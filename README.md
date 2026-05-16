@@ -65,8 +65,6 @@ Grip editing sur toutes les entités : cliquer un objet sélectionné pour dépl
 |--------|:------:|:------:|
 | `.mcad` (JSON natif) | ✓ | ✓ |
 | `.dxf` AC1015 (AutoCAD 2000) | ✓ | ✓ |
-| `.dwg` (DXF renommé) | ✓ | ✓ |
-| `.svg` | — | ✓ |
 
 - **Auto-save** localStorage — restauration automatique au rechargement (F5)
 - **File System Access API** (Chrome/Edge) — `Ctrl+S` écrit dans le même fichier sans télécharger
