@@ -4,7 +4,7 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [3.7] — 2026-05-16 — Version courante
+## [0.01] — 2026-05-16 — Version courante
 
 ### Ajouté
 - **Commandes FILLET / CHAMFER** (alias F/RACCORD, CHA/CHANFREIN)
