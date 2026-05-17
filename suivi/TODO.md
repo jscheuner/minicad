@@ -27,32 +27,27 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## 🟡 Priorité moyenne
 
-- [ ] **3.3 — Commande TRIM**
-  - Sélectionner une entité limite (clic 1)
-  - Cliquer la partie à couper (clic 2)
-  - Support : ligne×ligne, ligne×cercle, ligne×arc
-  - Algorithme : intersection + truncature de segment
+- [x] **3.3 — Commande TRIM** ✅ 2026-05-17
+  - Support : ligne, wall, arc, polyligne × toute entité limite
+  - Algorithme paramétrique (t∈[0,1]) + extractSubPoly pour les polylignes
 
-- [ ] **3.6 — Commande ROTATE**
-  - `ROTATE` → sélection → point de base → angle (terminal ou D.I.)
-  - Applique rotation à toutes les entités sélectionnées
+- [x] **3.6 — Commande ROTATE** ✅ 2026-05-17
+  - Sélection préalable possible (comme COPY), point de base, angle terminal ou D.I.
 
-- [ ] **3.7 — Commande SCALE**
-  - `SCALE` → sélection → point de base → facteur
-  - Met à l'échelle toutes les entités sélectionnées
+- [x] **3.7 — Commande SCALE** ✅ 2026-05-17
+  - Sélection, point de base, facteur
 
 - [ ] **4.1 — Panneau propriétés éditable**
   - Champs input (pas div) pour X1,Y1,X2,Y2,R,thickness…
   - `onchange` → pushUndo + modifier entité + render
 
-- [ ] **4.2 — Gestionnaire de calques amélioré**
-  - Bouton "+" pour ajouter un calque
-  - Double-clic sur nom pour renommer
-  - Bouton supprimer (avec confirmation si entités)
+- [x] **4.2 — Gestionnaire de calques amélioré** ✅ 2026-05-17
+  - Fenêtre dédiée (showLayerManager) : couleur, nom éditable, visibilité, épaisseur ISO, type de ligne
+  - Panneau gauche simplifié pour changer de calque actif
+  - Transfert d'entités entre calques par clic sur calque avec sélection active
 
-- [ ] **5.1 — Commande DIST**
-  - `DIST` → clic point 1 → clic point 2
-  - Afficher dans terminal : distance, Δx, Δy, angle
+- [x] **5.1 — Commande DIST** ✅ 2026-05-17
+  - `DIST` → clic point 1 → clic point 2 → terminal : distance, Δx, Δy, angle
 
 ---
 
@@ -85,7 +80,9 @@ Voir [CHANGELOG.md](CHANGELOG.md) pour le détail.
 - ✅ OSNAP 7 modes + perpendiculaire + tangente
 - ✅ Ortho (F8) + Polaire (F10)
 - ✅ Dynamic Input (bulle D/A)
-- ✅ Grip editing
+- ✅ Grip editing (poignées cotations corrigées — OSNAP ne dévie plus le clic)
+- ✅ Gestionnaire de calques (fenêtre + transfert d'entités)
+- ✅ TRIM, ROTATE, SCALE, DIST, JOIN
 - ✅ Module Architecture (mur, porte, fenêtre)
 - ✅ Module Électricité (prise, interrupteur, câble)
 - ✅ Module Cotation (5 types)

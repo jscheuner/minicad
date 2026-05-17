@@ -32,11 +32,13 @@ Aucun npm, aucun build, aucune connexion internet requise.
 | `ERASE` | Supprimer |
 | `OFFSET` | Décaler parallèle (O) |
 | `MIRROR` | Symétrie axiale (MI) |
+| `ROTATE` | Rotation avec point de base |
+| `SCALE` | Mise à l'échelle avec point de base |
 | `FILLET` | Raccord arrondi entre deux segments (F) |
 | `CHAMFER` | Chanfrein entre deux segments (CHA) |
+| `TRIM` | Raccourcir au croisement |
 | `JOIN` | Fusionner des lignes en une polyligne (J) |
-| `TRIM` | *(à venir)* |
-| `ROTATE` | *(à venir)* |
+| `DIST` | Mesure distance entre deux points |
 
 Grip editing sur toutes les entités : cliquer un objet sélectionné pour déplacer ses extrémités.
 
@@ -216,7 +218,7 @@ minicad/
 
 ## Version
 
-**v0.01** — Voir [suivi/CHANGELOG.md](suivi/CHANGELOG.md) pour l'historique complet.
+**v0.02** — Voir [suivi/CHANGELOG.md](suivi/CHANGELOG.md) pour l'historique complet.
 
 ---
 

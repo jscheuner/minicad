@@ -296,31 +296,84 @@
   .panel-content.hidden { display: none; }
 
   .layer-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 6px;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: background 0.1s;
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 6px; border-radius: 3px; cursor: pointer;
+    font-size: 11px; transition: background 0.1s;
   }
   .layer-item:hover { background: #ffffff08; }
   .layer-item.active { background: var(--accent-dim); }
-
-  .layer-color {
-    width: 10px; height: 10px;
-    border-radius: 2px;
-    flex-shrink: 0;
-  }
-
-  .layer-vis {
-    margin-left: auto;
-    font-size: 10px;
-    opacity: 0.5;
-    cursor: pointer;
-  }
+  .layer-item.assignable { cursor: crosshair; }
+  .layer-item.assignable:hover { background: #00d4ff18; outline: 1px solid #00d4ff44; }
+  .layer-color { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .layer-vis { margin-left: auto; font-size: 10px; opacity: 0.5; cursor: pointer; flex-shrink: 0; }
   .layer-vis:hover { opacity: 1; }
+  .layer-mgr-btn {
+    width: 100%; margin-top: 6px; padding: 5px; background: none;
+    border: 1px solid #ffffff18; border-radius: 3px; color: var(--text-dim);
+    font-size: 10px; cursor: pointer; letter-spacing: 0.5px;
+  }
+  .layer-mgr-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Layer Manager Dialog */
+  #layer-manager {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    z-index: 950; width: 560px; max-height: 80vh;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.8);
+    display: flex; flex-direction: column;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+  .lm-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px; border-bottom: 1px solid #ffffff18;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    font-weight: 600; letter-spacing: 1px; color: var(--accent);
+  }
+  .lm-close { cursor: pointer; color: #ffffff55; font-size: 18px; line-height: 1; }
+  .lm-close:hover { color: #fff; }
+  .lm-toolbar { padding: 8px 12px; border-bottom: 1px solid #ffffff0a; }
+  .lm-add-btn {
+    padding: 4px 12px; background: var(--accent-dim); border: 1px solid var(--accent);
+    border-radius: 4px; color: var(--accent); font-size: 11px; cursor: pointer;
+  }
+  .lm-add-btn:hover { background: var(--accent); color: #000; }
+  .lm-table { overflow-y: auto; flex: 1; }
+  table.lm-grid {
+    width: 100%; border-collapse: collapse; font-size: 11px;
+  }
+  .lm-grid th {
+    padding: 5px 8px; text-align: left; font-size: 9px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.8px; color: #ffffff44;
+    border-bottom: 1px solid #ffffff12; background: #0f1726; position: sticky; top: 0;
+  }
+  .lm-grid td { padding: 4px 8px; border-bottom: 1px solid #ffffff08; vertical-align: middle; }
+  .lm-grid tr:hover td { background: #ffffff06; }
+  .lm-grid tr.lm-current td { background: var(--accent-dim); }
+  .lm-color-btn {
+    width: 22px; height: 16px; border-radius: 3px; border: 1px solid #ffffff30;
+    cursor: pointer; padding: 0; display: block;
+  }
+  .lm-name-input {
+    background: transparent; border: none; color: var(--text); font-size: 11px;
+    font-family: 'IBM Plex Sans', sans-serif; width: 100%; min-width: 100px;
+  }
+  .lm-name-input:focus { outline: 1px solid var(--accent); border-radius: 2px; background: #ffffff08; }
+  .lm-sel {
+    background: #0d1525; border: 1px solid #ffffff18; border-radius: 3px;
+    color: var(--text); font-size: 10px; padding: 2px 4px; cursor: pointer; width: 100%;
+  }
+  .lm-sel:focus { outline: none; border-color: var(--accent); }
+  .lm-del-btn {
+    background: none; border: none; color: var(--error); opacity: 0.4;
+    cursor: pointer; font-size: 14px; padding: 0 4px;
+  }
+  .lm-del-btn:hover { opacity: 1; }
+  .lm-footer { padding: 10px 16px; border-top: 1px solid #ffffff12; text-align: right; }
+  .lm-close-btn {
+    padding: 5px 18px; background: var(--accent); border: none; border-radius: 4px;
+    color: #000; font-size: 11px; font-weight: 600; cursor: pointer;
+  }
+  .lm-close-btn:hover { opacity: 0.85; }
 
   .module-item {
     display: flex;
@@ -460,6 +513,29 @@
   }
   .prop-label { color: var(--text-dim); }
   .prop-value { color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+  .prop-input {
+    background: var(--bg-dark);
+    border: 1px solid #ffffff20;
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 1px 4px;
+    width: 90px;
+    text-align: right;
+  }
+  .prop-input:focus { outline: none; border-color: var(--accent); }
+  .prop-select {
+    background: var(--bg-dark);
+    border: 1px solid #ffffff20;
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 1px 4px;
+    width: 90px;
+  }
+  .prop-select:focus { outline: none; border-color: var(--accent); }
 
   .terminal {
     height: 160px;
@@ -715,6 +791,19 @@
           <line x1="12" y1="7" x2="12" y2="13" stroke-dasharray="2,2"/>
         </svg>
       </button>
+      <!-- Trim -->
+      <button class="tool-btn" data-tool="trim" title="Couper (TR)" onclick="executeCommand('TRIM')">
+        <svg viewBox="0 0 24 24">
+          <!-- Ligne horizontale à couper : partie gauche pleine, partie droite en pointillé -->
+          <line x1="2" y1="12" x2="11" y2="12"/>
+          <line x1="13" y1="12" x2="22" y2="12" stroke-dasharray="2,2" opacity="0.35"/>
+          <!-- Ligne verticale = entité limite -->
+          <line x1="12" y1="2" x2="12" y2="22"/>
+          <!-- Petites flèches indiquant la coupe -->
+          <line x1="9" y1="9" x2="12" y2="12"/>
+          <line x1="9" y1="15" x2="12" y2="12"/>
+        </svg>
+      </button>
       <!-- Raccord -->
       <button class="tool-btn" data-tool="fillet" title="Raccord (F)" onclick="executeCommand('FILLET')">
         <svg viewBox="0 0 24 24">
@@ -729,6 +818,21 @@
           <line x1="5" y1="2" x2="5" y2="13"/>
           <line x1="5" y1="13" x2="12" y2="20"/>
           <line x1="12" y1="20" x2="22" y2="20"/>
+        </svg>
+      </button>
+      <!-- Échelle -->
+      <button class="tool-btn" data-tool="scale" title="Mise à l'échelle (SC)" onclick="executeCommand('SCALE')">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 21l6-6M21 3l-6 6" fill="none"/>
+          <path d="M21 3h-5M21 3v5" fill="none"/>
+          <path d="M3 21h5M3 21v-5" fill="none"/>
+        </svg>
+      </button>
+      <!-- Rotation -->
+      <button class="tool-btn" data-tool="rotate" title="Rotation (RO)" onclick="executeCommand('ROTATE')">
+        <svg viewBox="0 0 24 24">
+          <path d="M20 8A9 9 0 1 0 21 13" fill="none"/>
+          <path d="M20 3v5h-5" fill="none"/>
         </svg>
       </button>
       <!-- Joindre -->
@@ -984,6 +1088,46 @@
 </div>
 
 <!-- TEXT PROPERTIES DIALOG -->
+<div id="layer-manager" style="display:none">
+  <div class="lm-header">
+    <span>GESTIONNAIRE DE CALQUES</span>
+    <span class="lm-close" onclick="closeLayerManager()">×</span>
+  </div>
+  <div class="lm-toolbar">
+    <button class="lm-add-btn" onclick="_layerAdd()">+ Nouveau calque</button>
+  </div>
+  <div class="lm-table">
+    <table class="lm-grid">
+      <thead><tr>
+        <th>Couleur</th><th>Nom</th><th style="text-align:center">👁</th>
+        <th>Épaisseur</th><th>Type de ligne</th><th></th>
+      </tr></thead>
+      <tbody id="lm-body"></tbody>
+    </table>
+  </div>
+  <div class="lm-footer">
+    <button class="lm-close-btn" onclick="closeLayerManager()">Fermer</button>
+  </div>
+</div>
+
+<div id="dim-text-dialog" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2133;border:1px solid #ffffff22;border-radius:8px;z-index:951;width:340px;box-shadow:0 12px 48px rgba(0,0,0,0.8);font-family:'IBM Plex Sans',sans-serif">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #ffffff18;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1px;color:var(--accent)">
+    TEXTE DE COTE
+    <span onclick="closeDimTextDialog()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+  </div>
+  <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+    <label style="font-size:10px;color:#ffffff55;letter-spacing:0.4px">Texte libre — utiliser &lt;&gt; pour la valeur mesurée</label>
+    <input id="dim-td-input" type="text" placeholder="<>" autocomplete="off"
+      style="background:#0d1525;border:1px solid #ffffff22;border-radius:3px;color:var(--text);font-size:13px;padding:6px 10px;font-family:'JetBrains Mono',monospace;outline:none"
+      oninput="updateDimTextPreview()" onkeydown="if(event.key==='Enter')confirmDimTextDialog();if(event.key==='Escape')closeDimTextDialog()">
+    <div id="dim-td-preview" style="font-size:12px;color:var(--accent);min-height:18px;font-family:'JetBrains Mono',monospace;padding-left:2px"></div>
+  </div>
+  <div style="padding:8px 16px;border-top:1px solid #ffffff12;display:flex;justify-content:flex-end;gap:8px">
+    <button onclick="closeDimTextDialog()" style="padding:4px 16px;background:none;border:1px solid #ffffff22;border-radius:3px;color:var(--text-dim);font-size:11px;cursor:pointer">Annuler</button>
+    <button onclick="confirmDimTextDialog()" style="padding:4px 16px;background:var(--accent);border:none;border-radius:3px;color:#000;font-size:11px;font-weight:600;cursor:pointer">OK</button>
+  </div>
+</div>
+
 <div id="text-dialog" style="display:none">
   <div class="td-header">
     <span>TEXTE</span>
@@ -1069,10 +1213,10 @@
 const S = {
   entities: [],
   layers: [
-    { name: '0 - Défaut', color: '#00d4ff', visible: true },
-    { name: '1 - Construction', color: '#ff4081', visible: true },
-    { name: '2 - Cotation', color: '#00e676', visible: true },
-    { name: '3 - Texte', color: '#ffab40', visible: true },
+    { name: '0 - Défaut',      color: '#00d4ff', visible: true, lineWidth: 0.35, lineType: 'solid' },
+    { name: '1 - Construction',color: '#ff4081', visible: true, lineWidth: 0.13, lineType: 'dashed' },
+    { name: '2 - Cotation',    color: '#00e676', visible: true, lineWidth: 0.25, lineType: 'solid' },
+    { name: '3 - Texte',       color: '#ffab40', visible: true, lineWidth: 0.25, lineType: 'solid' },
   ],
   currentLayer: 0,
   tool: 'select',
@@ -1116,9 +1260,27 @@ const S = {
   copyPending: false,
   // MIRROR pending selection
   mirrorPending: false,
+  rotatePending: false,
+  movePending: false,
+  // SCALE
+  scaleStep: 0,
+  scaleBase: null,
+  scaleIds: [],
+  scalePending: false,
+  // DIST
+  distPt1: null,
+  // TRIM
+  trimStep: 0,
+  trimCuttingId: null,
+  // Grip edit
+  _gripJustConfirmed: false,
   // MIRROR delete-source confirmation
   mirrorAwaitDelete: false,
   mirrorSourceIds: [],
+  // ROTATE
+  rotateStep: 0,   // 1=await base, 2=await angle
+  rotateBase: null,
+  rotateIds: [],
   // Dernière commande pour répétition (clic droit)
   lastCmdRaw: null,
   // TEXT
@@ -1131,6 +1293,7 @@ const S = {
   _textPendingY: 0,
   _textLivePreview: null,
   _textEditId: null,
+  _dimEditId: null,
   // OFFSET
   offsetDist: 10,
   offsetTargetId: null,
@@ -1492,8 +1655,37 @@ const CMD = {
     termPrint('COPIER: Point de base, puis destination', 'info'); setTool('copy');
   }},
   MOVE: { alias: ['M','DEPLACER'], desc: 'Déplacer sélection', exec: () => {
-    if (!S.selected.length) { termPrint('Aucun objet sélectionné', 'warning'); return; }
+    if (!S.selected.length) {
+      S.movePending = true;
+      setTool('select');
+      termPrint('DÉPLACER: Sélectionner les objets à déplacer, puis Entrée', 'warning');
+      return;
+    }
     termPrint('DÉPLACER: Point de base, puis destination', 'info'); setTool('move_obj');
+  }},
+  SCALE: { alias: ['SC','ECHELLE'], desc: 'Mise à l\'échelle des objets sélectionnés', exec() {
+    if (!S.selected.length) {
+      S.scalePending = true;
+      setTool('select');
+      termPrint('SCALE: Sélectionner les objets à mettre à l\'échelle, puis Entrée', 'warning');
+      return;
+    }
+    S.scaleIds = [...S.selected]; S.scaleStep = 1; S.scaleBase = null;
+    setTool('scale');
+    termPrint('SCALE: Cliquer le point de base', 'info');
+    setTimeout(smartFocus, 0);
+  }},
+  ROTATE: { alias: ['RO','ROTATION','PIVOTER'], desc: 'Pivoter les objets sélectionnés', exec() {
+    if (!S.selected.length) {
+      S.rotatePending = true;
+      setTool('select');
+      termPrint('ROTATE: Sélectionner les objets à pivoter, puis Entrée', 'warning');
+      return;
+    }
+    S.rotateIds = [...S.selected]; S.rotateStep = 1; S.rotateBase = null;
+    setTool('rotate');
+    termPrint('ROTATE: Cliquer le point de base', 'info');
+    setTimeout(smartFocus, 0);
   }},
   OFFSET: { alias: ['O','DECALER'], desc: 'Décaler entité (OFFSET [dist])', exec: (args) => {
     if (args[0]) {
@@ -1516,6 +1708,17 @@ const CMD = {
       return;
     }
     termPrint('MIROIR: 1er point de l\'axe de symétrie', 'info'); setTool('mirror');
+  }},
+  TRIM: { alias: ['TR'], desc: 'Couper une entité avec une entité limite', exec() {
+    S.trimStep=1; S.trimCuttingId=null;
+    setTool('trim');
+    termPrint('TRIM: Cliquer l\'entité limite', 'info');
+    setTimeout(smartFocus, 0);
+  }},
+  DIST: { alias: ['DI','DISTANCE'], desc: 'Mesure la distance entre deux points', exec() {
+    S.distPt1 = null; setTool('dist');
+    termPrint('DIST: Cliquer le 1er point', 'info');
+    setTimeout(smartFocus, 0);
   }},
   JOIN: { alias: ['J','JOINDRE'], desc: 'Joindre des lignes en polyligne', exec() {
     S.joinSelection=[]; S.selected=[];
@@ -1708,16 +1911,21 @@ function render() {
     const isOffsetHover  = S.tool === 'offset' && e.id === S.hoverEntityId && S.offsetTargetId === null;
     const isFilletFirst  = ['fillet','chamfer'].includes(S.tool) && e.id === S.filletFirstId;
     const isFilletHover  = ['fillet','chamfer'].includes(S.tool) && e.id === S.hoverEntityId && e.id !== S.filletFirstId;
-    const isJoinSelected = S.tool==='join' && S.joinSelection.includes(e.id);
-    const isJoinHover    = S.tool==='join' && e.id === S.hoverEntityId && !S.joinSelection.includes(e.id);
-    let color = S.layers[e.layer]?.color || '#00d4ff';
+    const isJoinSelected  = S.tool==='join' && S.joinSelection.includes(e.id);
+    const isJoinHover     = S.tool==='join' && e.id === S.hoverEntityId && !S.joinSelection.includes(e.id);
+    const isTrimCutting   = S.tool==='trim' && e.id === S.trimCuttingId;
+    const isTrimHover     = S.tool==='trim' && e.id === S.hoverEntityId && e.id !== S.trimCuttingId;
+    const highlighted = sel || isOffsetTarget || isOffsetHover || isFilletFirst || isFilletHover || isJoinSelected || isJoinHover || isTrimCutting || isTrimHover;
+    const layer = S.layers[e.layer];
+    let color = layer?.color || '#00d4ff';
     if (sel) color = '#448aff';
-    if (isOffsetTarget || isFilletFirst || isJoinSelected) color = '#ffab40';
-    if (isOffsetHover  || isFilletHover || isJoinHover)   color = '#ffffff';
+    if (isOffsetTarget || isFilletFirst || isJoinSelected || isTrimCutting) color = '#ffab40';
+    if (isOffsetHover  || isFilletHover || isJoinHover   || isTrimHover)   color = '#ffffff';
     ctx.strokeStyle = color;
     ctx.fillStyle = color;
-    ctx.lineWidth = (sel || isOffsetTarget || isOffsetHover || isFilletFirst || isFilletHover || isJoinSelected || isJoinHover) ? 2 : 1.2;
-    ctx.setLineDash(e.dash || []);
+    ctx.lineWidth = highlighted ? 2 : getLayerLineWidthPx(layer?.lineWidth);
+    const layerDash = highlighted ? [] : getLayerLineDash(layer?.lineType || 'solid');
+    ctx.setLineDash(e.dash || layerDash);
     drawEntity(e);
     ctx.setLineDash([]);
     if (sel) drawGrips(e);
@@ -1731,6 +1939,26 @@ function render() {
 
   // Offset ghost preview (indépendant de drawPoints)
   if (S.tool === 'offset' && S.offsetTargetId !== null && mouseOnCanvas) drawOffsetGhost();
+
+  // Rotate preview
+  if (S.tool === 'rotate' && S.rotateStep === 2 && mouseOnCanvas) drawRotatePreview();
+
+  // Scale preview
+  if (S.tool === 'scale' && S.scaleStep === 2 && mouseOnCanvas) drawScalePreview();
+
+  // Dist preview
+  if (S.tool === 'dist' && S.distPt1 && mouseOnCanvas) {
+    const [x1,y1] = S.distPt1, [mx,my] = S.mouseWorld;
+    const [sx1,sy1] = w2s(x1,y1), [smx,smy] = w2s(mx,my);
+    const dist = Math.hypot(mx-x1, my-y1);
+    ctx.save();
+    ctx.strokeStyle = '#ffab40'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(smx,smy); ctx.stroke();
+    ctx.fillStyle = '#ffab40'; ctx.font = '10px JetBrains Mono';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText(dist.toFixed(2), (sx1+smx)/2+4, (sy1+smy)/2-4);
+    ctx.setLineDash([]); ctx.restore();
+  }
 
   // Grip edit preview
   if (S.gripEdit) drawGripPreview();
@@ -1763,6 +1991,12 @@ function render() {
 
   updateStatusBar();
   updateDynamicInput();
+}
+
+function dimText(e, value) {
+  const t = e.text || '';
+  if (!t || t === '<>') return value.toFixed(1);
+  return t.replace('<>', value.toFixed(1));
 }
 
 function drawEntity(e) {
@@ -1837,6 +2071,7 @@ function drawEntity(e) {
     case 'dim_linear': {
       // Cote linéaire: offset from 3rd click determines position
       const off = e.offset || 30;
+      const to = e.textOffset || 0;
       const dx = Math.abs(e.x2 - e.x1), dy = Math.abs(e.y2 - e.y1);
       const isHoriz = dx >= dy;
       if (isHoriz) {
@@ -1848,8 +2083,9 @@ function drawEntity(e) {
         ctx.beginPath(); ctx.moveTo(a1, b1); ctx.lineTo(a2, b2); ctx.stroke();
         drawArrowHead(a1, b1, a2, b2); drawArrowHead(a2, b2, a1, b1);
         const dist = Math.abs(e.x2 - e.x1);
+        const [ttx, tty] = w2s((e.x1+e.x2)/2 + to, dimY);
         ctx.font = '10px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.fillText(dist.toFixed(1), (a1+a2)/2, Math.min(b1,b2) - 3);
+        ctx.fillText(dimText(e, dist), ttx, tty - 3);
       } else {
         const dimX = (e.x1 + e.x2) / 2 + off;
         const [a1, b1] = w2s(dimX, e.y1), [a2, b2] = w2s(dimX, e.y2);
@@ -1859,9 +2095,10 @@ function drawEntity(e) {
         ctx.beginPath(); ctx.moveTo(a1, b1); ctx.lineTo(a2, b2); ctx.stroke();
         drawArrowHead(a1, b1, a2, b2); drawArrowHead(a2, b2, a1, b1);
         const dist = Math.abs(e.y2 - e.y1);
-        ctx.save(); ctx.translate((a1+a2)/2, (b1+b2)/2); ctx.rotate(-Math.PI/2);
+        const [ttx, tty] = w2s(dimX, (e.y1+e.y2)/2 + to);
+        ctx.save(); ctx.translate(ttx, tty); ctx.rotate(-Math.PI/2);
         ctx.font = '10px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.fillText(dist.toFixed(1), 0, -3); ctx.restore();
+        ctx.fillText(dimText(e, dist), 0, -3); ctx.restore();
       }
       break;
     }
@@ -1877,12 +2114,16 @@ function drawEntity(e) {
       ctx.beginPath(); ctx.moveTo(dx1, dy1); ctx.lineTo(dx2, dy2); ctx.stroke();
       drawArrowHead(dx1, dy1, dx2, dy2); drawArrowHead(dx2, dy2, dx1, dy1);
       const dist = Math.hypot(e.x2 - e.x1, e.y2 - e.y1);
-      ctx.save(); ctx.translate((dx1+dx2)/2, (dy1+dy2)/2);
+      const len = dist > 0 ? dist : 1;
+      const to = (e.textOffset || 0) * S.zoom;
+      const dirX = (a2-a1)/len/S.zoom, dirY = (b2-b1)/len/S.zoom;
+      const ttx = (dx1+dx2)/2 + dirX*to*S.zoom, tty = (dy1+dy2)/2 + dirY*to*S.zoom;
+      ctx.save(); ctx.translate(ttx, tty);
       let textAngle = angle;
       if (textAngle > Math.PI/2 || textAngle < -Math.PI/2) textAngle += Math.PI;
       ctx.rotate(textAngle);
       ctx.font = '10px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillText(dist.toFixed(1), 0, -3); ctx.restore();
+      ctx.fillText(dimText(e, dist), 0, -3); ctx.restore();
       break;
     }
     case 'dim_angular': {
@@ -2030,10 +2271,66 @@ function getGripPoints(e) {
   const gp = (x, y, applyFn) => grips.push({ x, y, apply: applyFn });
 
   switch (e.type) {
-    case 'line': case 'wall': case 'dim_linear': case 'dim_aligned': case 'leader':
+    case 'line': case 'wall': case 'leader':
       gp(e.x1, e.y1, (ent, nx, ny) => { ent.x1 = nx; ent.y1 = ny; });
       gp(e.x2, e.y2, (ent, nx, ny) => { ent.x2 = nx; ent.y2 = ny; });
       break;
+    case 'dim_linear': {
+      const off = e.offset || 30;
+      const to = e.textOffset || 0;
+      const isHoriz = Math.abs(e.x2-e.x1) >= Math.abs(e.y2-e.y1);
+      // Definition point grips
+      gp(e.x1, e.y1, (ent, nx, ny) => { ent.x1 = nx; ent.y1 = ny; });
+      gp(e.x2, e.y2, (ent, nx, ny) => { ent.x2 = nx; ent.y2 = ny; });
+      // Arrow tip grips (on the dimension line)
+      if (isHoriz) {
+        const dimY = (e.y1+e.y2)/2 + off;
+        gp(e.x1, dimY, (ent, nx, ny) => { ent.offset = ny - (ent.y1+ent.y2)/2; });
+        gp(e.x2, dimY, (ent, nx, ny) => { ent.offset = ny - (ent.y1+ent.y2)/2; });
+        // Text grip
+        gp((e.x1+e.x2)/2 + to, dimY, (ent, nx, ny) => { ent.textOffset = nx - (ent.x1+ent.x2)/2; });
+      } else {
+        const dimX = (e.x1+e.x2)/2 + off;
+        gp(dimX, e.y1, (ent, nx, ny) => { ent.offset = nx - (ent.x1+ent.x2)/2; });
+        gp(dimX, e.y2, (ent, nx, ny) => { ent.offset = nx - (ent.x1+ent.x2)/2; });
+        // Text grip
+        gp(dimX, (e.y1+e.y2)/2 + to, (ent, nx, ny) => { ent.textOffset = ny - (ent.y1+ent.y2)/2; });
+      }
+      break;
+    }
+    case 'dim_aligned': {
+      const off = e.offset || 30;
+      const to = e.textOffset || 0;
+      const ldx = e.x2-e.x1, ldy = e.y2-e.y1, len = Math.hypot(ldx, ldy) || 1;
+      // Perpendicular direction (rendering-consistent): (ldy/len, -ldx/len)
+      const px = ldy/len, py = -ldx/len;
+      // Definition point grips
+      gp(e.x1, e.y1, (ent, nx, ny) => { ent.x1 = nx; ent.y1 = ny; });
+      gp(e.x2, e.y2, (ent, nx, ny) => { ent.x2 = nx; ent.y2 = ny; });
+      // Arrow tip grips
+      gp(e.x1 + px*off, e.y1 + py*off, (ent, nx, ny) => {
+        const dl = ent.x2-ent.x1, dm = ent.y2-ent.y1, ln = Math.hypot(dl, dm) || 1;
+        const ppx = dm/ln, ppy = -dl/ln;
+        ent.offset = (nx-ent.x1)*ppx + (ny-ent.y1)*ppy;
+      });
+      gp(e.x2 + px*off, e.y2 + py*off, (ent, nx, ny) => {
+        const dl = ent.x2-ent.x1, dm = ent.y2-ent.y1, ln = Math.hypot(dl, dm) || 1;
+        const ppx = dm/ln, ppy = -dl/ln;
+        ent.offset = (nx-ent.x2)*ppx + (ny-ent.y2)*ppy;
+      });
+      // Text grip: midpoint of dim line + textOffset along line direction
+      const midX = (e.x1+e.x2)/2 + px*off + (ldx/len)*to;
+      const midY = (e.y1+e.y2)/2 + py*off + (ldy/len)*to;
+      gp(midX, midY, (ent, nx, ny) => {
+        const dl = ent.x2-ent.x1, dm = ent.y2-ent.y1, ln = Math.hypot(dl, dm) || 1;
+        const ppx2 = dl/ln, ppy2 = dm/ln; // line direction
+        const ppx = dm/ln, ppy = -dl/ln;  // perp direction
+        const cmx = (ent.x1+ent.x2)/2 + ppx*(ent.offset||30);
+        const cmy = (ent.y1+ent.y2)/2 + ppy*(ent.offset||30);
+        ent.textOffset = (nx-cmx)*ppx2 + (ny-cmy)*ppy2;
+      });
+      break;
+    }
     case 'rect':
       gp(e.x1, e.y1, (ent, nx, ny) => { ent.x1 = nx; ent.y1 = ny; });
       gp(e.x2, e.y1, (ent, nx, ny) => { ent.x2 = nx; ent.y1 = ny; });
@@ -2069,7 +2366,7 @@ function getGripPoints(e) {
 
 // Check if click is on a grip of a selected entity
 function findGripHit(wx, wy) {
-  const tol = 8 / S.zoom;
+  const tol = 10 / S.zoom;
   for (const id of S.selected) {
     const ent = S.entities.find(e => e.id === id);
     if (!ent) continue;
@@ -2618,6 +2915,38 @@ function applyJoin() {
   updateSaveIndicator('modified'); autoSave(); render();
 }
 
+function drawRotatePreview() {
+  if (!S.rotateBase || S.rotateStep !== 2) return;
+  const [bx, by] = S.rotateBase;
+  const [mx, my] = S.mouseWorld;
+  const angle = Math.atan2(my - by, mx - bx);
+  const [bsx, bsy] = w2s(bx, by), [msx, msy] = w2s(mx, my);
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 1.2;
+  ctx.setLineDash([4, 4]);
+  S.rotateIds.forEach(id => {
+    const e = S.entities.find(en => en.id === id);
+    if (!e) return;
+    const g = JSON.parse(JSON.stringify(e));
+    rotateEntityInPlace(g, bx, by, angle);
+    drawEntity(g);
+  });
+  ctx.setLineDash([2, 4]);
+  ctx.strokeStyle = '#ffffff44';
+  ctx.lineWidth = 1;
+  ctx.globalAlpha = 0.8;
+  ctx.beginPath(); ctx.moveTo(bsx, bsy); ctx.lineTo(msx, msy); ctx.stroke();
+  // Angle label
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#ffab40';
+  ctx.font = '10px JetBrains Mono';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  ctx.fillText((angle*180/Math.PI).toFixed(1)+'°', msx+6, msy-4);
+  ctx.restore();
+}
+
 function drawOffsetGhost() {
   const src = S.entities.find(e => e.id === S.offsetTargetId);
   if (!src) return;
@@ -2972,7 +3301,7 @@ let mouseOnCanvas = false;
 function drawCursor() {
   if (!mouseOnCanvas) return;
   const [sx, sy] = S.mouseScreen;
-  const isSelect = S.tool === 'select' || S.copyPending;
+  const isSelect = S.tool === 'select' && !S.copyPending && !S.mirrorPending && !S.rotatePending && !S.movePending && !S.scalePending;
   const pickHalf = 6; // demi-côté du carré de sélection
   const gap = isSelect ? pickHalf + 2 : 0; // espace autour du centre en mode select
 
@@ -3030,7 +3359,7 @@ canvas.addEventListener('mousemove', (ev) => {
 
   // Hover entity for offset / fillet / chamfer selection highlight
   if ((S.tool === 'offset' && S.offsetTargetId === null) ||
-      S.tool === 'fillet' || S.tool === 'chamfer' || S.tool === 'join') {
+      S.tool === 'fillet' || S.tool === 'chamfer' || S.tool === 'join' || S.tool === 'trim') {
     const hit = hitTest(wx, wy);
     S.hoverEntityId = hit ? hit.id : null;
   } else {
@@ -3060,18 +3389,19 @@ canvas.addEventListener('mousedown', (ev) => {
   const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
   let [wx, wy] = s2w(sx, sy);
 
-  // Rubber-band: en mode select sans grip actif, différer jusqu'au mouseup
+  // Mode select : grip ou attente du 1er/2ème coin (logique dans mouseup)
   if (ev.button === 0 && S.tool === 'select' && !S.gripEdit && !S.drawing) {
     if (S.selected.length > 0) {
-      const [rwx, rwy] = resolvePoint(wx, wy);
-      const gripHit = findGripHit(rwx, rwy);
-      if (gripHit) { handleClick(rwx, rwy, ev); return; }
+      // Test grip with raw cursor (before OSNAP) so OSNAP snap can't deflect the hit
+      const gripHit = findGripHit(wx, wy);
+      if (gripHit) {
+        const [rwx, rwy] = resolvePoint(wx, wy);
+        handleClick(rwx, rwy, ev, wx, wy);
+        return;
+      }
     }
-    rbStart = { sx, sy, wx, wy };
-    rbEnd = { sx, sy, wx, wy };
-    isRubberBand = true;
     rbShiftKey = ev.shiftKey;
-    return;
+    return; // traité dans mouseup
   }
 
   const rawWx = wx, rawWy = wy;
@@ -3092,25 +3422,40 @@ function smartFocus() {
 
 canvas.addEventListener('mouseup', (ev) => {
   if (isPanning) { isPanning = false; canvas.style.cursor = 'none'; }
-  if (isRubberBand) {
-    isRubberBand = false;
-    const dx = rbEnd.sx - rbStart.sx, dy = rbEnd.sy - rbStart.sy;
-    if (Math.hypot(dx, dy) < 5) {
-      // Petit mouvement → clic simple — utiliser les coords brutes (pas snappées)
-      // pour que hitTest trouve l'entité sous le curseur réel, pas sous le snap
-      const hit = hitTest(rbStart.wx, rbStart.wy);
+
+  // Ignore mouseup that follows a grip confirmation (mousedown handled it already)
+  if (ev.button === 0 && S._gripJustConfirmed) { S._gripJustConfirmed = false; setTimeout(smartFocus, 0); return; }
+
+  if (ev.button === 0 && S.tool === 'select' && !S.gripEdit && !S.drawing) {
+    const rect = canvas.getBoundingClientRect();
+    const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
+    const [wx, wy] = s2w(sx, sy);
+
+    if (isRubberBand) {
+      // 2ème clic → finalise la sélection par fenêtre
+      isRubberBand = false;
+      selectInRect(rbStart.wx, rbStart.wy, wx, wy, rbShiftKey);
+      rbStart = null; rbEnd = null;
+    } else {
+      // 1er clic : entité ou 1er coin
+      const hit = hitTest(wx, wy);
       if (hit) {
         if (rbShiftKey) { const idx = S.selected.indexOf(hit.id); if (idx >= 0) S.selected.splice(idx, 1); else S.selected.push(hit.id); }
         else S.selected = [hit.id];
-      } else if (!rbShiftKey) S.selected = [];
-      updateProperties();
-    } else {
-      // Drag → sélection par fenêtre
-      selectInRect(rbStart.wx, rbStart.wy, rbEnd.wx, rbEnd.wy, rbShiftKey);
+        updateProperties();
+      } else {
+        if (!rbShiftKey) S.selected = [];
+        // Poser le 1er coin, rubber-band suit la souris jusqu'au 2ème clic
+        isRubberBand = true;
+        rbStart = { sx, sy, wx, wy };
+        rbEnd   = { sx, sy, wx, wy };
+      }
     }
-    rbStart = null; rbEnd = null;
     render();
+    setTimeout(smartFocus, 0);
+    return;
   }
+
   setTimeout(smartFocus, 0);
 });
 
@@ -3149,13 +3494,14 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     }
     S.gripEdit = null;
     S.drawing = false; S.awaitingInput = false;
+    S._gripJustConfirmed = true; // tell mouseup to ignore this release
     updateProperties(); render(); return;
   }
 
   if (tool === 'select') {
     // Check grip hit first (only if entities are selected and not in copy-pending mode)
     if (S.selected.length > 0 && !S.copyPending) {
-      const gripHit = findGripHit(wx, wy);
+      const gripHit = findGripHit(rawWx, rawWy);
       if (gripHit) {
         // Start grip editing
         S.gripEdit = gripHit;
@@ -3416,6 +3762,67 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     render(); return;
   }
 
+  // Trim
+  if (tool === 'trim') {
+    const hit = hitTest(rawWx!==undefined?rawWx:wx, rawWy!==undefined?rawWy:wy);
+    if (!hit) { termPrint('TRIM: cliquer sur une entité', 'warning'); return; }
+    if (S.trimStep === 1) {
+      S.trimCuttingId = hit.id;
+      S.trimStep = 2;
+      termPrint('TRIM: Cliquer la partie à couper (clic droit pour changer la limite)', 'info');
+      render(); return;
+    }
+    if (S.trimStep === 2) {
+      if (hit.id === S.trimCuttingId) {
+        termPrint('TRIM: Cliquer une entité différente de la limite', 'warning'); return;
+      }
+      applyTrim(hit.id, S.trimCuttingId, rawWx!==undefined?rawWx:wx, rawWy!==undefined?rawWy:wy);
+      return;
+    }
+  }
+
+  // Dist
+  if (tool === 'dist') {
+    if (!S.distPt1) {
+      S.distPt1 = [wx, wy];
+      termPrint('DIST: Cliquer le 2ème point', 'info');
+      render(); return;
+    }
+    const [x1,y1] = S.distPt1, dx = wx-x1, dy = wy-y1;
+    const dist = Math.hypot(dx, dy);
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    termPrint('DIST  D='+dist.toFixed(3)+'  Δx='+dx.toFixed(3)+'  Δy='+dy.toFixed(3)+'  Angle='+angle.toFixed(2)+'°', 'success');
+    S.distPt1 = null; setTool('select'); render(); return;
+  }
+
+  // Scale
+  if (tool === 'scale') {
+    if (S.scaleStep === 1) {
+      S.scaleBase = [wx, wy];
+      S.scaleStep = 2;
+      termPrint('SCALE: Déplacer la souris puis cliquer, ou taper le facteur + Entrée (ex: 2)','info');
+      render(); return;
+    }
+    if (S.scaleStep === 2) {
+      const factor = Math.max(0.01, Math.hypot(wx-S.scaleBase[0], wy-S.scaleBase[1]) / 100);
+      applyScale(factor); return;
+    }
+  }
+
+  // Rotate
+  if (tool === 'rotate') {
+    if (S.rotateStep === 1) {
+      S.rotateBase = [wx, wy];
+      S.rotateStep = 2;
+      termPrint('ROTATE: Déplacer la souris puis cliquer, ou taper un angle (en degrés) + Entrée','info');
+      render(); return;
+    }
+    if (S.rotateStep === 2) {
+      const angle = Math.atan2(wy - S.rotateBase[1], wx - S.rotateBase[0]);
+      applyRotate(angle); return;
+    }
+  }
+
   // Copy/Move
   if (tool==='copy'||tool==='move_obj') {
     if (!S.drawing) {
@@ -3440,6 +3847,325 @@ function offsetEntity(e,dx,dy) {
   if(e.cx!==undefined){e.cx+=dx;e.cy+=dy;} if(e.x!==undefined&&e.x1===undefined){e.x+=dx;e.y+=dy;}
   if(e.vx!==undefined){e.vx+=dx;e.vy+=dy;} // dim_angular vertex
   if(e.points) e.points=e.points.map(p=>[p[0]+dx,p[1]+dy]);
+}
+
+// ===== TRIM =====
+function segSegIntersectT(ax1,ay1,ax2,ay2, bx1,by1,bx2,by2) {
+  const dx1=ax2-ax1,dy1=ay2-ay1,dx2=bx2-bx1,dy2=by2-by1;
+  const denom=dx1*dy2-dy1*dx2;
+  if(Math.abs(denom)<1e-10) return null;
+  const fx=bx1-ax1,fy=by1-ay1;
+  const t=(fx*dy2-fy*dx2)/denom;
+  const s=(fx*dy1-fy*dx1)/denom;
+  if(s<-1e-9||s>1+1e-9) return null;
+  return t;
+}
+
+function lineCircleIntersect(ax1,ay1,ax2,ay2,cx,cy,r) {
+  const dx=ax2-ax1,dy=ay2-ay1;
+  const fx=ax1-cx,fy=ay1-cy;
+  const a=dx*dx+dy*dy; if(a<1e-12) return [];
+  const b=2*(fx*dx+fy*dy), c2=fx*fx+fy*fy-r*r;
+  const disc=b*b-4*a*c2; if(disc<0) return [];
+  const sq=Math.sqrt(Math.max(0,disc));
+  const t1=(-b-sq)/(2*a), t2=(-b+sq)/(2*a);
+  const res=[];
+  if(t1>=-1e-9&&t1<=1+1e-9) res.push({t:t1,x:ax1+t1*dx,y:ay1+t1*dy});
+  if(disc>1e-10&&t2>=-1e-9&&t2<=1+1e-9) res.push({t:t2,x:ax1+t2*dx,y:ay1+t2*dy});
+  return res;
+}
+
+function angleInArc(a,sa,ea) {
+  let end=ea; while(end<sa) end+=Math.PI*2;
+  let ang=a;  while(ang<sa) ang+=Math.PI*2;
+  return ang<=end+1e-9;
+}
+
+function getCutterPrimitives(e) {
+  const p=[];
+  if(e.type==='line'||e.type==='wall'||e.type==='leader') {
+    p.push({type:'seg',x1:e.x1,y1:e.y1,x2:e.x2,y2:e.y2});
+  } else if(e.type==='circle') {
+    p.push({type:'circle',cx:e.cx,cy:e.cy,r:e.r});
+  } else if(e.type==='arc') {
+    p.push({type:'arc',cx:e.cx,cy:e.cy,r:e.r,sa:e.startAngle,ea:e.endAngle});
+  } else if(e.type==='rect') {
+    const{x1,y1,x2,y2}=e;
+    p.push({type:'seg',x1,y1,x2,y2:y1},{type:'seg',x1:x2,y1,x2:x2,y2});
+    p.push({type:'seg',x1:x2,y1:y2,x2:x1,y2},{type:'seg',x1,y1:y2,x2:x1,y2:y1});
+  } else if(e.type==='polyline'||e.type==='cable') {
+    for(let i=0;i<e.points.length-1;i++)
+      p.push({type:'seg',x1:e.points[i][0],y1:e.points[i][1],x2:e.points[i+1][0],y2:e.points[i+1][1]});
+  }
+  return p;
+}
+
+function getTrimTsForLine(lx1,ly1,lx2,ly2,prims) {
+  const ts=[];
+  for(const p of prims) {
+    if(p.type==='seg') {
+      const t=segSegIntersectT(lx1,ly1,lx2,ly2,p.x1,p.y1,p.x2,p.y2);
+      if(t!=null) ts.push(t);
+    } else if(p.type==='circle') {
+      lineCircleIntersect(lx1,ly1,lx2,ly2,p.cx,p.cy,p.r).forEach(h=>ts.push(h.t));
+    } else if(p.type==='arc') {
+      lineCircleIntersect(lx1,ly1,lx2,ly2,p.cx,p.cy,p.r).forEach(h=>{
+        if(angleInArc(Math.atan2(h.y-p.cy,h.x-p.cx),p.sa,p.ea)) ts.push(h.t);
+      });
+    }
+  }
+  return ts.filter(t=>t>1e-9&&t<1-1e-9);
+}
+
+function applyTrimLine(ent, prims, clickWx, clickWy) {
+  const ox1=ent.x1,oy1=ent.y1, dx=ent.x2-ent.x1, dy=ent.y2-ent.y1;
+  const len2=dx*dx+dy*dy; if(len2<1e-12) return false;
+  const ts=getTrimTsForLine(ent.x1,ent.y1,ent.x2,ent.y2,prims);
+  if(!ts.length) return false;
+  ts.sort((a,b)=>a-b);
+  const clickT=Math.max(0,Math.min(1,((clickWx-ox1)*dx+(clickWy-oy1)*dy)/len2));
+  const breaks=[0,...ts,1];
+  let remIdx=0;
+  for(let i=0;i<breaks.length-1;i++) { if(clickT>=breaks[i]-1e-9&&clickT<=breaks[i+1]+1e-9){remIdx=i;break;} }
+  const kept=[];
+  for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  if(!kept.length){ S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
+  ent.x1=ox1+kept[0][0]*dx; ent.y1=oy1+kept[0][0]*dy;
+  ent.x2=ox1+kept[0][1]*dx; ent.y2=oy1+kept[0][1]*dy;
+  for(let i=1;i<kept.length;i++) {
+    const ne=JSON.parse(JSON.stringify(ent)); ne.id=S.nextId++;
+    ne.x1=ox1+kept[i][0]*dx; ne.y1=oy1+kept[i][0]*dy;
+    ne.x2=ox1+kept[i][1]*dx; ne.y2=oy1+kept[i][1]*dy;
+    S.entities.push(ne);
+  }
+  return true;
+}
+
+function getTrimAnglesForArc(arcEnt, prims) {
+  const angles=[];
+  for(const p of prims) {
+    let pts=[];
+    if(p.type==='seg') {
+      pts=lineCircleIntersect(p.x1,p.y1,p.x2,p.y2,arcEnt.cx,arcEnt.cy,arcEnt.r).map(h=>({x:h.x,y:h.y}));
+    } else if(p.type==='circle'||p.type==='arc') {
+      const d=Math.hypot(p.cx-arcEnt.cx,p.cy-arcEnt.cy);
+      const r2=p.r;
+      if(d<1e-10||d>arcEnt.r+r2+1e-9||d<Math.abs(arcEnt.r-r2)-1e-9) continue;
+      const a=(arcEnt.r*arcEnt.r-r2*r2+d*d)/(2*d);
+      const h2=Math.max(0,arcEnt.r*arcEnt.r-a*a);
+      const h=Math.sqrt(h2);
+      const mx=(p.cx-arcEnt.cx)/d, my=(p.cy-arcEnt.cy)/d;
+      pts=[{x:arcEnt.cx+a*mx-h*my,y:arcEnt.cy+a*my+h*mx},{x:arcEnt.cx+a*mx+h*my,y:arcEnt.cy+a*my-h*mx}];
+      if(p.type==='arc') pts=pts.filter(pt=>angleInArc(Math.atan2(pt.y-p.cy,pt.x-p.cx),p.sa,p.ea));
+    }
+    for(const pt of pts) {
+      const angle=Math.atan2(pt.y-arcEnt.cy,pt.x-arcEnt.cx);
+      if(angleInArc(angle,arcEnt.startAngle,arcEnt.endAngle)) angles.push(angle);
+    }
+  }
+  return angles;
+}
+
+function applyTrimArc(ent, prims, clickWx, clickWy) {
+  const rawAngles=getTrimAnglesForArc(ent,prims);
+  if(!rawAngles.length) return false;
+  const sa=ent.startAngle;
+  let ea=ent.endAngle; while(ea<sa) ea+=Math.PI*2;
+  const norm=rawAngles.map(a=>{let b=a;while(b<sa)b+=Math.PI*2;return b;})
+                       .filter(a=>a>sa+1e-9&&a<ea-1e-9);
+  if(!norm.length) return false;
+  norm.sort((a,b)=>a-b);
+  let clickA=Math.atan2(clickWy-ent.cy,clickWx-ent.cx);
+  while(clickA<sa) clickA+=Math.PI*2;
+  const breaks=[sa,...norm,ea];
+  let remIdx=0;
+  for(let i=0;i<breaks.length-1;i++) { if(clickA>=breaks[i]-1e-9&&clickA<=breaks[i+1]+1e-9){remIdx=i;break;} }
+  const kept=[];
+  for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  if(!kept.length){ S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
+  ent.startAngle=kept[0][0]; ent.endAngle=kept[0][1];
+  for(let i=1;i<kept.length;i++) {
+    const ne=JSON.parse(JSON.stringify(ent)); ne.id=S.nextId++;
+    ne.startAngle=kept[i][0]; ne.endAngle=kept[i][1];
+    S.entities.push(ne);
+  }
+  return true;
+}
+
+function extractSubPoly(pts, nSegs, t1, t2) {
+  const result=[];
+  const seg1=Math.min(Math.floor(t1),nSegs-1);
+  const lt1=t1-seg1;
+  const A=pts[seg1], B=pts[seg1+1]||pts[seg1];
+  const sx=A[0]+lt1*(B[0]-A[0]), sy=A[1]+lt1*(B[1]-A[1]);
+  const startBulge=lt1<1e-9?(A[2]||0):0;
+  result.push([sx,sy,startBulge]);
+  const firstVtx=Math.ceil(t1+1e-9), lastVtx=Math.floor(t2-1e-9);
+  for(let i=firstVtx;i<=lastVtx;i++){
+    const p=pts[i];
+    const outComplete=(i+1)<=t2-1e-9;
+    result.push([p[0],p[1],outComplete?(p[2]||0):0]);
+  }
+  const seg2=Math.min(Math.floor(t2),nSegs-1);
+  const lt2=t2-seg2;
+  if(lt2>1e-9){
+    const C=pts[seg2],D=pts[seg2+1]||pts[seg2];
+    result.push([C[0]+lt2*(D[0]-C[0]),C[1]+lt2*(D[1]-C[1])]);
+  }
+  return result;
+}
+
+function applyTrimPolyline(ent, prims, clickWx, clickWy) {
+  const pts=ent.points, nSegs=pts.length-1;
+  if(nSegs<1) return false;
+  const globalTs=[];
+  for(let i=0;i<nSegs;i++){
+    const p1=pts[i],p2=pts[i+1];
+    if(p1[2]||0) continue; // skip arc segments
+    for(const p of prims){
+      if(p.type==='seg'){
+        const t=segSegIntersectT(p1[0],p1[1],p2[0],p2[1],p.x1,p.y1,p.x2,p.y2);
+        if(t!=null&&t>1e-9&&t<1-1e-9) globalTs.push(i+t);
+      } else if(p.type==='circle'){
+        lineCircleIntersect(p1[0],p1[1],p2[0],p2[1],p.cx,p.cy,p.r).forEach(h=>{
+          if(h.t>1e-9&&h.t<1-1e-9) globalTs.push(i+h.t);
+        });
+      } else if(p.type==='arc'){
+        lineCircleIntersect(p1[0],p1[1],p2[0],p2[1],p.cx,p.cy,p.r).forEach(h=>{
+          if(h.t>1e-9&&h.t<1-1e-9&&angleInArc(Math.atan2(h.y-p.cy,h.x-p.cx),p.sa,p.ea)) globalTs.push(i+h.t);
+        });
+      }
+    }
+  }
+  if(!globalTs.length) return false;
+  globalTs.sort((a,b)=>a-b);
+  let clickGlobalT=0,minDist=Infinity;
+  for(let i=0;i<nSegs;i++){
+    const p1=pts[i],p2=pts[i+1];
+    const dx=p2[0]-p1[0],dy=p2[1]-p1[1],len2=dx*dx+dy*dy;
+    if(len2<1e-12) continue;
+    const lt=Math.max(0,Math.min(1,((clickWx-p1[0])*dx+(clickWy-p1[1])*dy)/len2));
+    const d=Math.hypot(p1[0]+lt*dx-clickWx,p1[1]+lt*dy-clickWy);
+    if(d<minDist){minDist=d;clickGlobalT=i+lt;}
+  }
+  const breaks=[0,...globalTs,nSegs];
+  let remIdx=0;
+  for(let i=0;i<breaks.length-1;i++){if(clickGlobalT>=breaks[i]-1e-9&&clickGlobalT<=breaks[i+1]+1e-9){remIdx=i;break;}}
+  const kept=[];
+  for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  if(!kept.length){S.entities=S.entities.filter(e=>e.id!==ent.id);return true;}
+  const firstSub=extractSubPoly(pts,nSegs,kept[0][0],kept[0][1]);
+  ent.points=firstSub;
+  for(let i=1;i<kept.length;i++){
+    const ne=JSON.parse(JSON.stringify(ent));
+    ne.id=S.nextId++;
+    ne.points=extractSubPoly(pts,nSegs,kept[i][0],kept[i][1]);
+    S.entities.push(ne);
+  }
+  return true;
+}
+
+function applyTrim(trimmedId, cutterId, clickWx, clickWy) {
+  const ent=S.entities.find(e=>e.id===trimmedId);
+  const cutter=S.entities.find(e=>e.id===cutterId);
+  if(!ent||!cutter) return;
+  const supported=['line','wall','arc','polyline','cable'];
+  if(!supported.includes(ent.type)){ termPrint('TRIM: non supporté pour '+ent.type,'warning'); return; }
+  const prims=getCutterPrimitives(cutter);
+  pushUndo();
+  let ok=false;
+  if(ent.type==='line'||ent.type==='wall')       ok=applyTrimLine(ent,prims,clickWx,clickWy);
+  else if(ent.type==='arc')                       ok=applyTrimArc(ent,prims,clickWx,clickWy);
+  else if(ent.type==='polyline'||ent.type==='cable') ok=applyTrimPolyline(ent,prims,clickWx,clickWy);
+  if(!ok){ S.history.pop(); termPrint('TRIM: aucune intersection trouvée','warning'); return; }
+  termPrint('TRIM — segment supprimé','success');
+  updateSaveIndicator('modified'); autoSave(); render();
+}
+
+function scaleEntityInPlace(e, cx, cy, f) {
+  function sp(px, py) { return [cx+(px-cx)*f, cy+(py-cy)*f]; }
+  if (e.x1!==undefined) { [e.x1,e.y1]=sp(e.x1,e.y1); }
+  if (e.x2!==undefined) { [e.x2,e.y2]=sp(e.x2,e.y2); }
+  if (e.cx!==undefined) { [e.cx,e.cy]=sp(e.cx,e.cy); if(e.r!==undefined) e.r*=f; }
+  if (e.x!==undefined&&e.x1===undefined) { [e.x,e.y]=sp(e.x,e.y); if(e.size) e.size*=f; }
+  if (e.vx!==undefined) { [e.vx,e.vy]=sp(e.vx,e.vy); }
+  if (e.thickness!==undefined) e.thickness*=f;
+  if (e.points) e.points=e.points.map(p=>{const[nx,ny]=sp(p[0],p[1]);return p.length>2?[nx,ny,p[2]]:[nx,ny];});
+  if (e.p1) { const[nx,ny]=sp(e.p1[0],e.p1[1]); e.p1=[nx,ny]; }
+  if (e.p2) { const[nx,ny]=sp(e.p2[0],e.p2[1]); e.p2=[nx,ny]; }
+  if (e.linePos) { const[nx,ny]=sp(e.linePos[0],e.linePos[1]); e.linePos=[nx,ny]; }
+}
+
+function applyScale(factor) {
+  if (factor <= 0) { termPrint('Facteur invalide','warning'); return; }
+  pushUndo();
+  S.scaleIds.forEach(id => { const e=S.entities.find(en=>en.id===id); if(e) scaleEntityInPlace(e,S.scaleBase[0],S.scaleBase[1],factor); });
+  termPrint('SCALE: '+S.scaleIds.length+' objet(s) mis à l\'échelle ×'+factor.toFixed(3),'success');
+  S.scaleStep=0; S.scaleBase=null; S.scaleIds=[];
+  setTool('select'); updateSaveIndicator('modified'); autoSave(); render();
+}
+
+function drawScalePreview() {
+  if (!S.scaleBase || S.scaleStep !== 2) return;
+  const [bx, by] = S.scaleBase;
+  const [mx, my] = S.mouseWorld;
+  const dist = Math.hypot(mx-bx, my-by);
+  const factor = Math.max(0.01, dist / 100);
+  const [bsx, bsy] = w2s(bx, by), [msx, msy] = w2s(mx, my);
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 1.2;
+  ctx.setLineDash([4, 4]);
+  S.scaleIds.forEach(id => {
+    const e = S.entities.find(en => en.id === id);
+    if (!e) return;
+    const g = JSON.parse(JSON.stringify(e));
+    scaleEntityInPlace(g, bx, by, factor);
+    drawEntity(g);
+  });
+  ctx.setLineDash([2, 4]);
+  ctx.strokeStyle = '#ffffff44';
+  ctx.lineWidth = 1;
+  ctx.globalAlpha = 0.8;
+  ctx.beginPath(); ctx.moveTo(bsx, bsy); ctx.lineTo(msx, msy); ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#ffab40';
+  ctx.font = '10px JetBrains Mono';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  ctx.fillText('×'+factor.toFixed(3), msx+6, msy-4);
+  ctx.restore();
+}
+
+function rotateEntityInPlace(e, cx, cy, angle) {
+  const cos = Math.cos(angle), sin = Math.sin(angle);
+  function rp(px, py) { const dx=px-cx, dy=py-cy; return [cx+dx*cos-dy*sin, cy+dx*sin+dy*cos]; }
+  if (e.type === 'rect') {
+    const [ax1,ay1]=rp(e.x1,e.y1), [ax2,ay2]=rp(e.x2,e.y1);
+    const [ax3,ay3]=rp(e.x2,e.y2), [ax4,ay4]=rp(e.x1,e.y2);
+    e.type='polyline'; e.points=[[ax1,ay1],[ax2,ay2],[ax3,ay3],[ax4,ay4],[ax1,ay1]];
+    delete e.x1; delete e.y1; delete e.x2; delete e.y2;
+    return;
+  }
+  if (e.x1!==undefined) { [e.x1,e.y1]=rp(e.x1,e.y1); }
+  if (e.x2!==undefined) { [e.x2,e.y2]=rp(e.x2,e.y2); }
+  if (e.cx!==undefined) { [e.cx,e.cy]=rp(e.cx,e.cy); }
+  if (e.x!==undefined&&e.x1===undefined) { [e.x,e.y]=rp(e.x,e.y); }
+  if (e.vx!==undefined) { [e.vx,e.vy]=rp(e.vx,e.vy); }
+  if (e.type==='arc') { e.startAngle+=angle; e.endAngle+=angle; }
+  if (e.angle!==undefined&&e.x!==undefined) { e.angle=(e.angle||0)+angle; }
+  if (e.points) { e.points=e.points.map(p=>{const[nx,ny]=rp(p[0],p[1]);return p.length>2?[nx,ny,p[2]]:[nx,ny];}); }
+  if (e.p1) { const [nx,ny]=rp(e.p1[0],e.p1[1]); e.p1=[nx,ny]; }
+  if (e.p2) { const [nx,ny]=rp(e.p2[0],e.p2[1]); e.p2=[nx,ny]; }
+  if (e.linePos) { const [nx,ny]=rp(e.linePos[0],e.linePos[1]); e.linePos=[nx,ny]; }
+}
+
+function applyRotate(angle) {
+  pushUndo();
+  S.rotateIds.forEach(id => { const e=S.entities.find(en=>en.id===id); if(e) rotateEntityInPlace(e,S.rotateBase[0],S.rotateBase[1],angle); });
+  termPrint('ROTATE: '+S.rotateIds.length+' objet(s) pivoté(s) de '+(angle*180/Math.PI).toFixed(1)+'°','success');
+  S.rotateStep=0; S.rotateBase=null; S.rotateIds=[];
+  setTool('select'); updateSaveIndicator('modified'); autoSave(); render();
 }
 
 function mirrorPt(px,py,ax,ay,bx,by) {
@@ -3744,11 +4470,14 @@ function findCircleEntity(wx, wy) {
 const _toolCmdName = {
   line:'LINE', rect:'RECT', circle:'CIRCLE', arc:'ARC',
   wall:'WALL', polyline:'PL', cable:'CABLE', leader:'LEADER',
-  copy:'COPY', move_obj:'MOVE', mirror:'MIRROR', offset:'OFFSET',
+  copy:'COPY', move_obj:'MOVE', mirror:'MIRROR', offset:'OFFSET', rotate:'ROTATE', scale:'SCALE', trim:'TRIM',
 };
 function setTool(t) {
   if(t !== 'select' && t !== 'copy') S.copyPending=false;
   if(t !== 'select' && t !== 'mirror') S.mirrorPending=false;
+  if(t !== 'select' && t !== 'rotate') S.rotatePending=false;
+  if(t !== 'select' && t !== 'move_obj') S.movePending=false;
+  if(t !== 'select' && t !== 'scale') S.scalePending=false;
   if(t !== 'offset') { S.offsetTargetId=null; S.offsetAwaitDist=false; }
   if(_toolCmdName[t]) S.lastCmdRaw = _toolCmdName[t];
   S.tool=t; S.drawing=false; S.drawPoints=[]; S.awaitingInput=false;
@@ -3835,29 +4564,154 @@ function zoomExtents() {
   render();
 }
 
-function updateProperties() {
-  const c=document.getElementById('props-content');
-  if(!S.selected.length){c.innerHTML='<div style="padding:8px 10px;color:var(--text-dim);font-size:11px;">Aucune sélection</div>';return;}
-  if(S.selected.length>1){c.innerHTML='<div style="padding:8px 10px;font-size:11px;">'+S.selected.length+' objets</div>';return;}
-  const e=S.entities.find(en=>en.id===S.selected[0]);if(!e)return;
-  let h='<div class="prop-row"><span class="prop-label">Type</span><span class="prop-value">'+e.type+'</span></div>';
-  h+='<div class="prop-row"><span class="prop-label">ID</span><span class="prop-value">#'+e.id+'</span></div>';
-  h+='<div class="prop-row"><span class="prop-label">Calque</span><span class="prop-value">'+e.layer+'</span></div>';
-  if(e.x1!==undefined){
-    h+='<div class="prop-row"><span class="prop-label">X1,Y1</span><span class="prop-value">'+e.x1.toFixed(1)+', '+e.y1.toFixed(1)+'</span></div>';
-    h+='<div class="prop-row"><span class="prop-label">X2,Y2</span><span class="prop-value">'+e.x2.toFixed(1)+', '+e.y2.toFixed(1)+'</span></div>';
-    if(e.type==='line'||e.type==='wall')h+='<div class="prop-row"><span class="prop-label">Longueur</span><span class="prop-value">'+Math.hypot(e.x2-e.x1,e.y2-e.y1).toFixed(2)+'</span></div>';
+function _propChange(id, field, val, isText) {
+  const e = S.entities.find(en => en.id === id);
+  if (!e) return;
+  pushUndo();
+  if (isText) {
+    e[field] = val;
+  } else {
+    const n = parseFloat(val);
+    if (isNaN(n)) return;
+    e[field] = n;
   }
-  if(e.cx!==undefined){
-    h+='<div class="prop-row"><span class="prop-label">Centre</span><span class="prop-value">'+e.cx.toFixed(1)+', '+e.cy.toFixed(1)+'</span></div>';
-    h+='<div class="prop-row"><span class="prop-label">Rayon</span><span class="prop-value">'+e.r.toFixed(2)+'</span></div>';
-  }
-  if(e.x!==undefined&&e.x1===undefined)h+='<div class="prop-row"><span class="prop-label">Position</span><span class="prop-value">'+e.x.toFixed(1)+', '+e.y.toFixed(1)+'</span></div>';
-  if(e.thickness)h+='<div class="prop-row"><span class="prop-label">Épaisseur</span><span class="prop-value">'+e.thickness+'</span></div>';
-  if(e.content)h+='<div class="prop-row"><span class="prop-label">Texte</span><span class="prop-value">'+e.content+'</span></div>';
-  if(e.points)h+='<div class="prop-row"><span class="prop-label">Points</span><span class="prop-value">'+e.points.length+'</span></div>';
-  c.innerHTML=h;
+  render();
 }
+
+function _propChangeLayer(id, layerIdx) {
+  const e = S.entities.find(en => en.id === id);
+  if (!e) return;
+  pushUndo();
+  e.layer = parseInt(layerIdx);
+  render();
+  updateProperties();
+}
+
+function updateProperties() {
+  const c = document.getElementById('props-content');
+  if (!S.selected.length) { c.innerHTML='<div style="padding:8px 10px;color:var(--text-dim);font-size:11px;">Aucune sélection</div>'; return; }
+  if (S.selected.length > 1) { c.innerHTML='<div style="padding:8px 10px;font-size:11px;">'+S.selected.length+' objets</div>'; return; }
+  const e = S.entities.find(en => en.id === S.selected[0]); if (!e) return;
+  const id = e.id;
+  const inp = (field, val, isText) => {
+    const esc = String(val).replace(/"/g,'&quot;');
+    const t = isText ? 'text' : 'number';
+    const step = isText ? '' : ' step="any"';
+    return '<input type="'+t+'" class="prop-input" value="'+esc+'"'+step+
+           ' onchange="_propChange('+id+',\''+field+'\',this.value,'+(isText?'true':'false')+')" />';
+  };
+  const row = (label, content) => '<div class="prop-row"><span class="prop-label">'+label+'</span>'+content+'</div>';
+  let h = row('Type', '<span class="prop-value">'+e.type+'</span>');
+  h += row('ID', '<span class="prop-value">#'+e.id+'</span>');
+  const layerSel = '<select class="prop-select" onchange="_propChangeLayer('+id+',this.value)">'+
+    S.layers.map((l,i)=>'<option value="'+i+'"'+(e.layer===i?' selected':'')+'>'+l.name+'</option>').join('')+
+    '</select>';
+  h += row('Calque', layerSel);
+  if (e.x1 !== undefined) {
+    h += row('X1', inp('x1', e.x1.toFixed(2)));
+    h += row('Y1', inp('y1', e.y1.toFixed(2)));
+    h += row('X2', inp('x2', e.x2.toFixed(2)));
+    h += row('Y2', inp('y2', e.y2.toFixed(2)));
+    if (e.type==='line'||e.type==='wall') h += row('Longueur','<span class="prop-value">'+Math.hypot(e.x2-e.x1,e.y2-e.y1).toFixed(2)+'</span>');
+  }
+  if (e.cx !== undefined) {
+    h += row('CX', inp('cx', e.cx.toFixed(2)));
+    h += row('CY', inp('cy', e.cy.toFixed(2)));
+    h += row('Rayon', inp('r', e.r.toFixed(2)));
+  }
+  if (e.x !== undefined && e.x1 === undefined) {
+    h += row('X', inp('x', e.x.toFixed(2)));
+    h += row('Y', inp('y', e.y.toFixed(2)));
+  }
+  if (e.thickness !== undefined) h += row('Épaisseur', inp('thickness', e.thickness));
+  if (e.content !== undefined) h += row('Texte', inp('content', e.content, true));
+  if (e.size !== undefined) h += row('Taille', inp('size', e.size));
+  if (e.points) h += row('Points', '<span class="prop-value">'+e.points.length+'</span>');
+  c.innerHTML = h;
+}
+
+function _layerAdd() {
+  const colors=['#e040fb','#26c6da','#d4e157','#ff7043','#78909c','#aed581'];
+  const color=colors[S.layers.length%colors.length];
+  S.layers.push({name:'Calque '+S.layers.length,color,visible:true,lineWidth:0.25,lineType:'solid'});
+  updateUI(); refreshLayerManager(); autoSave();
+}
+function _layerDelete(i) {
+  if(S.layers.length<=1){termPrint('Impossible de supprimer le dernier calque','warning');return;}
+  const has=S.entities.some(e=>e.layer===i);
+  if(has&&!confirm('Ce calque contient des entités. Supprimer quand même ?')) return;
+  S.entities.forEach(e=>{if(e.layer===i)e.layer=0;else if(e.layer>i)e.layer--;});
+  S.layers.splice(i,1);
+  if(S.currentLayer>=S.layers.length) S.currentLayer=S.layers.length-1;
+  updateUI(); refreshLayerManager(); render(); autoSave();
+}
+function _layerRename(i,v){if(S.layers[i]){S.layers[i].name=v;updateUI();autoSave();}}
+function _layerColor(i,v){if(S.layers[i]){S.layers[i].color=v;updateUI();refreshLayerManager();render();autoSave();}}
+function _layerWidth(i,v){if(S.layers[i]){S.layers[i].lineWidth=parseFloat(v);render();autoSave();}}
+function _layerType(i,v){if(S.layers[i]){S.layers[i].lineType=v;render();autoSave();}}
+function _layerVis(i){if(S.layers[i]){S.layers[i].visible=!S.layers[i].visible;updateUI();refreshLayerManager();render();autoSave();}}
+function _layerSelect(i){
+  if(S.selected.length>0){
+    pushUndo();
+    S.selected.forEach(id=>{const e=S.entities.find(en=>en.id===id);if(e)e.layer=i;});
+    termPrint(S.selected.length+' entité'+(S.selected.length>1?'s':'')+' → calque '+S.layers[i].name,'ok');
+    render(); updateUI(); refreshLayerManager(); autoSave();
+  } else {
+    S.currentLayer=i; updateUI(); refreshLayerManager();
+  }
+}
+
+function showLayerManager() {
+  const dlg = document.getElementById('layer-manager');
+  dlg.style.display = 'flex';
+  refreshLayerManager();
+}
+function closeLayerManager() {
+  document.getElementById('layer-manager').style.display = 'none';
+}
+function refreshLayerManager() {
+  const dlg = document.getElementById('layer-manager');
+  if (dlg.style.display === 'none') return;
+  const widths = [0.13, 0.18, 0.25, 0.35, 0.50, 0.70, 1.00];
+  const types = [['solid','Continu'],['dashed','Tirets'],['dotted','Pointillés'],['dashdot','Tiret-point'],['center','Centre']];
+  const body = document.getElementById('lm-body');
+  body.innerHTML = S.layers.map((l, i) => {
+    const wOpts = widths.map(w =>
+      '<option value="'+w+'"'+(Math.abs((l.lineWidth||0.25)-w)<0.001?' selected':'')+'>'+w+' mm</option>'
+    ).join('');
+    const tOpts = types.map(([v,label]) =>
+      '<option value="'+v+'"'+(l.lineType===v?' selected':'')+'>'+label+'</option>'
+    ).join('');
+    const isCurrent = i === S.currentLayer;
+    return '<tr class="'+(isCurrent?'lm-current':'')+'" onclick="_layerSelect('+i+')" style="cursor:pointer">'+
+      '<td><input type="color" class="lm-color-btn" value="'+l.color+'" title="Couleur"'+
+        ' onchange="event.stopPropagation();_layerColor('+i+',this.value)"'+
+        ' onclick="event.stopPropagation()"></td>'+
+      '<td><input class="lm-name-input" value="'+l.name.replace(/"/g,'&quot;')+'"'+
+        ' onchange="event.stopPropagation();_layerRename('+i+',this.value)"'+
+        ' onclick="event.stopPropagation()"></td>'+
+      '<td style="text-align:center"><span style="cursor:pointer;font-size:14px" title="Visibilité"'+
+        ' onclick="event.stopPropagation();_layerVis('+i+')">'+(l.visible?'👁':'—')+'</span></td>'+
+      '<td><select class="lm-sel" onchange="event.stopPropagation();_layerWidth('+i+',this.value)"'+
+        ' onclick="event.stopPropagation()">'+wOpts+'</select></td>'+
+      '<td><select class="lm-sel" onchange="event.stopPropagation();_layerType('+i+',this.value)"'+
+        ' onclick="event.stopPropagation()">'+tOpts+'</select></td>'+
+      '<td><button class="lm-del-btn" title="Supprimer"'+
+        ' onclick="event.stopPropagation();_layerDelete('+i+')">✕</button></td>'+
+      '</tr>';
+  }).join('');
+}
+
+function getLayerLineDash(t) {
+  switch(t){
+    case 'dashed':  return [8,5];
+    case 'dotted':  return [2,5];
+    case 'dashdot': return [10,4,2,4];
+    case 'center':  return [18,5,3,5];
+    default:        return [];
+  }
+}
+function getLayerLineWidthPx(w) { return Math.max(0.5,(w||0.25)*3.5); }
 
 function updateOsnapPanel() {
   const panel = document.getElementById('osnap-panel');
@@ -3880,13 +4734,18 @@ function updateOsnapPanel() {
 }
 
 function updateUI() {
-  // Layers
+  // Layers — panneau simplifié (sélection uniquement)
   const ll=document.getElementById('layers-list');
-  ll.innerHTML=S.layers.map((l,i)=>
-    '<div class="layer-item'+(i===S.currentLayer?' active':'')+'" onclick="S.currentLayer='+i+';updateUI();">'+
-    '<div class="layer-color" style="background:'+l.color+'"></div><span>'+l.name+'</span>'+
-    '<span class="layer-vis" onclick="event.stopPropagation();S.layers['+i+'].visible=!S.layers['+i+'].visible;updateUI();render();">'+(l.visible?'👁':'—')+'</span></div>'
-  ).join('');
+  const hasSelection = S.selected.length > 0;
+  ll.innerHTML=(hasSelection?'<div style="font-size:9px;color:var(--accent);padding:2px 6px 4px;letter-spacing:0.5px">CLIQUER UN CALQUE POUR Y TRANSFÉRER</div>':'')+
+  S.layers.map((l,i)=>
+    '<div class="layer-item'+(i===S.currentLayer?' active':'')+(hasSelection?' assignable':'')+'" onclick="_layerSelect('+i+')">'+
+    '<div class="layer-color" style="background:'+l.color+'"></div>'+
+    '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+l.name+'</span>'+
+    '<span class="layer-vis" onclick="event.stopPropagation();_layerVis('+i+')">'+(l.visible?'👁':'—')+'</span>'+
+    '</div>'
+  ).join('')+
+  '<button class="layer-mgr-btn" onclick="showLayerManager()">⊞ Gérer les calques…</button>';
 
   // OSNAP panel
   updateOsnapPanel();
@@ -3918,6 +4777,41 @@ function updateStatusBar() {
   document.getElementById('status-mode').textContent='Mode: '+mode;
   const loaded=Object.values(modules).filter(m=>m.loaded).length;
   document.getElementById('status-module').textContent='Modules: '+loaded+'/'+Object.keys(modules).length;
+}
+
+// ===== DIM TEXT DIALOG =====
+function showDimTextDialog(e) {
+  S._dimEditId = e.id;
+  const dlg = document.getElementById('dim-text-dialog');
+  const inp = document.getElementById('dim-td-input');
+  inp.value = e.text || '';
+  dlg.style.display = 'block';
+  updateDimTextPreview();
+  setTimeout(() => { inp.focus(); inp.select(); }, 0);
+}
+function closeDimTextDialog() {
+  document.getElementById('dim-text-dialog').style.display = 'none';
+  S._dimEditId = null;
+  setTimeout(smartFocus, 0);
+}
+function updateDimTextPreview() {
+  const e = S._dimEditId !== null ? S.entities.find(en => en.id === S._dimEditId) : null;
+  if (!e) return;
+  const measured = e.type === 'dim_linear'
+    ? (Math.abs(e.x2-e.x1) >= Math.abs(e.y2-e.y1) ? Math.abs(e.x2-e.x1) : Math.abs(e.y2-e.y1))
+    : Math.hypot(e.x2-e.x1, e.y2-e.y1);
+  const val = document.getElementById('dim-td-input').value.trim();
+  const preview = val ? dimText({text: val}, measured) : measured.toFixed(1);
+  document.getElementById('dim-td-preview').textContent = '→ ' + preview;
+}
+function confirmDimTextDialog() {
+  const e = S._dimEditId !== null ? S.entities.find(en => en.id === S._dimEditId) : null;
+  if (!e) { closeDimTextDialog(); return; }
+  pushUndo();
+  const val = document.getElementById('dim-td-input').value.trim();
+  e.text = val || '';
+  closeDimTextDialog();
+  render(); autoSave();
 }
 
 // ===== TEXT DIALOG =====
@@ -4098,6 +4992,8 @@ function executeCommand(input) {
       termPrint('Distance: '+S.offsetDist+' — Cliquer sur un objet à décaler (Echap=fin)','info');
       setTool('offset'); render(); return;
     }
+    // Entrée vide en mode JOIN → confirmer la fusion
+    if(S.tool==='join'){ applyJoin(); return; }
     if(S.copyPending){
       if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
       S.copyPending=false;
@@ -4108,6 +5004,23 @@ function executeCommand(input) {
       S.mirrorPending=false;
       termPrint('MIROIR: 1er point de l\'axe de symétrie','info');
       setTool('mirror');
+    } else if(S.rotatePending){
+      if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
+      S.rotatePending=false;
+      S.rotateIds=[...S.selected]; S.rotateStep=1; S.rotateBase=null;
+      termPrint('ROTATE: Cliquer le point de base','info');
+      setTool('rotate');
+    } else if(S.movePending){
+      if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
+      S.movePending=false;
+      termPrint('DÉPLACER: Point de base, puis destination','info');
+      setTool('move_obj');
+    } else if(S.scalePending){
+      if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
+      S.scalePending=false;
+      S.scaleIds=[...S.selected]; S.scaleStep=1; S.scaleBase=null;
+      termPrint('SCALE: Cliquer le point de base','info');
+      setTool('scale');
     }
     return;
   }
@@ -4126,6 +5039,20 @@ function executeCommand(input) {
   }
   // ---- JOIN : Entrée confirme la fusion ----
   if(S.tool==='join'){ applyJoin(); return; }
+
+  // ---- SCALE : saisie du facteur ----
+  if(S.tool==='scale' && S.scaleStep===2){
+    const f=parseFloat(raw);
+    if(isNaN(f)||f<=0){ termPrint('Facteur invalide','warning'); return; }
+    applyScale(f); return;
+  }
+
+  // ---- ROTATE : saisie de l'angle en degrés ----
+  if(S.tool==='rotate' && S.rotateStep===2){
+    const deg=parseFloat(raw);
+    if(isNaN(deg)){ termPrint('Angle invalide','warning'); return; }
+    applyRotate(deg*Math.PI/180); return;
+  }
 
   // ---- FILLET : saisie du rayon (R puis valeur) ----
   if(S.tool==='fillet'){
@@ -4383,18 +5310,32 @@ document.addEventListener('keydown',(ev)=>{
     ev.preventDefault(); _confirmMirrorDelete(false); return;
   }
 
-  // Enter global: valider sélection copyPending / mirrorPending
-  if(ev.key==='Enter' && (S.copyPending || S.mirrorPending)){
+  // Enter global: valider sélection copyPending / mirrorPending / rotatePending / movePending
+  if(ev.key==='Enter' && (S.copyPending || S.mirrorPending || S.rotatePending || S.movePending || S.scalePending)){
     ev.preventDefault();
     if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
     if(S.copyPending){
       S.copyPending=false;
       termPrint('COPIER: Point de base, puis destination','info');
       setTool('copy');
-    } else {
+    } else if(S.mirrorPending){
       S.mirrorPending=false;
       termPrint('MIROIR: 1er point de l\'axe de symétrie','info');
       setTool('mirror');
+    } else if(S.rotatePending){
+      S.rotatePending=false;
+      S.rotateIds=[...S.selected]; S.rotateStep=1; S.rotateBase=null;
+      termPrint('ROTATE: Cliquer le point de base','info');
+      setTool('rotate');
+    } else if(S.movePending){
+      S.movePending=false;
+      termPrint('DÉPLACER: Point de base, puis destination','info');
+      setTool('move_obj');
+    } else {
+      S.scalePending=false;
+      S.scaleIds=[...S.selected]; S.scaleStep=1; S.scaleBase=null;
+      termPrint('SCALE: Cliquer le point de base','info');
+      setTool('scale');
     }
     return;
   }
@@ -4405,6 +5346,24 @@ document.addEventListener('keydown',(ev)=>{
   if(ev.key==='Escape' && S.mirrorPending){
     S.mirrorPending=false; termPrint('Miroir annulé','warning'); setTool('select'); return;
   }
+  if(ev.key==='Escape' && S.rotatePending){
+    S.rotatePending=false; termPrint('Rotation annulée','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S.movePending){
+    S.movePending=false; termPrint('Déplacement annulé','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S.scalePending){
+    S.scalePending=false; termPrint('Mise à l\'échelle annulée','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S.tool==='scale'){
+    S.scaleStep=0; S.scaleBase=null; S.scaleIds=[]; setTool('select'); render(); return;
+  }
+  if(ev.key==='Escape' && S.tool==='dist'){
+    S.distPt1=null; setTool('select'); render(); return;
+  }
+  if(ev.key==='Escape' && S.tool==='trim'){
+    S.trimStep=0; S.trimCuttingId=null; setTool('select'); render(); return;
+  }
   if(ev.key==='Escape' && S.mirrorAwaitDelete){
     _confirmMirrorDelete(false); return;
   }
@@ -4413,6 +5372,12 @@ document.addEventListener('keydown',(ev)=>{
   }
   if(ev.key==='Escape' && S.tool==='join'){
     S.joinSelection=[]; S.selected=[]; setTool('select'); render(); return;
+  }
+  if(ev.key==='Escape' && isRubberBand){
+    isRubberBand=false; rbStart=null; rbEnd=null; render(); return;
+  }
+  if(ev.key==='Escape' && S.tool==='rotate'){
+    S.rotateStep=0; S.rotateBase=null; S.rotateIds=[]; setTool('select'); render(); return;
   }
 
   // Auto-focus distance field when typing numbers while drawing or waiting for first point (AutoCAD behavior)
@@ -4833,7 +5798,7 @@ function loadFromLocalStorage() {
     if (!saved) return;
     const data = JSON.parse(saved);
     if (!data.entities || !data.entities.length) return;
-    if (data.layers) S.layers = data.layers;
+    if (data.layers) { S.layers = data.layers; S.layers.forEach(l=>{if(!l.lineWidth)l.lineWidth=0.25;if(!l.lineType)l.lineType='solid';}); }
     S.entities = data.entities;
     if (data.currentLayer !== undefined) S.currentLayer = data.currentLayer;
     if (data.nextId) S.nextId = data.nextId;
@@ -4942,7 +5907,7 @@ function openJSON(content, filename) {
     return;
   }
   pushUndo();
-  if (data.layers) S.layers = data.layers;
+  if (data.layers) { S.layers = data.layers; S.layers.forEach(l=>{if(!l.lineWidth)l.lineWidth=0.25;if(!l.lineType)l.lineType='solid';}); }
   if (data.entities) S.entities = data.entities;
   if (data.currentLayer !== undefined) S.currentLayer = data.currentLayer;
   if (data.nextId) S.nextId = data.nextId;
@@ -5282,14 +6247,19 @@ canvas.addEventListener('dblclick', (ev) => {
   const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
   const [wx, wy] = s2w(sx, sy);
   const hit = hitTest(wx, wy);
-  if (!hit || hit.type !== 'text') return;
+  if (!hit) return;
   ev.preventDefault(); ev.stopPropagation();
-  S._textEditId = hit.id;
-  S._textPendingX = hit.x; S._textPendingY = hit.y;
-  S._textContent = hit.content || ''; S._textSize = hit.size || 14;
-  S._textFont = hit.font || 'sans-serif'; S._textBold = !!hit.bold; S._textItalic = !!hit.italic;
-  showTextDialog(rect.left + sx, rect.top + sy);
-  termPrint('Modifier le texte — Valider ↵ ou Echap pour annuler', 'info');
+  if (hit.type === 'text') {
+    S._textEditId = hit.id;
+    S._textPendingX = hit.x; S._textPendingY = hit.y;
+    S._textContent = hit.content || ''; S._textSize = hit.size || 14;
+    S._textFont = hit.font || 'sans-serif'; S._textBold = !!hit.bold; S._textItalic = !!hit.italic;
+    showTextDialog(rect.left + sx, rect.top + sy);
+    termPrint('Modifier le texte — Valider ↵ ou Echap pour annuler', 'info');
+  } else if (hit.type === 'dim_linear' || hit.type === 'dim_aligned') {
+    showDimTextDialog(hit);
+    termPrint('Double-clic cote — taper le texte, utiliser <> pour la valeur mesurée', 'info');
+  }
 });
 
 canvas.addEventListener('contextmenu', (ev) => {
@@ -5315,6 +6285,13 @@ canvas.addEventListener('contextmenu', (ev) => {
       cancelDrawing();
     }
     render(); return;
+  }
+
+  // Outils avec confirmation → clic droit = Entrée (comme AutoCAD)
+  if (S.tool === 'join') { applyJoin(); return; }
+  if (S.tool === 'trim' && S.trimStep === 2) {
+    S.trimStep=1; S.trimCuttingId=null;
+    termPrint('TRIM: Cliquer l\'entité limite','info'); render(); return;
   }
 
   // Outil actif mais pas encore commencé → retour à select

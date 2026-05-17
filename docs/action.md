@@ -51,13 +51,13 @@
 |---|---------------|----------|------------|-------|
 | 3.1 | **Sélection par fenêtre** (rubber-band) | 🔴 | Faible | Drag pour sélectionner plusieurs objets |
 | 3.2 | **Historique commandes** (↑↓ terminal) | 🔴 | Faible | Tableau `cmdHistory[]`, index |
-| 3.3 | **TRIM** — raccourcir au croisement | 🔴 | Haute | Sélectionner limite puis segment |
-| 3.4 | **EXTEND** — prolonger jusqu'à limite | 🟡 | Haute | Similaire à TRIM |
-| 3.5 | **OFFSET** — parallèle à distance | 🔴 | Moyenne | Pour lignes, polylignes, arcs |
-| 3.6 | **ROTATE** — rotation d'objets | 🟡 | Moyenne | Avec centre de rotation |
-| 3.7 | **SCALE** — mise à l'échelle | 🟡 | Moyenne | Avec point de base + facteur |
-| 3.8 | **MIRROR** — symétrie axiale | 🟡 | Moyenne | Axe en 2 points |
-| 3.9 | **Arc 3 points** | 🟡 | Moyenne | P1, P2, P3 sur l'arc |
+| 3.3 | **TRIM** — raccourcir au croisement | ✅ | Haute | ligne/wall/arc/polyligne |
+| 3.4 | **EXTEND** — prolonger jusqu'à limite | 🟢 | Haute | Similaire à TRIM |
+| 3.5 | **OFFSET** — parallèle à distance | ✅ | Moyenne | ligne, wall, arc, cercle, rect, pline |
+| 3.6 | **ROTATE** — rotation d'objets | ✅ | Moyenne | Sélection préalable + point base |
+| 3.7 | **SCALE** — mise à l'échelle | ✅ | Moyenne | Point base + facteur |
+| 3.8 | **MIRROR** — symétrie axiale | ✅ | Moyenne | Axe en 2 points |
+| 3.9 | **Arc 3 points** | 🟢 | Moyenne | P1, P2, P3 sur l'arc |
 
 ---
 
@@ -66,9 +66,9 @@
 | # | Fonctionnalité | Priorité | Notes |
 |---|---------------|----------|-------|
 | 4.1 | **Panneau propriétés éditable** | 🟡 | Modifier X1,Y1,R… directement |
-| 4.2 | **Gestionnaire de calques** | 🟡 | Ajouter, renommer, supprimer calques |
+| 4.2 | **Gestionnaire de calques** | ✅ | Fenêtre dédiée + épaisseur/type de ligne + transfert entités |
 | 4.3 | **Menu contextuel** clic-droit canvas | 🟡 | Couper/Copier/Coller/Propriétés |
-| 4.4 | **Double-clic pour éditer** texte | 🟡 | Inline editing du contenu texte |
+| 4.4 | **Double-clic pour éditer** texte/cote | ✅ | Texte inline + dialogue texte de cote avec `<>` |
 | 4.5 | **Zoom fenêtre** (sélection zone) | 🟢 | |
 | 4.6 | **Drag to copy** (Ctrl+Drag) | 🟢 | |
 | 4.7 | **Sélection par type** (SEL LINE etc.) | 🟢 | |
@@ -79,7 +79,7 @@
 
 | # | Fonctionnalité | Priorité | Notes |
 |---|---------------|----------|-------|
-| 5.1 | **DIST** — mesure distance entre 2 points | 🟡 | Commande + affichage terminal |
+| 5.1 | **DIST** — mesure distance entre 2 points | ✅ | distance, Δx, Δy, angle |
 | 5.2 | **AREA** — calcul de surface | 🟢 | Polygone ou sélection |
 | 5.3 | **Hachures** (HATCH) | 🟢 | Remplissage polygone |
 | 5.4 | **Blocs** (BLOCK/INSERT) | 🟢 | Symboles réutilisables |
@@ -100,10 +100,11 @@
 
 ## Prochaine session de développement
 
-**Objectif recommandé : Phase 3.1 + 3.2**
+**Objectif recommandé** : Phase 4 (UX) + Phase 3 restante
 
-Ces deux fonctionnalités sont les plus demandées et les moins complexes :
-
-1. **Sélection par fenêtre** : détecter mousedown + mousemove + mouseup sans tool actif en mode select, dessiner un rectangle de sélection, sélectionner toutes les entités dont la bounding box intersecte.
-
-2. **Historique de commandes** : ajouter `S.cmdHistory = []` et `S.cmdHistoryIdx = -1`, intercepter ↑↓ dans le keydown du terminal.
+Éléments prioritaires restants :
+- **4.3 Menu contextuel** clic-droit canvas (Couper/Copier/Coller/Propriétés)
+- **4.1 Panneau propriétés éditable** (champs input pour X1,Y1,R…)
+- **3.4 EXTEND** — prolonger jusqu'à limite
+- **3.9 Arc 3 points**
+- **6.3 Export PNG** (canvas.toBlob)

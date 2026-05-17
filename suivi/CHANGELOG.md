@@ -4,7 +4,27 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [0.01] — 2026-05-16 — Version courante
+## [0.02] — 2026-05-17 — Version courante
+
+### Ajouté
+- **Gestionnaire de calques** (fenêtre dédiée style AutoCAD)
+  - Panneau gauche simplifié : liste cliquable pour changer de calque actif
+  - Bouton "⊞ Gérer les calques…" → dialogue complet avec couleur, nom, visibilité, épaisseur ISO (0.13→1.00 mm), type de ligne (5 types), suppression
+  - `refreshLayerManager()` : mise à jour en temps réel sans fermer le dialogue
+- **Transfert d'entités entre calques**
+  - Sélectionner objets → cliquer un calque dans le panneau → les objets changent de calque
+  - Indicateur visuel et curseur crosshair quand une sélection est active
+  - Message terminal confirme : `3 entités → calque 1 - Construction`
+
+### Corrigé
+- **Grip editing sur cotations** : poignées (flèches + texte) désormais accrochables
+  - Hit test utilise les coordonnées brutes avant OSNAP — l'OSNAP voisin ne peut plus dévier le clic
+  - Tolérance d'accroche : 8 → 10 px
+  - Flag `_gripJustConfirmed` : le `mouseup` après confirmation de grip ne démarre plus une sélection fenêtre parasite
+
+---
+
+## [0.01] — 2026-05-16
 
 ### Ajouté
 - **Commandes FILLET / CHAMFER** (alias F/RACCORD, CHA/CHANFREIN)
