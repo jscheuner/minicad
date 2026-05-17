@@ -37,9 +37,9 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 - [x] **3.7 — Commande SCALE** ✅ 2026-05-17
   - Sélection, point de base, facteur
 
-- [ ] **4.1 — Panneau propriétés éditable**
-  - Champs input (pas div) pour X1,Y1,X2,Y2,R,thickness…
-  - `onchange` → pushUndo + modifier entité + render
+- [x] **4.1 — Panneau propriétés éditable** ✅
+  - Champs input pour X1,Y1,X2,Y2,R,thickness… avec `onchange` → pushUndo + render
+  - Select calque par entité
 
 - [x] **4.2 — Gestionnaire de calques amélioré** ✅ 2026-05-17
   - Fenêtre dédiée (showLayerManager) : couleur, nom éditable, visibilité, épaisseur ISO, type de ligne
@@ -54,8 +54,17 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 ## 🟢 Priorité basse / Futur
 
 - [ ] **3.4 — Commande EXTEND**
-- [ ] **3.8 — Commande MIRROR**
+- [x] **3.8 — Commande MIRROR** ✅ (déjà implémenté)
 - [ ] **3.9 — Arc 3 points** (commande ARC3 ou variante A)
+- [x] **ARRAY / RÉSEAU** ✅ 2026-05-17 — Réseau rectangulaire (popup dialog, preview pointillés, résultat = bloc)
+- [ ] **BLOCK — Créer un bloc nommé** depuis une sélection (commande BLOCK, point d'insertion, nom)
+- [ ] **INSERT — Insérer un bloc** existant avec point d'insertion, échelle, rotation
+- [ ] **EXPLODE** ✅ partiellement (éclate les blocs ARRAY) — à étendre aux blocs INSERT futurs
+- [ ] **REFEDIT — Éditer un bloc** en place (double-clic pour entrer dans le bloc)
+- [x] **DIMANGULAR — Nouveau workflow** ✅ 2026-05-17
+  - Cliquer ligne 1 → cliquer ligne 2 → choisir côté → cliquer pour placer
+  - Vertex calculé automatiquement par intersection (`lineIntersect`)
+  - Secteur sélectionné par position souris (`_dimAngSector`)
 - [ ] **4.3 — Menu contextuel** clic-droit canvas (Couper/Copier/Coller/Propriétés)
 - [ ] **4.4 — Double-clic pour éditer** un texte inline
 - [ ] **4.6 — Ctrl+Drag pour copier** (drag d'un objet sélectionné avec Ctrl)
@@ -65,6 +74,19 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 - [x] **6.1 — Auto-save localStorage + File System Access API** ✅ 2025-05-14
 - [ ] **6.3 — Export PNG** (canvas.toBlob)
 - [ ] **6.4 — Import SVG** (parsing SVG → entités)
+- [x] **7.2 — Outil TUBE** ✅ 2026-05-17
+  - Entité `tube` : parois (2 traits) + axe (trait-point), coudes avec tangentes
+  - Mode graphique (clics comme polyligne) + mode formule (ex: `TUBE 1000+90R67+500`)
+  - Commandes : `TUBE`, `TUBED <Ø>`, `TUBEBR <R>` — rayon défaut R67, Ø40
+  - Bouton dans toolbar Dessin, Enter/Échap pour terminer, clic-droit valide
+
+- [x] **7.1 — Assistant IA Ollama** ✅ 2026-05-17
+  - Panneau flottant déplaçable, bouton 🤖 dans toolbar fichier
+  - Sélection de modèle depuis `/api/tags`, streaming réponse
+  - Génération d'entités via balises `<entities>[...]</entities>`
+  - Bouton "+ Ajouter au dessin" → `pushUndo()` + `render()`
+  - Prompt système avec format JSON des entités et calques actuels
+  - Commande terminal : `AI` / `OLLAMA` / `ASSISTANT`
 
 ---
 

@@ -24,6 +24,7 @@ Aucun npm, aucun build, aucune connexion internet requise.
 - Polyligne (avec segments droits **et** arcs — bulge compatible DXF)
 - Mur (épaisseur configurable), Porte, Fenêtre
 - Prise électrique, Interrupteur, Câble
+- **Tube** (2 parois + axe trait-point, coudes calculés par tangentes)
 
 ### Modification
 | Commande | Description |
@@ -39,6 +40,8 @@ Aucun npm, aucun build, aucune connexion internet requise.
 | `TRIM` | Raccourcir au croisement |
 | `JOIN` | Fusionner des lignes en une polyligne (J) |
 | `DIST` | Mesure distance entre deux points |
+| `TUBE [formule]` | Tube 2 parois + axe (ex : `TUBE 1000+90R67+500`) |
+| `ARRAY` | Réseau rectangulaire (dialogue) |
 
 Grip editing sur toutes les entités : cliquer un objet sélectionné pour déplacer ses extrémités.
 
@@ -142,15 +145,21 @@ REDO              Refaire
 ZOOM [facteur]    Zoom
 POLAR [angle]     Incrément polaire
 OSNAP [mode]      Activer un mode OSNAP
+TUBE [formule]    Tube 2 parois + axe (ex: 1000+90R67+500)
+TUBED <Ø>         Diamètre du tube (défaut 40)
+TUBEBR <R>        Rayon de coude (défaut 67)
 DIMLINEAR         Cote linéaire
 DIMALIGNED        Cote parallèle
-DIMANGULAR        Cote angulaire
+DIMANGULAR        Cote angulaire (cliquer ligne 1, ligne 2, puis placer)
 DIMRADIUS         Cote rayon
 DIMDIAMETER       Cote diamètre
+DIST              Mesure distance entre deux points
+ARRAY             Réseau rectangulaire (dialogue)
 LOAD arch         Charger module Architecture
 LOAD elec         Charger module Électricité
 LOAD dim          Charger module Cotation
 LOAD annot        Charger module Annotation
+AI / OLLAMA       Assistant IA Ollama local
 SAVE / Ctrl+S     Sauvegarder
 SAVEAS            Sauvegarder sous…
 OPEN / Ctrl+O     Ouvrir
@@ -164,7 +173,7 @@ CLEAR / NOUVEAU   Effacer le dessin
 ## Architecture technique
 
 ```
-minicad.html   (~5 000 lignes, un seul fichier)
+minicad.html   (~8 000 lignes, un seul fichier)
 │
 ├── CSS         dark theme, barres d'outils, dialogue texte
 ├── HTML        canvas + sidebar + terminal
@@ -218,7 +227,7 @@ minicad/
 
 ## Version
 
-**v0.02** — Voir [suivi/CHANGELOG.md](suivi/CHANGELOG.md) pour l'historique complet.
+**v0.03** — Voir [suivi/CHANGELOG.md](suivi/CHANGELOG.md) pour l'historique complet.
 
 ---
 

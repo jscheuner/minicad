@@ -183,18 +183,77 @@ Cocher ✅ après validation, noter ❌ si échec avec description du problème.
 
 ---
 
-## Scénario 11 — Sélection par fenêtre ❌ Non implémenté
+## Scénario 11 — Sélection par fenêtre
 
 **Étapes :**
 1. Plusieurs objets présents
 2. Mode select (V)
-3. Cliquer+glisser pour dessiner un rectangle de sélection
+3. Cliquer+glisser gauche→droite (fenêtre) ou droite→gauche (croisement)
 
 **Résultat attendu :**
-- Rectangle cyan pointillé pendant le drag
-- Objets dans la fenêtre sélectionnés (bleus)
+- Rectangle cyan plein (fenêtre) ou vert pointillé (croisement) pendant le drag
+- Fenêtre : sélectionne uniquement les entités entièrement à l'intérieur
+- Croisement : sélectionne aussi les entités qui intersectent le rectangle
 
-**État :** ❌ Non implémenté — voir TODO 3.1
+**État :** ✅
+
+---
+
+---
+
+## Scénario 15 — Outil TUBE (mode graphique)
+
+**Préconditions :** Application ouverte
+
+**Étapes :**
+1. Taper `TUBE` + Entrée (ou cliquer le bouton toolbar Dessin)
+2. Cliquer 3 points non colinéaires sur le canvas
+3. Appuyer Entrée (ou clic-droit) pour terminer
+
+**Résultat attendu :**
+- Tube dessiné : 2 traits pleins (parois) + 1 axe trait-point
+- Coudes arrondis aux changements de direction
+- Message terminal : `TUBE #X créé — 3 points, Ø40 R67`
+
+**État :** ✅
+
+---
+
+## Scénario 16 — Outil TUBE (mode formule)
+
+**Préconditions :** Application ouverte
+
+**Étapes :**
+1. Taper `TUBE 500+90R50+300` + Entrée
+2. Cliquer le point d'insertion sur le canvas
+
+**Résultat attendu :**
+- Tube formulé : 500 droit, coude 90° rayon 50, 300 droit
+- Longueurs droites réduites de T = R·tan(45°) ≈ 50 de chaque côté du coude
+- Rendu correct (2 parois + axe)
+
+**État :** ✅
+
+---
+
+## Scénario 17 — DIMANGULAR (nouveau workflow)
+
+**Préconditions :** Deux lignes sécantes existent sur le canvas
+
+**Étapes :**
+1. Taper `DIMANGULAR` + Entrée
+2. Cliquer sur la 1ère ligne
+3. Cliquer sur la 2ème ligne
+4. Déplacer la souris pour choisir le secteur angulaire voulu
+5. Cliquer pour placer la cote
+
+**Résultat attendu :**
+- Étape 2 : 1ère ligne surlignée en orange
+- Étape 3 : terminal affiche les coordonnées du vertex (intersection calculée)
+- Étape 4 : arc dynamique suit la souris (4 secteurs possibles)
+- Étape 5 : cote angulaire créée avec arc, flèches, et valeur en degrés
+
+**État :** ✅
 
 ---
 

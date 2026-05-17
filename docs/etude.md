@@ -45,7 +45,7 @@ minicad.html
 │   ├── Terminal (entrée commande + sortie)
 │   └── Statusbar
 │
-└── <script> — JavaScript inline (~2950 lignes)
+└── <script> — JavaScript inline (~6500 lignes)
     ├── État global S (objet singleton)
     ├── Moteur OSNAP (findOsnap, drawOsnapMarker)
     ├── Parser d'entrée distance (parseDistanceInput)
@@ -100,6 +100,10 @@ Toutes les entités sont stockées dans `S.entities[]` sous forme d'objets plats
 // Câble (polyligne pointillée)
 { type:'cable', points:[[x,y],...], id, layer }
 
+// Tube (v0.03) — 2 parois + axe trait-point, avec coudes
+{ type:'tube', startX, startY, startAngle, tubeRadius,
+  segments:[ {type:'straight', length} | {type:'bend', angle, bendRadius, side} ], id, layer }
+
 // Cote linéaire
 { type:'dim_linear', x1, y1, x2, y2, offset, id, layer }
 
@@ -120,6 +124,9 @@ Toutes les entités sont stockées dans `S.entities[]` sous forme d'objets plats
 
 // Repère
 { type:'leader', x1, y1, x2, y2, text, id, layer }
+
+// Bloc réseau (ARRAY)
+{ type:'block', sourceIds:[], cols, rows, dx, dy, id, layer }
 ```
 
 ### Système de coordonnées
@@ -135,7 +142,7 @@ World:  (wx, wy) = ((sx - panX - W/2) / zoom, -(sy - panY - H/2) / zoom)
 
 ---
 
-## 3. Points forts du code actuel
+## 3. Points forts du code actuel (v0.03)
 
 - OSNAP complet et performant (7 modes, priorité sur snap grille)
 - Saisie dynamique type AutoCAD (Tab, Distance/Angle, relatif/polaire)
@@ -143,12 +150,18 @@ World:  (wx, wy) = ((sx - panX - W/2) / zoom, -(sy - panY - H/2) / zoom)
 - Export DXF AC1015 propre avec couches et couleurs ACI
 - Import DXF avec LWPOLYLINE, POLYLINE, SPLINE, ELLIPSE, DIMENSION
 - Toolbars drag & drop dock/float
+- Sélection par fenêtre (rubber-band cyan) et par croisement (vert pointillé)
+- TRIM, OFFSET, ROTATE, SCALE, MIRROR, FILLET, CHAMFER, JOIN, DIST, ARRAY
+- Gestionnaire de calques complet (épaisseur ISO, type de ligne, transfert entités)
+- Outil TUBE (2 parois + axe, coudes par tangentes, mode formule et graphique)
+- DIMANGULAR redessiné : sélection par clic sur lignes + secteur dynamique souris
+- Assistant IA Ollama (panneau flottant, streaming, génération d'entités)
 
 ## 4. Points à améliorer (voir docs/action.md)
 
-- Pas de sélection par fenêtre (rubber-band)
-- Arc outil peu intuitif (centre+rayon seulement)
-- Pas de TRIM / EXTEND / OFFSET
-- Panneau propriétés en lecture seule
-- Pas d'historique de commandes (↑↓)
-- Arc et Dimension angulaire ont des bugs d'affichage potentiels
+- EXTEND (prolonger jusqu'à limite) non implémenté
+- Arc 3 points non implémenté
+- Menu contextuel clic-droit canvas absent
+- Export PNG absent
+- AREA (calcul de surface) absent
+- Blocs nommés (BLOCK/INSERT) absents

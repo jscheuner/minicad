@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MiniCAD v0.01</title>
+<title>MiniCAD v0.03</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=Oswald:wght@300;400;500&family=Share+Tech&display=swap');
 
@@ -30,6 +30,7 @@
     --osnap-intersection: #e040fb;
     --osnap-perpendicular: #00bcd4;
     --osnap-tangent: #ff6e40;
+    --osnap-quadrant: #cddc39;
     --module-arch: #7c4dff;
     --module-elec: #ffab40;
     --module-dim: #00e676;
@@ -375,6 +376,151 @@
   }
   .lm-close-btn:hover { opacity: 0.85; }
 
+  /* ===== ARRAY DIALOG ===== */
+  #array-dialog {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    z-index: 952; width: 320px; box-shadow: 0 12px 48px rgba(0,0,0,0.8);
+    font-family: 'IBM Plex Sans', sans-serif; display: none; flex-direction: column;
+  }
+  .ar-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px; border-bottom: 1px solid #ffffff18;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    font-weight: 600; letter-spacing: 1px; color: var(--accent);
+  }
+  .ar-body { padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .ar-group { display: flex; flex-direction: column; gap: 4px; }
+  .ar-label { font-size: 9px; color: #ffffff55; text-transform: uppercase; letter-spacing: 0.6px; }
+  .ar-input {
+    background: #0d1525; border: 1px solid #ffffff18; border-radius: 4px;
+    color: var(--text); font-size: 13px; padding: 6px 8px; width: 100%;
+    font-family: 'JetBrains Mono', monospace; box-sizing: border-box;
+  }
+  .ar-input:focus { outline: none; border-color: var(--accent); }
+  .ar-info { padding: 6px 16px 0; font-size: 10px; color: #ffffff44; text-align: center; }
+  .ar-footer {
+    padding: 12px 16px; border-top: 1px solid #ffffff12;
+    display: flex; justify-content: flex-end; gap: 8px;
+  }
+  .ar-btn { padding: 5px 18px; border: none; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .ar-btn.cancel { background: #ffffff12; color: var(--text); }
+  .ar-btn.cancel:hover { background: #ffffff20; }
+  .ar-btn.ok { background: var(--accent); color: #000; }
+  .ar-btn.ok:hover { opacity: 0.85; }
+
+  /* ===== AI ASSISTANT PANEL ===== */
+  #ai-panel {
+    position: fixed; top: 80px; right: 16px;
+    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    z-index: 950; width: 340px; height: 520px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.8);
+    display: flex; flex-direction: column;
+    font-family: 'IBM Plex Sans', sans-serif;
+    resize: both; overflow: hidden; min-width: 260px; min-height: 300px;
+  }
+  .ai-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px; border-bottom: 1px solid #ffffff18;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    font-weight: 600; letter-spacing: 1px; color: var(--accent);
+    cursor: move; flex-shrink: 0;
+  }
+  .ai-header-btns { display: flex; gap: 8px; align-items: center; }
+  .ai-settings-btn {
+    background: none; border: none; color: #ffffff55; font-size: 14px;
+    cursor: pointer; padding: 0 2px; line-height: 1;
+  }
+  .ai-settings-btn:hover { color: #fff; }
+  .ai-settings-panel {
+    padding: 10px 14px; border-bottom: 1px solid #ffffff12;
+    background: #131b2e; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px;
+  }
+  .ai-settings-row {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ai-settings-label { font-size: 9px; color: #ffffff55; text-transform: uppercase; letter-spacing: 0.6px; flex: 0 0 48px; }
+  .ai-settings-input {
+    flex: 1; background: #0d1525; border: 1px solid #ffffff18; border-radius: 3px;
+    color: var(--text); font-size: 11px; padding: 4px 8px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .ai-settings-input:focus { outline: none; border-color: var(--accent); }
+  .ai-settings-sel {
+    flex: 1; background: #0d1525; border: 1px solid #ffffff18; border-radius: 3px;
+    color: var(--text); font-size: 11px; padding: 3px 6px; cursor: pointer;
+  }
+  .ai-settings-sel:focus { outline: none; border-color: var(--accent); }
+  .ai-refresh-btn {
+    background: none; border: 1px solid #ffffff22; border-radius: 3px;
+    color: #ffffff88; font-size: 11px; cursor: pointer; padding: 3px 7px;
+  }
+  .ai-refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .ai-chat {
+    flex: 1; overflow-y: auto; padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 8px;
+    scrollbar-width: thin; scrollbar-color: #ffffff18 transparent;
+  }
+  .ai-msg {
+    border-radius: 6px; padding: 7px 10px; font-size: 12px; line-height: 1.5;
+    max-width: 100%; word-break: break-word; white-space: pre-wrap;
+    user-select: text; cursor: text;
+  }
+  .ai-msg.user {
+    background: #00d4ff15; border: 1px solid #00d4ff22; color: var(--text);
+    align-self: flex-end; text-align: right;
+  }
+  .ai-msg.assistant {
+    background: #ffffff08; border: 1px solid #ffffff12; color: var(--text);
+    align-self: flex-start;
+  }
+  .ai-msg.system-msg {
+    background: none; border: none; color: #ffffff33; font-size: 10px;
+    align-self: center; text-align: center; padding: 2px 6px;
+  }
+  .ai-msg .ai-entities-btn {
+    display: inline-block; margin-top: 6px;
+    padding: 3px 10px; background: var(--accent); border: none; border-radius: 4px;
+    color: #000; font-size: 10px; font-weight: 600; cursor: pointer;
+  }
+  .ai-msg .ai-entities-btn:hover { opacity: 0.8; }
+  .ai-input-area {
+    display: flex; gap: 6px; padding: 8px 10px;
+    border-top: 1px solid #ffffff12; flex-shrink: 0;
+    align-items: flex-end;
+  }
+  .ai-textarea {
+    flex: 1; background: #0d1525; border: 1px solid #ffffff18; border-radius: 4px;
+    color: var(--text); font-size: 12px; padding: 6px 8px;
+    font-family: 'IBM Plex Sans', sans-serif; resize: none;
+    max-height: 80px; overflow-y: auto; min-height: 32px;
+  }
+  .ai-textarea:focus { outline: none; border-color: var(--accent); }
+  .ai-send-btn {
+    background: var(--accent); border: none; border-radius: 4px;
+    color: #000; font-size: 16px; width: 32px; height: 32px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .ai-send-btn:hover { opacity: 0.85; }
+  .ai-send-btn:disabled { background: #ffffff22; color: #ffffff44; cursor: default; }
+  .ai-thinking {
+    display: flex; gap: 4px; align-items: center; padding: 4px 0;
+  }
+  .ai-thinking span {
+    width: 6px; height: 6px; background: var(--accent); border-radius: 50%;
+    animation: aiDot 1.2s infinite;
+  }
+  .ai-thinking span:nth-child(2) { animation-delay: 0.2s; }
+  .ai-thinking span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes aiDot { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+  .ai-toolbar-btn {
+    background: none; border: 1px solid #ffffff22; border-radius: 4px;
+    color: var(--accent); font-size: 13px; padding: 3px 8px;
+    cursor: pointer; font-family: 'JetBrains Mono', monospace;
+  }
+  .ai-toolbar-btn:hover { background: var(--accent-dim); }
+
   .module-item {
     display: flex;
     align-items: center;
@@ -693,7 +839,7 @@
 
 <!-- MENU BAR -->
 <div class="menubar">
-  <div class="topbar-logo">MiniCAD <span>v0.01</span></div>
+  <div class="topbar-logo">MiniCAD <span>v0.03</span></div>
   <div class="menu-items">
     <div class="menu-dropdown" id="menu-fichier">
       <div class="menu-item" id="menu-fichier-btn" onclick="toggleMenuDropdown('menu-fichier',event)">Fichier</div>
@@ -742,6 +888,7 @@
     <div class="tb-buttons">
       <button class="tool-btn text-btn" title="Ouvrir (Ctrl+O)" onclick="cmdOpen()">📂</button>
       <button class="tool-btn text-btn" title="Sauvegarder (Ctrl+S)" onclick="cmdSave()">💾</button>
+      <button class="tool-btn text-btn" title="Assistant IA Ollama" onclick="toggleAiPanel()" style="color:var(--accent)">🤖</button>
     </div>
   </div>
   <input type="file" id="file-input" accept=".dxf,.dwg,.json,.mcad" style="display:none" onchange="handleFileOpen(event)">
@@ -794,30 +941,48 @@
       <!-- Trim -->
       <button class="tool-btn" data-tool="trim" title="Couper (TR)" onclick="executeCommand('TRIM')">
         <svg viewBox="0 0 24 24">
-          <!-- Ligne horizontale à couper : partie gauche pleine, partie droite en pointillé -->
           <line x1="2" y1="12" x2="11" y2="12"/>
           <line x1="13" y1="12" x2="22" y2="12" stroke-dasharray="2,2" opacity="0.35"/>
-          <!-- Ligne verticale = entité limite -->
           <line x1="12" y1="2" x2="12" y2="22"/>
-          <!-- Petites flèches indiquant la coupe -->
           <line x1="9" y1="9" x2="12" y2="12"/>
           <line x1="9" y1="15" x2="12" y2="12"/>
+        </svg>
+      </button>
+      <!-- Extend -->
+      <button class="tool-btn" data-tool="extend" title="Prolonger (EX)" onclick="executeCommand('EXTEND')">
+        <svg viewBox="0 0 24 24">
+          <!-- Ligne pointillée → prolongée jusqu'à la limite verticale -->
+          <line x1="2" y1="12" x2="9" y2="12" stroke-dasharray="2,2" opacity="0.45"/>
+          <line x1="9" y1="12" x2="20" y2="12"/>
+          <!-- Flèche indiquant le prolongement -->
+          <line x1="17" y1="9" x2="20" y2="12"/>
+          <line x1="17" y1="15" x2="20" y2="12"/>
+          <!-- Limite verticale -->
+          <line x1="20" y1="2" x2="20" y2="22"/>
         </svg>
       </button>
       <!-- Raccord -->
       <button class="tool-btn" data-tool="fillet" title="Raccord (F)" onclick="executeCommand('FILLET')">
         <svg viewBox="0 0 24 24">
-          <line x1="5" y1="2" x2="5" y2="14"/>
-          <path d="M5,14 A6,6 0 0,0 11,20"/>
-          <line x1="11" y1="20" x2="22" y2="20"/>
+          <!-- Fillet : angle droit avec grand arc de raccord visible -->
+          <line x1="4" y1="3" x2="4" y2="15"/>
+          <path d="M4,15 A9,9 0 0,0 13,22" fill="none"/>
+          <line x1="13" y1="22" x2="22" y2="22"/>
+          <!-- petit repère du centre du rayon en pointillés -->
+          <line x1="4" y1="22" x2="4" y2="15" stroke-dasharray="2,2" opacity="0.35"/>
+          <line x1="4" y1="22" x2="13" y2="22" stroke-dasharray="2,2" opacity="0.35"/>
         </svg>
       </button>
       <!-- Chanfrein -->
       <button class="tool-btn" data-tool="chamfer" title="Chanfrein (CHA)" onclick="executeCommand('CHAMFER')">
         <svg viewBox="0 0 24 24">
-          <line x1="5" y1="2" x2="5" y2="13"/>
-          <line x1="5" y1="13" x2="12" y2="20"/>
-          <line x1="12" y1="20" x2="22" y2="20"/>
+          <!-- Chamfer : angle droit avec grande diagonale droite bien visible -->
+          <line x1="4" y1="3" x2="4" y2="14"/>
+          <line x1="4" y1="14" x2="15" y2="22" stroke-width="1.8"/>
+          <line x1="15" y1="22" x2="22" y2="22"/>
+          <!-- lignes de coupe en pointillés pour montrer ce qui est enlevé -->
+          <line x1="4" y1="22" x2="4" y2="14" stroke-dasharray="2,2" opacity="0.35"/>
+          <line x1="4" y1="22" x2="15" y2="22" stroke-dasharray="2,2" opacity="0.35"/>
         </svg>
       </button>
       <!-- Échelle -->
@@ -843,6 +1008,24 @@
           <line x1="15" y1="18" x2="22" y2="12"/>
           <circle cx="9" cy="12" r="2" fill="currentColor" fill-opacity="0.4"/>
           <path d="M14,9 Q16,6 15,18" fill="none" stroke-dasharray="2,2"/>
+        </svg>
+      </button>
+      <!-- Réseau -->
+      <button class="tool-btn" title="Réseau rectangulaire (AR)" onclick="executeCommand('ARRAY')">
+        <svg viewBox="0 0 24 24">
+          <rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9.5" y="2" width="5" height="5" rx="1"/><rect x="17" y="2" width="5" height="5" rx="1"/>
+          <rect x="2" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><rect x="17" y="9.5" width="5" height="5" rx="1"/>
+          <rect x="2" y="17" width="5" height="5" rx="1"/><rect x="9.5" y="17" width="5" height="5" rx="1"/><rect x="17" y="17" width="5" height="5" rx="1"/>
+        </svg>
+      </button>
+      <!-- Éclater bloc -->
+      <button class="tool-btn" title="Éclater un bloc (X)" onclick="executeCommand('EXPLODE')">
+        <svg viewBox="0 0 24 24">
+          <rect x="8" y="8" width="8" height="8" rx="1"/>
+          <line x1="12" y1="8" x2="12" y2="2"/><polygon points="10,4 14,4 12,1" fill="currentColor"/>
+          <line x1="16" y1="12" x2="22" y2="12"/><polygon points="20,10 20,14 23,12" fill="currentColor"/>
+          <line x1="12" y1="16" x2="12" y2="22"/><polygon points="10,20 14,20 12,23" fill="currentColor"/>
+          <line x1="8" y1="12" x2="2" y2="12"/><polygon points="4,10 4,14 1,12" fill="currentColor"/>
         </svg>
       </button>
       <div class="tb-sep"></div>
@@ -885,6 +1068,13 @@
       </button>
       <button class="tool-btn" data-tool="polyline" title="Polyligne (PL)" onclick="setTool('polyline')">
         <svg viewBox="0 0 24 24"><polyline points="4,18 8,8 14,14 20,4"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="tube" title="Tube 2 traits (TUBE)" onclick="executeCommand('TUBE')">
+        <svg viewBox="0 0 24 24">
+          <line x1="3" y1="7" x2="21" y2="7"/>
+          <line x1="3" y1="17" x2="21" y2="17"/>
+          <line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="3,2"/>
+        </svg>
       </button>
       <div class="tb-sep"></div>
       <button class="tool-btn" data-tool="text_place" title="Texte (T)" onclick="executeCommand('TEXT')">
@@ -1110,6 +1300,68 @@
   </div>
 </div>
 
+<div id="array-dialog">
+  <div class="ar-header">
+    <span>RÉSEAU RECTANGULAIRE</span>
+    <span class="lm-close" onclick="closeArrayDialog()">×</span>
+  </div>
+  <div class="ar-body">
+    <div class="ar-group">
+      <div class="ar-label">Colonnes</div>
+      <input id="ar-cols" class="ar-input" type="number" value="3" min="1" max="100" oninput="arrayPreviewUpdate()">
+    </div>
+    <div class="ar-group">
+      <div class="ar-label">Espacement X</div>
+      <input id="ar-dx" class="ar-input" type="number" value="100" oninput="arrayPreviewUpdate()">
+    </div>
+    <div class="ar-group">
+      <div class="ar-label">Lignes</div>
+      <input id="ar-rows" class="ar-input" type="number" value="3" min="1" max="100" oninput="arrayPreviewUpdate()">
+    </div>
+    <div class="ar-group">
+      <div class="ar-label">Espacement Y</div>
+      <input id="ar-dy" class="ar-input" type="number" value="100" oninput="arrayPreviewUpdate()">
+    </div>
+  </div>
+  <div class="ar-info" id="ar-info">— entités : —</div>
+  <div class="ar-footer">
+    <button class="ar-btn cancel" onclick="closeArrayDialog()">Annuler</button>
+    <button class="ar-btn ok" onclick="confirmArray()">OK</button>
+  </div>
+</div>
+
+<!-- AI ASSISTANT PANEL -->
+<div id="ai-panel" style="display:none">
+  <div class="ai-header" onmousedown="startAiDrag(event)">
+    <span>ASSISTANT IA — OLLAMA</span>
+    <div class="ai-header-btns">
+      <button class="ai-settings-btn" onclick="toggleAiSettings()" title="Paramètres">⚙</button>
+      <span class="lm-close" onclick="closeAiPanel()">×</span>
+    </div>
+  </div>
+  <div class="ai-settings-panel" id="ai-settings-panel" style="display:none">
+    <div class="ai-settings-row">
+      <span class="ai-settings-label">URL</span>
+      <input id="ai-url" class="ai-settings-input" type="text" value="http://localhost:11434"
+        onchange="S.aiOllamaUrl=this.value.replace(/\/$/,'')">
+    </div>
+    <div class="ai-settings-row">
+      <span class="ai-settings-label">Modèle</span>
+      <select id="ai-model-sel" class="ai-settings-sel" onchange="S.aiModel=this.value">
+        <option value="">— sélectionner —</option>
+      </select>
+      <button class="ai-refresh-btn" onclick="loadOllamaModels()" title="Rafraîchir la liste">↻</button>
+    </div>
+  </div>
+  <div class="ai-chat" id="ai-chat"></div>
+  <div class="ai-input-area">
+    <textarea id="ai-input" class="ai-textarea" rows="2"
+      placeholder="Posez une question ou demandez de dessiner..."
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAiMessage();}"></textarea>
+    <button class="ai-send-btn" id="ai-send-btn" onclick="sendAiMessage()" title="Envoyer (Entrée)">▶</button>
+  </div>
+</div>
+
 <div id="dim-text-dialog" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2133;border:1px solid #ffffff22;border-radius:8px;z-index:951;width:340px;box-shadow:0 12px 48px rgba(0,0,0,0.8);font-family:'IBM Plex Sans',sans-serif">
   <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #ffffff18;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1px;color:var(--accent)">
     TEXTE DE COTE
@@ -1249,6 +1501,7 @@ const S = {
     intersection: true,
     perpendicular: false,
     tangent: false,
+    quadrant: true,
   },
   currentOsnap: null, // { x, y, type, entity }
   // GRIP EDITING
@@ -1269,9 +1522,21 @@ const S = {
   scalePending: false,
   // DIST
   distPt1: null,
+  // DIMANGULAR
+  _dimAngLine1: null,
+  _dimAngClick1: null,
+  _dimAngLine2: null,
+  _dimAngVtx: null,
+  _dimAngLA1: null,
+  _dimAngLA2: null,
   // TRIM
   trimStep: 0,
   trimCuttingId: null,
+  // EXTEND
+  extendStep: 0,
+  extendBoundaryId: null,
+  arraySourceIds: [],
+  arrayPreview: null, // { cols, rows, dx, dy } for live preview in dialog
   // Grip edit
   _gripJustConfirmed: false,
   // MIRROR delete-source confirmation
@@ -1311,6 +1576,17 @@ const S = {
   filletClickPos1: null,
   // JOIN
   joinSelection: [],
+  // AI ASSISTANT
+  aiHistory: [],
+  aiModel: 'qwen3-coder:30b-opt',
+  aiOllamaUrl: 'http://localhost:11434',
+  aiStreaming: false,
+  aiPendingEntities: null,   // entités en attente de placement à la souris
+  aiPendingCenter: null,     // [cx,cy] centre de la bbox des entités en attente
+  // TUBE TOOL
+  tubeDiameter: 40,
+  tubeBendRadius: 67,
+  tubePoints: [],
 };
 
 // ===== OSNAP ENGINE =====
@@ -1322,6 +1598,7 @@ const OSNAP_COLORS = {
   intersection: '#e040fb',
   perpendicular: '#00bcd4',
   tangent: '#ff6e40',
+  quadrant: '#cddc39',
 };
 
 function findOsnap(wx, wy) {
@@ -1340,12 +1617,27 @@ function findOsnap(wx, wy) {
 
   for (const e of S.entities) {
     if (!S.layers[e.layer]?.visible) continue;
+    // Skip entities whose bounding box is farther than tol from cursor
+    const ebb = getEntityBBox(e);
+    if (ebb) {
+      const dx = Math.max(ebb.minX - wx, 0, wx - ebb.maxX);
+      const dy = Math.max(ebb.minY - wy, 0, wy - ebb.maxY);
+      if (dx * dx + dy * dy > tol * tol) continue;
+    }
 
     // ENDPOINT
     if (S.osnapModes.endpoint) {
-      if (e.type === 'line' || e.type === 'wall' || e.type === 'dim_linear' || e.type === 'dim_aligned' || e.type === 'leader') {
+      if (e.type === 'line' || e.type === 'wall' || e.type === 'leader') {
         check(e.x1, e.y1, 'endpoint', e);
         check(e.x2, e.y2, 'endpoint', e);
+      }
+      if (e.type === 'dim_linear' || e.type === 'dim_aligned') {
+        // Points de définition (où l'utilisateur a cliqué)
+        check(e.x1, e.y1, 'endpoint', e);
+        check(e.x2, e.y2, 'endpoint', e);
+        // Pointes des flèches (ligne de cote) — permet d'aligner les cotes
+        const tips = getDimArrowTips(e);
+        if (tips) { check(tips[0][0], tips[0][1], 'endpoint', e); check(tips[1][0], tips[1][1], 'endpoint', e); }
       }
       if (e.type === 'rect') {
         check(e.x1, e.y1, 'endpoint', e);
@@ -1366,6 +1658,10 @@ function findOsnap(wx, wy) {
     if (S.osnapModes.midpoint) {
       if (e.type === 'line' || e.type === 'wall') {
         check((e.x1 + e.x2) / 2, (e.y1 + e.y2) / 2, 'midpoint', e);
+      }
+      if (e.type === 'dim_linear' || e.type === 'dim_aligned') {
+        const tips = getDimArrowTips(e);
+        if (tips) check((tips[0][0]+tips[1][0])/2, (tips[0][1]+tips[1][1])/2, 'midpoint', e);
       }
       if (e.type === 'rect') {
         check((e.x1 + e.x2) / 2, e.y1, 'midpoint', e);
@@ -1412,16 +1708,82 @@ function findOsnap(wx, wy) {
       }
     }
 
-    // INTERSECTION (line-line)
+    // QUADRANT (4 points cardinaux d'un cercle ou arc)
+    if (S.osnapModes.quadrant && (e.type === 'circle' || e.type === 'arc')) {
+      const candidates = [0, Math.PI/2, Math.PI, 3*Math.PI/2];
+      for (const a of candidates) {
+        if (e.type === 'arc' && !angleInArc(a, e.startAngle, e.endAngle)) continue;
+        check(e.cx + e.r * Math.cos(a), e.cy + e.r * Math.sin(a), 'quadrant', e);
+      }
+    }
+
+    // INTERSECTION (segment-segment + cercle)
     if (S.osnapModes.intersection) {
+      const isCircular = e.type === 'circle' || e.type === 'arc';
       const segsA = getEntitySegments(e);
+
       for (const e2 of S.entities) {
         if (e2 === e || !S.layers[e2.layer]?.visible) continue;
-        const segsB = getEntitySegments(e2);
-        for (const a of segsA) {
-          for (const b of segsB) {
-            const pt = segSegIntersect(a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3]);
-            if (pt) check(pt[0], pt[1], 'intersection', e);
+        // Skip e2 si sa bbox est loin du curseur
+        const bb2 = getEntityBBox(e2);
+        if (bb2) {
+          const dx = Math.max(bb2.minX - wx, 0, wx - bb2.maxX);
+          const dy = Math.max(bb2.minY - wy, 0, wy - bb2.maxY);
+          if (dx * dx + dy * dy > (tol * 4) * (tol * 4)) continue;
+        }
+        const isCircular2 = e2.type === 'circle' || e2.type === 'arc';
+
+        // Cercle / arc × cercle / arc
+        if (isCircular && isCircular2) {
+          const pts = circleCircleIntersect(e.cx, e.cy, e.r, e2.cx, e2.cy, e2.r);
+          for (const [px, py] of pts) {
+            const a1 = Math.atan2(py - e.cy,  px - e.cx);
+            const a2 = Math.atan2(py - e2.cy, px - e2.cx);
+            if (e.type  === 'arc' && !angleInArc(a1, e.startAngle,  e.endAngle))  continue;
+            if (e2.type === 'arc' && !angleInArc(a2, e2.startAngle, e2.endAngle)) continue;
+            check(px, py, 'intersection', e);
+          }
+          continue;
+        }
+
+        // Segment × cercle / arc
+        if (!isCircular && isCircular2) {
+          for (const seg of segsA) {
+            const pts = segCircleIntersect(seg[0], seg[1], seg[2], seg[3], e2.cx, e2.cy, e2.r);
+            for (const [px, py] of pts) {
+              if (e2.type === 'arc') {
+                const a2 = Math.atan2(py - e2.cy, px - e2.cx);
+                if (!angleInArc(a2, e2.startAngle, e2.endAngle)) continue;
+              }
+              check(px, py, 'intersection', e);
+            }
+          }
+          continue;
+        }
+
+        // Cercle / arc × segment
+        if (isCircular && !isCircular2) {
+          for (const seg of getEntitySegments(e2)) {
+            const pts = segCircleIntersect(seg[0], seg[1], seg[2], seg[3], e.cx, e.cy, e.r);
+            for (const [px, py] of pts) {
+              if (e.type === 'arc') {
+                const a1 = Math.atan2(py - e.cy, px - e.cx);
+                if (!angleInArc(a1, e.startAngle, e.endAngle)) continue;
+              }
+              check(px, py, 'intersection', e);
+            }
+          }
+          continue;
+        }
+
+        // Segment × segment
+        if (segsA.length) {
+          const segsB = getEntitySegments(e2);
+          for (const a of segsA) {
+            for (const b of segsB) {
+              const pt = segSegIntersect(a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3]);
+              if (pt) check(pt[0], pt[1], 'intersection', e);
+            }
           }
         }
       }
@@ -1450,6 +1812,27 @@ function findOsnap(wx, wy) {
     }
   }
 
+  // OSNAP sur la polyligne/ligne en cours de tracé (drawPoints pas encore dans S.entities)
+  if (S.drawing && (S.tool === 'polyline' || S.tool === 'cable' || S.tool === 'line') && S.drawPoints.length >= 1) {
+    const pts = S.drawPoints;
+    // Extrémités (tous les sommets confirmés)
+    if (S.osnapModes.endpoint) {
+      for (const p of pts) check(p[0], p[1], 'endpoint', null);
+    }
+    // Milieux des segments confirmés
+    if (S.osnapModes.midpoint && pts.length >= 2) {
+      for (let i = 0; i < pts.length - 1; i++)
+        check((pts[i][0]+pts[i+1][0])/2, (pts[i][1]+pts[i+1][1])/2, 'midpoint', null);
+    }
+    // Projection nearest sur chaque segment confirmé
+    if (S.osnapModes.nearest && pts.length >= 2) {
+      for (let i = 0; i < pts.length - 1; i++) {
+        const p = projectOnSeg(wx, wy, pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1]);
+        if (p) check(p[0], p[1], 'nearest', null);
+      }
+    }
+  }
+
   return best;
 }
 
@@ -1471,6 +1854,58 @@ function projectOnLine(px, py, x1, y1, x2, y2) {
   return [x1 + t * dx, y1 + t * dy];
 }
 
+// Returns 0, 1 or 2 intersection points of two circles (or arcs — caller checks angular range)
+function circleCircleIntersect(cx1, cy1, r1, cx2, cy2, r2) {
+  const dx = cx2-cx1, dy = cy2-cy1;
+  const d = Math.hypot(dx, dy);
+  if (d < 1e-10 || d > r1+r2+1e-10 || d < Math.abs(r1-r2)-1e-10) return [];
+  const a = (r1*r1 - r2*r2 + d*d) / (2*d);
+  const h2 = r1*r1 - a*a;
+  if (h2 < 0) return [];
+  const h = Math.sqrt(h2);
+  const mx = cx1 + a*dx/d, my = cy1 + a*dy/d;
+  if (h < 1e-10) return [[mx, my]];
+  return [[mx + h*dy/d, my - h*dx/d], [mx - h*dy/d, my + h*dx/d]];
+}
+
+// Returns intersection points of a segment with a circle, where t∈[0,1] on the segment
+function segCircleIntersect(x1, y1, x2, y2, cx, cy, r) {
+  const dx=x2-x1, dy=y2-y1, fx=x1-cx, fy=y1-cy;
+  const a=dx*dx+dy*dy, b=2*(fx*dx+fy*dy), c=fx*fx+fy*fy-r*r;
+  const disc=b*b-4*a*c;
+  if (disc < 0 || a < 1e-10) return [];
+  const sd=Math.sqrt(disc), pts=[];
+  const t1=(-b-sd)/(2*a), t2=(-b+sd)/(2*a);
+  if (t1>=0&&t1<=1) pts.push([x1+t1*dx, y1+t1*dy]);
+  if (t2>=0&&t2<=1&&Math.abs(t2-t1)>1e-10) pts.push([x1+t2*dx, y1+t2*dy]);
+  return pts;
+}
+
+// Retourne les 2 extrémités de la ligne de cote (pointes des flèches) en coordonnées monde
+function getDimArrowTips(e) {
+  if (e.type === 'dim_linear') {
+    const off = e.offset || 30;
+    const isHoriz = e.isHoriz !== undefined ? e.isHoriz : (Math.abs(e.x2-e.x1) >= Math.abs(e.y2-e.y1));
+    if (isHoriz) { // cote horizontale
+      const dimY = (e.y1 + e.y2) / 2 + off;
+      return [[e.x1, dimY], [e.x2, dimY]];
+    } else {        // cote verticale
+      const dimX = (e.x1 + e.x2) / 2 + off;
+      return [[dimX, e.y1], [dimX, e.y2]];
+    }
+  }
+  if (e.type === 'dim_aligned') {
+    const angle = Math.atan2(e.y2 - e.y1, e.x2 - e.x1);
+    const perp = angle + Math.PI / 2;
+    const off = e.offset || 30;
+    return [
+      [e.x1 + Math.cos(perp) * off, e.y1 + Math.sin(perp) * off],
+      [e.x2 + Math.cos(perp) * off, e.y2 + Math.sin(perp) * off]
+    ];
+  }
+  return null;
+}
+
 function getEntitySegments(e) {
   const segs = [];
   if (e.type === 'line' || e.type === 'wall') segs.push([e.x1, e.y1, e.x2, e.y2]);
@@ -1479,6 +1914,11 @@ function getEntitySegments(e) {
   }
   if (e.type === 'polyline' || e.type === 'cable') {
     for (let i = 0; i < e.points.length - 1; i++) segs.push([e.points[i][0], e.points[i][1], e.points[i+1][0], e.points[i+1][1]]);
+  }
+  // Ligne de cote (segment entre les deux flèches) — pour intersection
+  if (e.type === 'dim_linear' || e.type === 'dim_aligned') {
+    const tips = getDimArrowTips(e);
+    if (tips) segs.push([tips[0][0], tips[0][1], tips[1][0], tips[1][1]]);
   }
   return segs;
 }
@@ -1553,6 +1993,17 @@ function drawOsnapMarker(snap) {
       ctx.closePath();
       ctx.stroke();
       break;
+    case 'quadrant': // diamond (losange plein, plus petit — comme AutoCAD)
+      ctx.beginPath();
+      ctx.moveTo(sx, sy - sz);
+      ctx.lineTo(sx + sz, sy);
+      ctx.lineTo(sx, sy + sz);
+      ctx.lineTo(sx - sz, sy);
+      ctx.closePath();
+      ctx.fillStyle = OSNAP_COLORS.quadrant + '55';
+      ctx.fill();
+      ctx.stroke();
+      break;
   }
 }
 
@@ -1620,7 +2071,12 @@ modules.electrical.commands = {
 modules.dimensioning.commands = {
   DIMLINEAR: { desc: 'Cote linéaire (H ou V)', exec() { termPrint('COTE LINÉAIRE: Cliquez deux points (mesure H ou V auto)', 'info'); setTool('dim_linear'); }},
   DIMALIGNED: { alias: ['DIMPAR','DIMPARALLEL'], desc: 'Cote parallèle (alignée)', exec() { termPrint('COTE PARALLÈLE: Cliquez deux points', 'info'); setTool('dim_aligned'); }},
-  DIMANGULAR: { alias: ['DIMANG','ANGLE'], desc: 'Cote angulaire (3 pts: sommet, rayon1, rayon2)', exec() { termPrint('COTE ANGULAIRE: Cliquez le sommet, puis 2 points', 'info'); setTool('dim_angular'); }},
+  DIMANGULAR: { alias: ['DIMANG','ANGLE'], desc: 'Cote angulaire (cliquer ligne1, ligne2, puis placer)', exec() {
+    S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null;
+    S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null;
+    termPrint('COTE ANGULAIRE: Cliquez la 1ère ligne', 'info');
+    setTool('dim_angular');
+  }},
   DIMRADIUS: { alias: ['DIMRAD'], desc: 'Cote de rayon (cliquer un cercle/arc)', exec() { termPrint('RAYON: Cliquez sur un cercle ou un arc', 'info'); setTool('dim_radius'); }},
   DIMDIAMETER: { alias: ['DIMDIA','DIMDIAM'], desc: 'Cote de diamètre (cliquer un cercle/arc)', exec() { termPrint('DIAMÈTRE: Cliquez sur un cercle ou un arc', 'info'); setTool('dim_diameter'); }},
 };
@@ -1713,6 +2169,12 @@ const CMD = {
     S.trimStep=1; S.trimCuttingId=null;
     setTool('trim');
     termPrint('TRIM: Cliquer l\'entité limite', 'info');
+    setTimeout(smartFocus, 0);
+  }},
+  EXTEND: { alias: ['EX','PROLONGER'], desc: 'Prolonger une entité jusqu\'à une limite', exec() {
+    S.extendStep=1; S.extendBoundaryId=null;
+    setTool('extend');
+    termPrint('EXTEND: Cliquer l\'entité limite', 'info');
     setTimeout(smartFocus, 0);
   }},
   DIST: { alias: ['DI','DISTANCE'], desc: 'Mesure la distance entre deux points', exec() {
@@ -1823,6 +2285,7 @@ const CMD = {
   }},
   SELECT: { alias: ['V','SEL'], desc: 'Mode sélection', exec: () => setTool('select') },
   HELP: { alias: ['?','AIDE'], desc: 'Aide', exec: () => showHelp() },
+  AI: { alias: ['OLLAMA','ASSISTANT'], desc: 'Ouvrir l\'assistant IA', exec: () => toggleAiPanel() },
   EXPORT: { alias: ['SVG','DXF','DWG'], desc: 'Exporter (EXPORT SVG|DXF|DWG)', exec: (args) => {
     const fmt = (args[0] || 'DXF').toUpperCase();
     if (fmt === 'SVG') exportSVG();
@@ -1833,12 +2296,88 @@ const CMD = {
   SAVE: { alias: ['SAUVER','ENREGISTRER'], desc: 'Sauvegarder en JSON natif', exec: () => cmdSave() },
   OPEN: { alias: ['OUVRIR','IMPORT'], desc: 'Ouvrir DXF/DWG/JSON', exec: () => cmdOpen() },
   SAVEAS: { desc: 'Sauvegarder sous (SAVEAS [nom])', exec: (args) => cmdSave(args[0], true) },
+  ARRAY: { alias: ['AR','RESEAU','RÉSEAU'], desc: 'Réseau rectangulaire (copies en grille)', exec: () => {
+    if (!S.selected.length) { termPrint('Sélectionner des objets avant ARRAY', 'warning'); return; }
+    S.arraySourceIds = [...S.selected];
+    openArrayDialog();
+  }},
+  TUBE: { alias: ['TUYAU'], desc: 'Tube 2 traits + axe (TUBE [formule] ex: 1000+90R67+500)', exec: (args) => {
+    const formula = args.join('').toUpperCase().replace(/\s+/g,'');
+    if (formula) {
+      const defaultR = S.tubeBendRadius || 67;
+      const tr = (S.tubeDiameter || 40) / 2;
+      const ent = parseTubeFormula(formula, defaultR);
+      if (!ent || !ent.segments.length) { termPrint('Syntaxe: TUBE 1000+90R67+500  ou  TUBE 1000+90+500R67', 'warning'); return; }
+      ent.tubeRadius = tr; ent.layer = S.currentLayer;
+      const bb = getEntityBBox(ent);
+      if (bb) {
+        S.aiPendingEntities = [ent];
+        S.aiPendingCenter   = [(bb.minX+bb.maxX)/2, (bb.minY+bb.maxY)/2];
+        termPrint('TUBE formule OK — cliquez pour placer (Échap=annuler)', 'info');
+        scheduleRender();
+      }
+    } else {
+      S.tubeDiameter  = S.tubeDiameter  || 40;
+      S.tubeBendRadius= S.tubeBendRadius|| 67;
+      S.tubePoints    = [];
+      setTool('tube');
+      termPrint('TUBE Ø'+S.tubeDiameter+' R'+S.tubeBendRadius+' — Cliquez les points, Entrée pour terminer (Echap=fin)', 'info');
+      termPrint('(TUBED <val> = changer Ø, TUBEBR <val> = changer rayon de coude)', 'info');
+    }
+  }},
+  TUBED: { alias: ['TUBEDIAMETRE','TUBEDIAM'], desc: 'Diamètre tube (TUBED [mm])', exec: (args) => {
+    if (args[0]) { S.tubeDiameter = parseFloat(args[0]); termPrint('Ø tube: '+S.tubeDiameter+'mm', 'success'); }
+    else termPrint('Ø tube actuel: '+(S.tubeDiameter||40)+'mm  —  Usage: TUBED <valeur>', 'info');
+  }},
+  TUBEBR: { alias: ['TUBERAYON','TUBER'], desc: 'Rayon de coude tube (TUBEBR [mm])', exec: (args) => {
+    if (args[0]) { S.tubeBendRadius = parseFloat(args[0]); termPrint('Rayon coude: '+S.tubeBendRadius+'mm', 'success'); }
+    else termPrint('Rayon coude actuel: '+(S.tubeBendRadius||67)+'mm  —  Usage: TUBEBR <valeur>', 'info');
+  }},
+  EXPLODE: { alias: ['X','ECLATER','ÉCLATER'], desc: 'Éclater un bloc ou une polyligne en segments', exec: () => {
+    const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && (e.type === 'block' || e.type === 'polyline' || e.type === 'cable'));
+    if (!targets.length) { termPrint('Sélectionner un bloc ou une polyligne à éclater', 'warning'); return; }
+    pushUndo();
+    const newIds = [];
+    targets.forEach(ent => {
+      const i = S.entities.findIndex(e => e.id === ent.id);
+      if (i !== -1) S.entities.splice(i, 1);
+      if (ent.type === 'block') {
+        (ent.entities || []).forEach(ch => {
+          ch.id = S.nextId++;
+          S.entities.push(ch);
+          newIds.push(ch.id);
+        });
+        termPrint('Bloc "' + (ent.name||'bloc') + '" → ' + (ent.entities?.length||0) + ' entités', 'success');
+      } else {
+        // polyline / cable → lignes individuelles
+        const pts = ent.points;
+        let count = 0;
+        for (let j = 0; j < pts.length - 1; j++) {
+          const line = { type: 'line', id: S.nextId++, layer: ent.layer,
+            x1: pts[j][0], y1: pts[j][1], x2: pts[j+1][0], y2: pts[j+1][1] };
+          S.entities.push(line);
+          newIds.push(line.id);
+          count++;
+        }
+        termPrint('Polyligne → ' + count + ' ligne' + (count > 1 ? 's' : ''), 'success');
+      }
+    });
+    S.selected = newIds;
+    updateSaveIndicator('modified'); autoSave(); render(); updateUI();
+  }},
 };
 
 // ===== CANVAS =====
 const canvas = document.getElementById('cad-canvas');
-const ctx = canvas.getContext('2d');
+let ctx = canvas.getContext('2d');       // let so we can swap to static canvas
+const mainCtx = ctx;
 let canvasW, canvasH;
+
+// Off-screen canvas — redrawn only when entities/zoom/layers change, not on every mousemove
+const staticCanvas = document.createElement('canvas');
+const staticCtx = staticCanvas.getContext('2d');
+let staticDirty = true;
+let _rafPending = false;
 
 function resizeCanvas() {
   const area = document.getElementById('canvas-area');
@@ -1847,7 +2386,10 @@ function resizeCanvas() {
   canvas.height = canvasH * devicePixelRatio;
   canvas.style.width = canvasW + 'px';
   canvas.style.height = canvasH + 'px';
-  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  mainCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  staticCanvas.width  = canvas.width;
+  staticCanvas.height = canvas.height;
+  staticCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
   render();
 }
 window.addEventListener('resize', resizeCanvas);
@@ -1873,130 +2415,410 @@ function resolvePoint(wx, wy) {
 }
 
 // ===== RENDER =====
-function render() {
-  ctx.clearRect(0, 0, canvasW, canvasH);
+
+// Bounding box d'une entité en coordonnées monde (pour culling viewport)
+function getEntityBBox(e) {
+  const pad = 20;
+  switch (e.type) {
+    case 'line': case 'wall': case 'leader':
+      return { minX:Math.min(e.x1,e.x2)-pad, maxX:Math.max(e.x1,e.x2)+pad,
+               minY:Math.min(e.y1,e.y2)-pad, maxY:Math.max(e.y1,e.y2)+pad };
+    case 'dim_linear': case 'dim_aligned': {
+      const tips = getDimArrowTips(e);
+      const xs = [e.x1, e.x2, ...(tips ? [tips[0][0], tips[1][0]] : [])];
+      const ys = [e.y1, e.y2, ...(tips ? [tips[0][1], tips[1][1]] : [])];
+      return { minX:Math.min(...xs)-pad, maxX:Math.max(...xs)+pad,
+               minY:Math.min(...ys)-pad, maxY:Math.max(...ys)+pad };
+    }
+    case 'rect':
+      return { minX:Math.min(e.x1,e.x2), maxX:Math.max(e.x1,e.x2),
+               minY:Math.min(e.y1,e.y2), maxY:Math.max(e.y1,e.y2) };
+    case 'circle': case 'arc': case 'dim_radius': case 'dim_diameter': case 'dim_angular':
+      return { minX:(e.cx||0)-(e.r||50)-pad, maxX:(e.cx||0)+(e.r||50)+pad,
+               minY:(e.cy||0)-(e.r||50)-pad, maxY:(e.cy||0)+(e.r||50)+pad };
+    case 'polyline': case 'cable': {
+      if (!e.points?.length) return null;
+      let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+      e.points.forEach(p=>{ x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1]); });
+      return { minX:x0, maxX:x1, minY:y0, maxY:y1 };
+    }
+    case 'tube': {
+      const tr = e.tubeRadius || 20;
+      let cx = e.startX, cy = e.startY, theta = e.startAngle;
+      let x0 = cx - tr, x1 = cx + tr, y0 = cy - tr, y1 = cy + tr;
+      const expand = (ax, ay, r) => {
+        if (ax - r < x0) x0 = ax - r; if (ax + r > x1) x1 = ax + r;
+        if (ay - r < y0) y0 = ay - r; if (ay + r > y1) y1 = ay + r;
+      };
+      for (const seg of e.segments) {
+        if (seg.type === 'straight') {
+          cx += seg.length * Math.cos(theta); cy += seg.length * Math.sin(theta);
+          expand(cx, cy, tr);
+        } else if (seg.type === 'bend') {
+          const { angle: phi, bendRadius: R, side } = seg;
+          const bcx = cx - side*R*Math.sin(theta), bcy = cy + side*R*Math.cos(theta);
+          expand(bcx, bcy, R + tr); // bbox of full arc circle (over-approx)
+          const arcEnd = (theta - side*Math.PI/2) + side*phi;
+          cx = bcx + R*Math.cos(arcEnd); cy = bcy + R*Math.sin(arcEnd);
+          theta += side*phi;
+        }
+      }
+      return { minX: x0, maxX: x1, minY: y0, maxY: y1 };
+    }
+    case 'block': {
+      if (!e.entities?.length) return null;
+      let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+      e.entities.forEach(ch => {
+        const bb = getEntityBBox(ch);
+        if (bb) { x0=Math.min(x0,bb.minX);x1=Math.max(x1,bb.maxX);y0=Math.min(y0,bb.minY);y1=Math.max(y1,bb.maxY); }
+      });
+      return x0===Infinity ? null : { minX:x0, maxX:x1, minY:y0, maxY:y1 };
+    }
+    default:
+      if (e.cx!==undefined) return { minX:e.cx-80, maxX:e.cx+80, minY:e.cy-80, maxY:e.cy+80 };
+      if (e.x !==undefined) return { minX:e.x-10,  maxX:e.x+300, minY:e.y-30,  maxY:e.y+30  };
+      if (e.x1!==undefined) return { minX:Math.min(e.x1,e.x2)-pad, maxX:Math.max(e.x1,e.x2)+pad,
+                                     minY:Math.min(e.y1,e.y2)-pad, maxY:Math.max(e.y1,e.y2)+pad };
+      return null;
+  }
+}
+
+function _inViewport(bb, vp) {
+  return !bb || (bb.maxX>=vp.minX && bb.minX<=vp.maxX && bb.maxY>=vp.minY && bb.minY<=vp.maxY);
+}
+
+// Couche statique : grille + entités non-interactives (viewport culled)
+function _drawStaticLayer() {
+  ctx = staticCtx;
+  ctx.clearRect(0, 0, staticCanvas.width, staticCanvas.height);
 
   // Grid
   if (S.gridVis) {
     const g = S.gridSize * S.zoom;
     if (g > 4) {
-      const ox = (S.panX + canvasW / 2) % g;
-      const oy = (S.panY + canvasH / 2) % g;
-      ctx.strokeStyle = g > 15 ? '#1a2a4a' : '#141e35';
-      ctx.lineWidth = 0.5;
-      for (let x = ox; x < canvasW; x += g) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvasH); ctx.stroke(); }
-      for (let y = oy; y < canvasH; y += g) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvasW, y); ctx.stroke(); }
+      const ox = (S.panX + canvasW/2) % g, oy = (S.panY + canvasH/2) % g;
+      ctx.strokeStyle = g > 15 ? '#1a2a4a' : '#141e35'; ctx.lineWidth = 0.5;
+      for (let x=ox; x<canvasW; x+=g){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvasH); ctx.stroke(); }
+      for (let y=oy; y<canvasH; y+=g){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvasW,y); ctx.stroke(); }
     }
-    const mg = g * 5;
+    const mg = g*5;
     if (mg > 20) {
-      const ox2 = (S.panX + canvasW / 2) % mg;
-      const oy2 = (S.panY + canvasH / 2) % mg;
-      ctx.strokeStyle = '#253a5a'; ctx.lineWidth = 0.5;
-      for (let x = ox2; x < canvasW; x += mg) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvasH); ctx.stroke(); }
-      for (let y = oy2; y < canvasH; y += mg) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvasW, y); ctx.stroke(); }
+      const ox2=(S.panX+canvasW/2)%mg, oy2=(S.panY+canvasH/2)%mg;
+      ctx.strokeStyle='#253a5a'; ctx.lineWidth=0.5;
+      for (let x=ox2; x<canvasW; x+=mg){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvasH); ctx.stroke(); }
+      for (let y=oy2; y<canvasH; y+=mg){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvasW,y); ctx.stroke(); }
     }
   }
 
-  // Origin
-  const [ox, oy] = w2s(0, 0);
-  ctx.strokeStyle = '#ffffff20'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(ox - 20, oy); ctx.lineTo(ox + 20, oy); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(ox, oy - 20); ctx.lineTo(ox, oy + 20); ctx.stroke();
+  // Origine
+  const [ox,oy] = w2s(0,0);
+  ctx.strokeStyle='#ffffff20'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(ox-20,oy); ctx.lineTo(ox+20,oy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox,oy-20); ctx.lineTo(ox,oy+20); ctx.stroke();
 
-  // Entities
+  // Viewport bounds pour culling
+  const [vpx0,vpy0]=s2w(0,0), [vpx1,vpy1]=s2w(canvasW,canvasH);
+  const vp = { minX:Math.min(vpx0,vpx1), maxX:Math.max(vpx0,vpx1),
+               minY:Math.min(vpy0,vpy1), maxY:Math.max(vpy0,vpy1) };
+
+  // Entités (toutes — les surbrillances sont ajoutées dessus dans la couche dynamique)
+  S.entities.forEach(e => {
+    if (!S.layers[e.layer]?.visible) return;
+    if (!_inViewport(getEntityBBox(e), vp)) return;
+    const layer = S.layers[e.layer];
+    const color = layer?.color || '#00d4ff';
+    ctx.strokeStyle = color; ctx.fillStyle = color;
+    ctx.lineWidth = getLayerLineWidthPx(layer?.lineWidth);
+    ctx.setLineDash(e.dash || getLayerLineDash(layer?.lineType || 'solid'));
+    drawEntity(e);
+    ctx.setLineDash([]);
+  });
+
+  ctx = mainCtx;
+}
+
+function drawAiPlacementPreview() {
+  const [mx, my] = S.mouseWorld;
+  const [cx, cy] = S.aiPendingCenter;
+  const dsx = (mx - cx) * S.zoom;
+  const dsy = -(my - cy) * S.zoom; // Y inversé écran
+  ctx.save();
+  ctx.translate(dsx, dsy);
+  ctx.globalAlpha = 0.55;
+  S.aiPendingEntities.forEach(e => {
+    const layer = S.layers[e.layer] || S.layers[S.currentLayer];
+    ctx.strokeStyle = layer?.color || '#00d4ff';
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.lineWidth = Math.max(1, getLayerLineWidthPx(layer?.lineWidth));
+    ctx.setLineDash([5, 4]);
+    drawEntity(e);
+    ctx.setLineDash([]);
+  });
+  ctx.restore();
+  // Croix au point d'ancrage (centre de la bbox)
+  const [scx, scy] = w2s(cx + (mx - cx), cy + (my - cy)); // = w2s(mx, my)
+  ctx.save();
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 1;
+  const g = 8;
+  ctx.beginPath();
+  ctx.moveTo(scx - g, scy); ctx.lineTo(scx + g, scy);
+  ctx.moveTo(scx, scy - g); ctx.lineTo(scx, scy + g);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// Couche dynamique : colle le statique + surbrillances + overlays curseur
+function _drawDynamicLayer() {
+  ctx = mainCtx;
+  // Coller le canvas statique (GPU blit rapide)
+  ctx.save();
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(staticCanvas, 0, 0);
+  ctx.restore();
+
+  // Entités en surbrillance (sélectionnées, survolées, outils) — redessinées sur le statique
   S.entities.forEach(e => {
     if (!S.layers[e.layer]?.visible) return;
     const sel = S.selected.includes(e.id);
-    const isOffsetTarget = S.tool === 'offset' && e.id === S.offsetTargetId;
-    const isOffsetHover  = S.tool === 'offset' && e.id === S.hoverEntityId && S.offsetTargetId === null;
-    const isFilletFirst  = ['fillet','chamfer'].includes(S.tool) && e.id === S.filletFirstId;
-    const isFilletHover  = ['fillet','chamfer'].includes(S.tool) && e.id === S.hoverEntityId && e.id !== S.filletFirstId;
-    const isJoinSelected  = S.tool==='join' && S.joinSelection.includes(e.id);
-    const isJoinHover     = S.tool==='join' && e.id === S.hoverEntityId && !S.joinSelection.includes(e.id);
-    const isTrimCutting   = S.tool==='trim' && e.id === S.trimCuttingId;
-    const isTrimHover     = S.tool==='trim' && e.id === S.hoverEntityId && e.id !== S.trimCuttingId;
-    const highlighted = sel || isOffsetTarget || isOffsetHover || isFilletFirst || isFilletHover || isJoinSelected || isJoinHover || isTrimCutting || isTrimHover;
-    const layer = S.layers[e.layer];
-    let color = layer?.color || '#00d4ff';
-    if (sel) color = '#448aff';
-    if (isOffsetTarget || isFilletFirst || isJoinSelected || isTrimCutting) color = '#ffab40';
-    if (isOffsetHover  || isFilletHover || isJoinHover   || isTrimHover)   color = '#ffffff';
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineWidth = highlighted ? 2 : getLayerLineWidthPx(layer?.lineWidth);
-    const layerDash = highlighted ? [] : getLayerLineDash(layer?.lineType || 'solid');
-    ctx.setLineDash(e.dash || layerDash);
-    drawEntity(e);
-    ctx.setLineDash([]);
+    const isOffsetTarget = S.tool==='offset' && e.id===S.offsetTargetId;
+    const isOffsetHover  = S.tool==='offset' && e.id===S.hoverEntityId && S.offsetTargetId===null;
+    const isFilletFirst  = ['fillet','chamfer'].includes(S.tool) && e.id===S.filletFirstId;
+    const isFilletHover  = ['fillet','chamfer'].includes(S.tool) && e.id===S.hoverEntityId && e.id!==S.filletFirstId;
+    const isJoinSelected = S.tool==='join' && S.joinSelection.includes(e.id);
+    const isJoinHover    = S.tool==='join' && e.id===S.hoverEntityId && !S.joinSelection.includes(e.id);
+    const isTrimCutting  = S.tool==='trim'   && e.id===S.trimCuttingId;
+    const isTrimHover    = S.tool==='trim'   && e.id===S.hoverEntityId && e.id!==S.trimCuttingId;
+    const isExtendBound  = S.tool==='extend' && e.id===S.extendBoundaryId;
+    const isExtendHover  = S.tool==='extend' && e.id===S.hoverEntityId && e.id!==S.extendBoundaryId;
+    const highlighted = sel||isOffsetTarget||isOffsetHover||isFilletFirst||isFilletHover||
+                        isJoinSelected||isJoinHover||isTrimCutting||isTrimHover||isExtendBound||isExtendHover;
+    if (!highlighted) return;
+    let color = '#448aff';
+    if (isOffsetTarget||isFilletFirst||isJoinSelected||isTrimCutting||isExtendBound) color='#ffab40';
+    if (isOffsetHover ||isFilletHover ||isJoinHover  ||isTrimHover  ||isExtendHover) color='#ffffff';
+    ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=2;
+    ctx.setLineDash(e.dash||[]); drawEntity(e); ctx.setLineDash([]);
     if (sel) drawGrips(e);
   });
 
-  // Drawing preview
-  if (S.drawing && S.drawPoints.length > 0 && !S.gripEdit) drawPreview();
-
-  // Text live preview pendant la configuration
+  // Overlays dynamiques
+  if ((S.drawing && S.drawPoints.length>0 && !S.gripEdit) || (S.tool==='tube' && S.drawing && S.tubePoints.length>=1)) drawPreview();
   if (S._textLivePreview) drawTextLivePreview();
-
-  // Offset ghost preview (indépendant de drawPoints)
-  if (S.tool === 'offset' && S.offsetTargetId !== null && mouseOnCanvas) drawOffsetGhost();
-
-  // Rotate preview
-  if (S.tool === 'rotate' && S.rotateStep === 2 && mouseOnCanvas) drawRotatePreview();
-
-  // Scale preview
-  if (S.tool === 'scale' && S.scaleStep === 2 && mouseOnCanvas) drawScalePreview();
-
-  // Dist preview
-  if (S.tool === 'dist' && S.distPt1 && mouseOnCanvas) {
-    const [x1,y1] = S.distPt1, [mx,my] = S.mouseWorld;
-    const [sx1,sy1] = w2s(x1,y1), [smx,smy] = w2s(mx,my);
-    const dist = Math.hypot(mx-x1, my-y1);
-    ctx.save();
-    ctx.strokeStyle = '#ffab40'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+  if (S.tool==='offset' && S.offsetTargetId!==null && mouseOnCanvas) drawOffsetGhost();
+  if (S.tool==='extend' && S.extendStep===2 && S.hoverEntityId && S.extendBoundaryId && mouseOnCanvas) drawExtendPreview();
+  if (S.tool==='rotate' && S.rotateStep===2 && mouseOnCanvas) drawRotatePreview();
+  if (S.tool==='scale'  && S.scaleStep===2  && mouseOnCanvas) drawScalePreview();
+  if (S.tool==='dist' && S.distPt1 && mouseOnCanvas) {
+    const [x1,y1]=S.distPt1,[mx,my]=S.mouseWorld;
+    const [sx1,sy1]=w2s(x1,y1),[smx,smy]=w2s(mx,my);
+    ctx.save(); ctx.strokeStyle='#ffab40'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
     ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(smx,smy); ctx.stroke();
-    ctx.fillStyle = '#ffab40'; ctx.font = '10px JetBrains Mono';
-    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
-    ctx.fillText(dist.toFixed(2), (sx1+smx)/2+4, (sy1+smy)/2-4);
+    ctx.fillStyle='#ffab40'; ctx.font='10px JetBrains Mono';
+    ctx.textAlign='left'; ctx.textBaseline='bottom';
+    ctx.fillText(Math.hypot(mx-x1,my-y1).toFixed(2),(sx1+smx)/2+4,(sy1+smy)/2-4);
     ctx.setLineDash([]); ctx.restore();
   }
-
-  // Grip edit preview
   if (S.gripEdit) drawGripPreview();
-
-  // OSNAP marker
+  if (S.arrayPreview) drawArrayPreview();
+  if (S.aiPendingEntities && S.aiPendingCenter && mouseOnCanvas) drawAiPlacementPreview();
   if (S.currentOsnap) drawOsnapMarker(S.currentOsnap);
-
-  // Rubber-band selection rectangle
   if (isRubberBand && rbStart && rbEnd) {
-    const dsx = rbEnd.sx - rbStart.sx, dsy = rbEnd.sy - rbStart.sy;
+    // Recalculer les coordonnées écran depuis le monde à chaque frame
+    // pour que le rectangle reste correct après zoom/pan
+    const [ssx, ssy] = w2s(rbStart.wx, rbStart.wy);
+    const [sex, sey] = w2s(rbEnd.wx,   rbEnd.wy);
+    const dsx = sex - ssx, dsy = sey - ssy;
     if (Math.hypot(dsx, dsy) > 4) {
-      const rx = Math.min(rbStart.sx, rbEnd.sx), ry = Math.min(rbStart.sy, rbEnd.sy);
-      const rw = Math.abs(dsx), rh = Math.abs(dsy);
-      // Gauche→droite = fenêtre (plein), droite→gauche = croisement (pointillé)
-      const isWindow = rbEnd.wx >= rbStart.wx;
+      const rx=Math.min(ssx,sex), ry=Math.min(ssy,sey);
+      const rw=Math.abs(dsx), rh=Math.abs(dsy);
+      const isWin = rbEnd.wx >= rbStart.wx;
       ctx.save();
-      ctx.strokeStyle = isWindow ? '#00d4ffaa' : '#00e676aa';
-      ctx.fillStyle = isWindow ? '#00d4ff0d' : '#00e6760d';
-      ctx.lineWidth = 1;
-      if (!isWindow) ctx.setLineDash([4, 4]);
-      ctx.beginPath(); ctx.rect(rx, ry, rw, rh);
-      ctx.fill(); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
+      ctx.strokeStyle=isWin?'#00d4ffaa':'#00e676aa'; ctx.fillStyle=isWin?'#00d4ff0d':'#00e6760d';
+      ctx.lineWidth=1; if(!isWin) ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.rect(rx,ry,rw,rh); ctx.fill(); ctx.stroke();
+      ctx.setLineDash([]); ctx.restore();
     }
   }
-
-  // Custom cursor (always on top)
   drawCursor();
-
   updateStatusBar();
   updateDynamicInput();
+}
+
+function drawArrayPreview() {
+  const p = S.arrayPreview;
+  if (!p) return;
+  const sources = S.arraySourceIds.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+  if (!sources.length) return;
+  ctx.save();
+  ctx.globalAlpha = 0.45;
+  ctx.strokeStyle = '#00d4ff';
+  ctx.fillStyle = '#00d4ff';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  for (let r = 0; r < p.rows; r++) {
+    for (let c = 0; c < p.cols; c++) {
+      if (r === 0 && c === 0) continue; // original visible as-is
+      for (const src of sources) {
+        const ghost = JSON.parse(JSON.stringify(src));
+        offsetEntity(ghost, c * p.dx, r * p.dy);
+        drawEntity(ghost);
+      }
+    }
+  }
+  ctx.setLineDash([]); ctx.restore();
+}
+
+// Point d'entrée public — marque le statique comme périmé et planifie un rendu RAF
+function render() {
+  staticDirty = true;
+  if (!_rafPending) { _rafPending=true; requestAnimationFrame(_doRender); }
+}
+
+// Rendu rapide mousemove — réutilise le statique en cache, planifie RAF uniquement
+function scheduleRender() {
+  if (!_rafPending) { _rafPending=true; requestAnimationFrame(_doRender); }
+}
+
+function _doRender() {
+  _rafPending = false;
+  if (staticDirty) { _drawStaticLayer(); staticDirty=false; }
+  _drawDynamicLayer();
 }
 
 function dimText(e, value) {
   const t = e.text || '';
   if (!t || t === '<>') return value.toFixed(1);
   return t.replace('<>', value.toFixed(1));
+}
+
+// ===== TUBE TOOL — geometry =====
+
+function parseTubeFormula(str, defaultR) {
+  str = str.trim().toUpperCase().replace(/\s+/g, '');
+  let globalR = defaultR;
+  const parts = str.split('+').filter(p => p.length);
+
+  // Check if last part is standalone "R<r>"
+  const last = parts[parts.length - 1];
+  const pureR = last?.match(/^R(\d+(?:\.\d+)?)$/);
+  if (pureR) { globalR = parseFloat(pureR[1]); parts.pop(); }
+  else {
+    // Check if last part is "<length>R<r>" in straight position (even 0-indexed)
+    const numR = last?.match(/^(\d+(?:\.\d+)?)R(\d+(?:\.\d+)?)$/);
+    if (numR && (parts.length - 1) % 2 === 0) {
+      globalR = parseFloat(numR[2]);
+      parts[parts.length - 1] = numR[1];
+    }
+  }
+
+  const segments = [];
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    if (i % 2 === 0) {
+      // Straight segment
+      const len = parseFloat(part);
+      if (!isNaN(len) && len > 0) segments.push({ type: 'straight', length: len });
+    } else {
+      // Bend: "<angle>" or "<angle>R<r>" or "-<angle>..." for right turn
+      const m = part.match(/^(-?\d+(?:\.\d+)?)(?:R(\d+(?:\.\d+)?))?$/);
+      if (m) {
+        const angleDeg = parseFloat(m[1]);
+        const R = m[2] ? parseFloat(m[2]) : globalR;
+        segments.push({ type: 'bend', angle: Math.abs(angleDeg) * Math.PI / 180,
+                        bendRadius: R, side: angleDeg >= 0 ? 1 : -1 });
+      }
+    }
+  }
+  if (!segments.length) return null;
+  return { type: 'tube', startX: 0, startY: 0, startAngle: 0, tubeRadius: 20, segments };
+}
+
+function buildTubeFromPoints(pts, tubeRadius, bendRadius) {
+  if (pts.length < 2) return null;
+  const dirs = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const dx = pts[i+1][0] - pts[i][0], dy = pts[i+1][1] - pts[i][1];
+    const len = Math.hypot(dx, dy);
+    if (len < 1e-6) continue;
+    dirs.push({ angle: Math.atan2(dy, dx), len });
+  }
+  if (!dirs.length) return null;
+
+  const segments = [];
+  for (let i = 0; i < dirs.length; i++) {
+    let T_start = 0, T_end = 0;
+    if (i > 0) {
+      let phi = dirs[i].angle - dirs[i-1].angle;
+      while (phi > Math.PI) phi -= 2*Math.PI; while (phi < -Math.PI) phi += 2*Math.PI;
+      T_start = bendRadius * Math.tan(Math.abs(phi) / 2);
+    }
+    if (i < dirs.length - 1) {
+      let phi = dirs[i+1].angle - dirs[i].angle;
+      while (phi > Math.PI) phi -= 2*Math.PI; while (phi < -Math.PI) phi += 2*Math.PI;
+      T_end = bendRadius * Math.tan(Math.abs(phi) / 2);
+    }
+    const len = dirs[i].len - T_start - T_end;
+    if (len > 1e-6) segments.push({ type: 'straight', length: len });
+    if (i < dirs.length - 1) {
+      let phi = dirs[i+1].angle - dirs[i].angle;
+      while (phi > Math.PI) phi -= 2*Math.PI; while (phi < -Math.PI) phi += 2*Math.PI;
+      segments.push({ type: 'bend', angle: Math.abs(phi), bendRadius,
+                      side: phi >= 0 ? 1 : -1 });
+    }
+  }
+  if (!segments.length) return null;
+  return { type: 'tube', startX: pts[0][0], startY: pts[0][1],
+           startAngle: dirs[0].angle, tubeRadius, segments };
+}
+
+// Draw one offset path for the tube (offset=0: centerline, ±tubeRadius: walls)
+function _drawTubePath(e, offset) {
+  let cx = e.startX, cy = e.startY, theta = e.startAngle;
+  ctx.beginPath();
+  const [sx0, sy0] = w2s(cx + offset * Math.sin(theta), cy - offset * Math.cos(theta));
+  ctx.moveTo(sx0, sy0);
+  for (const seg of e.segments) {
+    if (seg.type === 'straight') {
+      cx += seg.length * Math.cos(theta); cy += seg.length * Math.sin(theta);
+      const [sx, sy] = w2s(cx + offset * Math.sin(theta), cy - offset * Math.cos(theta));
+      ctx.lineTo(sx, sy);
+    } else if (seg.type === 'bend') {
+      const { angle: phi, bendRadius: R, side } = seg;
+      const bcx = cx - side * R * Math.sin(theta);
+      const bcy = cy + side * R * Math.cos(theta);
+      const arcStart = theta - side * Math.PI / 2;
+      const arcEnd   = arcStart + side * phi;
+      const wallR = Math.abs(side * R + offset);
+      if (wallR > 0.5) {
+        const [bcsx, bcsy] = w2s(bcx, bcy);
+        ctx.arc(bcsx, bcsy, wallR * S.zoom, -arcStart, -arcEnd, side > 0);
+      }
+      cx = bcx + R * Math.cos(arcEnd); cy = bcy + R * Math.sin(arcEnd);
+      theta += side * phi;
+    }
+  }
+  ctx.stroke();
+}
+
+function finishTube() {
+  if (!S.tubePoints || S.tubePoints.length < 2) {
+    termPrint('TUBE: au moins 2 points requis (Echap=annuler)', 'warning');
+    return;
+  }
+  const tr = (S.tubeDiameter || 40) / 2;
+  const br = S.tubeBendRadius || 67;
+  const ent = buildTubeFromPoints(S.tubePoints, tr, br);
+  if (ent) {
+    pushUndo();
+    ent.id = S.nextId++; ent.layer = S.currentLayer;
+    S.entities.push(ent);
+    updateSaveIndicator('modified'); autoSave(); updateUI();
+    termPrint('TUBE #' + ent.id + ' créé — ' + S.tubePoints.length + ' points, Ø' + S.tubeDiameter + ' R' + br, 'success');
+  }
+  S.drawing = false; S.tubePoints = []; S.awaitingInput = false;
+  setTool('select'); render();
 }
 
 function drawEntity(e) {
@@ -2031,6 +2853,16 @@ function drawEntity(e) {
       }
       ctx.stroke();
       if (e.type === 'cable') ctx.setLineDash([]);
+      break;
+    }
+    case 'tube': {
+      const tr = e.tubeRadius || 20;
+      ctx.setLineDash([]);
+      _drawTubePath(e, tr);
+      _drawTubePath(e, -tr);
+      ctx.setLineDash([8, 3, 2, 3]);
+      _drawTubePath(e, 0);
+      ctx.setLineDash([]);
       break;
     }
     case 'wall': {
@@ -2069,11 +2901,9 @@ function drawEntity(e) {
       ctx.beginPath(); ctx.moveTo(sx,sy-6); ctx.lineTo(sx+10,sy-12); ctx.stroke(); break;
     }
     case 'dim_linear': {
-      // Cote linéaire: offset from 3rd click determines position
       const off = e.offset || 30;
       const to = e.textOffset || 0;
-      const dx = Math.abs(e.x2 - e.x1), dy = Math.abs(e.y2 - e.y1);
-      const isHoriz = dx >= dy;
+      const isHoriz = e.isHoriz !== undefined ? e.isHoriz : (Math.abs(e.x2-e.x1) >= Math.abs(e.y2-e.y1));
       if (isHoriz) {
         const dimY = (e.y1 + e.y2) / 2 + off;
         const [a1, b1] = w2s(e.x1, dimY), [a2, b2] = w2s(e.x2, dimY);
@@ -2229,6 +3059,21 @@ function drawEntity(e) {
       ctx.moveTo(x1,y1); ctx.lineTo(x1-8*Math.cos(a+0.3),y1-8*Math.sin(a+0.3)); ctx.stroke();
       ctx.font='11px IBM Plex Sans'; ctx.textAlign='left'; ctx.fillText(e.text,x2+4,y2-4); break;
     }
+    case 'block': {
+      if (!e.entities) break;
+      const savedStroke = ctx.strokeStyle, savedFill = ctx.fillStyle, savedLW = ctx.lineWidth;
+      for (const child of e.entities) {
+        const layer = S.layers[child.layer] || S.layers[S.currentLayer];
+        ctx.strokeStyle = layer?.color || '#00d4ff';
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.lineWidth = getLayerLineWidthPx(layer?.lineWidth);
+        ctx.setLineDash(child.dash || getLayerLineDash(layer?.lineType || 'solid'));
+        drawEntity(child);
+        ctx.setLineDash([]);
+      }
+      ctx.strokeStyle = savedStroke; ctx.fillStyle = savedFill; ctx.lineWidth = savedLW;
+      break;
+    }
   }
 }
 
@@ -2278,7 +3123,7 @@ function getGripPoints(e) {
     case 'dim_linear': {
       const off = e.offset || 30;
       const to = e.textOffset || 0;
-      const isHoriz = Math.abs(e.x2-e.x1) >= Math.abs(e.y2-e.y1);
+      const isHoriz = e.isHoriz !== undefined ? e.isHoriz : (Math.abs(e.x2-e.x1) >= Math.abs(e.y2-e.y1));
       // Definition point grips
       gp(e.x1, e.y1, (ent, nx, ny) => { ent.x1 = nx; ent.y1 = ny; });
       gp(e.x2, e.y2, (ent, nx, ny) => { ent.x2 = nx; ent.y2 = ny; });
@@ -2358,6 +3203,17 @@ function getGripPoints(e) {
         gp(p[0], p[1], (ent, nx, ny) => { ent.points[i] = [nx, ny]; });
       });
       break;
+    case 'tube':
+      gp(e.startX, e.startY, (ent, nx, ny) => { ent.startX = nx; ent.startY = ny; });
+      break;
+    case 'block': {
+      const bb = getEntityBBox(e);
+      if (bb) {
+        const cx = (bb.minX+bb.maxX)/2, cy = (bb.minY+bb.maxY)/2;
+        gp(cx, cy, (ent, nx, ny) => { offsetEntity(ent, nx-cx, ny-cy); });
+      }
+      break;
+    }
     default:
       if (e.x !== undefined) gp(e.x, e.y, (ent, nx, ny) => { ent.x = nx; ent.y = ny; });
   }
@@ -2433,17 +3289,21 @@ function drawGripPreview() {
 }
 
 // Compute signed offset distance for dimension placement
+// Détermine si une DIMLINEAR est horizontale en fonction de la position souris
+// H = la ligne de cote est au-dessus/en-dessous → mesure une distance X
+// V = la ligne de cote est à gauche/droite → mesure une distance Y
+function dimIsHoriz(p1, p2, mousePos) {
+  const midX = (p1[0] + p2[0]) / 2;
+  const midY = (p1[1] + p2[1]) / 2;
+  return Math.abs(mousePos[1] - midY) >= Math.abs(mousePos[0] - midX);
+}
+
 function computeDimOffset(tool, p1, p2, mousePos) {
   if (tool === 'dim_linear') {
-    const dx = Math.abs(p2[0]-p1[0]), dy = Math.abs(p2[1]-p1[1]);
-    if (dx >= dy) {
-      // Horizontal: offset is mouse Y distance from reference Y
-      const refY = (p1[1] + p2[1]) / 2;
-      return mousePos[1] - refY;
+    if (dimIsHoriz(p1, p2, mousePos)) {
+      return mousePos[1] - (p1[1] + p2[1]) / 2;  // offset vertical (Y)
     } else {
-      // Vertical: offset is mouse X distance from reference X
-      const refX = (p1[0] + p2[0]) / 2;
-      return mousePos[0] - refX;
+      return mousePos[0] - (p1[0] + p2[0]) / 2;  // offset horizontal (X)
     }
   } else {
     // Aligned: perpendicular distance from mouse to P1-P2 line
@@ -2463,8 +3323,7 @@ function drawDimPreview(tool, p1, p2, mouseWorld) {
   ctx.strokeStyle = '#ffffff88'; ctx.fillStyle = '#ffffff88'; ctx.lineWidth = 1; ctx.setLineDash([]);
 
   if (tool === 'dim_linear') {
-    const dx = Math.abs(p2[0]-p1[0]), dy = Math.abs(p2[1]-p1[1]);
-    const isHoriz = dx >= dy;
+    const isHoriz = dimIsHoriz(p1, p2, mouseWorld);
     if (isHoriz) {
       const dimY = (p1[1] + p2[1]) / 2 + off;
       const [a1,b1]=w2s(p1[0],dimY), [a2,b2]=w2s(p2[0],dimY);
@@ -2557,39 +3416,33 @@ function drawPreview() {
     }
     const[lx,ly]=w2s(last[0],last[1]), [ex,ey]=w2s(tx,ty);
     ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(ex,ey); ctx.stroke();
-  } else if (tool === 'dim_angular' && pts.length >= 1) {
-    // Preview: lines from vertex to mouse, and from vertex to existing points
-    const [vx, vy] = w2s(pts[0][0], pts[0][1]);
-    if (pts.length === 1) {
-      const [mx2, my2] = w2s(mx, my);
-      ctx.beginPath(); ctx.moveTo(vx, vy); ctx.lineTo(mx2, my2); ctx.stroke();
-    } else if (pts.length === 2) {
-      const [p1x, p1y] = w2s(pts[1][0], pts[1][1]);
-      const [mx2, my2] = w2s(mx, my);
-      ctx.beginPath(); ctx.moveTo(vx, vy); ctx.lineTo(p1x, p1y); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(vx, vy); ctx.lineTo(mx2, my2); ctx.stroke();
-      const a1 = Math.atan2(pts[1][1]-pts[0][1], pts[1][0]-pts[0][0]);
-      const a2 = Math.atan2(my-pts[0][1], mx-pts[0][0]);
-      const pR = Math.min(Math.hypot(pts[1][0]-pts[0][0],pts[1][1]-pts[0][1]), Math.hypot(mx-pts[0][0],my-pts[0][1])) * 0.6 * S.zoom;
-      ctx.beginPath(); ctx.arc(vx, vy, pR, -a2, -a1); ctx.stroke();
-      let angle = a2 - a1; if (angle < 0) angle += Math.PI * 2;
-      ctx.font='10px JetBrains Mono'; ctx.textAlign='center'; ctx.fillStyle='#ffffff66';
-      ctx.fillText((angle*180/Math.PI).toFixed(1)+'°', vx + (pR+15)*Math.cos(-(a1+angle/2)), vy + (pR+15)*Math.sin(-(a1+angle/2)));
-    } else if (pts.length === 3) {
-      // 4th click phase: show arc with radius from mouse
-      const [p1x, p1y] = w2s(pts[1][0], pts[1][1]);
-      const [p2x, p2y] = w2s(pts[2][0], pts[2][1]);
-      ctx.setLineDash([3,3]);
-      ctx.beginPath(); ctx.moveTo(vx,vy); ctx.lineTo(p1x,p1y); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(vx,vy); ctx.lineTo(p2x,p2y); ctx.stroke();
+  } else if (tool === 'dim_angular') {
+    if (S._dimAngVtx) {
+      // Étape 2: vertex connu, afficher secteur dynamique sous la souris
+      const vtx = S._dimAngVtx;
+      const sec = _dimAngSector(vtx[0], vtx[1], S._dimAngLA1, S._dimAngLA2, mx, my);
+      const r = Math.max(20 * S.zoom, Math.hypot(mx - vtx[0], my - vtx[1]) * S.zoom);
+      const [vsx, vsy] = w2s(vtx[0], vtx[1]);
+      const sa = sec.startAngle, ea = sa + sec.angle;
+      ctx.strokeStyle = '#ffffff88'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+      const rayLen = r * 1.4;
+      ctx.beginPath(); ctx.moveTo(vsx,vsy); ctx.lineTo(vsx+rayLen*Math.cos(-sa),vsy+rayLen*Math.sin(-sa)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(vsx,vsy); ctx.lineTo(vsx+rayLen*Math.cos(-ea),vsy+rayLen*Math.sin(-ea)); ctx.stroke();
       ctx.setLineDash([]);
-      const a1 = Math.atan2(pts[1][1]-pts[0][1], pts[1][0]-pts[0][0]);
-      const a2 = Math.atan2(pts[2][1]-pts[0][1], pts[2][0]-pts[0][0]);
-      const pR = Math.hypot(mx-pts[0][0], my-pts[0][1]) * S.zoom;
-      ctx.beginPath(); ctx.arc(vx, vy, pR, -a2, -a1); ctx.stroke();
-      let angle = a2 - a1; if (angle < 0) angle += Math.PI * 2;
-      ctx.font='10px JetBrains Mono'; ctx.textAlign='center'; ctx.fillStyle='#ffffff88';
-      ctx.fillText((angle*180/Math.PI).toFixed(1)+'°', vx + (pR+15)*Math.cos(-(a1+angle/2)), vy + (pR+15)*Math.sin(-(a1+angle/2)));
+      ctx.beginPath(); ctx.arc(vsx, vsy, r, -ea, -sa); ctx.stroke();
+      const midA = -(sa + sec.angle/2);
+      ctx.font='10px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#ffffff88';
+      ctx.fillText((sec.angle*180/Math.PI).toFixed(1)+'°', vsx+(r+15)*Math.cos(midA), vsy+(r+15)*Math.sin(midA));
+    } else if (S._dimAngLine1) {
+      // Étape 1: 1ère ligne sélectionnée, la surligner en orange
+      const e1 = S._dimAngLine1;
+      const [sx1,sy1] = w2s(e1.x1,e1.y1), [sx2,sy2] = w2s(e1.x2,e1.y2);
+      ctx.strokeStyle = '#ffaa00cc'; ctx.lineWidth = 3; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(sx2,sy2); ctx.stroke();
+      const [msx,msy] = w2s(mx,my);
+      ctx.strokeStyle = '#ffffff44'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.moveTo((sx1+sx2)/2,(sy1+sy2)/2); ctx.lineTo(msx,msy); ctx.stroke();
+      ctx.setLineDash([]);
     }
   } else if ((tool === 'dim_linear' || tool === 'dim_aligned') && pts.length === 2) {
     // Offset placement preview
@@ -2615,6 +3468,29 @@ function drawPreview() {
       drawArrowHead(ex2,ey2,ex1,ey1); drawArrowHead(ex1,ey1,ex2,ey2);
       ctx.font='10px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='bottom';
       ctx.fillText('Ø'+(c.r*2).toFixed(1), cx2+(r*0.3)*Math.cos(-a), cy2+(r*0.3)*Math.sin(-a)-4);
+    }
+  } else if (tool === 'tube' && S.tubePoints && S.tubePoints.length >= 1) {
+    // Tube preview: build full tube with mouse as last point
+    const last = S.tubePoints[S.tubePoints.length - 1];
+    let [tx, ty] = applyConstraint(last[0], last[1], mx, my);
+    const previewPts = [...S.tubePoints, [tx, ty]];
+    const tr = (S.tubeDiameter || 40) / 2;
+    const br = S.tubeBendRadius || 67;
+    const tmpEnt = buildTubeFromPoints(previewPts, tr, br);
+    if (tmpEnt) {
+      const color = S.layers[S.currentLayer]?.color || '#00d4ff';
+      ctx.strokeStyle = color + 'aa'; ctx.lineWidth = 1; ctx.setLineDash([]);
+      _drawTubePath(tmpEnt, tr);
+      _drawTubePath(tmpEnt, -tr);
+      ctx.setLineDash([8, 3, 2, 3]);
+      _drawTubePath(tmpEnt, 0);
+      ctx.setLineDash([]);
+    } else {
+      // Only 1 point: simple rubber-band
+      const [lx, ly] = w2s(last[0], last[1]), [ex, ey] = w2s(tx, ty);
+      ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(ex, ey); ctx.stroke();
+      ctx.setLineDash([]);
     }
   }
   // Mirror preview: axis line + ghost of mirrored entities
@@ -2978,6 +3854,7 @@ function applyPolar(x1,y1,x2,y2) {
 }
 
 function applyConstraint(x1,y1,x2,y2) {
+  if (S.currentOsnap) return [x2, y2]; // OSNAP a priorité sur ortho/polaire
   if (S.ortho) return applyOrtho(x1,y1,x2,y2);
   if (S.polar) return applyPolar(x1,y1,x2,y2);
   return [x2, y2];
@@ -3189,12 +4066,19 @@ function confirmDynamicInput() {
     termPrint('Point 1: (' + x.toFixed(1) + ', ' + y.toFixed(1) + ')', 'info');
     if (S.tool === 'rect') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
     else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou cliquez', 'warning');
-    else if (S.tool === 'dim_angular') termPrint('Cliquez point sur 1er rayon', 'info');
+    else if (S.tool === 'dim_angular') termPrint('DIMANGULAR: cliquez la 1ère ligne', 'info');
     else termPrint('2ème point ou longueur (ex: 150, 100<45, 100,50)', 'warning');
     render(); setTimeout(smartFocus, 0); return;
   }
 
   if (!S.drawing || S.drawPoints.length === 0) return;
+
+  // === CLORE polyligne via bulle DI ===
+  const diVal = diDist.value.trim().toUpperCase();
+  if (['C','CL','CLO','CLOR','CLORE','CLOSE'].includes(diVal) && ['polyline','cable'].includes(S.tool)) {
+    S.diLocked = false; diDist.blur(); diAngle.blur();
+    closePolyline(S.tool); return;
+  }
 
   // === GRIP EDIT via dynamic input ===
   if (S.gripEdit) {
@@ -3298,40 +4182,53 @@ function cancelDrawing() {
 // ===== CUSTOM CURSOR (AutoCAD style) =====
 let mouseOnCanvas = false;
 
+// 'idle'    → réticule + carré  (aucune commande active, après ESC)
+// 'pick'    → carré seul       (commande active, attend un clic sur entité)
+// 'draw'    → réticule seul    (commande active, attend un point géométrique)
+function getCursorMode() {
+  const t = S.tool;
+  if (t === 'select') return 'idle';
+  if (t === 'trim' || t === 'extend') return 'pick';
+  if (t === 'fillet' || t === 'chamfer' || t === 'join') return 'pick';
+  if (t === 'offset' && S.offsetTargetId === null) return 'pick';
+  if (t === 'dim_angular' && !S._dimAngVtx) return 'pick';
+  return 'draw';
+}
+
 function drawCursor() {
   if (!mouseOnCanvas) return;
   const [sx, sy] = S.mouseScreen;
-  const isSelect = S.tool === 'select' && !S.copyPending && !S.mirrorPending && !S.rotatePending && !S.movePending && !S.scalePending;
-  const pickHalf = 6; // demi-côté du carré de sélection
-  const gap = isSelect ? pickHalf + 2 : 0; // espace autour du centre en mode select
+  const mode = getCursorMode();
+  const pickHalf = 6;
+  const gap = pickHalf + 2;
 
   ctx.save();
-  ctx.strokeStyle = '#ffffffaa';
   ctx.lineWidth = 1;
   ctx.setLineDash([]);
 
-  // Ligne horizontale (gauche + droite avec gap)
-  ctx.beginPath();
-  if (gap > 0) {
-    ctx.moveTo(0, sy); ctx.lineTo(sx - gap, sy);
-    ctx.moveTo(sx + gap, sy); ctx.lineTo(canvasW, sy);
-  } else {
-    ctx.moveTo(0, sy); ctx.lineTo(canvasW, sy);
+  if (mode === 'idle' || mode === 'draw') {
+    // Réticule — avec ou sans gap selon présence du carré
+    ctx.strokeStyle = '#ffffffaa';
+    ctx.beginPath();
+    if (mode === 'idle') {
+      ctx.moveTo(0, sy);       ctx.lineTo(sx - gap, sy);
+      ctx.moveTo(sx + gap, sy); ctx.lineTo(canvasW, sy);
+    } else {
+      ctx.moveTo(0, sy); ctx.lineTo(canvasW, sy);
+    }
+    ctx.stroke();
+    ctx.beginPath();
+    if (mode === 'idle') {
+      ctx.moveTo(sx, 0);       ctx.lineTo(sx, sy - gap);
+      ctx.moveTo(sx, sy + gap); ctx.lineTo(sx, canvasH);
+    } else {
+      ctx.moveTo(sx, 0); ctx.lineTo(sx, canvasH);
+    }
+    ctx.stroke();
   }
-  ctx.stroke();
 
-  // Ligne verticale (haut + bas avec gap)
-  ctx.beginPath();
-  if (gap > 0) {
-    ctx.moveTo(sx, 0); ctx.lineTo(sx, sy - gap);
-    ctx.moveTo(sx, sy + gap); ctx.lineTo(sx, canvasH);
-  } else {
-    ctx.moveTo(sx, 0); ctx.lineTo(sx, canvasH);
-  }
-  ctx.stroke();
-
-  // Carré de sélection (pickbox) — uniquement en mode select
-  if (isSelect) {
+  if (mode === 'idle' || mode === 'pick') {
+    // Carré de sélection
     ctx.strokeStyle = '#ffffffcc';
     ctx.strokeRect(sx - pickHalf, sy - pickHalf, pickHalf * 2, pickHalf * 2);
   }
@@ -3359,7 +4256,7 @@ canvas.addEventListener('mousemove', (ev) => {
 
   // Hover entity for offset / fillet / chamfer selection highlight
   if ((S.tool === 'offset' && S.offsetTargetId === null) ||
-      S.tool === 'fillet' || S.tool === 'chamfer' || S.tool === 'join' || S.tool === 'trim') {
+      S.tool === 'fillet' || S.tool === 'chamfer' || S.tool === 'join' || S.tool === 'trim' || S.tool === 'extend') {
     const hit = hitTest(wx, wy);
     S.hoverEntityId = hit ? hit.id : null;
   } else {
@@ -3369,11 +4266,10 @@ canvas.addEventListener('mousemove', (ev) => {
   if (isPanning) {
     S.panX += ev.clientX - panStartX; S.panY += ev.clientY - panStartY;
     panStartX = ev.clientX; panStartY = ev.clientY;
-    render(); return;
+    render(); return; // pan shifts entity positions — static layer must rebuild
   }
-  if (isRubberBand) { rbEnd = { sx, sy, wx, wy }; render(); return; }
-  if (S.drawing) render();
-  else render(); // always redraw to update cursor position
+  if (isRubberBand) { rbEnd = { sx, sy, wx, wy }; scheduleRender(); return; }
+  scheduleRender(); // cursor / preview only — reuse cached static layer
 });
 
 canvas.addEventListener('mouseenter', () => { mouseOnCanvas = true; render(); });
@@ -3381,6 +4277,32 @@ canvas.addEventListener('mouseleave', () => { mouseOnCanvas = false; render(); }
 
 canvas.addEventListener('mousedown', (ev) => {
   if (ev.button === 2) return; // géré par contextmenu
+
+  // Placement IA : clic gauche pose les entités au point cliqué
+  if (ev.button === 0 && S.aiPendingEntities && S.aiPendingCenter) {
+    const rect = canvas.getBoundingClientRect();
+    let [wx, wy] = s2w(ev.clientX - rect.left, ev.clientY - rect.top);
+    [wx, wy] = resolvePoint(wx, wy);
+    const [cx, cy] = S.aiPendingCenter;
+    const dx = wx - cx, dy = wy - cy;
+    pushUndo();
+    const newIds = [];
+    S.aiPendingEntities.forEach(e => {
+      const copy = JSON.parse(JSON.stringify(e));
+      copy.id = S.nextId++;
+      if (copy.layer === undefined) copy.layer = S.currentLayer;
+      offsetEntity(copy, dx, dy);
+      S.entities.push(copy);
+      newIds.push(copy.id);
+    });
+    S.selected = newIds;
+    S.aiPendingEntities = null;
+    S.aiPendingCenter = null;
+    updateSaveIndicator('modified'); autoSave(); render(); updateUI();
+    termPrint(newIds.length + ' entité(s) IA placée(s)', 'success');
+    return;
+  }
+
   if (ev.button === 1 || (ev.button === 0 && S.tool === 'pan')) {
     isPanning = true; panStartX = ev.clientX; panStartY = ev.clientY;
     canvas.style.cursor = 'grabbing'; return;
@@ -3473,6 +4395,22 @@ canvas.addEventListener('wheel', (ev) => {
   render();
 });
 
+function lineIntersect(x1,y1,x2,y2,x3,y3,x4,y4){
+  const dx1=x2-x1,dy1=y2-y1,dx2=x4-x3,dy2=y4-y3;
+  const d=dx1*dy2-dy1*dx2;
+  if(Math.abs(d)<1e-10)return null;
+  const t=((x3-x1)*dy2-(y3-y1)*dx2)/d;
+  return[x1+t*dx1,y1+t*dy1];
+}
+function _dimAngSector(vx,vy,la1,la2,mx,my){
+  const T=Math.PI*2,nm=a=>((a%T)+T)%T;
+  const alpha=nm(Math.atan2(my-vy,mx-vx));
+  const b=[nm(la1),nm(la1+Math.PI),nm(la2),nm(la2+Math.PI)].sort((a,b)=>a-b);
+  let sa=b[3],ea=b[0]+T;
+  for(let i=0;i<3;i++){if(alpha>=b[i]&&alpha<b[i+1]){sa=b[i];ea=b[i+1];break;}}
+  return{startAngle:sa,endAngle:ea>=T?ea-T:ea,angle:ea-sa};
+}
+
 function handleClick(wx, wy, ev, rawWx, rawWy) {
   // rawWx/rawWy: cursor position before OSNAP/grid snap — use for entity picking (hitTest)
   // wx/wy: snapped position — use for new point creation
@@ -3558,13 +4496,15 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       // 3rd click = offset placement
       pushUndo();
       const [p1, p2] = S.drawPoints;
+      const isH = tool === 'dim_linear' ? dimIsHoriz(p1, p2, [wx, wy]) : null;
       const offDist = computeDimOffset(tool, p1, p2, [wx, wy]);
       const ent = { type: tool === 'dim_linear' ? 'dim_linear' : 'dim_aligned',
                     x1:p1[0], y1:p1[1], x2:p2[0], y2:p2[1], offset:offDist,
                     id:S.nextId++, layer:S.currentLayer };
+      if (isH !== null) ent.isHoriz = isH;
       S.entities.push(ent);
       const dist = tool === 'dim_linear'
-        ? (Math.abs(p2[0]-p1[0]) >= Math.abs(p2[1]-p1[1]) ? Math.abs(p2[0]-p1[0]) : Math.abs(p2[1]-p1[1]))
+        ? (isH ? Math.abs(p2[0]-p1[0]) : Math.abs(p2[1]-p1[1]))
         : Math.hypot(p2[0]-p1[0], p2[1]-p1[1]);
       termPrint('#'+ent.id+' '+ent.type+' = '+dist.toFixed(1), 'success');
       S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
@@ -3572,32 +4512,49 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     render(); return;
   }
 
-  // DIMANGULAR (3 clicks: vertex, ray1, ray2, then position with mouse)
+  // DIMANGULAR: cliquer ligne1 → cliquer ligne2 → positionner avec souris → cliquer pour placer
   if (tool === 'dim_angular') {
-    if (!S.drawing) {
-      S.drawing = true; S.drawPoints = [[wx, wy]]; S.awaitingInput = true;
-      termPrint('Sommet: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ') — Cliquez point sur 1er rayon', 'info');
-    } else if (S.drawPoints.length === 1) {
-      S.drawPoints.push([wx, wy]);
-      termPrint('Rayon 1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ') — Cliquez point sur 2ème rayon', 'info');
-    } else if (S.drawPoints.length === 2) {
-      S.drawPoints.push([wx, wy]);
-      termPrint('Rayon 2 défini — Positionnez l\'arc et cliquez', 'warning');
-    } else if (S.drawPoints.length === 3) {
-      // 4th click = set arc radius from vertex to click position
+    if (!S._dimAngLine1) {
+      // Étape 0: pick 1ère ligne
+      const hit = hitTest(rawWx, rawWy);
+      if (!hit || (hit.type !== 'line' && hit.type !== 'wall')) { termPrint('DIMANGULAR: cliquez sur une ligne ou un mur', 'warning'); render(); return; }
+      S._dimAngLine1 = hit; S._dimAngClick1 = [wx, wy];
+      S.drawing = true; S.awaitingInput = true; S.drawPoints = [[wx, wy]];
+      termPrint('Ligne 1 sélectionnée — Cliquez la 2ème ligne', 'info');
+    } else if (!S._dimAngVtx) {
+      // Étape 1: pick 2ème ligne, calculer intersection
+      const _h2 = hitTest(rawWx, rawWy);
+      const hit = (_h2 && _h2 !== S._dimAngLine1 && (_h2.type === 'line' || _h2.type === 'wall')) ? _h2 : null;
+      if (!hit) { termPrint('DIMANGULAR: cliquez une autre ligne ou un mur', 'warning'); render(); return; }
+      S._dimAngLine2 = hit;
+      const [x1,y1,x2,y2] = [S._dimAngLine1.x1,S._dimAngLine1.y1,S._dimAngLine1.x2,S._dimAngLine1.y2];
+      const [x3,y3,x4,y4] = [hit.x1,hit.y1,hit.x2,hit.y2];
+      const vtx = lineIntersect(x1,y1,x2,y2,x3,y3,x4,y4);
+      if (!vtx) { termPrint('DIMANGULAR: ces lignes sont parallèles', 'warning'); render(); return; }
+      S._dimAngVtx = vtx;
+      S._dimAngLA1 = Math.atan2(y2-y1, x2-x1);
+      S._dimAngLA2 = Math.atan2(y4-y3, x4-x3);
+      S.drawPoints = [[vtx[0], vtx[1]]];
+      termPrint('Intersection (' + vtx[0].toFixed(1) + ', ' + vtx[1].toFixed(1) + ') — Choisissez le côté et cliquez', 'warning');
+    } else {
+      // Étape 2: placer la cote
+      const vtx = S._dimAngVtx;
+      const sec = _dimAngSector(vtx[0], vtx[1], S._dimAngLA1, S._dimAngLA2, wx, wy);
+      const r = Math.max(20, Math.hypot(wx - vtx[0], wy - vtx[1]));
       pushUndo();
-      const [v, p1, p2] = S.drawPoints;
-      const a1 = Math.atan2(p1[1]-v[1], p1[0]-v[0]);
-      const a2 = Math.atan2(p2[1]-v[1], p2[0]-v[0]);
-      let angle = a2 - a1;
-      if (angle < 0) angle += Math.PI * 2;
-      const r = Math.hypot(wx - v[0], wy - v[1]);
-      const ent = { type:'dim_angular', vx:v[0], vy:v[1], x1:p1[0], y1:p1[1], x2:p2[0], y2:p2[1],
-                    startAngle:a1, endAngle:a2, r:r, angle:angle,
-                    id:S.nextId++, layer:S.currentLayer };
+      const x1 = vtx[0] + r * Math.cos(sec.startAngle);
+      const y1 = vtx[1] + r * Math.sin(sec.startAngle);
+      const x2 = vtx[0] + r * Math.cos(sec.endAngle);
+      const y2 = vtx[1] + r * Math.sin(sec.endAngle);
+      const ent = { type:'dim_angular', vx:vtx[0], vy:vtx[1],
+                    x1, y1, x2, y2,
+                    startAngle:sec.startAngle, endAngle:sec.endAngle,
+                    r, angle:sec.angle, id:S.nextId++, layer:S.currentLayer };
       S.entities.push(ent);
-      termPrint('#'+ent.id+' dim_angular ' + (angle*180/Math.PI).toFixed(1) + '°', 'success');
+      termPrint('#'+ent.id+' dim_angular ' + (sec.angle*180/Math.PI).toFixed(1) + '°', 'success');
       S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
+      S._dimAngLine1 = null; S._dimAngLine2 = null; S._dimAngVtx = null;
+      S._dimAngClick1 = null; S._dimAngLA1 = null; S._dimAngLA2 = null;
     }
     render(); return;
   }
@@ -3632,7 +4589,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     if (!S.drawing) {
       S.drawing = true; S.drawPoints = [[wx, wy]]; S.awaitingInput = true;
       termPrint('Point 1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ')', 'info');
-      termPrint('Longueur: <entrez distance> ou cliquez, Echap=finir', 'warning');
+      termPrint('Cliquez ou tapez distance — C=Clore  Echap=Finir', 'warning');
     } else {
       let tx = wx, ty = wy;
       const last = S.drawPoints[S.drawPoints.length-1];
@@ -3640,7 +4597,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       S.drawPoints.push([tx, ty]);
       const d = Math.hypot(tx-last[0], ty-last[1]);
       termPrint('Point ' + S.drawPoints.length + ': (' + tx.toFixed(1) + ', ' + ty.toFixed(1) + ') L=' + d.toFixed(1), 'info');
-      termPrint('Longueur: <entrez distance> ou cliquez, Echap=finir', 'warning');
+      termPrint('Cliquez ou tapez distance — C=Clore  Echap=Finir', 'warning');
     }
     render(); return;
   }
@@ -3781,6 +4738,25 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     }
   }
 
+  // Extend
+  if (tool === 'extend') {
+    const hit = hitTest(rawWx!==undefined?rawWx:wx, rawWy!==undefined?rawWy:wy);
+    if (!hit) { termPrint('EXTEND: cliquer sur une entité', 'warning'); return; }
+    if (S.extendStep === 1) {
+      S.extendBoundaryId = hit.id;
+      S.extendStep = 2;
+      termPrint('EXTEND: Cliquer l\'extrémité à prolonger (clic droit pour changer la limite)', 'info');
+      render(); return;
+    }
+    if (S.extendStep === 2) {
+      if (hit.id === S.extendBoundaryId) {
+        termPrint('EXTEND: Cliquer une entité différente de la limite', 'warning'); return;
+      }
+      applyExtend(hit.id, S.extendBoundaryId, rawWx!==undefined?rawWx:wx, rawWy!==undefined?rawWy:wy);
+      return;
+    }
+  }
+
   // Dist
   if (tool === 'dist') {
     if (!S.distPt1) {
@@ -3823,6 +4799,22 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     }
   }
 
+  // Tube
+  if (tool === 'tube') {
+    if (!S.drawing) {
+      S.drawing = true; S.tubePoints = [[wx, wy]]; S.awaitingInput = true;
+      termPrint('TUBE pt1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ') — Cliquez les points, Entrée pour terminer', 'info');
+    } else {
+      const last = S.tubePoints[S.tubePoints.length - 1];
+      let [tx, ty] = applyConstraint(last[0], last[1], wx, wy);
+      if (Math.hypot(tx - last[0], ty - last[1]) < 1) { render(); return; }
+      S.tubePoints.push([tx, ty]);
+      const d = Math.hypot(tx-last[0], ty-last[1]);
+      termPrint('TUBE pt' + S.tubePoints.length + ': (' + tx.toFixed(1) + ', ' + ty.toFixed(1) + ') L=' + d.toFixed(1), 'info');
+    }
+    render(); return;
+  }
+
   // Copy/Move
   if (tool==='copy'||tool==='move_obj') {
     if (!S.drawing) {
@@ -3843,6 +4835,8 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
 }
 
 function offsetEntity(e,dx,dy) {
+  if(e.type==='block'){e.entities?.forEach(ch=>offsetEntity(ch,dx,dy));return;}
+  if(e.type==='tube'){e.startX+=dx;e.startY+=dy;return;}
   if(e.x1!==undefined){e.x1+=dx;e.y1+=dy;} if(e.x2!==undefined){e.x2+=dx;e.y2+=dy;}
   if(e.cx!==undefined){e.cx+=dx;e.cy+=dy;} if(e.x!==undefined&&e.x1===undefined){e.x+=dx;e.y+=dy;}
   if(e.vx!==undefined){e.vx+=dx;e.vy+=dy;} // dim_angular vertex
@@ -4082,6 +5076,165 @@ function applyTrim(trimmedId, cutterId, clickWx, clickWy) {
   updateSaveIndicator('modified'); autoSave(); render();
 }
 
+function drawExtendPreview() {
+  const ent = S.entities.find(e => e.id === S.hoverEntityId);
+  const boundary = S.entities.find(e => e.id === S.extendBoundaryId);
+  if (!ent || !boundary) return;
+  const [mx, my] = S.mouseWorld;
+  const prims = getCutterPrimitives(boundary);
+  let fromX, fromY, toX, toY;
+
+  if (ent.type === 'line' || ent.type === 'wall') {
+    const dx = ent.x2-ent.x1, dy = ent.y2-ent.y1;
+    const len2 = dx*dx+dy*dy; if (len2 < 1e-12) return;
+    const clickT = ((mx-ent.x1)*dx+(my-ent.y1)*dy)/len2;
+    const allTs = getExtendTsForLine(ent.x1,ent.y1,ent.x2,ent.y2, prims);
+    if (clickT > 0.5) {
+      const cands = allTs.filter(t=>t>1+1e-9); if (!cands.length) return;
+      const t = cands.reduce((a,b)=>Math.abs(a-1)<Math.abs(b-1)?a:b);
+      fromX=ent.x2; fromY=ent.y2; toX=ent.x1+t*dx; toY=ent.y1+t*dy;
+    } else {
+      const cands = allTs.filter(t=>t<-1e-9); if (!cands.length) return;
+      const t = cands.reduce((a,b)=>Math.abs(a)<Math.abs(b)?a:b);
+      fromX=ent.x1; fromY=ent.y1; toX=ent.x1+t*dx; toY=ent.y1+t*dy;
+    }
+  } else if (ent.type === 'polyline' || ent.type === 'cable') {
+    const pts = ent.points; if (pts.length < 2) return;
+    const d1 = Math.hypot(mx-pts[0][0], my-pts[0][1]);
+    const dN = Math.hypot(mx-pts[pts.length-1][0], my-pts[pts.length-1][1]);
+    if (d1 < dN) {
+      const dx=pts[0][0]-pts[1][0], dy=pts[0][1]-pts[1][1];
+      const allTs=getExtendTsForLine(pts[1][0],pts[1][1],pts[0][0],pts[0][1],prims);
+      const cands=allTs.filter(t=>t>1+1e-9); if (!cands.length) return;
+      const t=cands.reduce((a,b)=>Math.abs(a-1)<Math.abs(b-1)?a:b);
+      fromX=pts[0][0]; fromY=pts[0][1]; toX=pts[1][0]+t*dx; toY=pts[1][1]+t*dy;
+    } else {
+      const N=pts.length-1;
+      const dx=pts[N][0]-pts[N-1][0], dy=pts[N][1]-pts[N-1][1];
+      const allTs=getExtendTsForLine(pts[N-1][0],pts[N-1][1],pts[N][0],pts[N][1],prims);
+      const cands=allTs.filter(t=>t>1+1e-9); if (!cands.length) return;
+      const t=cands.reduce((a,b)=>Math.abs(a-1)<Math.abs(b-1)?a:b);
+      fromX=pts[N][0]; fromY=pts[N][1]; toX=pts[N-1][0]+t*dx; toY=pts[N-1][1]+t*dy;
+    }
+  } else { return; }
+
+  const [sx1,sy1]=w2s(fromX,fromY), [sx2,sy2]=w2s(toX,toY);
+  ctx.save();
+  ctx.strokeStyle='#00d4ff'; ctx.lineWidth=1.5; ctx.globalAlpha=0.7;
+  ctx.setLineDash([6,4]);
+  ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(sx2,sy2); ctx.stroke();
+  ctx.setLineDash([]);
+  // Point d'arrivée
+  ctx.globalAlpha=1; ctx.fillStyle='#00d4ff';
+  ctx.beginPath(); ctx.arc(sx2,sy2,3,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+// ===== EXTEND =====
+
+// Intersection de deux lignes INFINIES — retourne t sur la ligne A, sans contrainte sur s (limite infinie)
+function segSegIntersectT_inf(ax1,ay1,ax2,ay2, bx1,by1,bx2,by2) {
+  const dx1=ax2-ax1,dy1=ay2-ay1,dx2=bx2-bx1,dy2=by2-by1;
+  const denom=dx1*dy2-dy1*dx2;
+  if(Math.abs(denom)<1e-10) return null;
+  const fx=bx1-ax1,fy=by1-ay1;
+  return (fx*dy2-fy*dx2)/denom;
+}
+
+// Intersection ligne infinie × cercle — retourne les t sans contrainte
+function lineCircleIntersectInf(ax1,ay1,ax2,ay2,cx,cy,r) {
+  const dx=ax2-ax1,dy=ay2-ay1;
+  const fx=ax1-cx,fy=ay1-cy;
+  const a=dx*dx+dy*dy; if(a<1e-12) return [];
+  const b=2*(fx*dx+fy*dy), c2=fx*fx+fy*fy-r*r;
+  const disc=b*b-4*a*c2; if(disc<0) return [];
+  const sq=Math.sqrt(Math.max(0,disc));
+  const res=[(-b-sq)/(2*a)];
+  if(disc>1e-10) res.push((-b+sq)/(2*a));
+  return res;
+}
+
+// Tous les t (y compris hors [0,1]) où la ligne infinie croise les primitives de la limite
+function getExtendTsForLine(lx1,ly1,lx2,ly2, prims) {
+  const ts=[];
+  for(const p of prims) {
+    if(p.type==='seg') {
+      const t=segSegIntersectT_inf(lx1,ly1,lx2,ly2, p.x1,p.y1,p.x2,p.y2);
+      if(t!=null&&isFinite(t)) ts.push(t);
+    } else if(p.type==='circle'||p.type==='arc') {
+      lineCircleIntersectInf(lx1,ly1,lx2,ly2,p.cx,p.cy,p.r).forEach(t=>{ if(isFinite(t)) ts.push(t); });
+    }
+  }
+  return ts;
+}
+
+function applyExtendLine(ent, prims, clickWx, clickWy) {
+  const dx=ent.x2-ent.x1, dy=ent.y2-ent.y1;
+  const len2=dx*dx+dy*dy; if(len2<1e-12) return false;
+  const allTs=getExtendTsForLine(ent.x1,ent.y1,ent.x2,ent.y2, prims);
+  if(!allTs.length) return false;
+  const clickT=((clickWx-ent.x1)*dx+(clickWy-ent.y1)*dy)/len2;
+  if(clickT > 0.5) {
+    // étendre extrémité P2 (t > 1)
+    const cands=allTs.filter(t=>t>1+1e-9);
+    if(!cands.length) return false;
+    const t=cands.reduce((a,b)=>Math.abs(a-1)<Math.abs(b-1)?a:b);
+    ent.x2=ent.x1+t*dx; ent.y2=ent.y1+t*dy;
+  } else {
+    // étendre extrémité P1 (t < 0)
+    const cands=allTs.filter(t=>t<-1e-9);
+    if(!cands.length) return false;
+    const t=cands.reduce((a,b)=>Math.abs(a)<Math.abs(b)?a:b);
+    const nx=ent.x1+t*dx, ny=ent.y1+t*dy;
+    ent.x1=nx; ent.y1=ny;
+  }
+  return true;
+}
+
+function applyExtendPolyline(ent, prims, clickWx, clickWy) {
+  const pts=ent.points;
+  if(pts.length<2) return false;
+  const d1=Math.hypot(clickWx-pts[0][0],clickWy-pts[0][1]);
+  const dN=Math.hypot(clickWx-pts[pts.length-1][0],clickWy-pts[pts.length-1][1]);
+  if(d1 < dN) {
+    // étendre le début : segment pts[1]→pts[0], trouver t>1
+    const dx=pts[0][0]-pts[1][0], dy=pts[0][1]-pts[1][1];
+    const len2=dx*dx+dy*dy; if(len2<1e-12) return false;
+    const allTs=getExtendTsForLine(pts[1][0],pts[1][1],pts[0][0],pts[0][1],prims);
+    const cands=allTs.filter(t=>t>1+1e-9);
+    if(!cands.length) return false;
+    const t=cands.reduce((a,b)=>Math.abs(a-1)<Math.abs(b-1)?a:b);
+    pts[0]=[pts[1][0]+t*dx, pts[1][1]+t*dy, ...(pts[0].length>2?[pts[0][2]]:[])];
+  } else {
+    // étendre la fin : segment pts[N-2]→pts[N-1], trouver t>1
+    const N=pts.length-1;
+    const dx=pts[N][0]-pts[N-1][0], dy=pts[N][1]-pts[N-1][1];
+    const len2=dx*dx+dy*dy; if(len2<1e-12) return false;
+    const allTs=getExtendTsForLine(pts[N-1][0],pts[N-1][1],pts[N][0],pts[N][1],prims);
+    const cands=allTs.filter(t=>t>1+1e-9);
+    if(!cands.length) return false;
+    const t=cands.reduce((a,b)=>Math.abs(a-1)<Math.abs(b-1)?a:b);
+    pts[N]=[pts[N-1][0]+t*dx, pts[N-1][1]+t*dy, ...(pts[N].length>2?[pts[N][2]]:[])];
+  }
+  return true;
+}
+
+function applyExtend(extendedId, boundaryId, clickWx, clickWy) {
+  const ent=S.entities.find(e=>e.id===extendedId);
+  const boundary=S.entities.find(e=>e.id===boundaryId);
+  if(!ent||!boundary) return;
+  const supported=['line','wall','polyline','cable'];
+  if(!supported.includes(ent.type)){ termPrint('EXTEND: type non supporté ('+ent.type+')','warning'); return; }
+  const prims=getCutterPrimitives(boundary);
+  pushUndo();
+  let ok=false;
+  if(ent.type==='line'||ent.type==='wall')            ok=applyExtendLine(ent,prims,clickWx,clickWy);
+  else if(ent.type==='polyline'||ent.type==='cable')  ok=applyExtendPolyline(ent,prims,clickWx,clickWy);
+  if(!ok){ S.history.pop(); termPrint('EXTEND: pas d\'intersection trouvée sur cette extension','warning'); return; }
+  termPrint('EXTEND — entité prolongée','success');
+  updateSaveIndicator('modified'); autoSave(); render();
+}
+
 function scaleEntityInPlace(e, cx, cy, f) {
   function sp(px, py) { return [cx+(px-cx)*f, cy+(py-cy)*f]; }
   if (e.x1!==undefined) { [e.x1,e.y1]=sp(e.x1,e.y1); }
@@ -4310,14 +5463,22 @@ function finishEntity(tool, pts) {
   termPrint('#'+ent.id+' '+ent.type+' créé'+d,'success');
 }
 
-function finishPolyline(tool) {
+function finishPolyline(tool, closed=false) {
   if (S.drawPoints.length<2) { S.drawing=false; S.drawPoints=[]; S.awaitingInput=false; return; }
   pushUndo();
   const type = tool==='cable'?'cable':'polyline';
-  const ent={type,points:[...S.drawPoints],id:S.nextId++,layer:S.currentLayer};
+  const pts = [...S.drawPoints];
+  if (closed) pts.push([...S.drawPoints[0]]); // dupliquer le 1er point pour fermer
+  const ent={type,points:pts,id:S.nextId++,layer:S.currentLayer,closed};
   S.entities.push(ent);
-  termPrint('#'+ent.id+' '+type+' ('+S.drawPoints.length+' pts)','success');
+  termPrint('#'+ent.id+' '+type+(closed?' fermée':'')+' ('+S.drawPoints.length+' pts)','success');
   S.drawing=false; S.drawPoints=[]; S.awaitingInput=false; render();
+}
+
+function closePolyline(tool) {
+  if (S.drawPoints.length < 2) { termPrint('Au moins 2 points pour clore','warning'); return; }
+  finishPolyline(tool, true);
+  setTool('select');
 }
 
 function hitTest(wx,wy) {
@@ -4347,6 +5508,41 @@ function hitTest(wx,wy) {
     }
     else if(e.type==='polyline'||e.type==='cable'){
       for(let j=0;j<e.points.length-1;j++){if(distToSeg(wx,wy,e.points[j][0],e.points[j][1],e.points[j+1][0],e.points[j+1][1])<tol)return e;}
+    }
+    else if(e.type==='tube'){
+      const tr = e.tubeRadius || 20;
+      const hitR = tr + tol;
+      let cx = e.startX, cy = e.startY, theta = e.startAngle;
+      let hit = false;
+      for (const seg of e.segments) {
+        if (seg.type === 'straight') {
+          const endX = cx + seg.length*Math.cos(theta), endY = cy + seg.length*Math.sin(theta);
+          if (distToSeg(wx,wy,cx,cy,endX,endY) < hitR) { hit = true; break; }
+          cx = endX; cy = endY;
+        } else if (seg.type === 'bend') {
+          const { angle: phi, bendRadius: R, side } = seg;
+          const bcx = cx - side*R*Math.sin(theta), bcy = cy + side*R*Math.cos(theta);
+          const d = Math.hypot(wx-bcx,wy-bcy);
+          if (Math.abs(d - R) < hitR) {
+            const arcStart = theta - side*Math.PI/2, arcEnd = arcStart + side*phi;
+            const a = Math.atan2(wy-bcy, wx-bcx);
+            let sa = arcStart, ea = arcEnd;
+            if (side > 0) {
+              while (ea < sa) ea += 2*Math.PI;
+              let ac = a; while (ac < sa) ac += 2*Math.PI;
+              if (ac <= ea) { hit = true; break; }
+            } else {
+              while (ea > sa) ea -= 2*Math.PI;
+              let ac = a; while (ac > sa) ac -= 2*Math.PI;
+              if (ac >= ea) { hit = true; break; }
+            }
+          }
+          const arcEnd2 = (theta - side*Math.PI/2) + side*phi;
+          cx = bcx + R*Math.cos(arcEnd2); cy = bcy + R*Math.sin(arcEnd2);
+          theta += side*phi;
+        }
+      }
+      if (hit) return e;
     }
     // Dimension entities
     else if(e.type==='dim_linear'||e.type==='dim_aligned'){
@@ -4381,26 +5577,24 @@ function hitTest(wx,wy) {
       // Ancrage bas-gauche (baseline alphabetic) : le texte monte vers +Y monde
       if(wx>=e.x-tol && wx<=e.x+tw+tol && wy>=e.y-tol && wy<=e.y+th+tol) return e;
     }
+    else if(e.type==='block'){
+      if(e.entities){
+        // Bounding box quick reject, then test children
+        const bb=getEntityBBox(e);
+        if(bb&&wx>=bb.minX-tol&&wx<=bb.maxX+tol&&wy>=bb.minY-tol&&wy<=bb.maxY+tol){
+          // Test perimeter: check if cursor is near any child entity edge
+          const tmpEntities=S.entities; S.entities=e.entities;
+          const hit=hitTest(wx,wy); S.entities=tmpEntities;
+          if(hit) return e;
+        }
+      }
+    }
     else if(e.x!==undefined){if(Math.abs(wx-e.x)<tol*2&&Math.abs(wy-e.y)<tol*2)return e;}
   }
   return null;
 }
 
 // ===== WINDOW / CROSSING SELECTION =====
-function getEntityBBox(e) {
-  const pts = [];
-  if (e.x1 !== undefined) { pts.push([e.x1, e.y1], [e.x2, e.y2]); }
-  if (e.cx !== undefined) { pts.push([e.cx - e.r, e.cy - e.r], [e.cx + e.r, e.cy + e.r]); }
-  if (e.x !== undefined && e.x1 === undefined) { pts.push([e.x, e.y]); }
-  if (e.points) e.points.forEach(p => pts.push(p));
-  if (e.vx !== undefined) { pts.push([e.vx, e.vy]); }
-  if (!pts.length) return null;
-  return {
-    minX: Math.min(...pts.map(p => p[0])), maxX: Math.max(...pts.map(p => p[0])),
-    minY: Math.min(...pts.map(p => p[1])), maxY: Math.max(...pts.map(p => p[1])),
-  };
-}
-
 function entityInRect(e, minX, minY, maxX, maxY, windowMode) {
   const bb = getEntityBBox(e);
   if (!bb) return false;
@@ -4431,8 +5625,8 @@ function selectInRect(wx1, wy1, wx2, wy2, shiftKey) {
 function getDimLinePoints(e) {
   const off = e.offset || 30;
   if (e.type === 'dim_linear') {
-    const dx = Math.abs(e.x2-e.x1), dy = Math.abs(e.y2-e.y1);
-    if (dx >= dy) {
+    const isHoriz = e.isHoriz !== undefined ? e.isHoriz : (Math.abs(e.x2-e.x1) >= Math.abs(e.y2-e.y1));
+    if (isHoriz) {
       const dimY = (e.y1+e.y2)/2 + off;
       return [e.x1, dimY, e.x2, dimY];
     } else {
@@ -4481,6 +5675,8 @@ function setTool(t) {
   if(t !== 'offset') { S.offsetTargetId=null; S.offsetAwaitDist=false; }
   if(_toolCmdName[t]) S.lastCmdRaw = _toolCmdName[t];
   S.tool=t; S.drawing=false; S.drawPoints=[]; S.awaitingInput=false;
+  if(t !== 'tube') S.tubePoints=[];
+  if(t !== 'dim_angular') { S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null; S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null; }
   S.diLocked=false; S.diField='dist';
   S.gripEdit=null; // Cancel any grip edit
   document.querySelectorAll('.tool-btn[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));
@@ -4627,6 +5823,13 @@ function updateProperties() {
   if (e.content !== undefined) h += row('Texte', inp('content', e.content, true));
   if (e.size !== undefined) h += row('Taille', inp('size', e.size));
   if (e.points) h += row('Points', '<span class="prop-value">'+e.points.length+'</span>');
+  if (e.type === 'tube') {
+    const tr = e.tubeRadius || 20;
+    h += row('Ø tube', '<span class="prop-value">'+(tr*2).toFixed(1)+'</span>');
+    const nbBends = (e.segments||[]).filter(s=>s.type==='bend').length;
+    const nbStr   = (e.segments||[]).filter(s=>s.type==='straight').length;
+    h += row('Segments', '<span class="prop-value">'+nbStr+' droits, '+nbBends+' coudes</span>');
+  }
   c.innerHTML = h;
 }
 
@@ -4702,6 +5905,66 @@ function refreshLayerManager() {
   }).join('');
 }
 
+// ===== ARRAY DIALOG =====
+function openArrayDialog() {
+  const dlg = document.getElementById('array-dialog');
+  dlg.style.display = 'flex';
+  arrayPreviewUpdate();
+  setTimeout(() => document.getElementById('ar-cols').focus(), 50);
+}
+function closeArrayDialog() {
+  document.getElementById('array-dialog').style.display = 'none';
+  S.arrayPreview = null;
+  scheduleRender();
+}
+function arrayPreviewUpdate() {
+  const cols = Math.max(1, parseInt(document.getElementById('ar-cols').value) || 1);
+  const rows = Math.max(1, parseInt(document.getElementById('ar-rows').value) || 1);
+  const dx   = parseFloat(document.getElementById('ar-dx').value) || 0;
+  const dy   = parseFloat(document.getElementById('ar-dy').value) || 0;
+  const total = cols * rows * S.arraySourceIds.length;
+  document.getElementById('ar-info').textContent =
+    cols + ' col × ' + rows + ' lig  —  ' + total + ' entité' + (total > 1 ? 's' : '');
+  S.arrayPreview = { cols, rows, dx, dy };
+  scheduleRender();
+}
+function confirmArray() {
+  const cols = Math.max(1, parseInt(document.getElementById('ar-cols').value) || 1);
+  const rows = Math.max(1, parseInt(document.getElementById('ar-rows').value) || 1);
+  const dx   = parseFloat(document.getElementById('ar-dx').value) || 0;
+  const dy   = parseFloat(document.getElementById('ar-dy').value) || 0;
+  const sources = S.arraySourceIds.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+  if (!sources.length) { closeArrayDialog(); return; }
+  pushUndo();
+  // Build block children: R×C copies of each source entity
+  const children = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      for (const src of sources) {
+        const copy = JSON.parse(JSON.stringify(src));
+        copy.id = S.nextId++;
+        offsetEntity(copy, c * dx, r * dy);
+        children.push(copy);
+      }
+    }
+  }
+  // Remove originals, replace with block
+  S.arraySourceIds.forEach(id => {
+    const i = S.entities.findIndex(e => e.id === id);
+    if (i !== -1) S.entities.splice(i, 1);
+  });
+  const block = {
+    type: 'block', id: S.nextId++, layer: S.currentLayer,
+    name: 'Array ' + cols + '×' + rows,
+    entities: children
+  };
+  S.entities.push(block);
+  S.selected = [block.id];
+  closeArrayDialog();
+  updateSaveIndicator('modified'); autoSave(); render(); updateUI();
+  termPrint('Réseau ' + cols + '×' + rows + ' créé — ' + children.length + ' entités (bloc #' + block.id + ')', 'success');
+}
+
 function getLayerLineDash(t) {
   switch(t){
     case 'dashed':  return [8,5];
@@ -4723,6 +5986,7 @@ function updateOsnapPanel() {
     ['intersection', 'Intersection', '--osnap-intersection'],
     ['perpendicular', 'Perpendiculaire', '--osnap-perpendicular'],
     ['tangent', 'Tangente', '--osnap-tangent'],
+    ['quadrant', 'Quadrant', '--osnap-quadrant'],
   ];
   panel.innerHTML = modes.map(([key, label, cssVar]) =>
     '<label class="osnap-row"><input type="checkbox" ' + (S.osnapModes[key] ? 'checked' : '') +
@@ -4779,6 +6043,275 @@ function updateStatusBar() {
   document.getElementById('status-module').textContent='Modules: '+loaded+'/'+Object.keys(modules).length;
 }
 
+// ===== AI ASSISTANT (OLLAMA) =====
+(function() {
+  let _aiDragOffX = 0, _aiDragOffY = 0;
+
+  window.startAiDrag = function(ev) {
+    if (ev.target.closest('.ai-header-btns')) return;
+    const panel = document.getElementById('ai-panel');
+    const rect = panel.getBoundingClientRect();
+    _aiDragOffX = ev.clientX - rect.left;
+    _aiDragOffY = ev.clientY - rect.top;
+    function onMove(e) {
+      panel.style.left = (e.clientX - _aiDragOffX) + 'px';
+      panel.style.top  = (e.clientY - _aiDragOffY) + 'px';
+      panel.style.right = 'auto';
+    }
+    function onUp() { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    ev.preventDefault();
+  };
+})();
+
+function toggleAiPanel() {
+  const panel = document.getElementById('ai-panel');
+  if (panel.style.display === 'none' || panel.style.display === '') {
+    panel.style.display = 'flex';
+    // Charger les modèles seulement si pas encore fait
+    const sel = document.getElementById('ai-model-sel');
+    if (sel.options.length <= 1) loadOllamaModels();
+    if (!S.aiHistory.length) aiAppendMsg('system-msg', 'Connecté à Ollama · Posez une question ou demandez de dessiner quelque chose.');
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+function closeAiPanel() { document.getElementById('ai-panel').style.display = 'none'; }
+
+function toggleAiSettings() {
+  const s = document.getElementById('ai-settings-panel');
+  s.style.display = s.style.display === 'none' ? 'flex' : 'none';
+}
+
+async function loadOllamaModels() {
+  const url = S.aiOllamaUrl;
+  const sel = document.getElementById('ai-model-sel');
+  sel.innerHTML = '<option value="">Chargement…</option>';
+  try {
+    const r = await fetch(url + '/api/tags');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    const models = (data.models || []).map(m => m.name).sort();
+    if (!models.length) { sel.innerHTML = '<option value="">Aucun modèle trouvé</option>'; return; }
+    sel.innerHTML = models.map(n => `<option value="${n}"${n===S.aiModel?' selected':''}>${n}</option>`).join('');
+    if (!S.aiModel && models.length) { S.aiModel = models[0]; sel.value = S.aiModel; }
+    document.getElementById('ai-url').value = url;
+    aiAppendMsg('system-msg', '✓ ' + models.length + ' modèle(s) disponible(s)');
+  } catch(e) {
+    sel.innerHTML = '<option value="">— non disponible —</option>';
+    const isCors = e instanceof TypeError;
+    const hint = isCors
+      ? 'Problème CORS. Relancez Ollama avec :\nOLLAMA_ORIGINS="*" ollama serve'
+      : 'Vérifiez l\'URL et que Ollama est démarré.';
+    aiAppendMsg('system-msg', '⚠ ' + url + ' — ' + (isCors ? 'accès bloqué (CORS)' : e.message));
+    aiAppendMsg('system-msg', hint);
+    // Open settings automatically so user sees the URL
+    document.getElementById('ai-settings-panel').style.display = 'flex';
+  }
+}
+
+function aiGetSystemPrompt() {
+  const layerDesc = S.layers.map((l,i) => `${i}: "${l.name}" (${l.color})`).join(', ');
+  return `Tu es un assistant pour MiniCAD, un logiciel de dessin technique 2D.
+
+CONTEXTE ACTUEL:
+- Calques: ${layerDesc}
+- Calque actif: ${S.currentLayer}
+- Unités: millimètres. Coordonnées: X→droite, Y→haut, origine (0,0) au centre.
+
+TYPES D'ENTITÉS (JSON):
+{"type":"line","x1":0,"y1":0,"x2":100,"y2":0,"layer":0}
+{"type":"rect","x1":0,"y1":0,"x2":100,"y2":100,"layer":0}
+{"type":"circle","cx":50,"cy":50,"r":25,"layer":0}
+{"type":"arc","cx":0,"cy":0,"r":50,"startAngle":0,"endAngle":1.5708,"layer":0}
+{"type":"polyline","points":[[0,0],[100,0],[100,100]],"layer":0}
+{"type":"text","x":0,"y":0,"text":"Label","size":14,"layer":3}
+
+RÈGLE ABSOLUE — GÉNÉRATION D'ENTITÉS:
+Quand l'utilisateur demande de dessiner, tu DOIS répondre avec un tableau JSON entre les balises exactes:
+<entities>[...tableau JSON des entités...]</entities>
+
+EXEMPLE — "dessine un carré de 100x100":
+Voici un carré de 100×100 mm centré à l'origine.
+<entities>[{"type":"rect","x1":-50,"y1":-50,"x2":50,"y2":50,"layer":0}]</entities>
+
+EXEMPLE — "plaque 200x100 avec 4 trous Ø10 à 15mm des coins":
+<entities>[
+{"type":"rect","x1":0,"y1":0,"x2":200,"y2":100,"layer":0},
+{"type":"circle","cx":15,"cy":15,"r":5,"layer":0},
+{"type":"circle","cx":185,"cy":15,"r":5,"layer":0},
+{"type":"circle","cx":15,"cy":85,"r":5,"layer":0},
+{"type":"circle","cx":185,"cy":85,"r":5,"layer":0}
+]</entities>
+
+N'utilise JAMAIS de blocs markdown \`\`\`json pour les entités. Toujours les balises <entities>.
+
+IMPORTANT — si une demande de dessin manque de précisions indispensables (dimensions, espacement, nombre d'éléments…), pose d'abord les questions nécessaires en français AVANT de générer quoi que ce soit. Ne suppose pas de valeurs arbitraires.
+
+Pour les questions sur MiniCAD (pas de dessin), réponds en français sans balises.`;
+}
+
+function aiAppendMsg(role, text, entitiesJson) {
+  const chat = document.getElementById('ai-chat');
+  const div = document.createElement('div');
+  div.className = 'ai-msg ' + role;
+  div.textContent = text;
+  if (entitiesJson) {
+    const btn = document.createElement('button');
+    btn.className = 'ai-entities-btn';
+    btn.textContent = '+ Ajouter au dessin';
+    btn.onclick = () => aiImportEntities(entitiesJson, btn);
+    div.appendChild(document.createElement('br'));
+    div.appendChild(btn);
+  }
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
+function aiStartPlacement(entities, btn) {
+  // Calculer le centre de la bbox de toutes les entités
+  let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
+  entities.forEach(e => {
+    const bb = getEntityBBox(e);
+    if (bb) {
+      minX=Math.min(minX,bb.minX); maxX=Math.max(maxX,bb.maxX);
+      minY=Math.min(minY,bb.minY); maxY=Math.max(maxY,bb.maxY);
+    }
+  });
+  if (minX===Infinity) { termPrint('Impossible de calculer la position des entités','warning'); return; }
+  S.aiPendingEntities = JSON.parse(JSON.stringify(entities));
+  S.aiPendingCenter   = [(minX+maxX)/2, (minY+maxY)/2];
+  if (btn) { btn.textContent = '↗ Cliquez sur le canvas…'; btn.disabled = true; }
+  termPrint('Cliquez sur le canvas pour placer les entités — Échap pour annuler', 'info');
+  scheduleRender();
+}
+
+function aiImportEntities(jsonArr, btn) {
+  try {
+    const arr = typeof jsonArr === 'string' ? JSON.parse(jsonArr) : jsonArr;
+    if (!Array.isArray(arr) || !arr.length) { termPrint('Aucune entité à importer', 'warning'); return; }
+    pushUndo();
+    const newIds = [];
+    arr.forEach(e => {
+      e.id = S.nextId++;
+      if (e.layer === undefined) e.layer = S.currentLayer;
+      S.entities.push(e);
+      newIds.push(e.id);
+    });
+    S.selected = newIds;
+    updateSaveIndicator('modified'); autoSave(); render(); updateUI();
+    termPrint(arr.length + ' entité(s) IA ajoutée(s) — #' + newIds[0] + '…', 'success');
+    if (btn) { btn.textContent = '✓ Ajouté'; btn.disabled = true; }
+  } catch(ex) {
+    termPrint('Erreur import entités IA: ' + ex.message, 'error');
+  }
+}
+
+async function sendAiMessage() {
+  const inp = document.getElementById('ai-input');
+  const msg = inp.value.trim();
+  if (!msg || S.aiStreaming) return;
+  if (!S.aiModel) { aiAppendMsg('system-msg', '⚠ Choisissez un modèle dans les paramètres ⚙'); toggleAiSettings(); return; }
+
+  inp.value = '';
+  aiAppendMsg('user', msg);
+  S.aiHistory.push({ role: 'user', content: msg });
+
+  const btn = document.getElementById('ai-send-btn');
+  btn.disabled = true;
+  S.aiStreaming = true;
+
+  const thinkingDiv = document.getElementById('ai-chat').appendChild((() => {
+    const d = document.createElement('div');
+    d.className = 'ai-msg assistant ai-thinking';
+    d.innerHTML = '<span></span><span></span><span></span>';
+    return d;
+  })());
+  document.getElementById('ai-chat').scrollTop = document.getElementById('ai-chat').scrollHeight;
+
+  try {
+    const body = {
+      model: S.aiModel,
+      messages: [{ role: 'system', content: aiGetSystemPrompt() }, ...S.aiHistory],
+      stream: true
+    };
+    const resp = await fetch(S.aiOllamaUrl + '/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status + ' — ' + await resp.text());
+
+    thinkingDiv.remove();
+    const chat = document.getElementById('ai-chat');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'ai-msg assistant';
+    chat.appendChild(msgDiv);
+
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let full = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const lines = dec.decode(value).split('\n').filter(l => l.trim());
+      for (const line of lines) {
+        try {
+          const obj = JSON.parse(line);
+          const chunk = obj.message?.content || '';
+          full += chunk;
+          msgDiv.textContent = full;
+          chat.scrollTop = chat.scrollHeight;
+        } catch {}
+      }
+    }
+
+    // Extraire le JSON des entités — accepte <entities>[...]</entities> ou ```json\n[...]\n```
+    let entitiesRaw = null;
+    const tagMatch  = full.match(/<entities>([\s\S]*?)<\/entities>/);
+    const codeMatch = full.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
+    if (tagMatch)       entitiesRaw = tagMatch[1].trim();
+    else if (codeMatch) entitiesRaw = codeMatch[1].trim();
+
+    if (entitiesRaw) {
+      // Vérifier que c'est un tableau JSON valide avant d'afficher le bouton
+      let parsed = null;
+      try { parsed = JSON.parse(entitiesRaw); } catch(ex) { entitiesRaw = null; }
+      if (parsed && Array.isArray(parsed) && parsed.length) {
+        const cleaned = full
+          .replace(/<entities>[\s\S]*?<\/entities>/g, '')
+          .replace(/```(?:json)?[\s\S]*?```/g, '')
+          .trim();
+        msgDiv.textContent = cleaned || 'Entités générées :';
+        const btn2 = document.createElement('button');
+        btn2.className = 'ai-entities-btn';
+        btn2.textContent = '📍 Placer sur le dessin (' + parsed.length + ')';
+        btn2.onclick = () => aiStartPlacement(parsed, btn2);
+        msgDiv.appendChild(document.createElement('br'));
+        msgDiv.appendChild(btn2);
+      }
+    }
+
+    S.aiHistory.push({ role: 'assistant', content: full });
+    if (S.aiHistory.length > 20) S.aiHistory = S.aiHistory.slice(-20);
+
+    // Scroll au début de la bulle pour voir le début de la réponse
+    chat.scrollTop = Math.max(0, msgDiv.offsetTop - 8);
+
+  } catch(e) {
+    thinkingDiv.remove();
+    aiAppendMsg('system-msg', '⚠ Erreur: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    S.aiStreaming = false;
+    if (inp.value === 'null' || inp.value === 'undefined') inp.value = '';
+    inp.focus();
+  }
+}
+
 // ===== DIM TEXT DIALOG =====
 function showDimTextDialog(e) {
   S._dimEditId = e.id;
@@ -4798,7 +6331,7 @@ function updateDimTextPreview() {
   const e = S._dimEditId !== null ? S.entities.find(en => en.id === S._dimEditId) : null;
   if (!e) return;
   const measured = e.type === 'dim_linear'
-    ? (Math.abs(e.x2-e.x1) >= Math.abs(e.y2-e.y1) ? Math.abs(e.x2-e.x1) : Math.abs(e.y2-e.y1))
+    ? ((e.isHoriz !== undefined ? e.isHoriz : Math.abs(e.x2-e.x1) >= Math.abs(e.y2-e.y1)) ? Math.abs(e.x2-e.x1) : Math.abs(e.y2-e.y1))
     : Math.hypot(e.x2-e.x1, e.y2-e.y1);
   const val = document.getElementById('dim-td-input').value.trim();
   const preview = val ? dimText({text: val}, measured) : measured.toFixed(1);
@@ -4994,6 +6527,8 @@ function executeCommand(input) {
     }
     // Entrée vide en mode JOIN → confirmer la fusion
     if(S.tool==='join'){ applyJoin(); return; }
+    // Entrée vide en mode TUBE → finaliser le tube
+    if(S.tool==='tube' && S.drawing){ finishTube(); return; }
     if(S.copyPending){
       if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
       S.copyPending=false;
@@ -5025,6 +6560,11 @@ function executeCommand(input) {
     return;
   }
 
+  // ---- POLYLINE / CABLE : C ou CLORE pour fermer ----
+  if(S.drawing && ['polyline','cable'].includes(S.tool) && (raw.toUpperCase()==='C'||raw.toUpperCase()==='CLORE'||raw.toUpperCase()==='CLOSE')){
+    closePolyline(S.tool); return;
+  }
+
   // ---- OFFSET : saisie de la distance ----
   if(S.offsetAwaitDist){
     if(raw){
@@ -5039,6 +6579,21 @@ function executeCommand(input) {
   }
   // ---- JOIN : Entrée confirme la fusion ----
   if(S.tool==='join'){ applyJoin(); return; }
+
+  // ---- TUBE : Entrée confirme, ou modifier Ø/R pendant dessin ----
+  if(S.tool==='tube' && S.drawing){
+    const uRaw = raw.toUpperCase();
+    if(uRaw==='D'||uRaw==='DIAM'){ termPrint('Nouveau Ø <'+S.tubeDiameter+'> :','info'); return; }
+    if(uRaw==='R'||uRaw==='RAYON'){ termPrint('Nouveau rayon coude <'+S.tubeBendRadius+'> :','info'); return; }
+    const n = parseFloat(raw);
+    if(!isNaN(n) && n > 0){
+      // Heuristic: small value probably R, large value probably diameter
+      if(raw.toUpperCase().startsWith('D')||n>200){ S.tubeDiameter=n; termPrint('Ø tube: '+n+'mm','success'); }
+      else { S.tubeBendRadius=n; termPrint('Rayon coude: '+n+'mm','success'); }
+      return;
+    }
+    finishTube(); return;
+  }
 
   // ---- SCALE : saisie du facteur ----
   if(S.tool==='scale' && S.scaleStep===2){
@@ -5154,7 +6709,7 @@ function executeCommand(input) {
       // Show next step prompt
       if (S.tool === 'rect') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
       else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou cliquez', 'warning');
-      else if (S.tool === 'dim_angular') termPrint('Cliquez point sur 1er rayon', 'info');
+      else if (S.tool === 'dim_angular') termPrint('DIMANGULAR: cliquez la 1ère ligne', 'info');
       else termPrint('2ème point ou longueur (ex: 150, 100<45, 100,50)', 'warning');
       render(); return;
     }
@@ -5282,6 +6837,7 @@ cmdInput.addEventListener('keydown',(ev)=>{
     if(S.tool==='text_place'||S.tool==='text_edit'){ S._textLivePreview=null; S._textEditId=null; document.getElementById('text-dialog').style.display='none'; setTool('select'); render(); return; }
     if(S.drawing){
       if(['polyline','cable'].includes(S.tool))finishPolyline(S.tool);
+      else if(S.tool==='tube'){ finishTube(); return; }
       else{S.drawing=false;S.drawPoints=[];S.awaitingInput=false;termPrint('Annulé','warning');}
       render();
     }
@@ -5340,6 +6896,10 @@ document.addEventListener('keydown',(ev)=>{
     return;
   }
   // Escape global: annuler pending
+  if(ev.key==='Escape' && S.aiPendingEntities){
+    S.aiPendingEntities=null; S.aiPendingCenter=null;
+    termPrint('Placement IA annulé','warning'); scheduleRender(); return;
+  }
   if(ev.key==='Escape' && S.copyPending){
     S.copyPending=false; termPrint('Copie annulée','warning'); setTool('select'); return;
   }
@@ -5409,6 +6969,7 @@ document.addEventListener('keydown',(ev)=>{
     }
     if(S.drawing){
       if(['polyline','cable'].includes(S.tool))finishPolyline(S.tool);
+      else if(S.tool==='tube'){ finishTube(); return; }
       else{S.drawing=false;S.drawPoints=[];S.awaitingInput=false;termPrint('Annulé','warning');}
       render();
     }
@@ -5763,7 +7324,7 @@ let _fileHandle = null; // File System Access API — handle fichier courant
 
 function buildSaveData(name) {
   return {
-    version: '0.01', app: 'MiniCAD',
+    version: '0.03', app: 'MiniCAD',
     name: name || (_fileHandle?.name?.replace(/\.mcad$/i,'')) || 'projet',
     date: new Date().toISOString(),
     layers: S.layers, entities: S.entities,
@@ -6269,6 +7830,8 @@ canvas.addEventListener('contextmenu', (ev) => {
   if (S.drawing || S.gripEdit) {
     if (['polyline','cable'].includes(S.tool)) {
       finishPolyline(S.tool);
+    } else if (S.tool === 'tube') {
+      finishTube();
     } else if (S.tool === 'line') {
       S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
       termPrint('Ligne terminée','info'); setTool('select');
@@ -6292,6 +7855,10 @@ canvas.addEventListener('contextmenu', (ev) => {
   if (S.tool === 'trim' && S.trimStep === 2) {
     S.trimStep=1; S.trimCuttingId=null;
     termPrint('TRIM: Cliquer l\'entité limite','info'); render(); return;
+  }
+  if (S.tool === 'extend' && S.extendStep === 2) {
+    S.extendStep=1; S.extendBoundaryId=null;
+    termPrint('EXTEND: Cliquer l\'entité limite','info'); render(); return;
   }
 
   // Outil actif mais pas encore commencé → retour à select

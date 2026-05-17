@@ -4,7 +4,33 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [0.02] — 2026-05-17 — Version courante
+## [0.03] — 2026-05-17 — Version courante
+
+### Ajouté
+- **Outil TUBE** — tube 2 parois + axe trait-point
+  - Mode graphique : cliquer les points du tracé (comme polyligne), Entrée/clic-droit/Échap pour terminer
+  - Mode formule : `TUBE 1000+90R67+500` ou `TUBE 1000+90+500R67` (global R en fin)
+  - Coudes calculés par tangentes : longueurs droites = longueur réelle − T (T = R·tan(φ/2))
+  - Rendu : 2 traits pleins (parois) + 1 trait-point [8,3,2,3] (axe)
+  - Commandes : `TUBE [formule]`, `TUBED <Ø>` (diamètre), `TUBEBR <R>` (rayon de coude)
+  - Défauts : Ø 40 mm, R coude 67 mm
+  - Bouton dans la toolbar Dessin (icône 2 traits + tirets)
+  - Entité `tube` : `startX/Y`, `startAngle`, `tubeRadius`, `segments[]`
+  - Sélection/déplacement/copie/grip fonctionnels
+
+### Corrigé
+- **DIMANGULAR — nouveau workflow** : cliquer ligne 1 → cliquer ligne 2 → choisir le côté au clic
+  - Remplacement de l'ancien workflow sommet + 2 rayons (4 clics) par 3 clics
+  - `lineIntersect()` : calcul exact de l'intersection des deux droites (vertex automatique)
+  - `_dimAngSector()` : parmi les 4 secteurs angulaires, sélection par position souris
+  - Surlignage orange de la 1ère ligne pendant la sélection de la 2ème
+  - Aperçu live de l'arc et de la valeur d'angle pendant le déplacement de la souris
+  - Curseur `pick` (carrée) pendant la sélection des lignes, `draw` pour le placement
+  - Correction du bug de sélection : `hitTest()` utilisé directement (au lieu de `entities.find()` qui ignorait le 3ème argument)
+
+---
+
+## [0.02] — 2026-05-17
 
 ### Ajouté
 - **Gestionnaire de calques** (fenêtre dédiée style AutoCAD)

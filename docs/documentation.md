@@ -53,7 +53,18 @@
 | `findGripHit(wx,wy)` | `(num,num) → gripHit\|null` | Poignée sous le curseur |
 | `applyGripMove(nx,ny)` | `(num,num) → void` | Applique le déplacement de poignée |
 | `pushUndo()` | `() → void` | Sauvegarde l'état dans history[] |
-| `hitTest(wx,wy)` | `(num,num) → entity\|null` | Entité sous le curseur |
+| `hitTest(wx,wy)` | `(num,num) → entity\|null` | Entité topmost sous le curseur (Z-order) |
+| `lineIntersect(x1,y1,x2,y2,x3,y3,x4,y4)` | `(8×num) → [x,y]\|null` | Intersection de 2 droites infinies |
+| `_dimAngSector(vx,vy,la1,la2,mx,my)` | `(...) → {startAngle,endAngle,angle}` | Secteur angulaire sélectionné par la souris |
+
+### Tube (v0.03)
+
+| Fonction | Signature | Description |
+|----------|-----------|-------------|
+| `parseTubeFormula(str, defaultR)` | `(string,num) → entity\|null` | Parse formule `1000+90R67+500` |
+| `buildTubeFromPoints(pts, tr, br)` | `([[x,y],...],num,num) → entity\|null` | Construit l'entité tube depuis des points cliqués |
+| `_drawTubePath(e, offset)` | `(entity,num) → void` | Trace un chemin décalé (paroi ou axe) |
+| `finishTube()` | `() → void` | Valide et pousse l'entité tube dans S.entities |
 
 ### Interface
 
@@ -132,8 +143,10 @@
 
 **arch :** WALL [ép], DOOR [larg], WINDOW [larg]
 **elec :** OUTLET, SWITCH, CABLE
-**dim :** DIMLINEAR, DIMALIGNED, DIMANGULAR, DIMRADIUS, DIMDIAMETER
+**dim :** DIMLINEAR, DIMALIGNED, DIMANGULAR (clic ligne 1 → clic ligne 2 → placer), DIMRADIUS, DIMDIAMETER
 **annot :** TEXT "contenu", LEADER "texte"
+**tube :** TUBE [formule], TUBED \<Ø\>, TUBEBR \<R\>
+**ia :** AI / OLLAMA / ASSISTANT
 
 ---
 
@@ -170,7 +183,7 @@ Voir [docs/methode.md](methode.md) section 5.
 
 ```json
 {
-  "version": 3,
+  "version": "0.03",
   "app": "MiniCAD",
   "date": "2025-01-15T10:30:00.000Z",
   "layers": [

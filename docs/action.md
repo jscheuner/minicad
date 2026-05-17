@@ -45,12 +45,12 @@
 
 ---
 
-## Phase 3 — Édition géométrique (prochaine étape)
+## Phase 3 — Édition géométrique (terminée)
 
 | # | Fonctionnalité | Priorité | Complexité | Notes |
 |---|---------------|----------|------------|-------|
-| 3.1 | **Sélection par fenêtre** (rubber-band) | 🔴 | Faible | Drag pour sélectionner plusieurs objets |
-| 3.2 | **Historique commandes** (↑↓ terminal) | 🔴 | Faible | Tableau `cmdHistory[]`, index |
+| 3.1 | **Sélection par fenêtre** (rubber-band) | ✅ | Faible | Drag pour sélectionner plusieurs objets |
+| 3.2 | **Historique commandes** (↑↓ terminal) | ✅ | Faible | Tableau `cmdHistory[]`, index |
 | 3.3 | **TRIM** — raccourcir au croisement | ✅ | Haute | ligne/wall/arc/polyligne |
 | 3.4 | **EXTEND** — prolonger jusqu'à limite | 🟢 | Haute | Similaire à TRIM |
 | 3.5 | **OFFSET** — parallèle à distance | ✅ | Moyenne | ligne, wall, arc, cercle, rect, pline |
@@ -65,13 +65,14 @@
 
 | # | Fonctionnalité | Priorité | Notes |
 |---|---------------|----------|-------|
-| 4.1 | **Panneau propriétés éditable** | 🟡 | Modifier X1,Y1,R… directement |
+| 4.1 | **Panneau propriétés éditable** | ✅ | Champs input X1,Y1,R… + select calque |
 | 4.2 | **Gestionnaire de calques** | ✅ | Fenêtre dédiée + épaisseur/type de ligne + transfert entités |
 | 4.3 | **Menu contextuel** clic-droit canvas | 🟡 | Couper/Copier/Coller/Propriétés |
 | 4.4 | **Double-clic pour éditer** texte/cote | ✅ | Texte inline + dialogue texte de cote avec `<>` |
 | 4.5 | **Zoom fenêtre** (sélection zone) | 🟢 | |
 | 4.6 | **Drag to copy** (Ctrl+Drag) | 🟢 | |
 | 4.7 | **Sélection par type** (SEL LINE etc.) | 🟢 | |
+| 4.8 | **DIMANGULAR** — workflow repensé | ✅ | Clic ligne 1 → clic ligne 2 → choisir côté |
 
 ---
 
@@ -100,11 +101,11 @@
 
 ## Prochaine session de développement
 
-**Objectif recommandé** : Phase 4 (UX) + Phase 3 restante
+**Objectif recommandé** : Phase 4 (UX restante) + Phase 5 (mesure/annotation)
 
 Éléments prioritaires restants :
 - **4.3 Menu contextuel** clic-droit canvas (Couper/Copier/Coller/Propriétés)
-- **4.1 Panneau propriétés éditable** (champs input pour X1,Y1,R…)
 - **3.4 EXTEND** — prolonger jusqu'à limite
 - **3.9 Arc 3 points**
+- **5.2 AREA** — calcul de surface d'un polygone
 - **6.3 Export PNG** (canvas.toBlob)
