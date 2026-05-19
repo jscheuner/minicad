@@ -7,7 +7,7 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 ## 🔴 Priorité haute (prochaine session)
 
 - [ ] **4.3 — Menu contextuel** clic-droit canvas (Couper/Copier/Coller/Propriétés)
-- [ ] **3.4 — Commande EXTEND**
+- [ ] **3.4 — Commande EXTEND** *(multi-limites fait, mode tout prolonger fait — vérifier cas limites)*
 - [ ] **5.2 — Commande AREA** (surface d'un polygone)
 
 ---
@@ -44,6 +44,14 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 Voir [CHANGELOG.md](CHANGELOG.md) pour le détail.
 
+- ✅ **Tableau nomenclature TUBE** — `TUBELBL`, taille fixe monde, poignées déplacement + redim, auto à finishTube
+- ✅ **Preview TUBE EXT/INT** — bisectrices miter correctes, plus de segment en biais
+- ✅ **DI Tab bug** — `relatedTarget` empêche l'écrasement de la distance lors du Tab entre champs
+- ✅ **EXTEND amélioré** — mode tout prolonger + correction intersection sur droite infinie
+- ✅ **Préférences utilisateur** — dialogue PREFS, localStorage + bloc USER_PREFS HTML, export/import JSON
+- ✅ **TRIM amélioré** — multi-limites, mode tout couper, circle/rect découpables, limites auto-découpables
+- ✅ **DIMRADIUS/DIMDIAMETER** — double-clic texte pour édition (hitTest corrigé)
+- ✅ **Bouton téléchargement** sur minicad.org (flottant bas-droit, conditionnel au hostname)
 - ✅ Canvas, zoom, pan, grille, snap
 - ✅ Outils de base (ligne, rect, cercle, arc, polyligne)
 - ✅ Sélection, move, copy, erase, undo/redo

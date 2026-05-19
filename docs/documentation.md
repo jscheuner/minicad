@@ -56,6 +56,8 @@
 | `hitTest(wx,wy)` | `(num,num) → entity\|null` | Entité topmost sous le curseur (Z-order) |
 | `lineIntersect(x1,y1,x2,y2,x3,y3,x4,y4)` | `(8×num) → [x,y]\|null` | Intersection de 2 droites infinies |
 | `_dimAngSector(vx,vy,la1,la2,mx,my)` | `(...) → {startAngle,endAngle,angle}` | Secteur angulaire sélectionné par la souris |
+| `applyTrimCircle(ent,prims,cx,cy)` | `(entity,[],num,num) → bool` | Découpe un cercle → remplace par arc(s) en place |
+| `applyTrimRect(ent,prims,cx,cy)` | `(entity,[],num,num) → bool` | Découpe un rect → converti en polyligne puis découpé |
 
 ### Tube (v0.03)
 
@@ -96,6 +98,32 @@
 | `openJSON(content,filename)` | Charge un .mcad |
 | `openDXF(content,filename)` | Parse et importe un DXF |
 | `downloadBlob(content,mime,filename)` | Téléchargement générique |
+
+### Préférences utilisateur
+
+| Fonction | Signature | Description |
+|----------|-----------|-------------|
+| `captureUserPrefs()` | `() → object` | Capture l'état actuel de S (snap, OSNAP, polar, tube, dim…) |
+| `applyUserPrefs(prefs)` | `(object) → void` | Applique un objet prefs à S |
+| `loadUserPrefs()` | `() → void` | Chargé au démarrage : localStorage → `USER_PREFS` HTML |
+| `autoSavePrefs()` | `() → void` | Sauvegarde silencieuse dans localStorage (appelé par les toggles) |
+| `openPrefsDialog()` | `() → void` | Ouvre le dialogue graphique de préférences |
+| `savePrefsToFile()` | `async () → void` | Exporte les préférences en `.json` (File System Access API ou téléchargement) |
+| `importPrefsFromFile()` | `async () → void` | Importe les préférences depuis un `.json` |
+| `resetUserPrefs()` | `() → void` | Réinitialise aux valeurs du bloc `USER_PREFS` embarqué |
+
+**Bloc `USER_PREFS`** (dans le script, juste avant `const S = {`) :
+```javascript
+// ===USER_PREFS_START===
+const USER_PREFS = {
+  snap, snapSize, gridSize, gridVis, osnapEnabled, osnapModes,
+  ortho, polar, polarAngle,
+  tubeDiameter, tubeBendRadius, tubeRef,
+  currentDimStyle, defaultLayers
+};
+// ===USER_PREFS_END===
+```
+Ces marqueurs permettent de remplacer le bloc par regex pour intégrer les préférences directement dans le fichier HTML (portabilité inter-ordinateurs).
 
 ---
 

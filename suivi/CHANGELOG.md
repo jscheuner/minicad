@@ -4,7 +4,63 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [0.03] — 2026-05-19 — Version courante
+## [0.04] — 2026-05-19 — Version courante
+
+### Ajouté
+- **Tableau de nomenclature tube** (commande `TUBELBL` / alias `TUBTAB`)
+  - Affiché automatiquement à la fin du tracé TUBE
+  - Contenu : en-tête D/R, lignes longueur droite + angle de coude, longueur développée totale
+  - Longueur développée = Σ longueurs droites + Σ arcs d'axe (R × angle_rad pour chaque coude)
+  - Taille fixe dans le dessin (unités monde × zoom) — suit le zoom comme les cotes et textes
+  - Poignée déplacement (carré cyan, coin haut-gauche) via le mécanisme grip standard
+  - Poignée redimensionnement (triangle bas-droit) : `e.labelScale` de 0.4× à 8×
+  - Clic sur le tableau sélectionne l'entité tube (`hitTest` étendu)
+  - `TUBELBL` sur un tube sélectionné bascule l'affichage on/off
+- **Correctifs preview TUBE en mode EXT/INT**
+  - Le preview multi-tronçons était en biais : les bisectrices miter n'étaient pas recalculées à la jonction entre points confirmés et point souris
+  - Fix : `applyTubeRefOffset([...S.tubePoints, [tx,ty]], tr, ref)` — le point souris est inclus pour un bisecteur correct à chaque jonction
+- **Correctif DI — distance écrasée lors du Tab**
+  - `blur` sur `diDist`/`diAngle` réinitialisait `S.diLocked = false` même lors d'un Tab entre les deux champs DI
+  - Fix : `ev.relatedTarget` — on ne déverrouille que si le focus sort des deux champs
+- **Correctif terminal TUBE — angle ignorait la contrainte polaire**
+  - Saisie d'une distance dans le terminal utilisait `S.mouseWorld` brut sans `applyConstraint`
+  - Fix : `applyConstraint` appliqué avant calcul de l'angle de direction
+- **Preview DI verrouillée** — quand l'utilisateur a tapé une distance (`diLocked=true`), le preview tube affiche la distance exacte saisie (direction suit la souris)
+- **EXTEND amélioré** — mode tout prolonger (analogue au mode tout couper de TRIM) + correction bug « grille comme point de prolongement » (`getExtendTsForLine` : paramètre `s` contraint à [0,1])
+
+### Ajouté (session précédente dans 0.04)
+- **Système de préférences utilisateur** (commande `PREFS` / menu Fichier → Préférences…)
+  - Dialogue graphique : accrochage & grille, contraintes, tube, style de cote
+  - Paramètres mémorisés : SNAP on/off, taille grille, grille visible, OSNAP (on/off + 8 modes), Ortho, Polaire, incrément polaire, Ø tube, R coude, référence tube, style de cote, calques par défaut
+  - **Stockage hybride** : `localStorage` (`minicad_user_prefs`) comme cache rapide + bloc `USER_PREFS` encodé dans le HTML pour portabilité inter-ordinateurs
+  - Marqueurs `===USER_PREFS_START===` / `===USER_PREFS_END===` dans le script pour remplacement par regex lors d'un export HTML personnalisé
+  - Export préférences → fichier `.json` (File System Access API ou téléchargement fallback)
+  - Import préférences depuis `.json`
+  - Réinitialisation aux valeurs par défaut
+  - Auto-sauvegarde silencieuse dans localStorage à chaque toggle (SNAP, OSNAP, ORTHO, POLAR)
+  - Chargement des préférences au démarrage (avant `loadFromLocalStorage`)
+- **TRIM amélioré** — refonte complète du workflow
+  - **Multi-limites** : sélection de plusieurs entités limites (tableau `S.trimCuttingIds[]`), toutes surlignées en orange
+  - **Workflow 2 étapes** : étape 1 = sélection limites (clic toggle) → Entrée ou clic droit → étape 2 = coupe ; clic droit en étape 2 = quitter
+  - **Mode tout couper** : Entrée ou clic droit sans limite sélectionnée → toutes les entités visibles deviennent limites (comportement AutoCAD)
+  - **Entités limites découpables** : une entité peut être à la fois limite et objet à couper (coupée par les autres limites)
+  - **Cercle découpable** (`circle`) : découpe → remplace l'entité par un ou plusieurs `arc`
+  - **Rectangle découpable** (`rect`) : découpe → converti en polyligne fermée puis découpé normalement
+- **Bouton "Télécharger MiniCAD"** sur minicad.org
+  - Bouton flottant fixe, coin bas-droit, au-dessus de la statusbar
+  - Visible uniquement si `window.location.hostname` est `minicad.org` ou `www.minicad.org`
+  - Lien direct `<a download>` vers `minicad.html` — télécharge le fichier servi
+
+### Corrigé
+- **Dialogue préférences** — fond transparent (variable CSS `--panel` inexistante) remplacé par `#1a1a2e` opaque
+- **DIMRADIUS / DIMDIAMETER** — double-clic pour éditer le texte ne fonctionnait pas
+  - `hitTest` calculait la position du texte différemment de `drawEntity` → zone de détection au mauvais endroit
+  - Corrigé : position text grip = `cx + r*0.55*cos(a)` pour radius, `cx/cy` pour diameter (identique au rendu)
+  - Tolérance agrandie à `tol*6` pour couvrir le texte rotatif
+
+---
+
+## [0.03] — 2026-05-19
 
 ### Ajouté
 - **Impression avec sélection de zone** (Ctrl+P / menu Fichier / commande `PRINT`)

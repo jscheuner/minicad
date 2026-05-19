@@ -75,6 +75,82 @@ Implémenter **sélection par fenêtre** (TODO 3.1) et **historique commandes** 
 
 ---
 
+## [2026-05-19] — v0.04 (suite) : TRIM amélioré, corrections cotations, bouton téléchargement
+
+**Contexte :** Continuation de la session v0.04.
+
+**Réalisé :**
+- [x] **TRIM — refonte workflow**
+  - `S.trimCuttingId` (singulier) → `S.trimCuttingIds[]` (tableau multi-limites)
+  - Étape 1 : sélection des limites par clic (toggle orange), Entrée ou clic droit → étape 2
+  - Étape 2 : clic sur partie à couper, reste en étape 2 pour coupes multiples, clic droit → quitter
+  - Mode tout couper : Entrée/clic droit sans limite = toutes entités visibles comme limites
+  - Entités limites également découpables (exclues d'elles-mêmes comme cutter)
+  - `applyTrimCircle` : remplace `circle` par `arc(s)` en place
+  - `applyTrimRect` : convertit `rect` en polyligne fermée puis applique `applyTrimPolyline`
+- [x] **DIMRADIUS/DIMDIAMETER — double-clic pour éditer le texte**
+  - Bug : `hitTest` calculait la position texte avec `toff = r*1.3 + offset` alors que `drawEntity` place le texte à `cx + r*0.55*cos(a)` (radius) ou `cx/cy` (diameter)
+  - Fix : alignement exact des positions entre hitTest et drawEntity, tolérance `tol*6`
+- [x] **Bouton "Télécharger MiniCAD"** (minicad.org uniquement)
+  - Détection : `window.location.hostname` dans `['minicad.org','www.minicad.org']`
+  - Bouton flottant `position:fixed` bas-droit, `<a download>` vers minicad.html
+  - Style cyan cohérent avec le thème, hover inversé fond/texte
+
+**Prochaine étape :**
+- 4.3 Menu contextuel clic-droit, 3.4 EXTEND, 5.2 AREA
+
+---
+
+## [2026-05-19] — v0.04 : Tableau nomenclature TUBE + correctifs DI et preview
+
+**Contexte :** Continuation de la session v0.04.
+
+**Réalisé :**
+- [x] **Tableau de nomenclature tube** (`TUBELBL` / `TUBTAB`)
+  - Affiché automatiquement à la fin de chaque tracé TUBE
+  - En-tête D/R, lignes longueur droite + angle coude (jaune), longueur développée (axe)
+  - Taille en unités monde × zoom : garde la même proportion dans le dessin quel que soit le zoom
+  - Poignée déplacement (grip bleu coin haut-gauche) + poignée redimensionnement (triangle bas-droit, `labelScale`)
+  - Clic sur le tableau sélectionne le tube (`hitTest` étendu)
+- [x] **Correctif preview TUBE EXT/INT — segment en biais**
+  - Cause : les bisectrices miter n'étaient pas recalculées au dernier point confirmé lors du tracé multi-tronçons
+  - Fix : inclure le point souris dans `applyTubeRefOffset([...S.tubePoints, mousePoint], ...)` pour corriger la jonction
+- [x] **Correctif DI — distance écrasée lors du Tab dist→angle**
+  - `blur` réinitialisait `diLocked = false` même en taboulant entre les deux champs DI
+  - Fix : `ev.relatedTarget` — déverrouilage uniquement si focus sort des deux champs DI
+- [x] **Correctif terminal TUBE — contrainte polaire ignorée**
+  - Saisie d'une distance dans le terminal utilisait `S.mouseWorld` brut
+  - Fix : `applyConstraint` appliqué avant calcul de l'angle
+- [x] **Preview DI verrouillée** — avec `diLocked=true`, le preview tube reflète la distance saisie
+
+**Prochaine étape :**
+- 4.3 Menu contextuel clic-droit, 5.2 AREA, export PDF
+
+---
+
+## [2026-05-19] — v0.04 : Système de préférences utilisateur
+
+**Contexte :** Continuation de la session v0.03 dans la même journée.
+
+**Réalisé :**
+- [x] **Système de préférences utilisateur** (commande `PREFS` / menu Fichier → Préférences…)
+  - Dialogue graphique complet avec sections : Accrochage & Grille, Contraintes, Tube, Cotation
+  - Paramètres : SNAP, gridSize, gridVis, OSNAP + 8 modes, Ortho, Polaire, incrément polaire, Ø tube, R coude, tubeRef, style de cote
+  - `captureUserPrefs()` / `applyUserPrefs()` : sérialisation ↔ état S
+  - `loadUserPrefs()` : chargé au démarrage, priorité localStorage → bloc HTML embarqué
+  - `autoSavePrefs()` : câblé sur toggleSnap / toggleOsnap / toggleOrtho / togglePolar
+  - `openPrefsDialog()` : dialogue HTML injecté dans le DOM, fermable via ✕ ou Échap
+  - Export `.json` (File System Access API ou fallback téléchargement)
+  - Import `.json` via `<input type=file>`
+  - Réinitialisation aux valeurs du bloc `USER_PREFS` embedded
+  - Bloc `USER_PREFS` avec marqueurs `===USER_PREFS_START===` / `===USER_PREFS_END===` juste avant `const S = {`
+- [x] **Correctif fond transparent** : `var(--panel)` inexistant remplacé par `#1a1a2e` opaque
+
+**Prochaine étape :**
+- 4.3 Menu contextuel clic-droit, 3.4 EXTEND, 5.2 AREA
+
+---
+
 ## [2026-05-19] — v0.03 : Cotations redessinées, TUBE amélioré, bugs DIMANGULAR
 
 **Contexte :** Continuation du développement avec Claude Code (session context-compacted).

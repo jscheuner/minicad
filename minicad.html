@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MiniCAD v0.03</title>
+<title>MiniCAD v0.04</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=Oswald:wght@300;400;500&family=Share+Tech&display=swap');
 
@@ -906,6 +906,10 @@
         <div class="menu-dropdown-item" onclick="openPrintDialog();closeMenus()">
           <span>Exporter PDF…</span><span class="item-shortcut">Ctrl+P</span>
         </div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="openPrefsDialog();closeMenus()">
+          <span>Préférences…</span>
+        </div>
       </div>
     </div>
     <div class="menu-item" onclick="showHelp()">Aide</div>
@@ -1589,6 +1593,25 @@
 </div>
 
 <script>
+// ===USER_PREFS_START===
+const USER_PREFS = {
+  snap: true,
+  snapSize: 20,
+  gridSize: 20,
+  gridVis: true,
+  osnapEnabled: true,
+  osnapModes: { endpoint:true, midpoint:true, center:true, nearest:false, intersection:true, perpendicular:false, tangent:false, quadrant:true },
+  ortho: false,
+  polar: true,
+  polarAngle: 15,
+  tubeDiameter: 40,
+  tubeBendRadius: 67,
+  tubeRef: 'axe',
+  currentDimStyle: 'ISO-35',
+  defaultLayers: null,
+};
+// ===USER_PREFS_END===
+
 // ===== STATE =====
 const S = {
   entities: [],
@@ -1665,10 +1688,10 @@ const S = {
   _dimAngLA2: null,
   // TRIM
   trimStep: 0,
-  trimCuttingId: null,
+  trimCuttingIds: [],
   // EXTEND
   extendStep: 0,
-  extendBoundaryId: null,
+  extendBoundaryIds: [],
   arraySourceIds: [],
   arrayPreview: null, // { cols, rows, dx, dy } for live preview in dialog
   // Grip edit
@@ -2354,16 +2377,16 @@ const CMD = {
     }
     termPrint('MIROIR: 1er point de l\'axe de symétrie', 'info'); setTool('mirror');
   }},
-  TRIM: { alias: ['TR'], desc: 'Couper une entité avec une entité limite', exec() {
-    S.trimStep=1; S.trimCuttingId=null;
+  TRIM: { alias: ['TR'], desc: 'Couper une entité avec une ou plusieurs limites', exec() {
+    S.trimStep=1; S.trimCuttingIds=[];
     setTool('trim');
-    termPrint('TRIM: Cliquer l\'entité limite', 'info');
+    termPrint('TRIM: Cliquer les entités limites (plusieurs possibles), puis Entrée ou clic droit pour confirmer', 'info');
     setTimeout(smartFocus, 0);
   }},
-  EXTEND: { alias: ['EX','PROLONGER'], desc: 'Prolonger une entité jusqu\'à une limite', exec() {
-    S.extendStep=1; S.extendBoundaryId=null;
+  EXTEND: { alias: ['EX','PROLONGER'], desc: 'Prolonger une entité jusqu\'à une ou plusieurs limites', exec() {
+    S.extendStep=1; S.extendBoundaryIds=[];
     setTool('extend');
-    termPrint('EXTEND: Cliquer l\'entité limite', 'info');
+    termPrint('EXTEND: Cliquer les entités limites (plusieurs possibles), puis Entrée ou clic droit pour confirmer', 'info');
     setTimeout(smartFocus, 0);
   }},
   DIST: { alias: ['DI','DISTANCE'], desc: 'Mesure la distance entre deux points', exec() {
@@ -2474,6 +2497,7 @@ const CMD = {
   }},
   SELECT: { alias: ['V','SEL'], desc: 'Mode sélection', exec: () => setTool('select') },
   HELP: { alias: ['?','AIDE'], desc: 'Aide', exec: () => showHelp() },
+  PREFS: { alias: ['PREFERENCES','PARAMETRES','PARAMÈTRES'], desc: 'Ouvrir les préférences utilisateur', exec: () => openPrefsDialog() },
   AI: { alias: ['OLLAMA','ASSISTANT'], desc: 'Ouvrir l\'assistant IA', exec: () => toggleAiPanel() },
   EXPORT: { alias: ['SVG','DXF','DWG'], desc: 'Exporter (EXPORT SVG|DXF|DWG)', exec: (args) => {
     const fmt = (args[0] || 'DXF').toUpperCase();
@@ -2533,6 +2557,27 @@ const CMD = {
     } else {
       termPrint('Référence actuelle: ' + (S.tubeRef||'axe').toUpperCase() + '  —  Usage: TUBREF AXE|EXT|INT', 'info');
     }
+  }},
+  TUBELBL: { alias: ['TUBTAB','TUBENOMENCL'], desc: 'Afficher/masquer le tableau de nomenclature du tube sélectionné', exec: () => {
+    const tubes = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && e.type === 'tube');
+    if (!tubes.length) { termPrint('Sélectionner un tube puis TUBELBL', 'warning'); return; }
+    pushUndo();
+    tubes.forEach(e => {
+      e.showLabel = !e.showLabel;
+      if (e.showLabel) {
+        // Position par défaut : perpendiculaire droite du point de départ, ~80px écran
+        if (e.labelX === undefined) {
+          const off = 100 / S.zoom;
+          const pa = (e.startAngle || 0) - Math.PI / 2;
+          e.labelX = e.startX + off * Math.cos(pa);
+          e.labelY = e.startY + off * Math.sin(pa);
+        }
+        termPrint('Tableau affiché sur tube #' + e.id + ' — déplacer avec la poignée cyan', 'success');
+      } else {
+        termPrint('Tableau masqué sur tube #' + e.id, 'info');
+      }
+    });
+    render();
   }},
   EXPLODE: { alias: ['X','ECLATER','ÉCLATER'], desc: 'Éclater un bloc, polyligne ou tube en primitives', exec: () => {
     const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && (e.type === 'block' || e.type === 'polyline' || e.type === 'cable' || e.type === 'tube'));
@@ -2839,10 +2884,10 @@ function _drawDynamicLayer() {
     const isFilletHover  = ['fillet','chamfer'].includes(S.tool) && e.id===S.hoverEntityId && e.id!==S.filletFirstId;
     const isJoinSelected = S.tool==='join' && S.joinSelection.includes(e.id);
     const isJoinHover    = S.tool==='join' && e.id===S.hoverEntityId && !S.joinSelection.includes(e.id);
-    const isTrimCutting  = S.tool==='trim'   && e.id===S.trimCuttingId;
-    const isTrimHover    = S.tool==='trim'   && e.id===S.hoverEntityId && e.id!==S.trimCuttingId;
-    const isExtendBound  = S.tool==='extend' && e.id===S.extendBoundaryId;
-    const isExtendHover  = S.tool==='extend' && e.id===S.hoverEntityId && e.id!==S.extendBoundaryId;
+    const isTrimCutting  = S.tool==='trim'   && S.trimCuttingIds.includes(e.id);
+    const isTrimHover    = S.tool==='trim'   && e.id===S.hoverEntityId && !S.trimCuttingIds.includes(e.id);
+    const isExtendBound  = S.tool==='extend' && S.extendBoundaryIds.includes(e.id);
+    const isExtendHover  = S.tool==='extend' && e.id===S.hoverEntityId && !S.extendBoundaryIds.includes(e.id);
     const highlighted = sel||isOffsetTarget||isOffsetHover||isFilletFirst||isFilletHover||
                         isJoinSelected||isJoinHover||isTrimCutting||isTrimHover||isExtendBound||isExtendHover;
     if (!highlighted) return;
@@ -2858,7 +2903,7 @@ function _drawDynamicLayer() {
   if ((S.drawing && S.drawPoints.length>0 && !S.gripEdit) || (S.tool==='tube' && S.drawing && S.tubePoints.length>=1)) drawPreview();
   if (S._textLivePreview) drawTextLivePreview();
   if (S.tool==='offset' && S.offsetTargetId!==null && mouseOnCanvas) drawOffsetGhost();
-  if (S.tool==='extend' && S.extendStep===2 && S.hoverEntityId && S.extendBoundaryId && mouseOnCanvas) drawExtendPreview();
+  if (S.tool==='extend' && S.extendStep===2 && S.hoverEntityId && mouseOnCanvas) drawExtendPreview();
   if (S.tool==='rotate' && S.rotateStep===2 && mouseOnCanvas) drawRotatePreview();
   if (S.tool==='scale'  && S.scaleStep===2  && mouseOnCanvas) drawScalePreview();
   if (S.tool==='dist' && S.distPt1 && mouseOnCanvas) {
@@ -3102,6 +3147,124 @@ function applyTubeRefOffset(pts, tr, ref) {
   return { pts: result, sign };
 }
 
+// ── Tube table (nomenclature flottante) ───────────────────────────────────────
+
+function getTubeTableData(e) {
+  const rows = [];
+  let totalLen = 0;
+  for (const seg of (e.segments || [])) {
+    if (seg.type === 'straight') {
+      rows.push({ len: seg.length, bend: null });
+      totalLen += seg.length;
+    } else if (seg.type === 'bend') {
+      if (rows.length > 0) rows[rows.length - 1].bend = seg;
+      totalLen += seg.bendRadius * seg.angle;
+    }
+  }
+  const d = (e.tubeRadius || 20) * 2;
+  const r = (e.segments || []).find(s => s.type === 'bend')?.bendRadius || 0;
+  return { d, r, rows, totalLen };
+}
+
+// Dimensions de base en unités monde (scale=1). La taille en pixels = dim*zoom → taille
+// fixe dans le dessin, identique au comportement des cotes et textes.
+const _TBL_CELL  = 26;   // hauteur d'une ligne (unités monde)
+const _TBL_COL1  = 90;   // largeur colonne longueur
+const _TBL_COL2  = 54;   // largeur colonne angle
+const _TBL_PAD   = 8;    // marge interne
+const _TBL_SEP   = 6;    // hauteur séparateur
+
+function _tubeTableDims(nRows, sc) {
+  const W = (_TBL_COL1 + _TBL_COL2 + _TBL_PAD * 2) * sc;
+  const H = (_TBL_CELL * (nRows + 3) + _TBL_PAD * 2 + _TBL_SEP * 2) * sc;
+  return { W, H };
+}
+
+function drawTubeLabel(e) {
+  if (!e.showLabel || e.labelX === undefined) return;
+  const data = getTubeTableData(e);
+  const sc   = e.labelScale || 1;
+  const nRows = data.rows.length;
+  const { W, H } = _tubeTableDims(nRows, sc);
+  const z = S.zoom;
+
+  // Coin haut-gauche en screen
+  const [sx, sy] = w2s(e.labelX, e.labelY);
+  // Dimensions en pixels (monde × zoom)
+  const Wpx = W * z, Hpx = H * z;
+  const padPx  = _TBL_PAD  * sc * z;
+  const cellPx = _TBL_CELL * sc * z;
+  const sepPx  = _TBL_SEP  * sc * z;
+  const col1Px = _TBL_COL1 * sc * z;
+  const col2Px = _TBL_COL2 * sc * z;
+  const fh = Math.max(7, Math.round(cellPx * 0.52));
+
+  ctx.save();
+  ctx.font = fh + 'px JetBrains Mono';
+  ctx.textBaseline = 'top';
+  ctx.setLineDash([]);
+
+  // Fond + bordure
+  ctx.fillStyle = '#101827f2';
+  ctx.fillRect(sx, sy, Wpx, Hpx);
+  ctx.strokeStyle = '#00d4ff66';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(sx, sy, Wpx, Hpx);
+
+  let ry = sy + padPx;
+
+  // En-tête D / R
+  ctx.fillStyle = '#00d4ff';
+  ctx.textAlign = 'left';
+  ctx.fillText('D ' + data.d.toFixed(1) + '   R ' + (data.r > 0 ? data.r : '-'), sx + padPx, ry);
+  ry += cellPx;
+
+  // Séparateur haut
+  ctx.strokeStyle = '#00d4ff44';
+  ctx.beginPath(); ctx.moveTo(sx + 3, ry); ctx.lineTo(sx + Wpx - 3, ry); ctx.stroke();
+  ry += sepPx;
+
+  // Lignes de segments
+  for (const row of data.rows) {
+    ctx.fillStyle = '#e2e8f0';
+    ctx.textAlign = 'right';
+    ctx.fillText(row.len.toFixed(0), sx + padPx + col1Px, ry);
+    ctx.textAlign = 'center';
+    if (row.bend) {
+      const deg = Math.round(row.bend.angle * 180 / Math.PI);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText((row.bend.side < 0 ? '-' : '') + deg + '°', sx + padPx + col1Px + col2Px / 2, ry);
+    } else {
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('-', sx + padPx + col1Px + col2Px / 2, ry);
+    }
+    ry += cellPx;
+  }
+
+  // Séparateur bas
+  ctx.strokeStyle = '#00d4ff44';
+  ctx.beginPath(); ctx.moveTo(sx + 3, ry); ctx.lineTo(sx + Wpx - 3, ry); ctx.stroke();
+  ry += sepPx;
+
+  // Longueur développée
+  ctx.fillStyle = '#00d4ff';
+  ctx.textAlign = 'left';
+  ctx.fillText('Dév. ' + data.totalLen.toFixed(0), sx + padPx, ry);
+
+  // Poignée déplacement — coin haut-gauche (bleu cyan plein)
+  ctx.fillStyle = '#00d4ff';
+  ctx.fillRect(sx - 7, sy - 7, 10, 10);
+
+  // Poignée redimensionnement — coin bas-droit (cyan translucide + triangle)
+  const brx = sx + Wpx, bry = sy + Hpx;
+  ctx.fillStyle = '#00d4ff88';
+  ctx.beginPath(); ctx.moveTo(brx, bry - 12); ctx.lineTo(brx + 5, bry + 5); ctx.lineTo(brx - 12, bry); ctx.closePath(); ctx.fill();
+
+  ctx.restore();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function finishTube() {
   if (!S.tubePoints || S.tubePoints.length < 2) {
     termPrint('TUBE: au moins 2 points requis (Echap=annuler)', 'warning');
@@ -3115,6 +3278,12 @@ function finishTube() {
   if (ent) {
     pushUndo();
     ent.id = S.nextId++; ent.layer = S.currentLayer; ent.tubeRef = ref;
+    // Tableau de nomenclature automatique
+    ent.showLabel = true;
+    const _off = 120 / S.zoom;
+    const _pa  = (ent.startAngle || 0) - Math.PI / 2;
+    ent.labelX = ent.startX + _off * Math.cos(_pa);
+    ent.labelY = ent.startY + _off * Math.sin(_pa);
     S.entities.push(ent);
     updateSaveIndicator('modified'); autoSave(); updateUI();
     termPrint('TUBE #' + ent.id + ' créé — ' + S.tubePoints.length + ' pts, Ø' + S.tubeDiameter + ' R' + br + ' [' + ref.toUpperCase() + ']', 'success');
@@ -3173,6 +3342,7 @@ function drawEntity(e) {
       ctx.setLineDash([8, 3, 2, 3]);
       _drawTubePath(e, 0);
       ctx.setLineDash([]);
+      drawTubeLabel(e);
       break;
     }
     case 'wall': {
@@ -3550,6 +3720,20 @@ function getGripPoints(e) {
       break;
     case 'tube':
       gp(e.startX, e.startY, (ent, nx, ny) => { ent.startX = nx; ent.startY = ny; });
+      if (e.showLabel && e.labelX !== undefined) {
+        // Poignée déplacement (coin haut-gauche)
+        gp(e.labelX, e.labelY, (ent, nx, ny) => { ent.labelX = nx; ent.labelY = ny; });
+        // Poignée redimensionnement (coin bas-droit en coords monde)
+        const sc = e.labelScale || 1;
+        const nRowsG = getTubeTableData(e).rows.length;
+        const { W: Wg, H: Hg } = _tubeTableDims(nRowsG, sc);
+        // Bas-droit monde : x+W (droite), y-H (vers le bas en monde Y-up)
+        gp(e.labelX + Wg, e.labelY - Hg, (ent, nx, ny) => {
+          const dxW = nx - ent.labelX;
+          const baseW = (_TBL_COL1 + _TBL_COL2 + _TBL_PAD * 2);
+          ent.labelScale = Math.max(0.4, Math.min(8, dxW / baseW));
+        });
+      }
       break;
     case 'block': {
       const bb = getEntityBBox(e);
@@ -3834,26 +4018,21 @@ function drawPreview() {
     // Tube preview: build full tube with mouse as last point
     const last = S.tubePoints[S.tubePoints.length - 1];
     let [tx, ty] = applyConstraint(last[0], last[1], mx, my);
+    // When user has typed a distance in DI, freeze that distance (direction follows mouse)
+    if (S.diLocked) {
+      const dv = parseFloat(diDist.value), av = parseFloat(diAngle.value);
+      const dir = !isNaN(av) ? av * Math.PI / 180 : Math.atan2(ty - last[1], tx - last[0]);
+      const dist = (!isNaN(dv) && dv > 0) ? dv : Math.hypot(tx - last[0], ty - last[1]);
+      if (dist > 0.001) { tx = last[0] + dist * Math.cos(dir); ty = last[1] + dist * Math.sin(dir); }
+    }
     const tr = (S.tubeDiameter || 40) / 2;
     const br = S.tubeBendRadius || 67;
     const ref = S.tubeRef || 'axe';
-    let previewPts;
-    if (S.tubePoints.length === 1) {
-      // First segment only: offset the 2-point path directly
-      previewPts = applyTubeRefOffset([[...S.tubePoints[0]], [tx, ty]], tr, ref).pts;
-    } else {
-      // Offset confirmed points ONLY (last confirmed point = endpoint → stable position)
-      const { pts: confPts, sign } = applyTubeRefOffset([...S.tubePoints], tr, ref);
-      // Mouse point: offset by endpoint formula (outgoing direction only, same sign)
-      let mousePt;
-      if (sign === 0) {
-        mousePt = [tx, ty];
-      } else {
-        const dx = tx - last[0], dy = ty - last[1], len = Math.hypot(dx, dy) || 1;
-        mousePt = [tx + sign * (-dy/len) * tr, ty + sign * (dx/len) * tr];
-      }
-      previewPts = [...confPts, mousePt];
-    }
+    // Include mouse point in applyTubeRefOffset so miter bisectors are computed
+    // correctly at every junction (including the last confirmed point).
+    // This is slightly less "stable" at the last confirmed point as the mouse moves,
+    // but avoids the oblique segment artifact in EXT/INT modes.
+    const previewPts = applyTubeRefOffset([...S.tubePoints, [tx, ty]], tr, ref).pts;
     const tmpEnt = buildTubeFromPoints(previewPts, tr, br);
     if (tmpEnt) {
       const color = S.layers[S.currentLayer]?.color || '#00d4ff';
@@ -4393,8 +4572,8 @@ function updateDynamicInput() {
 // (sinon smartFocus bloque les mises à jour souris de distance/angle)
 diDist.addEventListener('focus', () => { S.diField = 'dist'; diDist.select(); });
 diAngle.addEventListener('focus', () => { S.diField = 'angle'; diAngle.select(); });
-diDist.addEventListener('blur', () => { S.diLocked = false; });
-diAngle.addEventListener('blur', () => { S.diLocked = false; });
+diDist.addEventListener('blur', (ev) => { if (ev.relatedTarget !== diAngle) S.diLocked = false; });
+diAngle.addEventListener('blur', (ev) => { if (ev.relatedTarget !== diDist) S.diLocked = false; });
 
 diDist.addEventListener('keydown', (ev) => {
   if (ev.key === 'Tab') {
@@ -5230,38 +5409,64 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
 
   // Trim
   if (tool === 'trim') {
-    const hit = hitTest(rawWx!==undefined?rawWx:wx, rawWy!==undefined?rawWy:wy);
-    if (!hit) { termPrint('TRIM: cliquer sur une entité', 'warning'); return; }
+    const cx = rawWx!==undefined?rawWx:wx, cy = rawWy!==undefined?rawWy:wy;
+    const hit = hitTest(cx, cy);
     if (S.trimStep === 1) {
-      S.trimCuttingId = hit.id;
-      S.trimStep = 2;
-      termPrint('TRIM: Cliquer la partie à couper (clic droit pour changer la limite)', 'info');
+      if (!hit) { termPrint('TRIM: cliquer sur une entité limite', 'warning'); return; }
+      if (S.trimCuttingIds.includes(hit.id)) {
+        S.trimCuttingIds = S.trimCuttingIds.filter(id => id !== hit.id);
+        termPrint('TRIM: limite retirée — '+S.trimCuttingIds.length+' limite(s). Entrée ou clic droit pour confirmer', 'info');
+      } else {
+        S.trimCuttingIds.push(hit.id);
+        termPrint('TRIM: '+S.trimCuttingIds.length+' limite(s) sélectionnée(s) — Entrée ou clic droit pour confirmer', 'info');
+      }
       render(); return;
     }
     if (S.trimStep === 2) {
-      if (hit.id === S.trimCuttingId) {
-        termPrint('TRIM: Cliquer une entité différente de la limite', 'warning'); return;
+      if (!hit) { termPrint('TRIM: cliquer sur une entité à couper', 'warning'); return; }
+      let allPrims;
+      if (S.trimCuttingIds.length === 0) {
+        // Mode tout couper : toutes les entités visibles sauf celle cliquée
+        allPrims = S.entities
+          .filter(e => e.id !== hit.id && S.layers[e.layer]?.visible)
+          .flatMap(e => getCutterPrimitives(e));
+      } else {
+        // Limites explicites : exclure l'entité cliquée d'elle-même (elle peut être dans les limites)
+        allPrims = S.trimCuttingIds
+          .filter(id => id !== hit.id)
+          .flatMap(id => { const e = S.entities.find(en => en.id === id); return e ? getCutterPrimitives(e) : []; });
       }
-      applyTrim(hit.id, S.trimCuttingId, rawWx!==undefined?rawWx:wx, rawWy!==undefined?rawWy:wy);
+      if (!allPrims.length) { termPrint('TRIM: aucune limite disponible pour cette entité', 'warning'); return; }
+      applyTrim(hit.id, allPrims, cx, cy);
       return;
     }
   }
 
   // Extend
   if (tool === 'extend') {
-    const hit = hitTest(rawWx!==undefined?rawWx:wx, rawWy!==undefined?rawWy:wy);
-    if (!hit) { termPrint('EXTEND: cliquer sur une entité', 'warning'); return; }
+    const cx = rawWx!==undefined?rawWx:wx, cy = rawWy!==undefined?rawWy:wy;
+    const hit = hitTest(cx, cy);
     if (S.extendStep === 1) {
-      S.extendBoundaryId = hit.id;
-      S.extendStep = 2;
-      termPrint('EXTEND: Cliquer l\'extrémité à prolonger (clic droit pour changer la limite)', 'info');
+      if (!hit) { termPrint('EXTEND: cliquer sur une entité limite', 'warning'); return; }
+      if (S.extendBoundaryIds.includes(hit.id)) {
+        S.extendBoundaryIds = S.extendBoundaryIds.filter(id => id !== hit.id);
+        termPrint('EXTEND: limite retirée — '+S.extendBoundaryIds.length+' limite(s). Entrée ou clic droit pour confirmer', 'info');
+      } else {
+        S.extendBoundaryIds.push(hit.id);
+        termPrint('EXTEND: '+S.extendBoundaryIds.length+' limite(s) sélectionnée(s) — Entrée ou clic droit pour confirmer', 'info');
+      }
       render(); return;
     }
     if (S.extendStep === 2) {
-      if (hit.id === S.extendBoundaryId) {
-        termPrint('EXTEND: Cliquer une entité différente de la limite', 'warning'); return;
+      if (!hit) { termPrint('EXTEND: cliquer sur une entité à prolonger', 'warning'); return; }
+      let allPrims;
+      if (S.extendBoundaryIds.length === 0) {
+        allPrims = S.entities.filter(e => e.id !== hit.id && S.layers[e.layer]?.visible).flatMap(e => getCutterPrimitives(e));
+      } else {
+        allPrims = S.extendBoundaryIds.filter(id => id !== hit.id).flatMap(id => { const e = S.entities.find(en => en.id === id); return e ? getCutterPrimitives(e) : []; });
       }
-      applyExtend(hit.id, S.extendBoundaryId, rawWx!==undefined?rawWx:wx, rawWy!==undefined?rawWy:wy);
+      if (!allPrims.length) { termPrint('EXTEND: aucune limite disponible pour cette entité', 'warning'); return; }
+      applyExtend(hit.id, allPrims, cx, cy);
       return;
     }
   }
@@ -5498,6 +5703,50 @@ function applyTrimArc(ent, prims, clickWx, clickWy) {
   return true;
 }
 
+function applyTrimCircle(ent, prims, clickWx, clickWy) {
+  // Traiter le cercle complet comme un arc [0, 2π]
+  const fakeArc = { cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:0, endAngle:Math.PI*2 };
+  const rawAngles = getTrimAnglesForArc(fakeArc, prims);
+  if (!rawAngles.length) return false;
+  rawAngles.sort((a,b)=>a-b);
+  // Angle du clic par rapport au centre
+  let clickA = Math.atan2(clickWy-ent.cy, clickWx-ent.cx);
+  if (clickA < 0) clickA += Math.PI*2;
+  // Trouver le segment angulaire cliqué parmi N segments
+  const breaks = [...rawAngles, rawAngles[0]+Math.PI*2]; // cercle fermé
+  let remIdx = 0;
+  for (let i=0; i<rawAngles.length; i++) {
+    const a1 = rawAngles[i], a2 = rawAngles[(i+1)%rawAngles.length];
+    let ca = clickA;
+    while (ca < a1-1e-9) ca += Math.PI*2;
+    const a2w = a2>a1 ? a2 : a2+Math.PI*2;
+    if (ca >= a1-1e-9 && ca <= a2w+1e-9) { remIdx=i; break; }
+  }
+  const kept=[];
+  for (let i=0; i<rawAngles.length; i++) if (i!==remIdx) {
+    const a1=rawAngles[i], a2=rawAngles[(i+1)%rawAngles.length];
+    kept.push([a1, a2>a1?a2:a2+Math.PI*2]);
+  }
+  if (!kept.length) { S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
+  // Remplacer le circle par le premier arc, créer les suivants
+  const idx = S.entities.findIndex(e=>e.id===ent.id);
+  const firstArc = { type:'arc', cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:kept[0][0], endAngle:kept[0][1], id:ent.id, layer:ent.layer };
+  if (idx>=0) S.entities[idx]=firstArc;
+  for (let i=1; i<kept.length; i++) {
+    S.entities.push({ type:'arc', cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:kept[i][0], endAngle:kept[i][1], id:S.nextId++, layer:ent.layer });
+  }
+  return true;
+}
+
+function applyTrimRect(ent, prims, clickWx, clickWy) {
+  // Convertit le rect en polyligne fermée, remplace l'entité, puis applique le trim polyligne
+  const {x1,y1,x2,y2} = ent;
+  const poly = { type:'polyline', points:[[x1,y1],[x2,y1],[x2,y2],[x1,y2],[x1,y1]], id:ent.id, layer:ent.layer };
+  const idx = S.entities.findIndex(e=>e.id===ent.id);
+  if (idx>=0) S.entities[idx]=poly;
+  return applyTrimPolyline(poly, prims, clickWx, clickWy);
+}
+
 function extractSubPoly(pts, nSegs, t1, t2) {
   const result=[];
   const seg1=Math.min(Math.floor(t1),nSegs-1);
@@ -5571,18 +5820,18 @@ function applyTrimPolyline(ent, prims, clickWx, clickWy) {
   return true;
 }
 
-function applyTrim(trimmedId, cutterId, clickWx, clickWy) {
+function applyTrim(trimmedId, prims, clickWx, clickWy) {
   const ent=S.entities.find(e=>e.id===trimmedId);
-  const cutter=S.entities.find(e=>e.id===cutterId);
-  if(!ent||!cutter) return;
-  const supported=['line','wall','arc','polyline','cable'];
+  if(!ent) return;
+  const supported=['line','wall','arc','circle','polyline','cable','rect'];
   if(!supported.includes(ent.type)){ termPrint('TRIM: non supporté pour '+ent.type,'warning'); return; }
-  const prims=getCutterPrimitives(cutter);
   pushUndo();
   let ok=false;
-  if(ent.type==='line'||ent.type==='wall')       ok=applyTrimLine(ent,prims,clickWx,clickWy);
-  else if(ent.type==='arc')                       ok=applyTrimArc(ent,prims,clickWx,clickWy);
-  else if(ent.type==='polyline'||ent.type==='cable') ok=applyTrimPolyline(ent,prims,clickWx,clickWy);
+  if(ent.type==='line'||ent.type==='wall')           ok=applyTrimLine(ent,prims,clickWx,clickWy);
+  else if(ent.type==='arc')                           ok=applyTrimArc(ent,prims,clickWx,clickWy);
+  else if(ent.type==='circle')                        ok=applyTrimCircle(ent,prims,clickWx,clickWy);
+  else if(ent.type==='rect')                          ok=applyTrimRect(ent,prims,clickWx,clickWy);
+  else if(ent.type==='polyline'||ent.type==='cable')  ok=applyTrimPolyline(ent,prims,clickWx,clickWy);
   if(!ok){ S.history.pop(); termPrint('TRIM: aucune intersection trouvée','warning'); return; }
   termPrint('TRIM — segment supprimé','success');
   updateSaveIndicator('modified'); autoSave(); render();
@@ -5590,10 +5839,15 @@ function applyTrim(trimmedId, cutterId, clickWx, clickWy) {
 
 function drawExtendPreview() {
   const ent = S.entities.find(e => e.id === S.hoverEntityId);
-  const boundary = S.entities.find(e => e.id === S.extendBoundaryId);
-  if (!ent || !boundary) return;
+  if (!ent) return;
   const [mx, my] = S.mouseWorld;
-  const prims = getCutterPrimitives(boundary);
+  let prims;
+  if (S.extendBoundaryIds.length === 0) {
+    prims = S.entities.filter(e => e.id !== ent.id && S.layers[e.layer]?.visible).flatMap(e => getCutterPrimitives(e));
+  } else {
+    prims = S.extendBoundaryIds.filter(id => id !== ent.id).flatMap(id => { const e = S.entities.find(en => en.id === id); return e ? getCutterPrimitives(e) : []; });
+  }
+  if (!prims.length) return;
   let fromX, fromY, toX, toY;
 
   if (ent.type === 'line' || ent.type === 'wall') {
@@ -5666,13 +5920,20 @@ function lineCircleIntersectInf(ax1,ay1,ax2,ay2,cx,cy,r) {
   return res;
 }
 
-// Tous les t (y compris hors [0,1]) où la ligne infinie croise les primitives de la limite
+// Tous les t (y compris hors [0,1]) où la ligne infinie croise les primitives de la limite.
+// Les segments limites sont contraints à [0,1] : on prolonge jusqu'où l'entité est réellement.
 function getExtendTsForLine(lx1,ly1,lx2,ly2, prims) {
   const ts=[];
+  const dx1=lx2-lx1, dy1=ly2-ly1;
   for(const p of prims) {
     if(p.type==='seg') {
-      const t=segSegIntersectT_inf(lx1,ly1,lx2,ly2, p.x1,p.y1,p.x2,p.y2);
-      if(t!=null&&isFinite(t)) ts.push(t);
+      const dx2=p.x2-p.x1, dy2=p.y2-p.y1;
+      const denom=dx1*dy2-dy1*dx2;
+      if(Math.abs(denom)<1e-10) continue;
+      const fx=p.x1-lx1, fy=p.y1-ly1;
+      const t=(fx*dy2-fy*dx2)/denom;
+      const s=(fx*dy1-fy*dx1)/denom;
+      if(isFinite(t) && s>=-1e-9 && s<=1+1e-9) ts.push(t);
     } else if(p.type==='circle'||p.type==='arc') {
       lineCircleIntersectInf(lx1,ly1,lx2,ly2,p.cx,p.cy,p.r).forEach(t=>{ if(isFinite(t)) ts.push(t); });
     }
@@ -5731,13 +5992,11 @@ function applyExtendPolyline(ent, prims, clickWx, clickWy) {
   return true;
 }
 
-function applyExtend(extendedId, boundaryId, clickWx, clickWy) {
+function applyExtend(extendedId, prims, clickWx, clickWy) {
   const ent=S.entities.find(e=>e.id===extendedId);
-  const boundary=S.entities.find(e=>e.id===boundaryId);
-  if(!ent||!boundary) return;
+  if(!ent) return;
   const supported=['line','wall','polyline','cable'];
   if(!supported.includes(ent.type)){ termPrint('EXTEND: type non supporté ('+ent.type+')','warning'); return; }
-  const prims=getCutterPrimitives(boundary);
   pushUndo();
   let ok=false;
   if(ent.type==='line'||ent.type==='wall')            ok=applyExtendLine(ent,prims,clickWx,clickWy);
@@ -6055,6 +6314,16 @@ function hitTest(wx,wy) {
         }
       }
       if (hit) return e;
+      // Clic sur le tableau de nomenclature du tube
+      if (e.showLabel && e.labelX !== undefined) {
+        const [lsx, lsy] = w2s(e.labelX, e.labelY);
+        const [cwx, cwy] = w2s(wx, wy);
+        const sc = e.labelScale || 1;
+        const nRowsH = getTubeTableData(e).rows.length;
+        const { W: Wh, H: Hh } = _tubeTableDims(nRowsH, sc);
+        if (cwx >= lsx - 8 && cwx <= lsx + Wh * S.zoom + 8 &&
+            cwy >= lsy - 8 && cwy <= lsy + Hh * S.zoom + 8) return e;
+      }
     }
     // Dimension entities
     else if(e.type==='dim_linear'||e.type==='dim_aligned'){
@@ -6085,21 +6354,21 @@ function hitTest(wx,wy) {
       if(Math.hypot(wx-(e.vx+_textRW*Math.cos(_midA)),wy-(e.vy+_textRW*Math.sin(_midA)))<tol*4)return e;
     }
     else if(e.type==='dim_radius'){
-      const a=e.angle||0, toff=(e.textOff!==undefined?e.textOff:e.r*1.3);
-      const jx=e.cx+toff*Math.cos(a), jy=e.cy+toff*Math.sin(a);
-      if(distToSeg(wx,wy,e.cx,e.cy,jx,jy)<tol)return e;
-      const twx=e.textWx!==undefined?e.textWx:jx+(Math.cos(a)>=0?1:-1)*20/S.zoom;
-      const twy=e.textWy!==undefined?e.textWy:jy;
-      if(Math.hypot(wx-twx,wy-twy)<tol*4)return e;
+      const a=e.angle||0;
+      const ex=e.cx+e.r*Math.cos(a), ey=e.cy+e.r*Math.sin(a);
+      if(distToSeg(wx,wy,e.cx,e.cy,ex,ey)<tol)return e;
+      const twx=e.textWx!==undefined?e.textWx:e.cx+e.r*0.55*Math.cos(a);
+      const twy=e.textWy!==undefined?e.textWy:e.cy+e.r*0.55*Math.sin(a);
+      if(Math.hypot(wx-twx,wy-twy)<tol*6)return e;
     }
     else if(e.type==='dim_diameter'){
-      const a=e.angle||0, toff=(e.textOff!==undefined?e.textOff:e.r*1.3);
+      const a=e.angle||0;
+      const ex=e.cx+e.r*Math.cos(a), ey=e.cy+e.r*Math.sin(a);
       const e2x=e.cx-e.r*Math.cos(a), e2y=e.cy-e.r*Math.sin(a);
-      const jx=e.cx+toff*Math.cos(a), jy=e.cy+toff*Math.sin(a);
-      if(distToSeg(wx,wy,e2x,e2y,jx,jy)<tol)return e;
-      const twx=e.textWx!==undefined?e.textWx:jx+(Math.cos(a)>=0?1:-1)*20/S.zoom;
-      const twy=e.textWy!==undefined?e.textWy:jy;
-      if(Math.hypot(wx-twx,wy-twy)<tol*4)return e;
+      if(distToSeg(wx,wy,e2x,e2y,ex,ey)<tol)return e;
+      const twx=e.textWx!==undefined?e.textWx:e.cx;
+      const twy=e.textWy!==undefined?e.textWy:e.cy;
+      if(Math.hypot(wx-twx,wy-twy)<tol*6)return e;
     }
     else if(e.type==='leader'){
       if(distToSeg(wx,wy,e.x1,e.y1,e.x2,e.y2)<tol)return e;
@@ -6232,6 +6501,7 @@ function toggleSnap() {
   document.getElementById('snap-label').className='snap-indicator'+(S.snap?'':' off');
   document.getElementById('snap-btn').classList.toggle('active',S.snap);
   termPrint('Snap grille: '+(S.snap?'ON':'OFF'),'info');
+  autoSavePrefs();
 }
 
 function toggleOsnap() {
@@ -6240,6 +6510,7 @@ function toggleOsnap() {
   if(S.osnapEnabled) document.getElementById('osnap-label').style.color='var(--osnap-endpoint)';
   document.getElementById('osnap-btn').classList.toggle('active',S.osnapEnabled);
   termPrint('OSNAP: '+(S.osnapEnabled?'ON':'OFF'),'info');
+  autoSavePrefs();
 }
 
 function toggleOrtho() {
@@ -6250,6 +6521,7 @@ function toggleOrtho() {
   document.getElementById('polar-label').className='snap-indicator'+(S.polar?'':' off');
   document.getElementById('polar-btn').classList.toggle('active',S.polar);
   termPrint('Ortho: '+(S.ortho?'ON':'OFF')+(S.ortho?' (contraint à 90°)':''),'info');
+  autoSavePrefs();
 }
 
 function togglePolar() {
@@ -6262,6 +6534,7 @@ function togglePolar() {
   document.getElementById('ortho-btn').classList.toggle('active',S.ortho);
   termPrint('Polaire: '+(S.polar?'ON (incrément '+S.polarAngle+'°)':'OFF'),'info');
   if (!S.polar) document.getElementById('polar-info').style.display='none';
+  autoSavePrefs();
 }
 
 function toggleGridVis() {
@@ -7443,10 +7716,11 @@ function executeCommand(input) {
     }
     const n = parseFloat(raw);
     if(!isNaN(n) && n > 0){
-      // Distance dans la direction souris courante
+      // Distance dans la direction souris courante (avec contrainte ortho/polaire)
       const last=S.tubePoints[S.tubePoints.length-1];
-      const [mx,my]=S.mouseWorld;
-      const a=Math.atan2(my-last[1],mx-last[0]);
+      const [mx0,my0]=S.mouseWorld;
+      const [cx,cy]=applyConstraint(last[0],last[1],mx0,my0);
+      const a=Math.atan2(cy-last[1],cx-last[0]);
       const nx=last[0]+n*Math.cos(a), ny=last[1]+n*Math.sin(a);
       S.tubePoints.push([nx,ny]); S.drawPoints=[[nx,ny]];
       termPrint('TUBE pt'+S.tubePoints.length+': L='+n.toFixed(1)+'  A='+(a*180/Math.PI).toFixed(1)+'°','info');
@@ -7781,8 +8055,25 @@ document.addEventListener('keydown',(ev)=>{
   if(ev.key==='Escape' && S.tool==='dist'){
     S.distPt1=null; setTool('select'); render(); return;
   }
+  if(ev.key==='Enter' && S.tool==='extend' && S.extendStep===1){
+    ev.preventDefault();
+    S.extendStep=2;
+    if(!S.extendBoundaryIds.length) termPrint('EXTEND (tout prolonger) : cliquer l\'extrémité à prolonger','info');
+    else termPrint('EXTEND: Cliquer l\'extrémité à prolonger (clic droit pour quitter)','info');
+    render(); return;
+  }
+  if(ev.key==='Enter' && S.tool==='trim' && S.trimStep===1){
+    ev.preventDefault();
+    S.trimStep=2;
+    if(!S.trimCuttingIds.length) termPrint('TRIM (tout couper) : cliquer la partie à supprimer','info');
+    else termPrint('TRIM: Cliquer la partie à couper (clic droit pour quitter)','info');
+    render(); return;
+  }
+  if(ev.key==='Escape' && S.tool==='extend'){
+    S.extendStep=0; S.extendBoundaryIds=[]; setTool('select'); render(); return;
+  }
   if(ev.key==='Escape' && S.tool==='trim'){
-    S.trimStep=0; S.trimCuttingId=null; setTool('select'); render(); return;
+    S.trimStep=0; S.trimCuttingIds=[]; setTool('select'); render(); return;
   }
   if(ev.key==='Escape' && S.mirrorAwaitDelete){
     _confirmMirrorDelete(false); return;
@@ -8185,7 +8476,7 @@ let _fileHandle = null; // File System Access API — handle fichier courant
 
 function buildSaveData(name) {
   return {
-    version: '0.03', app: 'MiniCAD',
+    version: '0.04', app: 'MiniCAD',
     name: name || (_fileHandle?.name?.replace(/\.mcad$/i,'')) || 'projet',
     date: new Date().toISOString(),
     layers: S.layers, entities: S.entities,
@@ -8201,6 +8492,173 @@ function autoSave() {
     localStorage.setItem('minicad_autosave', JSON.stringify(buildSaveData()));
     updateSaveIndicator('modified');
   } catch(e) {}
+}
+
+// ===== USER PREFERENCES =====
+
+function captureUserPrefs() {
+  return {
+    snap: S.snap,
+    snapSize: S.gridSize,
+    gridSize: S.gridSize,
+    gridVis: S.gridVis,
+    osnapEnabled: S.osnapEnabled,
+    osnapModes: { ...S.osnapModes },
+    ortho: S.ortho,
+    polar: S.polar,
+    polarAngle: S.polarAngle,
+    tubeDiameter: S.tubeDiameter,
+    tubeBendRadius: S.tubeBendRadius,
+    tubeRef: S.tubeRef,
+    currentDimStyle: S.currentDimStyle,
+    defaultLayers: JSON.parse(JSON.stringify(S.layers)),
+  };
+}
+
+function applyUserPrefs(prefs) {
+  if (!prefs) return;
+  if (prefs.snap !== undefined)         S.snap = prefs.snap;
+  if (prefs.gridSize !== undefined)     S.gridSize = prefs.gridSize;
+  if (prefs.gridVis !== undefined)      S.gridVis = prefs.gridVis;
+  if (prefs.osnapEnabled !== undefined) S.osnapEnabled = prefs.osnapEnabled;
+  if (prefs.osnapModes)                 Object.assign(S.osnapModes, prefs.osnapModes);
+  if (prefs.ortho !== undefined)        S.ortho = prefs.ortho;
+  if (prefs.polar !== undefined)        S.polar = prefs.polar;
+  if (prefs.polarAngle !== undefined)   S.polarAngle = prefs.polarAngle;
+  if (prefs.tubeDiameter !== undefined) S.tubeDiameter = prefs.tubeDiameter;
+  if (prefs.tubeBendRadius !== undefined) S.tubeBendRadius = prefs.tubeBendRadius;
+  if (prefs.tubeRef !== undefined)      S.tubeRef = prefs.tubeRef;
+  if (prefs.currentDimStyle)            S.currentDimStyle = prefs.currentDimStyle;
+}
+
+function loadUserPrefs() {
+  let prefs = null;
+  try {
+    const saved = localStorage.getItem('minicad_user_prefs');
+    if (saved) prefs = JSON.parse(saved);
+  } catch(e) {}
+  if (!prefs) prefs = USER_PREFS;
+  applyUserPrefs(prefs);
+  syncUIState();
+}
+
+function autoSavePrefs() {
+  try {
+    localStorage.setItem('minicad_user_prefs', JSON.stringify(captureUserPrefs()));
+  } catch(e) {}
+}
+
+async function savePrefsToFile() {
+  const prefs = captureUserPrefs();
+  const json = JSON.stringify(prefs, null, 2);
+  if ('showSaveFilePicker' in window) {
+    try {
+      const fh = await window.showSaveFilePicker({
+        suggestedName: 'minicad_prefs.json',
+        types: [{ description: 'MiniCAD Preferences', accept: { 'application/json': ['.json'] } }],
+      });
+      const w = await fh.createWritable();
+      await w.write(json);
+      await w.close();
+      termPrint('✓ Préférences sauvegardées: ' + fh.name, 'success');
+    } catch(e) { if (e.name !== 'AbortError') termPrint('Erreur sauvegarde préférences: ' + e.message, 'error'); }
+  } else {
+    downloadBlob(json, 'application/json', 'minicad_prefs.json');
+    termPrint('✓ Préférences exportées: minicad_prefs.json', 'success');
+  }
+}
+
+async function importPrefsFromFile() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    try {
+      const text = await file.text();
+      const prefs = JSON.parse(text);
+      applyUserPrefs(prefs);
+      autoSavePrefs();
+      syncUIState(); render();
+      termPrint('✓ Préférences importées depuis ' + file.name, 'success');
+    } catch(err) { termPrint('Erreur import préférences: ' + err.message, 'error'); }
+  };
+  input.click();
+}
+
+function resetUserPrefs() {
+  applyUserPrefs(USER_PREFS);
+  localStorage.removeItem('minicad_user_prefs');
+  syncUIState(); render();
+  termPrint('Préférences réinitialisées aux valeurs par défaut', 'info');
+}
+
+function openPrefsDialog() {
+  const existing = document.getElementById('prefs-dialog');
+  if (existing) { existing.remove(); return; }
+  const p = captureUserPrefs();
+  const dlg = document.createElement('div');
+  dlg.id = 'prefs-dialog';
+  dlg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1a1a2e;border:1px solid var(--border);border-radius:6px;padding:16px 20px;z-index:3000;min-width:340px;max-width:420px;box-shadow:0 8px 32px #000c;color:var(--text);font-family:var(--font-mono);font-size:11px;';
+  function row(label, content) { return `<div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0;gap:8px"><span style="color:var(--text-dim);min-width:140px">${label}</span>${content}</div>`; }
+  function chk(id, val, lbl) { return `<label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="pd-${id}" ${val?'checked':''}> ${lbl||''}</label>`; }
+  function num(id, val, step, min) { return `<input type="number" id="pd-${id}" value="${val}" step="${step||1}" min="${min||0}" style="width:70px;background:var(--input-bg,#1e1e1e);border:1px solid var(--border);color:var(--text);padding:2px 5px;border-radius:3px;font-size:11px;">`; }
+  function sel(id, opts, val) { return `<select id="pd-${id}" style="background:var(--input-bg,#1e1e1e);border:1px solid var(--border);color:var(--text);padding:2px 5px;border-radius:3px;font-size:11px;">${opts.map(o=>`<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('')}</select>`; }
+  dlg.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-size:13px;font-weight:bold;letter-spacing:1px">PRÉFÉRENCES UTILISATEUR</span>
+      <span onclick="document.getElementById('prefs-dialog').remove()" style="cursor:pointer;opacity:.6;font-size:16px">✕</span>
+    </div>
+    <div style="font-size:10px;color:var(--text-dim);margin-bottom:10px;letter-spacing:.5px">ACCROCHAGE &amp; GRILLE</div>
+    ${row('Snap grille', chk('snap', p.snap))}
+    ${row('Taille grille / snap', num('gridSize', p.gridSize, 5, 1))}
+    ${row('Grille visible', chk('gridVis', p.gridVis))}
+    ${row('OSNAP', chk('osnapEnabled', p.osnapEnabled))}
+    <div style="margin:4px 0 4px 148px;display:flex;flex-wrap:wrap;gap:4px" id="pd-osmodes">
+      ${['endpoint','midpoint','center','nearest','intersection','perpendicular','tangent','quadrant'].map(m=>
+        `<label style="cursor:pointer;font-size:10px;white-space:nowrap"><input type="checkbox" id="pd-os-${m}" ${p.osnapModes[m]?'checked':''}> ${m}</label>`
+      ).join('')}
+    </div>
+    <div style="font-size:10px;color:var(--text-dim);margin:10px 0 6px;letter-spacing:.5px">CONTRAINTES</div>
+    ${row('Ortho (F8)', chk('ortho', p.ortho))}
+    ${row('Polaire (F10)', chk('polar', p.polar))}
+    ${row('Incrément polaire', num('polarAngle', p.polarAngle, 5, 1) + ' <span style="color:var(--text-dim)">°</span>')}
+    <div style="font-size:10px;color:var(--text-dim);margin:10px 0 6px;letter-spacing:.5px">TUBE</div>
+    ${row('Diamètre tube (Ø)', num('tubeDiameter', p.tubeDiameter, 5, 1))}
+    ${row('Rayon coude', num('tubeBendRadius', p.tubeBendRadius, 5, 1))}
+    ${row('Référence tube', sel('tubeRef', ['axe','ext','int'], p.tubeRef))}
+    <div style="font-size:10px;color:var(--text-dim);margin:10px 0 6px;letter-spacing:.5px">COTATION</div>
+    ${row('Style de cote', sel('dimStyle', ['ISO-25','ISO-35','ISO-50'], p.currentDimStyle))}
+    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+      <button onclick="resetUserPrefs();document.getElementById('prefs-dialog').remove()" style="background:var(--danger,#e53935);border:none;color:#fff;padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px;">Réinitialiser</button>
+      <button onclick="importPrefsFromFile();document.getElementById('prefs-dialog').remove()" style="background:#2a2a3e;border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px;">Importer…</button>
+      <button onclick="savePrefsToFile()" style="background:#2a2a3e;border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px;">Exporter…</button>
+      <button id="pd-apply-btn" style="background:var(--accent);border:none;color:#000;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold;">Appliquer</button>
+    </div>`;
+  document.body.appendChild(dlg);
+  document.getElementById('pd-apply-btn').onclick = () => {
+    const g = id => document.getElementById('pd-' + id);
+    const prefs = {
+      snap: g('snap').checked,
+      gridSize: parseFloat(g('gridSize').value) || 20,
+      gridVis: g('gridVis').checked,
+      osnapEnabled: g('osnapEnabled').checked,
+      osnapModes: Object.fromEntries(['endpoint','midpoint','center','nearest','intersection','perpendicular','tangent','quadrant'].map(m => [m, document.getElementById('pd-os-'+m).checked])),
+      ortho: g('ortho').checked,
+      polar: g('polar').checked,
+      polarAngle: parseFloat(g('polarAngle').value) || 15,
+      tubeDiameter: parseFloat(g('tubeDiameter').value) || 40,
+      tubeBendRadius: parseFloat(g('tubeBendRadius').value) || 67,
+      tubeRef: g('tubeRef').value,
+      currentDimStyle: g('dimStyle').value,
+    };
+    applyUserPrefs(prefs);
+    autoSavePrefs();
+    syncUIState(); render();
+    updateTubeRefUI();
+    termPrint('✓ Préférences appliquées et sauvegardées', 'success');
+    dlg.remove();
+  };
+  dlg.addEventListener('keydown', e => { if (e.key === 'Escape') dlg.remove(); });
 }
 
 function updateSaveIndicator(state) {
@@ -8725,13 +9183,25 @@ canvas.addEventListener('contextmenu', (ev) => {
 
   // Outils avec confirmation → clic droit = Entrée (comme AutoCAD)
   if (S.tool === 'join') { applyJoin(); return; }
+  if (S.tool === 'trim' && S.trimStep === 1) {
+    S.trimStep=2;
+    if(!S.trimCuttingIds.length) termPrint('TRIM (tout couper) : cliquer la partie à supprimer','info');
+    else termPrint('TRIM: Cliquer la partie à couper (clic droit pour quitter)','info');
+    render(); return;
+  }
   if (S.tool === 'trim' && S.trimStep === 2) {
-    S.trimStep=1; S.trimCuttingId=null;
-    termPrint('TRIM: Cliquer l\'entité limite','info'); render(); return;
+    S.trimStep=0; S.trimCuttingIds=[]; setTool('select');
+    termPrint('TRIM terminé','info'); render(); return;
+  }
+  if (S.tool === 'extend' && S.extendStep === 1) {
+    S.extendStep=2;
+    if(!S.extendBoundaryIds.length) termPrint('EXTEND (tout prolonger) : cliquer l\'extrémité à prolonger','info');
+    else termPrint('EXTEND: Cliquer l\'extrémité à prolonger (clic droit pour quitter)','info');
+    render(); return;
   }
   if (S.tool === 'extend' && S.extendStep === 2) {
-    S.extendStep=1; S.extendBoundaryId=null;
-    termPrint('EXTEND: Cliquer l\'entité limite','info'); render(); return;
+    S.extendStep=0; S.extendBoundaryIds=[]; setTool('select');
+    termPrint('EXTEND terminé','info'); render(); return;
   }
 
   // Outil actif mais pas encore commencé → retour à select
@@ -8856,9 +9326,52 @@ function syncUIState() {
 resizeCanvas();
 setTool('select');
 updateUI();
+loadUserPrefs();
 syncUIState();
 window.addEventListener('beforeunload', autoSave);
 loadFromLocalStorage();
+
+// Bouton téléchargement — affiché uniquement sur minicad.org
+if (['minicad.org','www.minicad.org'].includes(window.location.hostname)) {
+  const dlBtn = document.createElement('a');
+  dlBtn.href = 'minicad.html';
+  dlBtn.download = 'minicad.html';
+  dlBtn.title = 'Télécharger MiniCAD pour utilisation hors-ligne';
+  dlBtn.style.cssText = [
+    'position:fixed',
+    'bottom:36px',
+    'right:16px',
+    'z-index:2000',
+    'display:flex',
+    'align-items:center',
+    'gap:6px',
+    'padding:7px 14px',
+    'background:#0d1b2a',
+    'border:1px solid #00d4ff',
+    'border-radius:20px',
+    'color:#00d4ff',
+    'font-family:JetBrains Mono,monospace',
+    'font-size:11px',
+    'font-weight:600',
+    'letter-spacing:.5px',
+    'text-decoration:none',
+    'cursor:pointer',
+    'box-shadow:0 2px 12px #00d4ff22',
+    'transition:background .15s,box-shadow .15s',
+  ].join(';');
+  dlBtn.innerHTML = '&#x2B07; T&eacute;l&eacute;charger MiniCAD';
+  dlBtn.addEventListener('mouseenter', () => {
+    dlBtn.style.background = '#00d4ff';
+    dlBtn.style.color = '#0d1b2a';
+    dlBtn.style.boxShadow = '0 4px 20px #00d4ff55';
+  });
+  dlBtn.addEventListener('mouseleave', () => {
+    dlBtn.style.background = '#0d1b2a';
+    dlBtn.style.color = '#00d4ff';
+    dlBtn.style.boxShadow = '0 2px 12px #00d4ff22';
+  });
+  document.body.appendChild(dlBtn);
+}
 
 termPrint('╔══════════════════════════════════════╗','info');
 termPrint('║  MiniCAD v3.1 — Dynamic Input+Polar  ║','info');

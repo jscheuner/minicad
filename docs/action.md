@@ -51,7 +51,7 @@
 |---|---------------|----------|------------|-------|
 | 3.1 | **Sélection par fenêtre** (rubber-band) | ✅ | Faible | Drag pour sélectionner plusieurs objets |
 | 3.2 | **Historique commandes** (↑↓ terminal) | ✅ | Faible | Tableau `cmdHistory[]`, index |
-| 3.3 | **TRIM** — raccourcir au croisement | ✅ | Haute | ligne/wall/arc/polyligne |
+| 3.3 | **TRIM** — raccourcir au croisement | ✅ | Haute | multi-limites, mode tout couper, circle/rect, limites auto-découpables |
 | 3.4 | **EXTEND** — prolonger jusqu'à limite | 🔴 | Haute | Similaire à TRIM |
 | 3.5 | **OFFSET** — parallèle à distance | ✅ | Moyenne | ligne, wall, arc, cercle, rect, pline |
 | 3.6 | **ROTATE** — rotation d'objets | ✅ | Moyenne | Sélection préalable + point base |
@@ -97,6 +97,7 @@
 | 6.3 | **Export PNG/Impression** | ✅ | Ctrl+P, sélection de zone, format papier, échelle |
 | 6.4 | **Import SVG** | 🟡 | Parsing SVG en entités |
 | 6.5 | **Fenêtres de présentation** (Paper Space) | 🟢 | Plusieurs vues, échelles indépendantes |
+| 6.6 | **Préférences utilisateur** | ✅ | Dialogue PREFS, localStorage + bloc HTML embarqué, export/import JSON |
 
 ---
 
@@ -106,8 +107,8 @@
 |---|---------------|----------|-------|
 | 7.1 | **Assistant IA Ollama** | ✅ | Panneau flottant, streaming, génération entités |
 | 7.2 | **Outil TUBE** | ✅ | 2 parois + axe, coudes, formule, EXT/AXE/INT |
-| 7.3 | **TUBE preview EXT/INT** | 🟡 | Améliorer stabilité preview multi-tronçons |
-| 7.4 | **Nomenclature tube** | 🟢 | Extraction longueurs + coudes depuis le dessin |
+| 7.3 | **TUBE preview EXT/INT** | ✅ | Bisectrices miter correctes, inclure point souris dans applyTubeRefOffset |
+| 7.4 | **Nomenclature tube** | ✅ | Tableau TUBELBL : D/R, segments, Dév., poignées déplacement + redim |
 | 7.5 | **Isométrie tuyauterie** | 🟢 | Vue isométrique automatique |
 
 ---
@@ -121,3 +122,9 @@
 - **3.4 EXTEND** — prolonger jusqu'à limite
 - **5.2 AREA** — calcul de surface d'un polygone
 - **7.3 TUBE preview EXT/INT** — pré-calculer les offsets confirmés dans `S.tubeOffsets[]`
+
+Terminé en dernière session :
+- **6.6 Préférences utilisateur** ✅ — dialogue PREFS, stockage hybride localStorage + USER_PREFS embarqué
+- **TRIM amélioré** ✅ — multi-limites, mode tout couper, circle/rect, limites auto-découpables
+- **DIMRADIUS/DIMDIAMETER hitTest** ✅ — double-clic texte corrigé
+- **Bouton téléchargement** ✅ — flottant bas-droit, visible sur minicad.org uniquement
