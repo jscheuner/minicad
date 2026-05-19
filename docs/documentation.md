@@ -64,7 +64,12 @@
 | `parseTubeFormula(str, defaultR)` | `(string,num) → entity\|null` | Parse formule `1000+90R67+500` |
 | `buildTubeFromPoints(pts, tr, br)` | `([[x,y],...],num,num) → entity\|null` | Construit l'entité tube depuis des points cliqués |
 | `_drawTubePath(e, offset)` | `(entity,num) → void` | Trace un chemin décalé (paroi ou axe) |
+| `_tubeWalkStraights(e, cb)` | `(entity, cb(x1,y1,x2,y2,theta)) → void` | Itère sur les tronçons droits de l'axe |
+| `getTubeSnapPoints(e)` | `(entity) → [{x,y}]` | Retourne tous les points OSNAP du tube (extrémités + milieux des parois et axe) |
+| `_tubeNearestSegment(e, wx, wy)` | `(entity,num,num) → {type:'line',...}\|null` | Tronçon droit le plus proche (pour DIMANGULAR) |
+| `applyTubeRefOffset(pts, tr, ref)` | `([[x,y],...],num,string) → {pts,sign}` | Décale les points cliqués selon EXT/AXE/INT. Bisectrice miter exacte, détection CW/CCW automatique. |
 | `finishTube()` | `() → void` | Valide et pousse l'entité tube dans S.entities |
+| `updateTubeRefUI()` | `() → void` | Met à jour les boutons AXE/EXT/INT dans la toolbar |
 
 ### Interface
 
@@ -145,7 +150,7 @@
 **elec :** OUTLET, SWITCH, CABLE
 **dim :** DIMLINEAR, DIMALIGNED, DIMANGULAR (clic ligne 1 → clic ligne 2 → placer), DIMRADIUS, DIMDIAMETER
 **annot :** TEXT "contenu", LEADER "texte"
-**tube :** TUBE [formule], TUBED \<Ø\>, TUBEBR \<R\>
+**tube :** TUBE [formule], TUBED \<Ø\>, TUBEBR \<R\>, TUBREF AXE|EXT|INT
 **ia :** AI / OLLAMA / ASSISTANT
 
 ---

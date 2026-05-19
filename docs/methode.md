@@ -83,7 +83,7 @@ pushUndo + render()
 | `circle`, `arc` | cx,cy, r |
 | `polyline`, `cable` | points[ [x,y], ... ] |
 | `door`, `outlet`, `switch_sym`, `window_sym`, `text` | x,y (point d'insertion) |
-| `tube` | startX,startY, startAngle, tubeRadius, segments[] |
+| `tube` | startX,startY, startAngle, tubeRadius, segments[], tubeRef ('axe'|'ext'|'int') |
 | `dim_angular` | vx,vy (sommet auto), x1,y1, x2,y2, startAngle, endAngle, r, angle |
 | `dim_radius`, `dim_diameter` | cx,cy, r, angle |
 | `block` | sourceIds[], cols, rows, dx, dy |

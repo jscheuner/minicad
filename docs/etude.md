@@ -45,7 +45,7 @@ minicad.html
 │   ├── Terminal (entrée commande + sortie)
 │   └── Statusbar
 │
-└── <script> — JavaScript inline (~6500 lignes)
+└── <script> — JavaScript inline (~8800 lignes)
     ├── État global S (objet singleton)
     ├── Moteur OSNAP (findOsnap, drawOsnapMarker)
     ├── Parser d'entrée distance (parseDistanceInput)
@@ -153,8 +153,11 @@ World:  (wx, wy) = ((sx - panX - W/2) / zoom, -(sy - panY - H/2) / zoom)
 - Sélection par fenêtre (rubber-band cyan) et par croisement (vert pointillé)
 - TRIM, OFFSET, ROTATE, SCALE, MIRROR, FILLET, CHAMFER, JOIN, DIST, ARRAY
 - Gestionnaire de calques complet (épaisseur ISO, type de ligne, transfert entités)
-- Outil TUBE (2 parois + axe, coudes par tangentes, mode formule et graphique)
-- DIMANGULAR redessiné : sélection par clic sur lignes + secteur dynamique souris
+- Outil TUBE (2 parois + axe, coudes par tangentes, mode formule et graphique, EXT/AXE/INT)
+- OSNAP sur parois de tube (endpoint, midpoint, nearest, perpendicular)
+- DIMANGULAR redessiné : sélection par clic sur lignes + secteur dynamique souris, bugs bbox/flèches corrigés
+- DIMRADIUS/DIMDIAMETER : texte le long du trait radial, déplaçable par poignée
+- Impression (Ctrl+P) avec sélection de zone, format papier, échelle
 - Assistant IA Ollama (panneau flottant, streaming, génération d'entités)
 
 ## 4. Points à améliorer (voir docs/action.md)

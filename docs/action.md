@@ -14,7 +14,7 @@
 
 ---
 
-## Phase 1 — Fondations (état actuel : terminée)
+## Phase 1 — Fondations (terminée)
 
 | # | Fonctionnalité | État |
 |---|---------------|------|
@@ -28,7 +28,7 @@
 | 1.8 | Export SVG | ✅ |
 | 1.9 | Sauvegarde/Ouverture JSON (.mcad) | ✅ |
 
-## Phase 2 — Outils avancés (état actuel : terminée)
+## Phase 2 — Outils avancés (terminée)
 
 | # | Fonctionnalité | État |
 |---|---------------|------|
@@ -45,19 +45,19 @@
 
 ---
 
-## Phase 3 — Édition géométrique (terminée)
+## Phase 3 — Édition géométrique (terminée sauf 3.4 et 3.9)
 
 | # | Fonctionnalité | Priorité | Complexité | Notes |
 |---|---------------|----------|------------|-------|
 | 3.1 | **Sélection par fenêtre** (rubber-band) | ✅ | Faible | Drag pour sélectionner plusieurs objets |
 | 3.2 | **Historique commandes** (↑↓ terminal) | ✅ | Faible | Tableau `cmdHistory[]`, index |
 | 3.3 | **TRIM** — raccourcir au croisement | ✅ | Haute | ligne/wall/arc/polyligne |
-| 3.4 | **EXTEND** — prolonger jusqu'à limite | 🟢 | Haute | Similaire à TRIM |
+| 3.4 | **EXTEND** — prolonger jusqu'à limite | 🔴 | Haute | Similaire à TRIM |
 | 3.5 | **OFFSET** — parallèle à distance | ✅ | Moyenne | ligne, wall, arc, cercle, rect, pline |
 | 3.6 | **ROTATE** — rotation d'objets | ✅ | Moyenne | Sélection préalable + point base |
 | 3.7 | **SCALE** — mise à l'échelle | ✅ | Moyenne | Point base + facteur |
 | 3.8 | **MIRROR** — symétrie axiale | ✅ | Moyenne | Axe en 2 points |
-| 3.9 | **Arc 3 points** | 🟢 | Moyenne | P1, P2, P3 sur l'arc |
+| 3.9 | **Arc 3 points** | 🟡 | Moyenne | P1, P2, P3 sur l'arc |
 
 ---
 
@@ -67,10 +67,10 @@
 |---|---------------|----------|-------|
 | 4.1 | **Panneau propriétés éditable** | ✅ | Champs input X1,Y1,R… + select calque |
 | 4.2 | **Gestionnaire de calques** | ✅ | Fenêtre dédiée + épaisseur/type de ligne + transfert entités |
-| 4.3 | **Menu contextuel** clic-droit canvas | 🟡 | Couper/Copier/Coller/Propriétés |
+| 4.3 | **Menu contextuel** clic-droit canvas | 🔴 | Couper/Copier/Coller/Propriétés |
 | 4.4 | **Double-clic pour éditer** texte/cote | ✅ | Texte inline + dialogue texte de cote avec `<>` |
 | 4.5 | **Zoom fenêtre** (sélection zone) | 🟢 | |
-| 4.6 | **Drag to copy** (Ctrl+Drag) | 🟢 | |
+| 4.6 | **Drag to copy** (Ctrl+Drag) | 🟡 | |
 | 4.7 | **Sélection par type** (SEL LINE etc.) | 🟢 | |
 | 4.8 | **DIMANGULAR** — workflow repensé | ✅ | Clic ligne 1 → clic ligne 2 → choisir côté |
 
@@ -81,8 +81,8 @@
 | # | Fonctionnalité | Priorité | Notes |
 |---|---------------|----------|-------|
 | 5.1 | **DIST** — mesure distance entre 2 points | ✅ | distance, Δx, Δy, angle |
-| 5.2 | **AREA** — calcul de surface | 🟢 | Polygone ou sélection |
-| 5.3 | **Hachures** (HATCH) | 🟢 | Remplissage polygone |
+| 5.2 | **AREA** — calcul de surface | 🔴 | Polygone ou sélection |
+| 5.3 | **Hachures** (HATCH) | 🟡 | Remplissage polygone |
 | 5.4 | **Blocs** (BLOCK/INSERT) | 🟢 | Symboles réutilisables |
 | 5.5 | **Tableaux** | 🟢 | Grilles texte |
 
@@ -92,20 +92,32 @@
 
 | # | Fonctionnalité | Priorité | Notes |
 |---|---------------|----------|-------|
-| 6.1 | **Auto-save** (localStorage) | 🟡 | Récupération après fermeture |
+| 6.1 | **Auto-save** (localStorage) | ✅ | Récupération après fermeture |
 | 6.2 | **Historique de sessions** | 🟢 | Liste des derniers fichiers |
-| 6.3 | **Export PNG/PDF** | 🟢 | Capture du canvas |
-| 6.4 | **Import SVG** | 🟢 | Parsing SVG en entités |
+| 6.3 | **Export PNG/Impression** | ✅ | Ctrl+P, sélection de zone, format papier, échelle |
+| 6.4 | **Import SVG** | 🟡 | Parsing SVG en entités |
+| 6.5 | **Fenêtres de présentation** (Paper Space) | 🟢 | Plusieurs vues, échelles indépendantes |
+
+---
+
+## Phase 7 — Métier tuyauterie
+
+| # | Fonctionnalité | Priorité | Notes |
+|---|---------------|----------|-------|
+| 7.1 | **Assistant IA Ollama** | ✅ | Panneau flottant, streaming, génération entités |
+| 7.2 | **Outil TUBE** | ✅ | 2 parois + axe, coudes, formule, EXT/AXE/INT |
+| 7.3 | **TUBE preview EXT/INT** | 🟡 | Améliorer stabilité preview multi-tronçons |
+| 7.4 | **Nomenclature tube** | 🟢 | Extraction longueurs + coudes depuis le dessin |
+| 7.5 | **Isométrie tuyauterie** | 🟢 | Vue isométrique automatique |
 
 ---
 
 ## Prochaine session de développement
 
-**Objectif recommandé** : Phase 4 (UX restante) + Phase 5 (mesure/annotation)
+**Objectif recommandé** : Phase 4 (UX restante) + Phase 5 (mesure) + amélioration TUBE preview
 
-Éléments prioritaires restants :
+Éléments prioritaires :
 - **4.3 Menu contextuel** clic-droit canvas (Couper/Copier/Coller/Propriétés)
 - **3.4 EXTEND** — prolonger jusqu'à limite
-- **3.9 Arc 3 points**
 - **5.2 AREA** — calcul de surface d'un polygone
-- **6.3 Export PNG** (canvas.toBlob)
+- **7.3 TUBE preview EXT/INT** — pré-calculer les offsets confirmés dans `S.tubeOffsets[]`

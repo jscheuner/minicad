@@ -4,19 +4,45 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [0.03] — 2026-05-17 — Version courante
+## [0.03] — 2026-05-19 — Version courante
 
 ### Ajouté
+- **Impression avec sélection de zone** (Ctrl+P / menu Fichier / commande `PRINT`)
+  - Dialog : format papier (A4/A3/A5/Letter), orientation, échelle (Adapter / 1:1 / 1:2 … 1:100), titre optionnel
+  - Sélection de zone par rubber-band (cliquer-glisser orange) via outil `print_window`
+  - Sans zone définie : impression de l'étendue de toutes les entités
+  - Rendu off-screen sur fond blanc → popup navigateur → `window.print()` automatique
+  - Bouton 🖨 dans la toolbar fichier
+- **EXPLODE tube** — éclater un tube en lignes (parois) et arcs (coudes)
+- **LEADER éditable** — double-clic ouvre la fenêtre de texte pour modifier le texte du repère
 - **Outil TUBE** — tube 2 parois + axe trait-point
   - Mode graphique : cliquer les points du tracé (comme polyligne), Entrée/clic-droit/Échap pour terminer
   - Mode formule : `TUBE 1000+90R67+500` ou `TUBE 1000+90+500R67` (global R en fin)
   - Coudes calculés par tangentes : longueurs droites = longueur réelle − T (T = R·tan(φ/2))
   - Rendu : 2 traits pleins (parois) + 1 trait-point [8,3,2,3] (axe)
-  - Commandes : `TUBE [formule]`, `TUBED <Ø>` (diamètre), `TUBEBR <R>` (rayon de coude)
+  - Commandes : `TUBE [formule]`, `TUBED <Ø>` (diamètre), `TUBEBR <R>` (rayon de coude), `TUBREF AXE|EXT|INT`
   - Défauts : Ø 40 mm, R coude 67 mm
-  - Bouton dans la toolbar Dessin (icône 2 traits + tirets)
+  - Bouton dans la toolbar Dessin (icône 2 traits + tirets) + boutons AXE/EXT/INT
   - Entité `tube` : `startX/Y`, `startAngle`, `tubeRadius`, `segments[]`
   - Sélection/déplacement/copie/grip fonctionnels
+- **TUBE — Référence de tracé EXT/AXE/INT** (v0.03 finale)
+  - `TUBREF AXE` : tracé sur l'axe (défaut)
+  - `TUBREF EXT` : tracé sur la paroi extérieure — tube entièrement à l'intérieur du tracé
+  - `TUBREF INT` : tracé sur la paroi intérieure — tube entièrement à l'extérieur du tracé
+  - `applyTubeRefOffset()` : décalage par point exact avec bisectrice miter (angle quelconque)
+  - Détection automatique CW/CCW du tracé pour choisir le bon côté
+  - Preview pendant le tracé reflète l'offset EXT/INT
+- **TUBE — Bulles Dynamic Input** sur tous les tronçons (pas seulement le premier)
+  - `ev.stopPropagation()` empêche le bubble de Enter vers le document après `diDist.blur()`
+- **TUBE — OSNAP sur les parois**
+  - ENDPOINT : extrémités des parois + axe, entrée et sortie de chaque coude
+  - MIDPOINT : milieux de chaque paroi et de l'axe
+  - NEAREST : projection sur chaque paroi (axe + wall+ + wall−)
+  - PERPENDICULAR : projection perpendiculaire sur chaque paroi
+- **DIMRADIUS / DIMDIAMETER redessiné**
+  - Texte positionné le long du trait radial (rotation correspondante), plus de queue après la flèche
+  - Texte déplaçable via une poignée dédiée (`textWx`, `textWy`)
+  - Poignée bord : change l'angle sans déplacer le texte
 
 ### Corrigé
 - **DIMANGULAR — nouveau workflow** : cliquer ligne 1 → cliquer ligne 2 → choisir le côté au clic
@@ -27,6 +53,13 @@ Format : `[version] — YYYY-MM-DD — Description`
   - Aperçu live de l'arc et de la valeur d'angle pendant le déplacement de la souris
   - Curseur `pick` (carrée) pendant la sélection des lignes, `draw` pour le placement
   - Correction du bug de sélection : `hitTest()` utilisé directement (au lieu de `entities.find()` qui ignorait le 3ème argument)
+- **DIMANGULAR invisible à certains niveaux de zoom** — `getEntityBBox` utilisait `e.cx/e.cy` (undefined pour les cotes angulaires) au lieu de `e.vx/e.vy` → entité culled à tort
+- **DIMANGULAR flèches pointaient vers l'extérieur** — inversion des signes ±π/2 pour les deux têtes de flèches
+- **TUBE OSNAP manquant après les coudes** — `getTubeSnapPoints` n'ajoutait pas le point de début de chaque tronçon droit (= sortie de coude)
+- **TUBE DI Enter bloqué après le premier tronçon** — `ev.stopPropagation()` ajouté aux handlers keydown de `diDist` / `diAngle`
+
+### Connu / À améliorer
+- **TUBE preview EXT/INT** — en mode multi-tronçons, le dernier point confirmé peut légèrement se déplacer lors du changement d'angle du tronçon suivant (bisectrice dynamique). La position finale à la validation (Enter) est correcte.
 
 ---
 
@@ -73,9 +106,13 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [3.6] — 2026-05-15
+## Versions préliminaires (historique de développement interne)
 
-### Ajouté
+> Les versions ci-dessous sont les itérations internes de développement antérieures à la mise en place du versionnage public 0.01. Le contenu est conservé à titre d'historique.
+
+### [3.6] — 2026-05-15
+
+#### Ajouté
 - **Commande OFFSET** (alias O, DECALER)
   - `OFFSET [distance]` → active l'outil avec la distance donnée (défaut: 10)
   - Cliquer l'objet à décaler (hover blanc, entité sélectionnée orange)
@@ -86,9 +123,9 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [3.5] — 2026-05-14
+### [3.5] — 2026-05-14
 
-### Ajouté
+#### Ajouté
 - **Historique de commandes terminal** (↑↓)
   - `↑` rappelle la commande précédente, `↓` avance vers la plus récente / vide le champ
   - Limité à 50 entrées, pas de doublons consécutifs
@@ -96,18 +133,18 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [3.4] — 2025-05-14
+### [3.4] — 2025-05-14
 
-### Modifié
+#### Modifié
 - **Menu Fichier** converti en menu déroulant avec toutes les commandes :
   Nouveau / Ouvrir… (Ctrl+O) / Sauvegarder (Ctrl+S) / Sauvegarder sous… / Exporter DXF
 - **Toolbar Fichier** épurée : suppression des boutons DXF, DWG, SVG — ne reste que 📂 et 💾
 
 ---
 
-## [3.3] — 2025-05-14
+### [3.3] — 2025-05-14
 
-### Ajouté
+#### Ajouté
 - **Auto-save localStorage** — sauvegarde automatique à chaque modification
   - F5 restaure le projet automatiquement au rechargement
   - `beforeunload` sauvegarde aussi les changements de config (calques, modules)
@@ -119,14 +156,14 @@ Format : `[version] — YYYY-MM-DD — Description`
 - **SAVEAS** force le choix d'un nouveau fichier de destination
 - **CLEAR/NOUVEAU** efface aussi la sauvegarde localStorage
 
-### Corrigé
+#### Corrigé
 - OSNAP endpoint désormais détecte les extrémités des arcs
 
 ---
 
-## [3.2] — 2025-05-14
+### [3.2] — 2025-05-14
 
-### Ajouté
+#### Ajouté
 - **Sélection par fenêtre (rubber-band)**
   - Drag gauche→droite : fenêtre (rectangle cyan plein) — entité doit être entièrement dedans
   - Drag droite→gauche : croisement (rectangle vert pointillé) — entité intersectant suffit
@@ -135,56 +172,24 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [3.1] — 2025-05-14
+### [3.1] — 2025-05-14
 
-### Ajouté
+#### Ajouté
 - **Grip editing complet** : poignées bleues sur tous les types d'entités
-  - Ligne, Mur, Leader : extrémités
-  - Rectangle : 4 coins
-  - Cercle : centre + 2 grips de rayon
-  - Polyligne/Câble : tous les sommets
-  - Cotations : points de définition
 - **Dynamic Input** type AutoCAD : bulle D/A éditable près du curseur
-  - Tab pour basculer Distance ↔ Angle
-  - Mode X/Y pour le 1er point
-  - Mode L/H pour Rectangle (Largeur/Hauteur)
-  - Mode R pour Cercle
 - **Polaire tracking** (F10) avec incrément configurable (`POLAR [angle]`)
-  - Ligne verte étendue indiquant l'axe polaire
-  - Badge d'angle affiché
-  - Ortho et Polaire mutuellement exclusifs
-- **Export DXF AC1015** complet avec :
-  - Section HEADER + TABLES (calques avec couleurs ACI)
-  - LWPOLYLINE pour rectangles et polylignes
-  - ARC, CIRCLE, LINE, TEXT, POINT
-  - Cotations exportées
-- **Import DXF** avec :
-  - Parsing LWPOLYLINE, POLYLINE/VERTEX
-  - SPLINE → polyligne, ELLIPSE → cercle, DIMENSION → dim_linear
-  - Mapping calques DXF → calques MiniCAD
+- **Export DXF AC1015** complet avec HEADER + TABLES + entités
+- **Import DXF** avec LWPOLYLINE, POLYLINE/VERTEX, SPLINE, ELLIPSE, DIMENSION
 - **Export DWG** (DXF renommé .dwg)
 - **Toolbars drag & drop** dock/float avec menu contextuel clic-droit
-- **Commandes terminales** : POLAR, OSNAP [mode], EXPORT, SAVE, OPEN, SAVEAS
 - **Module Cotation** complet : DIMLINEAR, DIMALIGNED, DIMANGULAR, DIMRADIUS, DIMDIAMETER
 - **Module Annotation** : TEXT, LEADER
 
-### Amélioré
-- OSNAP 7 modes : perpendiculaire et tangente ajoutés
-- Tooltip OSNAP coloré près du curseur
-- Parser d'entrée : syntaxe `100<45`, `50,30`, `@50,30`, `#x,y`, `200`
-- Grip edit via Dynamic Input (D+A confirmés à l'Entrée)
-- Panneau OSNAP dans la sidebar avec checkboxes
-- Panneau Objets (liste des 20 derniers)
-
-### Corrigé
-- Coordonnées Y inversées corrigées dans exportSVG
-- Grip edit annulé correctement par Échap
-
 ---
 
-## [2.0] — 2025-04-xx — Architecture + Électricité
+### [2.0] — 2025-04-xx — Architecture + Électricité
 
-### Ajouté
+#### Ajouté
 - **Module Architecture** : Mur (épaisseur configurable), Porte (arc+ligne), Fenêtre
 - **Module Électricité** : Prise, Interrupteur, Câble (pointillé)
 - **Module Cotation** (v1) : DIMLINEAR, DIMALIGNED
@@ -194,9 +199,9 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [1.0] — 2025-03-xx — Version initiale
+### [1.0] — 2025-03-xx — Version initiale
 
-### Ajouté
+#### Ajouté
 - Canvas 2D avec zoom molette et pan clic-milieu
 - Grille + snap
 - Outils de base : Ligne, Rectangle, Cercle, Arc, Polyligne
