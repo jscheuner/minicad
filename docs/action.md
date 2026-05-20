@@ -115,15 +115,18 @@
 
 ## Prochaine session de développement
 
-**Objectif recommandé** : Phase 4 (UX restante) + Phase 5 (mesure) + amélioration TUBE preview
+**Objectif recommandé** : Phase 4 (UX restante) + Phase 5 (mesure)
 
 Éléments prioritaires :
 - **4.3 Menu contextuel** clic-droit canvas (Couper/Copier/Coller/Propriétés)
 - **3.4 EXTEND** — prolonger jusqu'à limite
 - **5.2 AREA** — calcul de surface d'un polygone
-- **7.3 TUBE preview EXT/INT** — pré-calculer les offsets confirmés dans `S.tubeOffsets[]`
 
-Terminé en dernière session :
+Terminé en session v0.05 :
+- **JOIN arcs** ✅ — arc joinable avec lignes/polylignes, bulge correct dans le résultat
+- **Dialogue édition tube** ✅ — L. saisie REF, Prévisualiser, longeur AXE fixe, sens coude ⟳/⟲, Coter avec cotes liées
+
+Terminé en session v0.04 :
 - **6.6 Préférences utilisateur** ✅ — dialogue PREFS, stockage hybride localStorage + USER_PREFS embarqué
 - **TRIM amélioré** ✅ — multi-limites, mode tout couper, circle/rect, limites auto-découpables
 - **DIMRADIUS/DIMDIAMETER hitTest** ✅ — double-clic texte corrigé

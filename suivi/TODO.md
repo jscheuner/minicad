@@ -44,6 +44,8 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 Voir [CHANGELOG.md](CHANGELOG.md) pour le détail.
 
+- ✅ **JOIN arcs** — arc sélectionnable + bulge correctement transféré dans la polyligne résultante
+- ✅ **Dialogue édition tube v0.05** — L. saisie REF, Prévisualiser, longeur AXE fixe, sens coude, Coter avec cotes liées (`linkedTubeId`)
 - ✅ **Tableau nomenclature TUBE** — `TUBELBL`, taille fixe monde, poignées déplacement + redim, auto à finishTube
 - ✅ **Preview TUBE EXT/INT** — bisectrices miter correctes, plus de segment en biais
 - ✅ **DI Tab bug** — `relatedTarget` empêche l'écrasement de la distance lors du Tab entre champs

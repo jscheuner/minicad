@@ -4,7 +4,36 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [0.04] — 2026-05-19 — Version courante
+## [0.05] — 2026-05-20 — Version courante
+
+### Ajouté
+- **Dialogue d'édition tube — colonne L. saisie [REF]**
+  - Longueur point-à-point saisie à la création = `straightLen + T_before + T_after` (T = R_ref × tan(φ/2))
+  - Varie selon la référence active AXE / EXT / INT
+  - Champ éditable : la modification recalcule `straightLen` en soustrayant les tangentes
+- **Dialogue d'édition tube — bouton Prévisualiser**
+  - Applique les modifications sans fermer le dialogue (identique à Appliquer mais non destructif)
+- **Dialogue d'édition tube — longeur développée AXE fixe**
+  - Le total affiché en pied de dialogue est toujours l'axe, quelle que soit la référence active
+- **Dialogue d'édition tube — sens du coude**
+  - Angle toujours positif ; bouton ⟳/⟲ pour inverser le sens
+  - Saisie d'un angle négatif → flip automatique du sens + valeur absolue
+- **Dialogue d'édition tube — bouton Coter**
+  - Crée des `dim_aligned` sur le chemin de référence actif (AXE / EXT / INT)
+  - Cotes placées à l'extérieur du tube (côté convexe des coudes)
+  - Cotes liées au tube (`linkedTubeId`) : recalculées automatiquement à chaque Appliquer / Prévisualiser
+- **JOIN — support des arcs**
+  - Un arc peut maintenant être joint avec des lignes et des polylignes
+  - Converti en segment bulge (`bulge = tan(dθ/4)`) dans la polyligne résultante
+  - Rendu courbe exact via `drawPolyArcSegToPath` (déjà supporté)
+
+### Corrigé
+- **JOIN — perte du bulge à la concaténation**
+  - `pts.slice(1)` ignorait le bulge stocké sur `pts[0]` → transfert sur le point de jonction dans `allPts`
+
+---
+
+## [0.04] — 2026-05-19
 
 ### Ajouté
 - **Tableau de nomenclature tube** (commande `TUBELBL` / alias `TUBTAB`)

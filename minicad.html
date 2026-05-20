@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MiniCAD v0.04</title>
+<title>MiniCAD v0.05</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=Oswald:wght@300;400;500&family=Share+Tech&display=swap');
 
@@ -879,7 +879,7 @@
 
 <!-- MENU BAR -->
 <div class="menubar">
-  <div class="topbar-logo">MiniCAD <span>v0.03</span></div>
+  <div class="topbar-logo">MiniCAD <span>v0.05</span></div>
   <div class="menu-items">
     <div class="menu-dropdown" id="menu-fichier">
       <div class="menu-item" id="menu-fichier-btn" onclick="toggleMenuDropdown('menu-fichier',event)">Fichier</div>
@@ -3265,6 +3265,373 @@ function drawTubeLabel(e) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+function openTubeEditDialog(ent) {
+  const existing = document.getElementById('tube-edit-dialog');
+  if (existing) { existing.remove(); return; }
+  const data = getTubeTableData(ent);
+  if (!data.rows.length) return;
+
+  // Arc length of the following bend at the given reference
+  function arcLenAt(R, tr, phi, ref) {
+    if (ref === 'ext') return (R + tr) * phi;
+    if (ref === 'int') return Math.max(0, R - tr) * phi;
+    return R * phi;
+  }
+
+  // Tangent deduction at a bend for a given reference
+  // T_ref(phi) = R_ref * tan(phi/2), where R_ref = R (axe), R+tr (ext), R-tr (int)
+  function Tref(phi, R, tr, ref) {
+    const Rr = ref === 'ext' ? R + tr : ref === 'int' ? Math.max(0, R - tr) : R;
+    return Rr * Math.tan(Math.abs(phi) / 2);
+  }
+
+  // "Saisie" = point-to-point distance at the given reference:
+  //   saisie_i = straightLen_i + T_ref(phi_before) + T_ref(phi_after)
+  // phi_before = angle of preceding bend (editRows[i-1].angle), 0 if first row
+  // phi_after  = angle of following bend (editRows[i].angle),   0 if last row
+  function saisieAt(i, R, tr, ref) {
+    const phiBefore = (i > 0 && editRows[i-1].angle !== null)
+      ? (editRows[i-1].angle || 0) * Math.PI / 180 : 0;
+    const phiAfter = editRows[i].angle !== null
+      ? (editRows[i].angle || 0) * Math.PI / 180 : 0;
+    return editRows[i].straightLen + Tref(phiBefore, R, tr, ref) + Tref(phiAfter, R, tr, ref);
+  }
+
+  // editRows: straightLen is the canonical axis straight-section length (stored in segments)
+  let editRows = data.rows.map(r => ({
+    straightLen: r.len,
+    angle: r.bend ? +(r.bend.angle * 180 / Math.PI).toFixed(1) : null,
+    side:  r.bend ? r.bend.side : 1
+  }));
+  let activeRef = ent.tubeRef || S.tubeRef || 'axe';
+
+  const dlg = document.createElement('div');
+  dlg.id = 'tube-edit-dialog';
+  dlg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1a1a2e;border:1px solid #334;border-radius:6px;padding:16px 20px;z-index:3000;min-width:480px;max-width:560px;box-shadow:0 8px 32px #000c;color:var(--text);font-family:var(--font-mono,monospace);font-size:11px;';
+  const inp     = 'width:72px;background:#0f0f1a;border:1px solid #334;color:var(--text);padding:2px 5px;border-radius:3px;font-size:11px;text-align:right;';
+  const btnBase = 'border:1px solid #334;padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:.5px;';
+
+  dlg.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-size:13px;font-weight:bold;letter-spacing:1px">ÉDITER LE TUBE</span>
+      <span id="te-close" style="cursor:pointer;opacity:.6;font-size:16px">✕</span>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:5px;color:var(--text-dim)">Ø&nbsp;<input id="te-d" value="${data.d.toFixed(1)}" style="${inp}">&nbsp;mm</label>
+      <label style="display:flex;align-items:center;gap:5px;color:var(--text-dim)">R&nbsp;<input id="te-r" value="${(data.r || S.tubeBendRadius || 67).toFixed(1)}" style="${inp}">&nbsp;mm</label>
+      <div style="display:flex;gap:3px;margin-left:auto">
+        <button id="te-ref-axe" style="${btnBase}background:${activeRef==='axe'?'var(--accent)':'#2a2a3e'};color:${activeRef==='axe'?'#000':'var(--text)'}">AXE</button>
+        <button id="te-ref-ext" style="${btnBase}background:${activeRef==='ext'?'var(--accent)':'#2a2a3e'};color:${activeRef==='ext'?'#000':'var(--text)'}">EXT</button>
+        <button id="te-ref-int" style="${btnBase}background:${activeRef==='int'?'var(--accent)':'#2a2a3e'};color:${activeRef==='int'?'#000':'var(--text)'}">INT</button>
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
+      <thead><tr style="color:var(--text-dim);font-size:10px;text-transform:uppercase;letter-spacing:.5px">
+        <th style="padding:4px 6px;text-align:center;width:22px">#</th>
+        <th id="te-col-saisie-hdr" style="padding:4px 6px;text-align:right">L. saisie AXE (mm)</th>
+        <th style="padding:4px 6px;text-align:center">Angle (°)</th>
+        <th id="te-col-arc-hdr" style="padding:4px 6px;text-align:right;color:var(--accent)">L. coude AXE</th>
+        <th style="width:18px"></th>
+      </tr></thead>
+      <tbody id="te-tbody"></tbody>
+    </table>
+    <div style="margin-bottom:10px">
+      <button id="te-add" style="background:#2a2a3e;border:1px solid #334;color:var(--accent);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;width:100%">+ Ajouter une section</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:6px 0;border-top:1px solid #334">
+      <span style="color:var(--text-dim)">Long. développée AXE</span>
+      <span id="te-devlen" style="color:var(--accent);font-weight:bold">${data.totalLen.toFixed(1)} mm</span>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button id="te-cancel" style="background:#2a2a3e;border:1px solid #334;color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Annuler</button>
+      <button id="te-cote" style="background:#2a2a3e;border:1px solid #556;color:#aac;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Coter</button>
+      <button id="te-preview" style="background:#2a2a3e;border:1px solid var(--accent);color:var(--accent);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Prévisualiser</button>
+      <button id="te-ok" style="background:var(--accent);border:none;color:#000;padding:4px 14px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold">Appliquer ↵</button>
+    </div>`;
+  document.body.appendChild(dlg);
+
+  function getRD() {
+    return {
+      R:  parseFloat(document.getElementById('te-r').value) || 0,
+      tr: (parseFloat(document.getElementById('te-d').value) || 0) / 2
+    };
+  }
+
+  // Refresh arc spans (at activeRef) and axis total (always AXE)
+  function refreshArcAndTotal() {
+    const { R, tr } = getRD();
+    let totalAxe = 0;
+    [...document.querySelectorAll('#te-tbody tr')].forEach((domTr, i) => {
+      if (!editRows[i]) return;
+      const arcEl = domTr.querySelector('.te-arc');
+      const phi = editRows[i].angle !== null ? (editRows[i].angle || 0) * Math.PI / 180 : 0;
+      const arc = editRows[i].angle !== null ? arcLenAt(R, tr, phi, activeRef) : 0;
+      if (arcEl) arcEl.textContent = arc.toFixed(1);
+      totalAxe += editRows[i].straightLen + (editRows[i].angle !== null ? R * phi : 0);
+    });
+    document.getElementById('te-devlen').textContent = totalAxe.toFixed(1) + ' mm';
+  }
+
+  // Refresh ONE saisie input from editRows.straightLen (skips focused input to avoid caret reset)
+  function refreshSaisieRow(i, R, tr) {
+    const rows = document.querySelectorAll('#te-tbody tr');
+    if (!rows[i]) return;
+    const strEl = rows[i].querySelector('.te-straight');
+    if (strEl && document.activeElement !== strEl)
+      strEl.value = saisieAt(i, R, tr, activeRef).toFixed(1);
+  }
+
+  // Refresh ALL saisie inputs (called on ref or R/D change)
+  function refreshAllSaisie() {
+    const { R, tr } = getRD();
+    editRows.forEach((_, i) => refreshSaisieRow(i, R, tr));
+  }
+
+  // Update column headers to reflect active reference
+  function updateRefLabels() {
+    const ref = activeRef.toUpperCase();
+    document.getElementById('te-col-saisie-hdr').textContent = 'L. saisie ' + ref + ' (mm)';
+    document.getElementById('te-col-arc-hdr').textContent    = 'L. coude ' + ref;
+  }
+
+  // Snapshot current DOM inputs → editRows (used before add/delete/apply)
+  function snapshotRows() {
+    const { R, tr } = getRD();
+    [...document.querySelectorAll('#te-tbody tr')].forEach((domTr, i) => {
+      if (!editRows[i]) return;
+      const angEl = domTr.querySelector('.te-ang');
+      const strEl = domTr.querySelector('.te-straight');
+      if (angEl) editRows[i].angle = Math.abs(parseFloat(angEl.value) || 0) || editRows[i].angle;
+      if (strEl) {
+        const saisie = parseFloat(strEl.value) || 0;
+        const phiBefore = (i > 0 && editRows[i-1].angle !== null)
+          ? (editRows[i-1].angle || 0) * Math.PI / 180 : 0;
+        const phiAfter = editRows[i].angle !== null
+          ? (editRows[i].angle || 0) * Math.PI / 180 : 0;
+        editRows[i].straightLen = Math.max(0.1,
+          saisie - Tref(phiBefore, R, tr, activeRef) - Tref(phiAfter, R, tr, activeRef));
+      }
+    });
+  }
+
+  // Build tbody rows with per-input event handlers
+  function renderRows() {
+    const tbody = document.getElementById('te-tbody');
+    tbody.innerHTML = '';
+    const { R, tr } = getRD();
+    const inpNarrow = inp.replace('width:72px','width:58px');
+    editRows.forEach((row, i) => {
+      const isLast  = i === editRows.length - 1;
+      // Angle always displayed positive; side toggle button controls direction
+      const angCell = isLast
+        ? `<span style="color:var(--text-dim);padding:0 6px">—</span>`
+        : `<span style="display:inline-flex;gap:3px;align-items:center">
+            <input class="te-ang" value="${Math.abs(row.angle??90).toFixed(1)}" style="${inpNarrow}">
+            <button class="te-side" title="Inverser le sens du coude" style="background:#2a2a3e;border:1px solid #334;color:var(--accent);width:22px;height:22px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1;padding:0">${row.side >= 0 ? '⟳' : '⟲'}</button>
+           </span>`;
+      const arcCell = isLast
+        ? `<span style="color:var(--text-dim);padding:0 6px">—</span>`
+        : `<span class="te-arc" style="color:var(--accent)">—</span>`;
+      const delDis  = editRows.length <= 1 ? 'opacity:.3;cursor:default;' : 'cursor:pointer;';
+      const domTr   = document.createElement('tr');
+      domTr.innerHTML = `
+        <td style="text-align:center;color:var(--text-dim);padding:3px 6px">${i+1}</td>
+        <td style="padding:3px 4px"><input class="te-straight" value="${saisieAt(i,R,tr,activeRef).toFixed(1)}" style="${inp}"></td>
+        <td style="padding:3px 4px;text-align:center">${angCell}</td>
+        <td style="padding:3px 4px;text-align:right">${arcCell}</td>
+        <td style="padding:3px 4px;text-align:center"><span class="te-del" style="color:#ff5252;font-size:13px;${delDis}">×</span></td>`;
+      tbody.appendChild(domTr);
+
+      const strEl  = domTr.querySelector('.te-straight');
+      const angEl  = domTr.querySelector('.te-ang');
+      const sideBtn = domTr.querySelector('.te-side');
+
+      // Side toggle: flip direction, no length change
+      if (sideBtn) sideBtn.onclick = () => {
+        editRows[i].side = editRows[i].side >= 0 ? -1 : 1;
+        sideBtn.textContent = editRows[i].side >= 0 ? '⟳' : '⟲';
+      };
+
+      // Saisie edited → back-convert to straightLen, refresh arc+total
+      if (strEl) strEl.oninput = () => {
+        const { R, tr } = getRD();
+        const saisie = parseFloat(strEl.value) || 0;
+        const phiBefore = (i > 0 && editRows[i-1].angle !== null)
+          ? (editRows[i-1].angle || 0) * Math.PI / 180 : 0;
+        const phiAfter = editRows[i].angle !== null
+          ? (editRows[i].angle || 0) * Math.PI / 180 : 0;
+        editRows[i].straightLen = Math.max(0.1,
+          saisie - Tref(phiBefore, R, tr, activeRef) - Tref(phiAfter, R, tr, activeRef));
+        refreshArcAndTotal();
+      };
+
+      // Angle edited → always store positive; negative value flips side
+      if (angEl) angEl.oninput = () => {
+        const { R, tr } = getRD();
+        const raw = parseFloat(angEl.value) || 0;
+        if (raw < 0) {
+          editRows[i].side = -editRows[i].side;
+          editRows[i].angle = Math.abs(raw);
+          angEl.value = editRows[i].angle.toFixed(1);
+          if (sideBtn) sideBtn.textContent = editRows[i].side >= 0 ? '⟳' : '⟲';
+        } else {
+          editRows[i].angle = raw;
+        }
+        refreshSaisieRow(i, R, tr);
+        if (i + 1 < editRows.length) refreshSaisieRow(i + 1, R, tr);
+        refreshArcAndTotal();
+      };
+
+      domTr.querySelector('.te-del').onclick = () => {
+        if (editRows.length <= 1) return;
+        snapshotRows();
+        editRows.splice(i, 1);
+        editRows[editRows.length - 1].angle = null;
+        renderRows(); refreshArcAndTotal();
+      };
+    });
+  }
+
+  // R or D changed → saisie values and arc lengths both depend on them
+  document.getElementById('te-r').oninput = document.getElementById('te-d').oninput = () => {
+    refreshAllSaisie(); refreshArcAndTotal();
+  };
+
+  // AXE/EXT/INT toggle → saisie and arc both update, straightLen stays unchanged
+  ['axe','ext','int'].forEach(ref => {
+    document.getElementById('te-ref-'+ref).onclick = () => {
+      activeRef = ref;
+      ['axe','ext','int'].forEach(r => {
+        const b = document.getElementById('te-ref-'+r);
+        b.style.background = r === ref ? 'var(--accent)' : '#2a2a3e';
+        b.style.color       = r === ref ? '#000' : 'var(--text)';
+      });
+      refreshAllSaisie(); refreshArcAndTotal(); updateRefLabels();
+    };
+  });
+
+  document.getElementById('te-add').onclick = () => {
+    snapshotRows();
+    // Give the formerly-last row a default 90° bend (same side as its own side, or +1)
+    if (editRows.length > 0) {
+      const last = editRows[editRows.length - 1];
+      if (last.angle === null) last.angle = 90;
+    }
+    // New section: start with 500mm saisie. Back-convert to straightLen accounting for T_before.
+    const { R, tr } = getRD();
+    const precAngle = editRows[editRows.length - 1].angle || 90;
+    const phiBefore = precAngle * Math.PI / 180;
+    const newStraight = Math.max(0.1, 500 - Tref(phiBefore, R, tr, activeRef));
+    editRows.push({ straightLen: newStraight, angle: null, side: 1 });
+    renderRows(); refreshArcAndTotal();
+  };
+
+  function closeDlg() { dlg.remove(); }
+  document.getElementById('te-close').onclick  = closeDlg;
+  document.getElementById('te-cancel').onclick = closeDlg;
+
+  function applyChanges() {
+    snapshotRows();
+    const newD = parseFloat(document.getElementById('te-d').value);
+    const newR = parseFloat(document.getElementById('te-r').value);
+    if (!(newD > 0) || !(newR > 0)) { termPrint('TUBE: Ø et R doivent être > 0', 'warning'); return false; }
+    if (editRows.some(r => !(r.straightLen > 0))) { termPrint('TUBE: longueur droite ≤ 0', 'warning'); return false; }
+    pushUndo();
+    ent.tubeRadius = newD / 2;
+    ent.tubeRef    = activeRef;
+    const newSegs = [];
+    editRows.forEach((row, i) => {
+      newSegs.push({ type: 'straight', length: row.straightLen });
+      if (row.angle !== null && i < editRows.length - 1)
+        newSegs.push({ type: 'bend', angle: (row.angle||0)*Math.PI/180, bendRadius: newR, side: row.side||1 });
+    });
+    ent.segments = newSegs;
+    if (S.entities.some(e => e.linkedTubeId === ent.id)) {
+      S.entities = S.entities.filter(e => e.linkedTubeId !== ent.id);
+      S.entities.push(...createLinkedDims(ent, activeRef));
+    }
+    updateSaveIndicator('modified'); autoSave(); render();
+    return true;
+  }
+
+  function createLinkedDims(tubeEnt, ref) {
+    const { R, tr } = getRD();
+    const segs = tubeEnt.segments || [];
+    const straights = [], bends = [];
+    for (const s of segs) {
+      if (s.type === 'straight') straights.push(s);
+      else if (s.type === 'bend') bends.push(s);
+    }
+    if (!straights.length) return [];
+    function outwardPerp(theta, side) {
+      return [side * Math.sin(theta), -side * Math.cos(theta)];
+    }
+    const side0 = bends.length ? bends[0].side : 1;
+    const op0   = outwardPerp(tubeEnt.startAngle, side0);
+    const refSign = ref === 'ext' ? 1 : ref === 'int' ? -1 : 0;
+    let jx = tubeEnt.startX + refSign * tr * op0[0];
+    let jy = tubeEnt.startY + refSign * tr * op0[1];
+    let jdir = tubeEnt.startAngle;
+    const junctions = [];
+    for (let i = 0; i < straights.length; i++) {
+      junctions.push({ x: jx, y: jy, dir: jdir });
+      jx += Math.cos(jdir) * saisieAt(i, R, tr, ref);
+      jy += Math.sin(jdir) * saisieAt(i, R, tr, ref);
+      if (i < bends.length) jdir += bends[i].angle * bends[i].side;
+    }
+    junctions.push({ x: jx, y: jy });
+    const offsetDist = Math.max(50, tr * 6);
+    const result = [];
+    for (let i = 0; i < straights.length; i++) {
+      const j1 = junctions[i], j2 = junctions[i + 1];
+      const bendSide = i < bends.length ? bends[i].side
+                     : i > 0            ? bends[i-1].side
+                     : 1;
+      result.push({
+        type: 'dim_aligned',
+        x1: j1.x, y1: j1.y,
+        x2: j2.x, y2: j2.y,
+        offset: bendSide * offsetDist,
+        dimStyle: S.currentDimStyle,
+        linkedTubeId: tubeEnt.id,
+        id: S.nextId++,
+        layer: S.currentLayer
+      });
+    }
+    return result;
+  }
+
+  document.getElementById('te-cote').onclick = () => {
+    if (!ent.segments || !ent.segments.some(s => s.type === 'straight')) return;
+    pushUndo();
+    S.entities = S.entities.filter(e => e.linkedTubeId !== ent.id);
+    const created = createLinkedDims(ent, activeRef);
+    S.entities.push(...created);
+    render();
+    termPrint(created.length + ' cote(s) ajoutée(s) — ' + activeRef.toUpperCase(), 'success');
+  };
+
+  document.getElementById('te-preview').onclick = () => {
+    if (applyChanges()) termPrint('Prévisualisation appliquée', 'info');
+  };
+
+  document.getElementById('te-ok').onclick = () => {
+    if (applyChanges()) { closeDlg(); termPrint('Tube modifié', 'success'); }
+  };
+
+  dlg.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter')  { ev.preventDefault(); document.getElementById('te-ok').click(); }
+    if (ev.key === 'Escape') closeDlg();
+  });
+
+  renderRows();
+  refreshArcAndTotal();
+  updateRefLabels();
+  dlg.querySelector('.te-straight').focus();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function finishTube() {
   if (!S.tubePoints || S.tubePoints.length < 2) {
     termPrint('TUBE: au moins 2 points requis (Echap=annuler)', 'warning');
@@ -4298,10 +4665,25 @@ function applyJoin() {
 
   function endpts(e) {
     if (e.type==='line'||e.type==='wall') return {s:[e.x1,e.y1], e:[e.x2,e.y2]};
+    if (e.type==='arc') return {
+      s:[e.cx+e.r*Math.cos(e.startAngle), e.cy+e.r*Math.sin(e.startAngle)],
+      e:[e.cx+e.r*Math.cos(e.endAngle),   e.cy+e.r*Math.sin(e.endAngle)]
+    };
     const p = e.points; return {s:p[0], e:p[p.length-1]};
   }
   function close(a,b){ return Math.hypot(a[0]-b[0],a[1]-b[1]) < TOL; }
-  function getPts(e){ return (e.type==='line'||e.type==='wall') ? [[e.x1,e.y1],[e.x2,e.y2]] : e.points.map(p=>[...p]); }
+  function getPts(e) {
+    if (e.type==='line'||e.type==='wall') return [[e.x1,e.y1],[e.x2,e.y2]];
+    if (e.type==='arc') {
+      const dth = ((e.endAngle - e.startAngle) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
+      const b = Math.tan(dth / 4);
+      return [
+        [e.cx+e.r*Math.cos(e.startAngle), e.cy+e.r*Math.sin(e.startAngle), b],
+        [e.cx+e.r*Math.cos(e.endAngle),   e.cy+e.r*Math.sin(e.endAngle)]
+      ];
+    }
+    return e.points.map(p=>[...p]);
+  }
   function reversePts(pts){
     const n=pts.length, rev=pts.map(p=>[p[0],p[1]]);
     rev.reverse();
@@ -4336,7 +4718,17 @@ function applyJoin() {
   let allPts = [];
   for (let i=0;i<chain.length;i++) {
     let pts = chain[i].rev ? reversePts(getPts(chain[i].ent)) : getPts(chain[i].ent);
-    allPts = i===0 ? pts : allPts.concat(pts.slice(1));
+    if (i===0) {
+      allPts = pts;
+    } else {
+      // Transfer bulge from pts[0] to the junction point (last of allPts)
+      const b = pts[0][2];
+      if (b) {
+        const j = allPts[allPts.length-1];
+        allPts[allPts.length-1] = [j[0], j[1], b];
+      }
+      allPts = allPts.concat(pts.slice(1));
+    }
   }
 
   pushUndo();
@@ -5342,8 +5734,8 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
   // JOIN
   if (tool === 'join') {
     const hit = hitTest(rawWx, rawWy);
-    const supported = ['line','wall','polyline','cable'];
-    if (!hit || !supported.includes(hit.type)) { termPrint('Cliquez une ligne, un mur ou une polyligne','warning'); render(); return; }
+    const supported = ['line','wall','arc','polyline','cable'];
+    if (!hit || !supported.includes(hit.type)) { termPrint('Cliquez une ligne, un mur, un arc ou une polyligne','warning'); render(); return; }
     const idx = S.joinSelection.indexOf(hit.id);
     if (idx >= 0) {
       S.joinSelection.splice(idx, 1);
@@ -8476,7 +8868,7 @@ let _fileHandle = null; // File System Access API — handle fichier courant
 
 function buildSaveData(name) {
   return {
-    version: '0.04', app: 'MiniCAD',
+    version: '0.05', app: 'MiniCAD',
     name: name || (_fileHandle?.name?.replace(/\.mcad$/i,'')) || 'projet',
     date: new Date().toISOString(),
     layers: S.layers, entities: S.entities,
@@ -9151,6 +9543,9 @@ canvas.addEventListener('dblclick', (ev) => {
   } else if (['dim_linear','dim_aligned','dim_angular','dim_radius','dim_diameter'].includes(hit.type)) {
     showDimTextDialog(hit);
     termPrint('Double-clic cote — taper le texte, utiliser <> pour la valeur mesurée', 'info');
+  } else if (hit.type === 'tube') {
+    openTubeEditDialog(hit);
+    termPrint('Double-clic tube — modifier Ø, R, longueurs et angles', 'info');
   }
 });
 

@@ -187,6 +187,36 @@ Implémenter **sélection par fenêtre** (TODO 3.1) et **historique commandes** 
 
 ---
 
+## [2026-05-20] — v0.05 : Dialogue tube amélioré + JOIN arc
+
+**Contexte :** Continuation du développement avec Claude Code (session context-compacted).
+
+**Réalisé :**
+- [x] **Dialogue édition tube — L. saisie [REF]**
+  - Colonne affichant la longueur point-à-point (distance saisie à la création)
+  - Formule : `saisie = straightLen + T_before + T_after`, T_ref = R_ref × tan(φ/2)
+  - Varie selon AXE / EXT / INT
+- [x] **Dialogue édition tube — bouton Prévisualiser**
+  - Applique sans fermer (`applyChanges()` partagé avec Appliquer)
+- [x] **Dialogue édition tube — longeur développée AXE fixe**
+  - Total en pied de dialogue = toujours AXE, quelle que soit la référence
+- [x] **Dialogue édition tube — gestion du sens de coude**
+  - Bouton ⟳/⟲, saisie négative → flip automatique
+- [x] **Dialogue édition tube — bouton Coter avec cotes liées**
+  - `createLinkedDims(tubeEnt, ref)` : crée des `dim_aligned` sur le chemin REF, à l'extérieur du tube
+  - `linkedTubeId: ent.id` sur chaque cote → recalculées à chaque Appliquer / Prévisualiser
+  - Fix offset : `bendSide * offsetDist` (positif = extérieur)
+- [x] **JOIN — support des arcs**
+  - `arc` ajouté à la liste des types acceptés (filtre `supported` dans le handler JOIN)
+  - `endpts(arc)` : start/end depuis cx, cy, r, startAngle, endAngle
+  - `getPts(arc)` : `[x1,y1,bulge], [x2,y2]` avec `bulge = tan(dθ/4)` (CCW world)
+  - Fix concaténation : bulge de `pts[0]` transféré sur le point de jonction dans `allPts`
+
+**Prochaine étape :**
+- 4.3 Menu contextuel clic-droit, 3.4 EXTEND, 5.2 AREA
+
+---
+
 <!-- Template pour les prochaines sessions :
 
 ## [YYYY-MM-DD] — Titre
