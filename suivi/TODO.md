@@ -14,6 +14,16 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## 🟡 Priorité moyenne
 
+- [ ] **OSNAP Extension** — prolongement de ligne/polyligne (EXT comme AutoCAD)
+  - Acquisition du point d'extrémité au survol (marqueur "+")
+  - Ligne pointillée sur le prolongement, snap au croisement
+  - Implémenté partiellement (v0.06) — ne fonctionne pas correctement, à reprendre
+
+- [ ] **HATCH V2 — Détection de frontière multi-entités**
+  - Clic dans une zone délimitée par plusieurs lignes/arcs qui se croisent (pas une entité fermée unique)
+  - Lancer de rayons depuis le point cliqué → trouver les intersections les plus proches → reconstruire le contour fermé
+  - Similaire au "Pick Points" d'AutoCAD
+
 - [ ] **TUBE preview EXT/INT à améliorer**
   - En mode multi-tronçons, le dernier point confirmé peut légèrement bouger lors du changement d'angle du tronçon suivant (bisectrice dynamique)
   - Piste : pré-calculer et stocker l'offset de chaque point confirmé dans `S.tubeOffsets[]`, le réutiliser dans la preview sans le recalculer depuis l'angle souris

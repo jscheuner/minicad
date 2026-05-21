@@ -5,6 +5,23 @@ Format : `## [YYYY-MM-DD] — Résumé court`
 
 ---
 
+## [2026-05-21] — v0.06 suite : grip→move, preview déplacement, HATCH amélioré, OSNAP Extension (partiel)
+
+**Contexte :** Session de continuation v0.06 (context compacté depuis session précédente).
+
+**Réalisé :**
+- [x] **HATCH — polylignes avec arcs (bulge)** — `flattenPolyPoints()` pour tesseller les segments arc avant scanline
+- [x] **HATCH associatif** — `sourceId` relie la hachure à l'entité source ; `getHatchPoints()` recalcule les points live ; ERASE détache proprement
+- [x] **Double-clic hachure** — rouvre le dialogue de modification
+- [x] **Auto-détection hachure** — clic dans une zone fermée → `pointInClosedEntity()` détecte la plus petite entité englobante
+- [x] **Preview MOVE (move_obj)** — ghost pointillé semi-transparent pendant le déplacement, identique à la preview COPY
+- [x] **Workflow Grip → Espace → MOVE** — clic poignée → `S.gripSelected` armé (preview orange) → Espace intercepté en tête du keydown document (avant tout early-return) → `setTool('move_obj')` avec base point pré-rempli → clic destination
+- [x] **OSNAP Extension** — infrastructure posée : acquisition, snap, trail pointillé, marqueur tiret ; désactivé par défaut ; non fonctionnel en pratique — ajouté en TODO pour reprise
+
+**Non committé dans la session :** la fonctionnalité OSNAP Extension est dans le code mais en erreur ; TODO créé.
+
+---
+
 ## [2025-05-14] — Mise en place de la structure projet
 
 **Contexte :** Le projet a été développé dans claude.ai (web) et importé dans l'environnement local pour continuer le développement avec Claude Code.

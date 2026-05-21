@@ -24,6 +24,11 @@ Format : `[version] — YYYY-MM-DD — Description`
 - **Distance OFFSET par clic canvas** — curseur croix dès la saisie de distance, 2 clics définissent la distance (preview ligne orange avec valeur en direct)
 - **Clic droit = Entrée** — fonctionne pour tous les états pending, drawing actif, JOIN, TRIM/EXTEND
 
+### Ajouté (session 2026-05-21 — suite 2)
+- **Preview déplacement (move_obj)** — ghost pointillé identique à la preview COPY pendant le déplacement en cours
+- **Grip → Espace → Déplacer** — Space intercepté avant tout early-return de keydown ; base point pré-rempli depuis la poignée, pas de demande de point de base
+- **OSNAP Extension (partiel)** — infrastructure posée (acquisition, snap, trail pointillé), désactivé par défaut ; non fonctionnel, à terminer (voir TODO)
+
 ### Ajouté (session 2026-05-21 suite)
 - **FILLET R=0** — raccord en angle vif (sans arc) : raccorde deux lignes/polylignes au point d'intersection
 - **FILLET sur arc** — raccord entre ligne et arc de cercle (R=0 et R>0)

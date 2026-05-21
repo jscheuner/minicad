@@ -7,13 +7,20 @@ Interface inspirée d'AutoCAD LT : commandes texte, OSNAP, saisie dynamique, cot
 
 ---
 
+## Version en ligne
+
+**[minicad.org](https://minicad.org)** — accès direct dans le navigateur, sans installation.  
+Même fichier, même fonctionnalités — idéal pour tester ou utiliser depuis n'importe quel poste.
+
+---
+
 ## Démarrage rapide
 
-1. Télécharger [`minicad.html`](minicad.html)
-2. Ouvrir dans Chrome, Firefox ou Edge
+1. Aller sur **[minicad.org](https://minicad.org)** — ou —
+2. Télécharger [`minicad.html`](minicad.html) et l'ouvrir dans Chrome, Firefox ou Edge
 3. Commencer à dessiner
 
-Aucun npm, aucun build, aucune connexion internet requise.
+Aucun npm, aucun build, aucune connexion internet requise (version locale).
 
 ---
 
@@ -46,7 +53,7 @@ Aucun npm, aucun build, aucune connexion internet requise.
 Grip editing sur toutes les entités : cliquer un objet sélectionné pour déplacer ses extrémités.
 
 ### Précision
-- **OSNAP** — 7 modes : extrémité, milieu, centre, intersection, perpendiculaire, tangente, plus proche
+- **OSNAP** — 8 modes : extrémité, milieu, centre, intersection, perpendiculaire, tangente, plus proche, quadrant
 - **Ortho** (F8) — contraint à 0°/90°
 - **Polaire** (F10) — snap angulaire configurable (`POLAR [angle]`)
 - **Saisie dynamique** — bulle D/A éditable près du curseur (Tab pour basculer Distance ↔ Angle)
@@ -227,7 +234,7 @@ minicad/
 
 ## Version
 
-**v0.03** — Voir [suivi/CHANGELOG.md](suivi/CHANGELOG.md) pour l'historique complet.
+**v0.06** — Voir [suivi/CHANGELOG.md](suivi/CHANGELOG.md) pour l'historique complet.
 
 ---
 
