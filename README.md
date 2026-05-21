@@ -3,7 +3,7 @@
 **Logiciel de dessin technique 2D dans un seul fichier HTML.**  
 Aucune dépendance, aucun serveur, aucune installation — ouvrir `minicad.html` et dessiner.
 
-Interface inspirée d'AutoCAD LT : commandes texte, OSNAP, saisie dynamique, cotations, import/export DXF.
+Interface : commandes texte, OSNAP, saisie dynamique, cotations, import/export DXF.
 
 ---
 
