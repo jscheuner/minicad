@@ -187,6 +187,35 @@ Implémenter **sélection par fenêtre** (TODO 3.1) et **historique commandes** 
 
 ---
 
+## [2026-05-21] — v0.06 : FILLET arc, hitTest distance, sélection croisée géométrique
+
+**Contexte :** Continuation du développement avec Claude Code.
+
+**Réalisé :**
+- [x] **FILLET R=0** — raccord en angle vif : validation `r>=0` aux 3 endroits, cas spécial dans `applyFilletChamfer` (tronque/prolonge sans créer d'arc)
+- [x] **FILLET sur arc** — raccord ligne+arc (R=0 et R>0)
+  - `getHitSeg` étendu au type `arc` (segIdx=-2, ax1/ay1=start, ax2/ay2=end)
+  - Handler clic fillet : `supported` inclut `'arc'`
+  - `applyFilletWithArc` : trouve l'intersection (ligne×cercle ou cercle×cercle), R=0 → tronque, R>0 → calcule centre tangent via boucle sur d=±R et D=r±R
+  - `circleCircleIntersect`, `trimArcToPt`, `trimEntCorner`
+- [x] **hitTest par distance minimale** — refonte complète : accumule les candidats dans le rayon `tol`, retourne le plus proche du clic
+  - Suppression du premier-retourné, `tryHit(e, dist)` avec `bestDist`
+  - Hachure : boundary `distToSeg` (suppression point-in-polygon)
+  - Zones texte/cote : distance normalisée (`td/N`) pour rester compétitives
+- [x] **Sélection croisée géométrique** (`entityInRect` mode croisement)
+  - `segIntersectsRect` : Liang-Barsky pour lignes et bords de rect
+  - `circleOutlineCrossesRect` : distMin<r ET pas tous les coins dans le cercle
+  - `arcOutlineCrossesRect` : start/end/cardinaux dans boîte + même check coins
+  - polyline/cable/hatch : segment par segment
+
+**Problèmes rencontrés :**
+- Sélection croisée cercle : `if(center inside box) return true` incorrecte → cercle large entourant la boîte sélectionné à tort. Fix : check unifié "tous les coins dans le cercle" dans les deux cas (centre dedans ou dehors).
+
+**Prochaine étape :**
+- 4.3 Menu contextuel clic-droit, 3.4 EXTEND, 5.2 AREA
+
+---
+
 ## [2026-05-21] — HATCH, sélection additive, OFFSET refactorisé, clic droit
 
 **Contexte :** Continuation du développement avec Claude Code.

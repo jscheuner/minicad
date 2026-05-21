@@ -42,6 +42,12 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## ✅ Terminé (résumé)
 
+- ✅ **FILLET R=0** — raccord angle vif sur lignes, polylignes et arcs
+- ✅ **FILLET sur arc** — raccord ligne+arc (R=0 et R>0) via `applyFilletWithArc`
+- ✅ **hitTest par distance** — sélection au clic par proximité réelle au contour (plus premier-trouvé)
+- ✅ **Hachure hitTest contour** — détection sur le bord uniquement (plus surface)
+- ✅ **Sélection croisée précise** — rect/circle/arc/polyline/hatch par géométrie (plus bounding box)
+
 Voir [CHANGELOG.md](CHANGELOG.md) pour le détail.
 
 - ✅ **HATCH** — hachures sur polyligne/rect/cercle, patterns lignes/croisé, angle, espacement, grip centroïde

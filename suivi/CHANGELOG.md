@@ -24,7 +24,23 @@ Format : `[version] — YYYY-MM-DD — Description`
 - **Distance OFFSET par clic canvas** — curseur croix dès la saisie de distance, 2 clics définissent la distance (preview ligne orange avec valeur en direct)
 - **Clic droit = Entrée** — fonctionne pour tous les états pending, drawing actif, JOIN, TRIM/EXTEND
 
-### Corrigé (session 2026-05-21)
+### Ajouté (session 2026-05-21 suite)
+- **FILLET R=0** — raccord en angle vif (sans arc) : raccorde deux lignes/polylignes au point d'intersection
+- **FILLET sur arc** — raccord entre ligne et arc de cercle (R=0 et R>0)
+  - R=0 : tronque/prolonge les deux entités à leur intersection
+  - R>0 : calcule le cercle de raccord tangent à la ligne (dist R) et à l'arc (dist r±R), insère l'arc de raccord
+  - Helpers : `circleCircleIntersect`, `trimArcToPt`, `trimEntCorner`, `applyFilletWithArc`
+  - `getHitSeg` étendu au type `arc`
+
+### Corrigé (session 2026-05-21 suite)
+- **Sélection par clic (hitTest)** — priorité par distance minimale au contour (plus premier-trouvé)
+  - Un objet proche du clic bat un objet lointain, peu importe l'ordre de création
+  - Hachure : détection sur le contour uniquement (suppression du point-in-polygon)
+- **Sélection par fenêtre croisée** (droite→gauche) — géométrie exacte au lieu de bounding box
+  - `rect` : intersection avec les 4 bords (Liang-Barsky)
+  - `circle` : `circleOutlineCrossesRect` — exclut "boîte dans le cercle sans toucher le contour"
+  - `arc` : `arcOutlineCrossesRect` — vérifie la plage angulaire + même correction que cercle
+  - `polyline/cable/hatch` : segment par segment
 - **Navigation navigateur** — `preventDefault` sur mousedown/mouseup bouton droit empêche le geste "retour"
 - **Terminal** — texte sélectionnable et copiable (`user-select:text`)
 - **Rubber-band parasite** — flag `_offsetJustApplied` + guard `offsetAwaitDist` dans mouseup

@@ -2411,7 +2411,7 @@ const CMD = {
     setTimeout(smartFocus,0);
   }},
   FILLET: { alias: ['F','RACCORD','RACCORDER'], desc: 'Raccord arrondi — FILLET [rayon]', exec(args) {
-    if (args[0]) { const r=parseFloat(args[0]); if (!isNaN(r) && r>0) S.filletRadius=r; }
+    if (args[0]) { const r=parseFloat(args[0]); if (!isNaN(r) && r>=0) S.filletRadius=r; }
     S.filletFirstId=null; S.filletFirstSeg=null; S.filletClickPos1=null; S.selected=[];
     setTool('fillet');
     termPrint('RACCORD R='+S.filletRadius+' — Cliquer le 1er segment (Echap=fin)', 'info');
@@ -4579,6 +4579,11 @@ function getHitSeg(entity, wx, wy) {
     }
     return {entity, segIdx:best, ax1:pts[best][0], ay1:pts[best][1], ax2:pts[best+1][0], ay2:pts[best+1][1]};
   }
+  if (entity.type==='arc') {
+    const sx=entity.cx+entity.r*Math.cos(entity.startAngle), sy=entity.cy+entity.r*Math.sin(entity.startAngle);
+    const ex=entity.cx+entity.r*Math.cos(entity.endAngle),   ey=entity.cy+entity.r*Math.sin(entity.endAngle);
+    return {entity, segIdx:-2, ax1:sx, ay1:sy, ax2:ex, ay2:ey};
+  }
   return null;
 }
 
@@ -4608,10 +4613,135 @@ function splitPolyAtCorner(poly, sharedIdx, ptA, ptB) {
   if (pts2.length >= 2) S.entities.push({type:poly.type, points:pts2, id:S.nextId++, layer:poly.layer});
 }
 
+// Circle-circle intersection points
+function circleCircleIntersect(cx1,cy1,r1,cx2,cy2,r2){
+  const dx=cx2-cx1,dy=cy2-cy1,d=Math.hypot(dx,dy);
+  if(d<1e-9||d>r1+r2+1e-9||d<Math.abs(r1-r2)-1e-9) return [];
+  const a=(r1*r1-r2*r2+d*d)/(2*d);
+  const h2=r1*r1-a*a;
+  if(h2<-1e-9) return [];
+  const h=Math.sqrt(Math.max(0,h2));
+  const mx=cx1+a*dx/d,my=cy1+a*dy/d,px=-dy/d*h,py=dx/d*h;
+  const pts=[{x:mx+px,y:my+py}];
+  if(h>1e-9) pts.push({x:mx-px,y:my-py});
+  return pts;
+}
+
+// Trim arc: endpoint (start or end) closest to (ix,iy) gets its angle set to newAngle
+function trimArcToPt(arcEnt,ix,iy,newAngle){
+  const sa=arcEnt.startAngle,ea=arcEnt.endAngle;
+  const sx=arcEnt.cx+arcEnt.r*Math.cos(sa),sy=arcEnt.cy+arcEnt.r*Math.sin(sa);
+  const ex=arcEnt.cx+arcEnt.r*Math.cos(ea),ey=arcEnt.cy+arcEnt.r*Math.sin(ea);
+  if(Math.hypot(ix-sx,iy-sy)<Math.hypot(ix-ex,iy-ey)) arcEnt.startAngle=newAngle;
+  else arcEnt.endAngle=newAngle;
+}
+
+// Trim entity endpoint closest to corner (ix,iy) to point (tx,ty)
+function trimEntCorner(ent,seg,ix,iy,tx,ty){
+  if(ent.type==='arc'){
+    trimArcToPt(ent,ix,iy,Math.atan2(ty-ent.cy,tx-ent.cx));
+  } else if(ent.type==='line'||ent.type==='wall'){
+    const d1=Math.hypot(ix-ent.x1,iy-ent.y1),d2=Math.hypot(ix-ent.x2,iy-ent.y2);
+    if(d1<d2){ent.x1=tx;ent.y1=ty;}else{ent.x2=tx;ent.y2=ty;}
+  } else {
+    const pts=ent.points,p1=pts[seg.segIdx],p2=pts[seg.segIdx+1];
+    const d1=Math.hypot(ix-p1[0],iy-p1[1]),d2=Math.hypot(ix-p2[0],iy-p2[1]);
+    if(d1<d2) pts[seg.segIdx]=[tx,ty];else pts[seg.segIdx+1]=[tx,ty];
+  }
+}
+
+// Fillet between two entities where at least one is an arc
+function applyFilletWithArc(seg1,cx1,cy1,seg2,cx2,cy2){
+  const e1=seg1.entity,e2=seg2.entity;
+  const isArc1=e1.type==='arc',isArc2=e2.type==='arc';
+  const R=S.filletRadius;
+  const mx=(cx1+cx2)/2,my=(cy1+cy2)/2;
+
+  // Find intersection of the two curves
+  let corners=[];
+  if(isArc1&&isArc2){
+    corners=circleCircleIntersect(e1.cx,e1.cy,e1.r,e2.cx,e2.cy,e2.r);
+  } else {
+    const ls=isArc2?seg1:seg2, ae=isArc1?e1:e2;
+    const dx=ls.ax2-ls.ax1,dy=ls.ay2-ls.ay1;
+    const ts=lineCircleIntersectInf(ls.ax1,ls.ay1,ls.ax2,ls.ay2,ae.cx,ae.cy,ae.r);
+    for(const t of ts) corners.push({x:ls.ax1+t*dx,y:ls.ay1+t*dy});
+  }
+  if(!corners.length){termPrint('Pas d\'intersection trouvée','warning');return false;}
+  corners.sort((a,b)=>Math.hypot(a.x-mx,a.y-my)-Math.hypot(b.x-mx,b.y-my));
+  const {x:ix,y:iy}=corners[0];
+
+  pushUndo();
+
+  if(R===0){
+    trimEntCorner(e1,seg1,ix,iy,ix,iy);
+    trimEntCorner(e2,seg2,ix,iy,ix,iy);
+    termPrint('Raccord angle vif appliqué','success');
+    updateSaveIndicator('modified');autoSave();render();return true;
+  }
+
+  // R > 0: arc+arc not supported
+  if(isArc1&&isArc2){
+    termPrint('Raccord arc-arc R>0 : utilisez R=0','warning');
+    S.history.pop();return false;
+  }
+
+  // Line + Arc, R > 0
+  // Normalize: ls = line segment, ae = arc entity, arcSeg = arc's seg
+  const ls=isArc1?seg2:seg1, ae=isArc1?e1:e2, arcSeg=isArc1?seg1:seg2;
+
+  const ldx=ls.ax2-ls.ax1,ldy=ls.ay2-ls.ay1,llen=Math.hypot(ldx,ldy);
+  if(llen<1e-9){termPrint('Segment trop court','warning');S.history.pop();return false;}
+  const ludx=ldx/llen,ludy=ldy/llen,lnx=-ludy,lny=ludx;
+  const ar=ae.r,acx=ae.cx,acy=ae.cy;
+
+  // Find fillet center F: at distance R from line, distance (ar±R) from arc center
+  let bestF=null,bestD=Infinity;
+  for(const dSign of[1,-1]){
+    const d=dSign*R;
+    const ox=ls.ax1+d*lnx,oy=ls.ay1+d*lny;
+    for(const D of[ar+R,ar-R]){
+      if(D<1e-9) continue;
+      const A=ox-acx,B=oy-acy;
+      const p=A*ludx+B*ludy,q=A*A+B*B-D*D,disc=p*p-q;
+      if(disc<0) continue;
+      const sq=Math.sqrt(Math.max(0,disc));
+      for(const t of[-p-sq,-p+sq]){
+        const fx=ox+t*ludx,fy=oy+t*ludy;
+        const tlx=fx-d*lnx,tly=fy-d*lny;   // tangent on line
+        const df=Math.hypot(fx-acx,fy-acy);
+        if(df<1e-9) continue;
+        const tax=acx+ar*(fx-acx)/df,tay=acy+ar*(fy-acy)/df; // tangent on arc
+        const dist=Math.hypot(fx-mx,fy-my);
+        if(dist<bestD){bestD=dist;bestF={fx,fy,tlx,tly,tax,tay};}
+      }
+    }
+  }
+  if(!bestF){termPrint('Raccord impossible avec ce rayon','warning');S.history.pop();return false;}
+  const {fx,fy,tlx,tly,tax,tay}=bestF;
+
+  trimEntCorner(ls.entity,ls,ix,iy,tlx,tly);
+  trimEntCorner(ae,arcSeg,ix,iy,tax,tay);
+
+  // Add fillet arc between tangent points
+  let sa=Math.atan2(tly-fy,tlx-fx),ea=Math.atan2(tay-fy,tax-fx);
+  while(ea<sa) ea+=Math.PI*2;
+  if(ea-sa>Math.PI){let tmp=sa;sa=ea;ea=tmp;while(ea<sa)ea+=Math.PI*2;}
+  S.entities.push({type:'arc',cx:fx,cy:fy,r:R,startAngle:sa,endAngle:ea,id:S.nextId++,layer:ls.entity.layer});
+
+  termPrint('Raccord R='+R+' appliqué','success');
+  updateSaveIndicator('modified');autoSave();render();return true;
+}
+
 function applyFilletChamfer(seg1,cx1,cy1, seg2,cx2,cy2, type) {
-  const ok=['line','wall','polyline','cable'];
+  const ok=['line','wall','polyline','cable','arc'];
   if(!ok.includes(seg1.entity.type)||!ok.includes(seg2.entity.type)){
-    termPrint('Raccord/Chanfrein : lignes, murs et polylignes seulement','warning'); return false;
+    termPrint('Raccord/Chanfrein : lignes, murs, polylignes et arcs seulement','warning'); return false;
+  }
+  // Arc involved → dedicated handler
+  if(seg1.entity.type==='arc'||seg2.entity.type==='arc'){
+    if(type==='chamfer'){termPrint('Chanfrein non disponible sur les arcs','warning');return false;}
+    return applyFilletWithArc(seg1,cx1,cy1,seg2,cx2,cy2);
   }
   const pt=linesIntersect(seg1.ax1,seg1.ay1,seg1.ax2-seg1.ax1,seg1.ay2-seg1.ay1,
                           seg2.ax1,seg2.ay1,seg2.ax2-seg2.ax1,seg2.ay2-seg2.ay1);
@@ -4648,6 +4778,18 @@ function applyFilletChamfer(seg1,cx1,cy1, seg2,cx2,cy2, type) {
 
   if(type==='fillet'){
     const r=S.filletRadius;
+    if(r===0){
+      // Sharp corner: trim/extend both segments to their intersection, no arc
+      if(adjPoly){
+        const [sE]=seg1.segIdx<seg2.segIdx?[seg1,seg2]:[seg2,seg1];
+        const pts = sE.entity.points;
+        pts[sE.segIdx+1] = [ix, iy];
+      } else {
+        trimSegToPt(seg1,ix,iy,u1x,u1y,ix,iy);
+        trimSegToPt(seg2,ix,iy,u2x,u2y,ix,iy);
+      }
+      termPrint('Raccord angle vif appliqué','success');
+    } else {
     const cosA=Math.max(-1,Math.min(1,u1x*u2x+u1y*u2y));
     const halfA=Math.acos(cosA)/2;
     if(halfA<0.01||halfA>Math.PI/2-0.01){termPrint('Angle inadapté pour ce rayon','warning');S.history.pop();return false;}
@@ -4681,6 +4823,7 @@ function applyFilletChamfer(seg1,cx1,cy1, seg2,cx2,cy2, type) {
       S.entities.push({type:'arc',cx:arcCx,cy:arcCy,r,startAngle:sa,endAngle:ea,id:S.nextId++,layer:targetLayer});
     }
     termPrint('Raccord R='+r+' appliqué','success');
+    }
   } else {
     const d1=S.filletDist1, d2=S.filletDist2;
     const p1x=ix+d1*u1x, p1y=iy+d1*u1y;
@@ -5902,9 +6045,9 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
   // Fillet / Chamfer
   if (tool==='fillet' || tool==='chamfer') {
     const hit = hitTest(rawWx, rawWy);
-    const supported = ['line','wall','polyline','cable'];
+    const supported = ['line','wall','polyline','cable','arc'];
     if (!hit || !supported.includes(hit.type)) {
-      termPrint('Cliquez une ligne, un mur ou une polyligne', 'warning'); render(); return;
+      termPrint('Cliquez une ligne, un mur, une polyligne ou un arc', 'warning'); render(); return;
     }
     const hitSeg = getHitSeg(hit, rawWx, rawWy);
     if (S.filletFirstId === null) {
@@ -6797,92 +6940,88 @@ function closePolyline(tool) {
 
 function hitTest(wx,wy) {
   const tol=8/S.zoom;
+  let best=null, bestDist=Infinity;
+  // Record candidate only if closer than current best
+  function tryHit(e,dist){ if(dist<tol && dist<bestDist){bestDist=dist;best=e;} }
+
   for(let i=S.entities.length-1;i>=0;i--){
     const e=S.entities[i];
-    if(!S.layers[e.layer]?.visible)continue;
-    if(e.type==='line'||e.type==='wall'){if(distToSeg(wx,wy,e.x1,e.y1,e.x2,e.y2)<tol)return e;}
-    else if(e.type==='rect'){
-      if(distToSeg(wx,wy,e.x1,e.y1,e.x2,e.y1)<tol||distToSeg(wx,wy,e.x2,e.y1,e.x2,e.y2)<tol||
-         distToSeg(wx,wy,e.x2,e.y2,e.x1,e.y2)<tol||distToSeg(wx,wy,e.x1,e.y2,e.x1,e.y1)<tol)return e;
+    if(!S.layers[e.layer]?.visible) continue;
+
+    if(e.type==='line'||e.type==='wall'){
+      tryHit(e, distToSeg(wx,wy,e.x1,e.y1,e.x2,e.y2));
     }
-    else if(e.type==='circle'){if(Math.abs(Math.hypot(wx-e.cx,wy-e.cy)-e.r)<tol)return e;}
+    else if(e.type==='rect'){
+      tryHit(e, Math.min(
+        distToSeg(wx,wy,e.x1,e.y1,e.x2,e.y1),
+        distToSeg(wx,wy,e.x2,e.y1,e.x2,e.y2),
+        distToSeg(wx,wy,e.x2,e.y2,e.x1,e.y2),
+        distToSeg(wx,wy,e.x1,e.y2,e.x1,e.y1)
+      ));
+    }
+    else if(e.type==='circle'){
+      tryHit(e, Math.abs(Math.hypot(wx-e.cx,wy-e.cy)-e.r));
+    }
     else if(e.type==='arc'){
-      // Check radial distance + angle within arc span
       const dr=Math.abs(Math.hypot(wx-e.cx,wy-e.cy)-e.r);
       if(dr<tol){
         const a=Math.atan2(wy-e.cy,wx-e.cx);
-        // Normalize angle into arc span
-        let sa=e.startAngle, ea=e.endAngle;
-        const twoPi=Math.PI*2;
-        // Unwrap so ea >= sa
-        while(ea<sa) ea+=twoPi;
-        let ac=a; while(ac<sa) ac+=twoPi;
-        if(ac<=ea) return e;
+        let sa=e.startAngle,ea=e.endAngle;
+        while(ea<sa) ea+=Math.PI*2;
+        let ac=a; while(ac<sa) ac+=Math.PI*2;
+        if(ac<=ea) tryHit(e,dr);
       }
     }
     else if(e.type==='polyline'||e.type==='cable'){
-      for(let j=0;j<e.points.length-1;j++){if(distToSeg(wx,wy,e.points[j][0],e.points[j][1],e.points[j+1][0],e.points[j+1][1])<tol)return e;}
+      let d=Infinity;
+      for(let j=0;j<e.points.length-1;j++)
+        d=Math.min(d, distToSeg(wx,wy,e.points[j][0],e.points[j][1],e.points[j+1][0],e.points[j+1][1]));
+      tryHit(e,d);
     }
     else if(e.type==='hatch'){
-      const pts=e.points; const n=pts.length; let inside=false;
-      for(let i=0,j=n-1;i<n;j=i++){
-        const xi=pts[i][0],yi=pts[i][1],xj=pts[j][0],yj=pts[j][1];
-        if(((yi>wy)!==(yj>wy))&&(wx<(xj-xi)*(wy-yi)/(yj-yi)+xi)) inside=!inside;
-      }
-      if(inside) return e;
+      // Contour uniquement — pas la surface
+      const pts=e.points,n=pts.length;
+      let d=Infinity;
+      for(let j=0;j<n-1;j++)
+        d=Math.min(d, distToSeg(wx,wy,pts[j][0],pts[j][1],pts[j+1][0],pts[j+1][1]));
+      tryHit(e,d);
     }
     else if(e.type==='tube'){
-      const tr = e.tubeRadius || 20;
-      const hitR = tr + tol;
-      let cx = e.startX, cy = e.startY, theta = e.startAngle;
-      let hit = false;
-      for (const seg of e.segments) {
-        if (seg.type === 'straight') {
-          const endX = cx + seg.length*Math.cos(theta), endY = cy + seg.length*Math.sin(theta);
-          if (distToSeg(wx,wy,cx,cy,endX,endY) < hitR) { hit = true; break; }
-          cx = endX; cy = endY;
-        } else if (seg.type === 'bend') {
-          const { angle: phi, bendRadius: R, side } = seg;
-          const bcx = cx - side*R*Math.sin(theta), bcy = cy + side*R*Math.cos(theta);
-          const d = Math.hypot(wx-bcx,wy-bcy);
-          if (Math.abs(d - R) < hitR) {
-            const arcStart = theta - side*Math.PI/2, arcEnd = arcStart + side*phi;
-            const a = Math.atan2(wy-bcy, wx-bcx);
-            let sa = arcStart, ea = arcEnd;
-            if (side > 0) {
-              while (ea < sa) ea += 2*Math.PI;
-              let ac = a; while (ac < sa) ac += 2*Math.PI;
-              if (ac <= ea) { hit = true; break; }
-            } else {
-              while (ea > sa) ea -= 2*Math.PI;
-              let ac = a; while (ac > sa) ac -= 2*Math.PI;
-              if (ac >= ea) { hit = true; break; }
-            }
+      const tr=e.tubeRadius||20, hitR=tr+tol;
+      let cx=e.startX,cy=e.startY,theta=e.startAngle,hit=false;
+      for(const seg of e.segments){
+        if(seg.type==='straight'){
+          const endX=cx+seg.length*Math.cos(theta),endY=cy+seg.length*Math.sin(theta);
+          if(distToSeg(wx,wy,cx,cy,endX,endY)<hitR){hit=true;break;}
+          cx=endX;cy=endY;
+        } else if(seg.type==='bend'){
+          const{angle:phi,bendRadius:R,side}=seg;
+          const bcx=cx-side*R*Math.sin(theta),bcy=cy+side*R*Math.cos(theta);
+          const d=Math.hypot(wx-bcx,wy-bcy);
+          if(Math.abs(d-R)<hitR){
+            const arcStart=theta-side*Math.PI/2,arcEnd=arcStart+side*phi;
+            const a=Math.atan2(wy-bcy,wx-bcx);
+            let sa=arcStart,ea=arcEnd;
+            if(side>0){while(ea<sa)ea+=2*Math.PI;let ac=a;while(ac<sa)ac+=2*Math.PI;if(ac<=ea){hit=true;break;}}
+            else{while(ea>sa)ea-=2*Math.PI;let ac=a;while(ac>sa)ac-=2*Math.PI;if(ac>=ea){hit=true;break;}}
           }
-          const arcEnd2 = (theta - side*Math.PI/2) + side*phi;
-          cx = bcx + R*Math.cos(arcEnd2); cy = bcy + R*Math.sin(arcEnd2);
-          theta += side*phi;
+          const arcEnd2=(theta-side*Math.PI/2)+side*phi;
+          cx=bcx+R*Math.cos(arcEnd2);cy=bcy+R*Math.sin(arcEnd2);theta+=side*phi;
         }
       }
-      if (hit) return e;
-      // Clic sur le tableau de nomenclature du tube
-      if (e.showLabel && e.labelX !== undefined) {
-        const [lsx, lsy] = w2s(e.labelX, e.labelY);
-        const [cwx, cwy] = w2s(wx, wy);
-        const sc = e.labelScale || 1;
-        const nRowsH = getTubeTableData(e).rows.length;
-        const { W: Wh, H: Hh } = _tubeTableDims(nRowsH, sc);
-        if (cwx >= lsx - 8 && cwx <= lsx + Wh * S.zoom + 8 &&
-            cwy >= lsy - 8 && cwy <= lsy + Hh * S.zoom + 8) return e;
+      if(hit) tryHit(e, tol*0.5);
+      if(e.showLabel&&e.labelX!==undefined){
+        const[lsx,lsy]=w2s(e.labelX,e.labelY),[cwx,cwy]=w2s(wx,wy);
+        const sc=e.labelScale||1,nRowsH=getTubeTableData(e).rows.length;
+        const{W:Wh,H:Hh}=_tubeTableDims(nRowsH,sc);
+        if(cwx>=lsx-8&&cwx<=lsx+Wh*S.zoom+8&&cwy>=lsy-8&&cwy<=lsy+Hh*S.zoom+8) tryHit(e,tol*0.5);
       }
     }
-    // Dimension entities
     else if(e.type==='dim_linear'||e.type==='dim_aligned'){
-      if(distToSeg(wx,wy,e.x1,e.y1,e.x2,e.y2)<tol)return e;
-      const pts = getDimLinePoints(e);
-      if(pts && distToSeg(wx,wy,pts[0],pts[1],pts[2],pts[3])<tol)return e;
-      // Zone texte
-      const _off=e.offset||30, _to=e.textOffset||0;
+      let d=distToSeg(wx,wy,e.x1,e.y1,e.x2,e.y2);
+      const pts=getDimLinePoints(e);
+      if(pts) d=Math.min(d, distToSeg(wx,wy,pts[0],pts[1],pts[2],pts[3]));
+      const _off=e.offset||30,_to=e.textOffset||0;
       let ttx,tty;
       if(e.type==='dim_linear'){
         const isH=e.isHoriz!==undefined?e.isHoriz:Math.abs(e.x2-e.x1)>=Math.abs(e.y2-e.y1);
@@ -6890,71 +7029,123 @@ function hitTest(wx,wy) {
         else{ttx=(e.x1+e.x2)/2+_off;tty=(e.y1+e.y2)/2+_to;}
       } else {
         const dx=e.x2-e.x1,dy=e.y2-e.y1,len=Math.hypot(dx,dy)||1;
-        ttx=(e.x1+e.x2)/2+(-dy/len)*_off; tty=(e.y1+e.y2)/2+(dx/len)*_off;
+        ttx=(e.x1+e.x2)/2+(-dy/len)*_off;tty=(e.y1+e.y2)/2+(dx/len)*_off;
       }
-      if(Math.hypot(wx-ttx,wy-tty)<tol*4)return e;
+      const td=Math.hypot(wx-ttx,wy-tty); if(td<tol*4) d=Math.min(d,td/4);
+      tryHit(e,d);
     }
     else if(e.type==='dim_angular'){
-      if(Math.hypot(wx-e.vx,wy-e.vy)<tol*2)return e;
-      if(distToSeg(wx,wy,e.vx,e.vy,e.x1,e.y1)<tol)return e;
-      if(distToSeg(wx,wy,e.vx,e.vy,e.x2,e.y2)<tol)return e;
-      if(Math.abs(Math.hypot(wx-e.vx,wy-e.vy)-e.r)<tol)return e;
-      // Zone texte angulaire
-      const _rw=e.r||40, _midA=(e.startAngle||0)+(e.angle||0)/2;
+      let d=Infinity;
+      const dv=Math.hypot(wx-e.vx,wy-e.vy); if(dv<tol*2) d=Math.min(d,dv/2);
+      d=Math.min(d, distToSeg(wx,wy,e.vx,e.vy,e.x1,e.y1));
+      d=Math.min(d, distToSeg(wx,wy,e.vx,e.vy,e.x2,e.y2));
+      d=Math.min(d, Math.abs(Math.hypot(wx-e.vx,wy-e.vy)-e.r));
+      const _rw=e.r||40,_midA=(e.startAngle||0)+(e.angle||0)/2;
       const _textRW=_rw+getDimStyle(e).textHeight*1.2;
-      if(Math.hypot(wx-(e.vx+_textRW*Math.cos(_midA)),wy-(e.vy+_textRW*Math.sin(_midA)))<tol*4)return e;
+      const td=Math.hypot(wx-(e.vx+_textRW*Math.cos(_midA)),wy-(e.vy+_textRW*Math.sin(_midA)));
+      if(td<tol*4) d=Math.min(d,td/4);
+      tryHit(e,d);
     }
     else if(e.type==='dim_radius'){
-      const a=e.angle||0;
-      const ex=e.cx+e.r*Math.cos(a), ey=e.cy+e.r*Math.sin(a);
-      if(distToSeg(wx,wy,e.cx,e.cy,ex,ey)<tol)return e;
+      const a=e.angle||0,ex=e.cx+e.r*Math.cos(a),ey=e.cy+e.r*Math.sin(a);
+      let d=distToSeg(wx,wy,e.cx,e.cy,ex,ey);
       const twx=e.textWx!==undefined?e.textWx:e.cx+e.r*0.55*Math.cos(a);
       const twy=e.textWy!==undefined?e.textWy:e.cy+e.r*0.55*Math.sin(a);
-      if(Math.hypot(wx-twx,wy-twy)<tol*6)return e;
+      const td=Math.hypot(wx-twx,wy-twy); if(td<tol*6) d=Math.min(d,td/6);
+      tryHit(e,d);
     }
     else if(e.type==='dim_diameter'){
-      const a=e.angle||0;
-      const ex=e.cx+e.r*Math.cos(a), ey=e.cy+e.r*Math.sin(a);
-      const e2x=e.cx-e.r*Math.cos(a), e2y=e.cy-e.r*Math.sin(a);
-      if(distToSeg(wx,wy,e2x,e2y,ex,ey)<tol)return e;
-      const twx=e.textWx!==undefined?e.textWx:e.cx;
-      const twy=e.textWy!==undefined?e.textWy:e.cy;
-      if(Math.hypot(wx-twx,wy-twy)<tol*6)return e;
+      const a=e.angle||0,ex=e.cx+e.r*Math.cos(a),ey=e.cy+e.r*Math.sin(a);
+      const e2x=e.cx-e.r*Math.cos(a),e2y=e.cy-e.r*Math.sin(a);
+      let d=distToSeg(wx,wy,e2x,e2y,ex,ey);
+      const twx=e.textWx!==undefined?e.textWx:e.cx,twy=e.textWy!==undefined?e.textWy:e.cy;
+      const td=Math.hypot(wx-twx,wy-twy); if(td<tol*6) d=Math.min(d,td/6);
+      tryHit(e,d);
     }
     else if(e.type==='leader'){
-      if(distToSeg(wx,wy,e.x1,e.y1,e.x2,e.y2)<tol)return e;
-      // Zone texte (approximative) à l'extrémité x2,y2
-      const tw = (e.text||'').length * 7 / S.zoom;
-      if(wx>=e.x2-tol && wx<=e.x2+tw+tol && wy>=e.y2-tol*2 && wy<=e.y2+tol*2) return e;
+      let d=distToSeg(wx,wy,e.x1,e.y1,e.x2,e.y2);
+      const tw=(e.text||'').length*7/S.zoom;
+      if(wx>=e.x2-tol&&wx<=e.x2+tw+tol&&wy>=e.y2-tol*2&&wy<=e.y2+tol*2) d=Math.min(d,0);
+      tryHit(e,d);
     }
     else if(e.type==='text'){
-      // Mesure la largeur réelle du texte pour hit test sur toute la surface
-      const px = Math.max(4, (e.size||14) * S.zoom);
-      const bold = e.bold ? 'bold ' : ''; const italic = e.italic ? 'italic ' : '';
-      ctx.font = italic + bold + px + 'px ' + (e.font||'sans-serif');
-      const tw = ctx.measureText(e.content||'').width / S.zoom;
-      const th = (e.size||14);
-      // Ancrage bas-gauche (baseline alphabetic) : le texte monte vers +Y monde
-      if(wx>=e.x-tol && wx<=e.x+tw+tol && wy>=e.y-tol && wy<=e.y+th+tol) return e;
+      const px=Math.max(4,(e.size||14)*S.zoom);
+      const bold=e.bold?'bold ':'',italic=e.italic?'italic ':'';
+      ctx.font=italic+bold+px+'px '+(e.font||'sans-serif');
+      const tw=ctx.measureText(e.content||'').width/S.zoom,th=(e.size||14);
+      if(wx>=e.x-tol&&wx<=e.x+tw+tol&&wy>=e.y-tol&&wy<=e.y+th+tol) tryHit(e,0);
     }
     else if(e.type==='block'){
       if(e.entities){
-        // Bounding box quick reject, then test children
         const bb=getEntityBBox(e);
         if(bb&&wx>=bb.minX-tol&&wx<=bb.maxX+tol&&wy>=bb.minY-tol&&wy<=bb.maxY+tol){
-          // Test perimeter: check if cursor is near any child entity edge
           const tmpEntities=S.entities; S.entities=e.entities;
           const hit=hitTest(wx,wy); S.entities=tmpEntities;
-          if(hit) return e;
+          if(hit) tryHit(e, tol*0.5);
         }
       }
     }
-    else if(e.x!==undefined){if(Math.abs(wx-e.x)<tol*2&&Math.abs(wy-e.y)<tol*2)return e;}
+    else if(e.x!==undefined){
+      const d=Math.hypot(wx-e.x,wy-e.y); if(d<tol*2) tryHit(e,d/2);
+    }
   }
-  return null;
+  return best;
 }
 
 // ===== WINDOW / CROSSING SELECTION =====
+// True si le contour d'un cercle coupe effectivement la zone de sélection
+// (exclut le cas "boîte entièrement à l'intérieur du cercle" où le contour est hors de la sélection)
+function circleOutlineCrossesRect(cx,cy,r, minX,minY,maxX,maxY){
+  const nx=Math.max(minX,Math.min(maxX,cx)), ny=Math.max(minY,Math.min(maxY,cy));
+  if(Math.hypot(cx-nx,cy-ny)>=r) return false; // cercle n'atteint pas la boîte
+  // Si tous les coins sont dans le cercle, le contour entoure la boîte sans la toucher
+  const corners=[[minX,minY],[maxX,minY],[maxX,maxY],[minX,maxY]];
+  return !corners.every(([ex,ey])=>Math.hypot(cx-ex,cy-ey)<=r);
+}
+
+// True si le contour d'un arc coupe la zone de sélection
+function arcOutlineCrossesRect(cx,cy,r,startAngle,endAngle, minX,minY,maxX,maxY){
+  let sa=startAngle, ea=endAngle;
+  while(ea<sa) ea+=Math.PI*2;
+  function inArc(a){ let ac=a; while(ac<sa) ac+=Math.PI*2; return ac<=ea+1e-9; }
+
+  // Extrémités de l'arc dans la boîte ?
+  for(const a of[startAngle,endAngle]){
+    const px=cx+r*Math.cos(a), py=cy+r*Math.sin(a);
+    if(px>=minX&&px<=maxX&&py>=minY&&py<=maxY) return true;
+  }
+  // Points cardinaux de l'arc (0°, 90°, 180°, 270°) dans la boîte ?
+  for(const a of[0,Math.PI/2,Math.PI,3*Math.PI/2]){
+    if(!inArc(a)) continue;
+    const px=cx+r*Math.cos(a), py=cy+r*Math.sin(a);
+    if(px>=minX&&px<=maxX&&py>=minY&&py<=maxY) return true;
+  }
+  // L'arc atteint-il la boîte dans sa direction angulaire ?
+  const nx=Math.max(minX,Math.min(maxX,cx)), ny=Math.max(minY,Math.min(maxY,cy));
+  const distMin=Math.hypot(cx-nx,cy-ny);
+  if(distMin<r){
+    const angToBox=Math.atan2(ny-cy,nx-cx);
+    if(inArc(angToBox)){
+      const corners=[[minX,minY],[maxX,minY],[maxX,maxY],[minX,maxY]];
+      if(!corners.every(([ex,ey])=>Math.hypot(cx-ex,cy-ey)<=r)) return true;
+    }
+  }
+  return false;
+}
+
+// True si le segment (x1,y1)→(x2,y2) coupe ou est dans le rectangle (rx1,ry1,rx2,ry2)
+function segIntersectsRect(x1,y1,x2,y2, rx1,ry1,rx2,ry2){
+  const dx=x2-x1,dy=y2-y1;
+  let tMin=0,tMax=1;
+  for(const[p,q] of[[-dx,x1-rx1],[dx,rx2-x1],[-dy,y1-ry1],[dy,ry2-y1]]){
+    if(Math.abs(p)<1e-10){if(q<0)return false;continue;}
+    const t=q/p;
+    if(p<0){if(t>tMin)tMin=t;}else{if(t<tMax)tMax=t;}
+    if(tMin>tMax+1e-10)return false;
+  }
+  return true;
+}
+
 function entityInRect(e, minX, minY, maxX, maxY, windowMode) {
   const bb = getEntityBBox(e);
   if (!bb) return false;
@@ -6962,8 +7153,30 @@ function entityInRect(e, minX, minY, maxX, maxY, windowMode) {
     // Fenêtre : entité entièrement à l'intérieur
     return bb.minX >= minX && bb.maxX <= maxX && bb.minY >= minY && bb.maxY <= maxY;
   }
-  // Croisement : les boîtes se chevauchent
-  return bb.maxX >= minX && bb.minX <= maxX && bb.maxY >= minY && bb.minY <= maxY;
+  // Croisement : quick-reject si les bounding boxes ne se chevauchent pas
+  if(bb.maxX<minX||bb.minX>maxX||bb.maxY<minY||bb.minY>maxY) return false;
+  // Vérification géométrique précise par type
+  if(e.type==='line'||e.type==='wall')
+    return segIntersectsRect(e.x1,e.y1,e.x2,e.y2, minX,minY,maxX,maxY);
+  if(e.type==='rect')
+    return segIntersectsRect(e.x1,e.y1,e.x2,e.y1, minX,minY,maxX,maxY)||
+           segIntersectsRect(e.x2,e.y1,e.x2,e.y2, minX,minY,maxX,maxY)||
+           segIntersectsRect(e.x2,e.y2,e.x1,e.y2, minX,minY,maxX,maxY)||
+           segIntersectsRect(e.x1,e.y2,e.x1,e.y1, minX,minY,maxX,maxY);
+  if(e.type==='polyline'||e.type==='cable'||e.type==='hatch'){
+    const pts=e.points;
+    for(let j=0;j<pts.length-1;j++)
+      if(segIntersectsRect(pts[j][0],pts[j][1],pts[j+1][0],pts[j+1][1], minX,minY,maxX,maxY)) return true;
+    return false;
+  }
+  if(e.type==='circle'){
+    return circleOutlineCrossesRect(e.cx,e.cy,e.r, minX,minY,maxX,maxY);
+  }
+  if(e.type==='arc'){
+    return arcOutlineCrossesRect(e.cx,e.cy,e.r,e.startAngle,e.endAngle, minX,minY,maxX,maxY);
+  }
+  // tube, dim_*, text, etc. : bounding box overlap suffit (déjà vérifié)
+  return true;
 }
 
 function selectInRect(wx1, wy1, wx2, wy2, shiftKey) {
@@ -8304,7 +8517,7 @@ function executeCommand(input) {
   if(S.tool==='fillet'){
     if(S.filletAwaitRadius){
       const r=parseFloat(raw);
-      if(!isNaN(r)&&r>0){ S.filletRadius=r; termPrint('RACCORD R='+r+' — Cliquer la 1ère ligne','info'); }
+      if(!isNaN(r)&&r>=0){ S.filletRadius=r; termPrint('RACCORD R='+r+' — Cliquer la 1ère ligne','info'); }
       else termPrint('Rayon invalide','warning');
       S.filletAwaitRadius=false; return;
     }
@@ -8313,7 +8526,7 @@ function executeCommand(input) {
       termPrint('Nouveau rayon <'+S.filletRadius+'> :','info'); return;
     }
     const r=parseFloat(raw);
-    if(!isNaN(r)&&r>0){ S.filletRadius=r; termPrint('RACCORD R='+r+' — Cliquer la 1ère ligne','info'); return; }
+    if(!isNaN(r)&&r>=0){ S.filletRadius=r; termPrint('RACCORD R='+r+' — Cliquer la 1ère ligne','info'); return; }
   }
   // ---- CHAMFER : ECART/EC → D1 puis D2, ou nombre seul → D1=D2 ----
   if(S.tool==='chamfer'){
