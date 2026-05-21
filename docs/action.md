@@ -122,7 +122,11 @@
 - **3.4 EXTEND** — prolonger jusqu'à limite
 - **5.2 AREA** — calcul de surface d'un polygone
 
-Terminé en session v0.05 :
+Terminé en session v0.05 (2026-05-21) :
+- **HATCH** ✅ — hachures lignes/croisé sur polyligne/rect/cercle
+- **Sélection additive** ✅ — MOVE/COPY/ROTATE/SCALE/MIRROR/OFFSET sans Shift
+- **OFFSET refactorisé** ✅ — sélection multiple, distance par clic, clic droit = Entrée
+- **Clic droit = Entrée** ✅ — tous les états pending et commandes actives
 - **JOIN arcs** ✅ — arc joinable avec lignes/polylignes, bulge correct dans le résultat
 - **Dialogue édition tube** ✅ — L. saisie REF, Prévisualiser, longeur AXE fixe, sens coude ⟳/⟲, Coter avec cotes liées
 

@@ -187,6 +187,25 @@ Implémenter **sélection par fenêtre** (TODO 3.1) et **historique commandes** 
 
 ---
 
+## [2026-05-21] — HATCH, sélection additive, OFFSET refactorisé, clic droit
+
+**Contexte :** Continuation du développement avec Claude Code.
+
+**Réalisé :**
+- [x] **HATCH** — nouvelle entité `hatch` : contour extrait depuis polyligne/rect/cercle, patterns `lines`/`cross`, angle et espacement configurables via dialogue, rendu scanline dynamique (`computeHatchLines`), hitTest point-in-polygon, grip centroïde, commande H/HACHURE
+- [x] **Sélection additive sans Shift** — MOVE/COPY/ROTATE/SCALE/MIRROR/OFFSET : clic = toggle dans la sélection, clic dans le vide ne vide pas, curseur `pick`
+- [x] **OFFSET refactorisé** — workflow identique aux autres commandes : sélection multiple → Entrée → clic côté ; ghost preview pour tous les sélectionnés ; retour auto en sélection après décalage
+- [x] **Distance OFFSET par 2 clics** — curseur croix dès la demande de distance, cliquer 2 points sur le canvas calcule la distance avec preview ligne orange
+- [x] **Clic droit = Entrée** — couvre drawing actif (polyline/tube/line), JOIN, TRIM/EXTEND, tous les états pending (MOVE/COPY/ROTATE/SCALE/MIRROR/OFFSET), confirmation distance OFFSET
+- [x] **Fix navigation navigateur** — `ev.preventDefault()` sur mousedown et mouseup bouton 2
+- [x] **Terminal sélectionnable** — `user-select:text` + `cursor:text` sur `.terminal-output`
+- [x] **Fix rubber-band parasite** — flag `_offsetJustApplied` et guard `offsetAwaitDist` dans mouseup pour éviter démarrage involontaire du rubber-band
+
+**Prochaine étape :**
+- 4.3 Menu contextuel clic-droit, 3.4 EXTEND, 5.2 AREA
+
+---
+
 ## [2026-05-20] — v0.05 : Dialogue tube amélioré + JOIN arc
 
 **Contexte :** Continuation du développement avec Claude Code (session context-compacted).

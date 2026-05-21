@@ -20,7 +20,7 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
   - La position finale à la validation (Enter) est correcte — c'est uniquement la preview qui est imparfaite
 - [ ] **3.9 — Arc 3 points** (commande ARC3 ou variante A)
 - [ ] **4.6 — Ctrl+Drag pour copier** (drag d'un objet sélectionné avec Ctrl)
-- [ ] **5.3 — HATCH** (hachures / remplissage)
+- [x] **5.3 — HATCH** (hachures / remplissage) ✅
 - [ ] **5.5 — Tableaux** (grilles texte annotatives)
 - [ ] **6.4 — Import SVG** (parsing SVG → entités)
 - [ ] **6.5 — Fenêtres de présentation (Paper Space)**
@@ -44,6 +44,12 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 Voir [CHANGELOG.md](CHANGELOG.md) pour le détail.
 
+- ✅ **HATCH** — hachures sur polyligne/rect/cercle, patterns lignes/croisé, angle, espacement, grip centroïde
+- ✅ **Sélection additive** — MOVE/COPY/ROTATE/SCALE/MIRROR/OFFSET : clic sans Shift pour multi-sélection
+- ✅ **OFFSET refactorisé** — sélection multiple puis direction, distance par 2 clics canvas, clic droit = Entrée
+- ✅ **Clic droit = Entrée** — confirme états pending, active drawing, JOIN, TUBE, TRIM/EXTEND
+- ✅ **Fix navigation navigateur** — preventDefault sur mousedown/mouseup bouton droit
+- ✅ **Terminal sélectionnable** — user-select:text sur .terminal-output
 - ✅ **JOIN arcs** — arc sélectionnable + bulge correctement transféré dans la polyligne résultante
 - ✅ **Dialogue édition tube v0.05** — L. saisie REF, Prévisualiser, longeur AXE fixe, sens coude, Coter avec cotes liées (`linkedTubeId`)
 - ✅ **Tableau nomenclature TUBE** — `TUBELBL`, taille fixe monde, poignées déplacement + redim, auto à finishTube

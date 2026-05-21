@@ -717,6 +717,8 @@
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
     line-height: 1.6;
+    user-select: text;
+    cursor: text;
   }
   .terminal-output::-webkit-scrollbar { width: 4px; }
   .terminal-output::-webkit-scrollbar-thumb { background: #ffffff20; border-radius: 2px; }
@@ -1720,6 +1722,8 @@ const S = {
   offsetDist: 10,
   offsetTargetId: null,
   offsetAwaitDist: false,
+  offsetDistPt1: null,
+  offsetPending: false,
   // Hover pour highlight (offset, trim, etc.)
   hoverEntityId: null,
   // FILLET / CHAMFER
@@ -2360,13 +2364,15 @@ const CMD = {
       const d = parseFloat(args[0]);
       if (isNaN(d) || d <= 0) { termPrint('Distance invalide', 'warning'); return; }
       S.offsetDist = d;
-      termPrint('DÉCALER: Cliquer sur un objet à décaler (Echap=fin)', 'info');
-      setTool('offset');
     } else {
       S.offsetAwaitDist = true;
       termPrint('Distance de décalage <' + S.offsetDist + '> :', 'warning');
       setTimeout(smartFocus, 0);
+      return;
     }
+    S.offsetPending = true; S.selected = [];
+    termPrint('DÉCALER (' + S.offsetDist + ') — Sélectionner les objets, puis Entrée (Echap=fin)', 'info');
+    setTool('select');
   }},
   MIRROR: { alias: ['MI','MIROIR'], desc: 'Miroir par rapport à un axe', exec: () => {
     if (!S.selected.length) {
@@ -2393,6 +2399,10 @@ const CMD = {
     S.distPt1 = null; setTool('dist');
     termPrint('DIST: Cliquer le 1er point', 'info');
     setTimeout(smartFocus, 0);
+  }},
+  HATCH: { alias: ['H','HACHURE','HACHURES'], desc: 'Hachures sur un contour fermé', exec() {
+    setTool('hatch');
+    termPrint('HATCH — Cliquer le contour fermé (polyligne, rectangle ou cercle)', 'info');
   }},
   JOIN: { alias: ['J','JOINDRE'], desc: 'Joindre des lignes en polyligne', exec() {
     S.joinSelection=[]; S.selected=[];
@@ -2732,7 +2742,7 @@ function getEntityBBox(e) {
       return { minX:e.vx-armR-pad, maxX:e.vx+armR+pad,
                minY:e.vy-armR-pad, maxY:e.vy+armR+pad };
     }
-    case 'polyline': case 'cable': {
+    case 'polyline': case 'cable': case 'hatch': {
       if (!e.points?.length) return null;
       let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
       e.points.forEach(p=>{ x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1]); });
@@ -2878,22 +2888,23 @@ function _drawDynamicLayer() {
   S.entities.forEach(e => {
     if (!S.layers[e.layer]?.visible) return;
     const sel = S.selected.includes(e.id);
-    const isOffsetTarget = S.tool==='offset' && e.id===S.offsetTargetId;
-    const isOffsetHover  = S.tool==='offset' && e.id===S.hoverEntityId && S.offsetTargetId===null;
+    const isOffsetTarget = false;
+    const isOffsetHover  = S.tool==='offset' && e.id===S.hoverEntityId;
     const isFilletFirst  = ['fillet','chamfer'].includes(S.tool) && e.id===S.filletFirstId;
     const isFilletHover  = ['fillet','chamfer'].includes(S.tool) && e.id===S.hoverEntityId && e.id!==S.filletFirstId;
     const isJoinSelected = S.tool==='join' && S.joinSelection.includes(e.id);
     const isJoinHover    = S.tool==='join' && e.id===S.hoverEntityId && !S.joinSelection.includes(e.id);
+    const isHatchHover   = S.tool==='hatch' && e.id===S.hoverEntityId;
     const isTrimCutting  = S.tool==='trim'   && S.trimCuttingIds.includes(e.id);
     const isTrimHover    = S.tool==='trim'   && e.id===S.hoverEntityId && !S.trimCuttingIds.includes(e.id);
     const isExtendBound  = S.tool==='extend' && S.extendBoundaryIds.includes(e.id);
     const isExtendHover  = S.tool==='extend' && e.id===S.hoverEntityId && !S.extendBoundaryIds.includes(e.id);
     const highlighted = sel||isOffsetTarget||isOffsetHover||isFilletFirst||isFilletHover||
-                        isJoinSelected||isJoinHover||isTrimCutting||isTrimHover||isExtendBound||isExtendHover;
+                        isJoinSelected||isJoinHover||isTrimCutting||isTrimHover||isExtendBound||isExtendHover||isHatchHover;
     if (!highlighted) return;
     let color = '#448aff';
     if (isOffsetTarget||isFilletFirst||isJoinSelected||isTrimCutting||isExtendBound) color='#ffab40';
-    if (isOffsetHover ||isFilletHover ||isJoinHover  ||isTrimHover  ||isExtendHover) color='#ffffff';
+    if (isOffsetHover ||isFilletHover ||isJoinHover  ||isTrimHover  ||isExtendHover||isHatchHover) color='#ffffff';
     ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=2;
     ctx.setLineDash(e.dash||[]); drawEntity(e); ctx.setLineDash([]);
     if (sel) drawGrips(e);
@@ -2902,7 +2913,7 @@ function _drawDynamicLayer() {
   // Overlays dynamiques
   if ((S.drawing && S.drawPoints.length>0 && !S.gripEdit) || (S.tool==='tube' && S.drawing && S.tubePoints.length>=1)) drawPreview();
   if (S._textLivePreview) drawTextLivePreview();
-  if (S.tool==='offset' && S.offsetTargetId!==null && mouseOnCanvas) drawOffsetGhost();
+  if (S.tool==='offset' && S.selected.length && mouseOnCanvas) drawOffsetGhost();
   if (S.tool==='extend' && S.extendStep===2 && S.hoverEntityId && mouseOnCanvas) drawExtendPreview();
   if (S.tool==='rotate' && S.rotateStep===2 && mouseOnCanvas) drawRotatePreview();
   if (S.tool==='scale'  && S.scaleStep===2  && mouseOnCanvas) drawScalePreview();
@@ -2918,6 +2929,17 @@ function _drawDynamicLayer() {
   }
   if (S.gripEdit) drawGripPreview();
   if (S.arrayPreview) drawArrayPreview();
+  if (S.offsetDistPt1 && mouseOnCanvas) {
+    const [x1,y1]=S.offsetDistPt1, [mx,my]=S.mouseWorld;
+    const [sx1,sy1]=w2s(x1,y1), [smx,smy]=w2s(mx,my);
+    const d=Math.hypot(mx-x1,my-y1);
+    ctx.save(); ctx.strokeStyle='#ffab40'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(smx,smy); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle='#ffab40'; ctx.font='11px JetBrains Mono';
+    ctx.textAlign='left'; ctx.textBaseline='bottom';
+    ctx.fillText(d.toFixed(1),(sx1+smx)/2+6,(sy1+smy)/2-4);
+    ctx.restore();
+  }
   if (S.aiPendingEntities && S.aiPendingCenter && mouseOnCanvas) drawAiPlacementPreview();
   if (S.currentOsnap) drawOsnapMarker(S.currentOsnap);
   if (isRubberBand && rbStart && rbEnd) {
@@ -3667,6 +3689,30 @@ function updateTubeRefUI() {
   });
 }
 
+function computeHatchLines(pts, angleDeg, spacing) {
+  if (!pts || pts.length < 3 || spacing <= 0) return [];
+  const a = angleDeg * Math.PI / 180;
+  const ca = Math.cos(a), sa = Math.sin(a);
+  const rpts = pts.map(p => [p[0]*ca + p[1]*sa, -p[0]*sa + p[1]*ca]);
+  let yMin = Infinity, yMax = -Infinity;
+  rpts.forEach(p => { if (p[1] < yMin) yMin = p[1]; if (p[1] > yMax) yMax = p[1]; });
+  const segs = [], n = rpts.length;
+  for (let y = Math.ceil(yMin / spacing) * spacing; y <= yMax + 1e-9; y += spacing) {
+    const xs = [];
+    for (let i = 0; i < n; i++) {
+      const p1 = rpts[i], p2 = rpts[(i + 1) % n];
+      if ((p1[1] <= y && p2[1] > y) || (p2[1] <= y && p1[1] > y)) {
+        const t = (y - p1[1]) / (p2[1] - p1[1]);
+        xs.push(p1[0] + t * (p2[0] - p1[0]));
+      }
+    }
+    xs.sort((a, b) => a - b);
+    for (let i = 0; i + 1 < xs.length; i += 2)
+      segs.push([xs[i]*ca - y*sa, xs[i]*sa + y*ca, xs[i+1]*ca - y*sa, xs[i+1]*sa + y*ca]);
+  }
+  return segs;
+}
+
 function drawEntity(e) {
   switch (e.type) {
     case 'line': {
@@ -3925,6 +3971,19 @@ function drawEntity(e) {
       ctx.strokeStyle = savedStroke; ctx.fillStyle = savedFill; ctx.lineWidth = savedLW;
       break;
     }
+    case 'hatch': {
+      if (!e.points || e.points.length < 3) break;
+      const segs = computeHatchLines(e.points, e.angle ?? 45, e.spacing || 10);
+      const extra = e.pattern === 'cross' ? computeHatchLines(e.points, (e.angle ?? 45) + 90, e.spacing || 10) : [];
+      ctx.save(); ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      [...segs, ...extra].forEach(s => {
+        const [x1s, y1s] = w2s(s[0], s[1]), [x2s, y2s] = w2s(s[2], s[3]);
+        ctx.moveTo(x1s, y1s); ctx.lineTo(x2s, y2s);
+      });
+      ctx.stroke(); ctx.restore();
+      break;
+    }
   }
 }
 
@@ -4085,6 +4144,17 @@ function getGripPoints(e) {
         gp(p[0], p[1], (ent, nx, ny) => { ent.points[i] = [nx, ny]; });
       });
       break;
+    case 'hatch': {
+      if (!e.points?.length) break;
+      let hcx = 0, hcy = 0;
+      e.points.forEach(p => { hcx += p[0]; hcy += p[1]; });
+      hcx /= e.points.length; hcy /= e.points.length;
+      gp(hcx, hcy, (ent, nx, ny) => {
+        const dx = nx - hcx, dy = ny - hcy;
+        ent.points = ent.points.map(p => [p[0]+dx, p[1]+dy]);
+      });
+      break;
+    }
     case 'tube':
       gp(e.startX, e.startY, (ent, nx, ny) => { ent.startX = nx; ent.startY = ny; });
       if (e.showLabel && e.labelX !== undefined) {
@@ -4740,6 +4810,45 @@ function applyJoin() {
   updateSaveIndicator('modified'); autoSave(); render();
 }
 
+function openHatchDialog(pts, layer) {
+  const dlg = document.createElement('div');
+  dlg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1a2e;border:1px solid #334;border-radius:6px;padding:16px;z-index:3000;min-width:260px;color:var(--text);font-family:JetBrains Mono,monospace;font-size:12px;box-shadow:0 4px 20px #000a';
+  dlg.innerHTML = `
+    <div style="font-size:13px;font-weight:bold;margin-bottom:12px;color:#00d4ff">Hachures</div>
+    <div style="display:flex;gap:16px;margin-bottom:12px">
+      <label style="cursor:pointer"><input type="radio" name="hp" value="lines" checked> Lignes</label>
+      <label style="cursor:pointer"><input type="radio" name="hp" value="cross"> Croisé</label>
+    </div>
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin-bottom:14px">
+      <span>Angle (°)</span>
+      <input id="h-angle" type="number" value="45" style="background:#12122a;border:1px solid #334;color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
+      <span>Espacement</span>
+      <input id="h-spacing" type="number" value="10" min="0.1" style="background:#12122a;border:1px solid #334;color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button id="h-cancel" style="background:#223;border:1px solid #334;color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer">Annuler</button>
+      <button id="h-ok" style="background:#00d4ff22;border:1px solid #00d4ff66;color:#00d4ff;padding:4px 12px;border-radius:3px;cursor:pointer">OK ↵</button>
+    </div>`;
+  document.body.appendChild(dlg);
+  const close = () => document.body.removeChild(dlg);
+  document.getElementById('h-cancel').onclick = close;
+  document.getElementById('h-ok').onclick = () => {
+    const angle   = parseFloat(document.getElementById('h-angle').value) || 45;
+    const spacing = Math.max(0.1, parseFloat(document.getElementById('h-spacing').value) || 10);
+    const pattern = dlg.querySelector('input[name="hp"]:checked').value;
+    pushUndo();
+    S.entities.push({ type:'hatch', points:pts, angle, spacing, pattern, id:S.nextId++, layer: layer ?? S.currentLayer });
+    updateSaveIndicator('modified'); autoSave(); render();
+    termPrint('Hachures créées', 'success');
+    close();
+  };
+  dlg.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter') { ev.preventDefault(); document.getElementById('h-ok').click(); }
+    if (ev.key === 'Escape') close();
+  });
+  document.getElementById('h-angle').focus();
+}
+
 function drawRotatePreview() {
   if (!S.rotateBase || S.rotateStep !== 2) return;
   const [bx, by] = S.rotateBase;
@@ -4773,20 +4882,19 @@ function drawRotatePreview() {
 }
 
 function drawOffsetGhost() {
-  const src = S.entities.find(e => e.id === S.offsetTargetId);
-  if (!src) return;
-  let [mx, my] = S.mouseWorld;
-  const ghost = computeOffsetGeom(src, S.offsetDist, mx, my);
-  if (!ghost) return;
-  ctx.save();
-  ctx.globalAlpha = 0.65;
-  ctx.strokeStyle = S.layers[ghost.layer]?.color || '#00d4ff';
-  ctx.fillStyle = ctx.strokeStyle;
-  ctx.lineWidth = 1.5;
-  ctx.setLineDash([6, 4]);
-  drawEntity(ghost);
-  ctx.setLineDash([]);
-  ctx.restore();
+  const [mx, my] = S.mouseWorld;
+  const supported = ['line','wall','circle','arc','rect','polyline','cable'];
+  const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && supported.includes(e.type));
+  if (!targets.length) return;
+  ctx.save(); ctx.globalAlpha = 0.65; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
+  for (const src of targets) {
+    const ghost = computeOffsetGeom(src, S.offsetDist, mx, my);
+    if (!ghost) continue;
+    ctx.strokeStyle = S.layers[ghost.layer]?.color || '#00d4ff';
+    ctx.fillStyle = ctx.strokeStyle;
+    drawEntity(ghost);
+  }
+  ctx.setLineDash([]); ctx.restore();
 }
 
 function applyOrtho(x1,y1,x2,y2) {
@@ -5149,10 +5257,11 @@ let mouseOnCanvas = false;
 // 'draw'    → réticule seul    (commande active, attend un point géométrique)
 function getCursorMode() {
   const t = S.tool;
-  if (t === 'select') return 'idle';
+  if (S.offsetAwaitDist) return 'draw';
+  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending) ? 'pick' : 'idle';
   if (t === 'trim' || t === 'extend') return 'pick';
-  if (t === 'fillet' || t === 'chamfer' || t === 'join') return 'pick';
-  if (t === 'offset' && S.offsetTargetId === null) return 'pick';
+  if (t === 'fillet' || t === 'chamfer' || t === 'join' || t === 'hatch') return 'pick';
+  if (t === 'offset') return 'draw';
   if (t === 'dim_angular' && !S._dimAngVtx) return 'pick';
   if ((t === 'dim_radius' || t === 'dim_diameter') && !S._dimCircle) return 'pick';
   return 'draw';
@@ -5220,7 +5329,8 @@ canvas.addEventListener('mousemove', (ev) => {
 
   // Hover entity for offset / fillet / chamfer selection highlight
   if ((S.tool === 'offset' && S.offsetTargetId === null) ||
-      S.tool === 'fillet' || S.tool === 'chamfer' || S.tool === 'join' || S.tool === 'trim' || S.tool === 'extend') {
+      S.tool === 'fillet' || S.tool === 'chamfer' || S.tool === 'join' || S.tool === 'trim' || S.tool === 'extend' || S.tool === 'hatch' ||
+      S.offsetPending) {
     const hit = hitTest(wx, wy);
     S.hoverEntityId = hit ? hit.id : null;
   } else {
@@ -5241,7 +5351,7 @@ canvas.addEventListener('mouseenter', () => { mouseOnCanvas = true; render(); })
 canvas.addEventListener('mouseleave', () => { mouseOnCanvas = false; render(); });
 
 canvas.addEventListener('mousedown', (ev) => {
-  if (ev.button === 2) return; // géré par contextmenu
+  if (ev.button === 2) { ev.preventDefault(); return; } // géré par contextmenu
 
   // Placement IA : clic gauche pose les entités au point cliqué
   if (ev.button === 0 && S.aiPendingEntities && S.aiPendingCenter) {
@@ -5284,6 +5394,25 @@ canvas.addEventListener('mousedown', (ev) => {
     return;
   }
 
+  // OFFSET — saisie distance par 2 clics sur le canvas
+  if (ev.button === 0 && S.offsetAwaitDist) {
+    const [rwx, rwy] = s2w(sx, sy);
+    if (!S.offsetDistPt1) {
+      S.offsetDistPt1 = [rwx, rwy];
+      termPrint('Point 2 pour définir la distance', 'info');
+    } else {
+      const dist = Math.hypot(rwx - S.offsetDistPt1[0], rwy - S.offsetDistPt1[1]);
+      S.offsetDist = parseFloat(dist.toFixed(2));
+      S.offsetDistPt1 = null;
+      S.offsetAwaitDist = false;
+      S._offsetJustApplied = true;
+      S.offsetPending = true; S.selected = [];
+      termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets, puis Entrée (Echap=fin)', 'info');
+      setTool('select');
+    }
+    render(); return;
+  }
+
   // Mode select : grip ou attente du 1er/2ème coin (logique dans mouseup)
   if (ev.button === 0 && S.tool === 'select' && !S.gripEdit && !S.drawing) {
     if (S.selected.length > 0) {
@@ -5316,6 +5445,7 @@ function smartFocus() {
 }
 
 canvas.addEventListener('mouseup', (ev) => {
+  if (ev.button === 2) { ev.preventDefault(); return; }
   if (isPanning) { isPanning = false; canvas.style.cursor = 'none'; }
 
   // Print rubber-band finalise la zone d'impression
@@ -5340,6 +5470,9 @@ canvas.addEventListener('mouseup', (ev) => {
 
   // Ignore mouseup that follows a grip confirmation (mousedown handled it already)
   if (ev.button === 0 && S._gripJustConfirmed) { S._gripJustConfirmed = false; setTimeout(smartFocus, 0); return; }
+  // Ignore mouseup that follows an offset application or distance pick (mousedown handled it already)
+  if (ev.button === 0 && S._offsetJustApplied) { S._offsetJustApplied = false; return; }
+  if (ev.button === 0 && S.offsetAwaitDist) return;
 
   if (ev.button === 0 && S.tool === 'select' && !S.gripEdit && !S.drawing) {
     const rect = canvas.getBoundingClientRect();
@@ -5353,13 +5486,14 @@ canvas.addEventListener('mouseup', (ev) => {
       rbStart = null; rbEnd = null;
     } else {
       // 1er clic : entité ou 1er coin
+      const isPending = S.movePending || S.copyPending || S.rotatePending || S.scalePending || S.mirrorPending || S.offsetPending;
       const hit = hitTest(wx, wy);
       if (hit) {
-        if (rbShiftKey) { const idx = S.selected.indexOf(hit.id); if (idx >= 0) S.selected.splice(idx, 1); else S.selected.push(hit.id); }
+        if (rbShiftKey || isPending) { const idx = S.selected.indexOf(hit.id); if (idx >= 0) S.selected.splice(idx, 1); else S.selected.push(hit.id); }
         else S.selected = [hit.id];
         updateProperties();
       } else {
-        if (!rbShiftKey) S.selected = [];
+        if (!rbShiftKey && !isPending) S.selected = [];
         // Poser le 1er coin, rubber-band suit la souris jusqu'au 2ème clic
         isRubberBand = true;
         rbStart = { sx, sy, wx, wy };
@@ -5702,33 +5836,25 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     setTool('select'); render(); return;
   }
 
-  // Offset
+  // Offset — clic sur le côté → décale tous les sélectionnés
   if (tool === 'offset') {
-    if (S.offsetTargetId === null) {
-      // Phase 1: pick the entity
-      const hit = hitTest(rawWx, rawWy);
-      if (!hit) { termPrint('Aucun objet ici — cliquez sur un objet à décaler', 'warning'); render(); return; }
-      const supported = ['line','wall','circle','arc','rect','polyline','cable'];
-      if (!supported.includes(hit.type)) { termPrint('Type non supporté pour OFFSET: '+hit.type, 'warning'); render(); return; }
-      S.offsetTargetId = hit.id;
-      S.drawing = true;
-      termPrint('Objet #'+hit.id+' sélectionné — Cliquer du côté à décaler', 'info');
-    } else {
-      // Phase 2: apply the offset
-      const src = S.entities.find(e => e.id === S.offsetTargetId);
-      if (!src) { S.offsetTargetId = null; S.drawing = false; render(); return; }
+    const supported = ['line','wall','circle','arc','rect','polyline','cable'];
+    const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && supported.includes(e.type));
+    if (!targets.length) { termPrint('Aucun objet décalable sélectionné','warning'); render(); return; }
+    pushUndo();
+    let count = 0;
+    for (const src of targets) {
       const ne = computeOffsetGeom(src, S.offsetDist, wx, wy);
-      if (!ne) { termPrint('Décalage impossible (résultat invalide — distance trop grande ?)', 'warning'); render(); return; }
-      pushUndo();
-      ne.id = S.nextId++;
-      S.entities.push(ne);
-      termPrint('#'+ne.id+' '+ne.type+' décalé de '+S.offsetDist, 'success');
-      // Reset to allow picking next entity
-      S.offsetTargetId = null;
-      S.drawing = false;
-      termPrint('Sélectionner un autre objet à décaler ou Echap pour quitter', 'info');
+      if (!ne) continue;
+      ne.id = S.nextId++; S.entities.push(ne); count++;
     }
-    render(); return;
+    if (count) termPrint(count+' objet(s) décalé(s) de '+S.offsetDist,'success');
+    else termPrint('Décalage impossible pour ces objets','warning');
+    // Retour à la sélection pour décaler autre chose
+    S._offsetJustApplied = true;
+    S.offsetPending=true; S.selected=[];
+    termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets, puis Entrée (Echap=fin)','info');
+    setTool('select'); render(); return;
   }
 
   // JOIN
@@ -5745,6 +5871,31 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       termPrint('#'+hit.id+' ajouté ('+S.joinSelection.length+' sélectionné'+(S.joinSelection.length>1?'s':'')+')', 'info');
     }
     S.selected = [...S.joinSelection];
+    render(); return;
+  }
+
+  // HATCH
+  if (tool === 'hatch') {
+    const hit = hitTest(rawWx, rawWy);
+    const supported = ['polyline','rect','circle'];
+    if (!hit || !supported.includes(hit.type)) {
+      termPrint('Cliquez une polyligne fermée, un rectangle ou un cercle', 'warning'); render(); return;
+    }
+    let pts;
+    if (hit.type === 'rect') {
+      pts = [[hit.x1,hit.y1],[hit.x2,hit.y1],[hit.x2,hit.y2],[hit.x1,hit.y2]];
+    } else if (hit.type === 'circle') {
+      pts = [];
+      for (let i = 0; i < 64; i++) {
+        const a = i / 64 * Math.PI * 2;
+        pts.push([hit.cx + hit.r*Math.cos(a), hit.cy + hit.r*Math.sin(a)]);
+      }
+    } else {
+      pts = hit.points.map(p => [p[0], p[1]]);
+      const first = pts[0], last = pts[pts.length-1];
+      if (Math.hypot(last[0]-first[0], last[1]-first[1]) > 1) pts.push([first[0], first[1]]);
+    }
+    openHatchDialog(pts, hit.layer);
     render(); return;
   }
 
@@ -6672,6 +6823,14 @@ function hitTest(wx,wy) {
     else if(e.type==='polyline'||e.type==='cable'){
       for(let j=0;j<e.points.length-1;j++){if(distToSeg(wx,wy,e.points[j][0],e.points[j][1],e.points[j+1][0],e.points[j+1][1])<tol)return e;}
     }
+    else if(e.type==='hatch'){
+      const pts=e.points; const n=pts.length; let inside=false;
+      for(let i=0,j=n-1;i<n;j=i++){
+        const xi=pts[i][0],yi=pts[i][1],xj=pts[j][0],yj=pts[j][1];
+        if(((yi>wy)!==(yj>wy))&&(wx<(xj-xi)*(wy-yi)/(yj-yi)+xi)) inside=!inside;
+      }
+      if(inside) return e;
+    }
     else if(e.type==='tube'){
       const tr = e.tubeRadius || 20;
       const hitR = tr + tol;
@@ -6873,7 +7032,7 @@ function setTool(t) {
   if(t !== 'select' && t !== 'rotate') S.rotatePending=false;
   if(t !== 'select' && t !== 'move_obj') S.movePending=false;
   if(t !== 'select' && t !== 'scale') S.scalePending=false;
-  if(t !== 'offset') { S.offsetTargetId=null; S.offsetAwaitDist=false; }
+  if(t !== 'offset' && t !== 'select') { S.offsetTargetId=null; S.offsetAwaitDist=false; S.offsetPending=false; }
   if(_toolCmdName[t]) S.lastCmdRaw = _toolCmdName[t];
   S.tool=t; S.drawing=false; S.drawPoints=[]; S.awaitingInput=false;
   if(t !== 'tube') S.tubePoints=[];
@@ -8033,8 +8192,9 @@ function executeCommand(input) {
     // Entrée vide sur saisie distance offset → garder valeur actuelle
     if(S.offsetAwaitDist){
       S.offsetAwaitDist=false;
-      termPrint('Distance: '+S.offsetDist+' — Cliquer sur un objet à décaler (Echap=fin)','info');
-      setTool('offset'); render(); return;
+      S.offsetPending=true; S.selected=[];
+      termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets, puis Entrée (Echap=fin)','info');
+      setTool('select'); render(); return;
     }
     // Entrée vide en mode JOIN → confirmer la fusion
     if(S.tool==='join'){ applyJoin(); return; }
@@ -8067,6 +8227,11 @@ function executeCommand(input) {
       S.scaleIds=[...S.selected]; S.scaleStep=1; S.scaleBase=null;
       termPrint('SCALE: Cliquer le point de base','info');
       setTool('scale');
+    } else if(S.offsetPending){
+      if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
+      S.offsetPending=false;
+      termPrint('DÉCALER: Cliquer du côté à décaler','info');
+      setTool('offset');
     }
     return;
   }
@@ -8084,9 +8249,9 @@ function executeCommand(input) {
       S.offsetDist=d;
     }
     S.offsetAwaitDist=false;
-    termPrint('Distance: '+S.offsetDist+' — Cliquer sur un objet à décaler (Echap=fin)','info');
-    setTool('offset');
-    render(); return;
+    S.offsetPending=true; S.selected=[];
+    termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets, puis Entrée (Echap=fin)','info');
+    setTool('select'); render(); return;
   }
   // ---- JOIN : Entrée confirme la fusion ----
   if(S.tool==='join'){ applyJoin(); return; }
@@ -8470,11 +8635,14 @@ document.addEventListener('keydown',(ev)=>{
   if(ev.key==='Escape' && S.mirrorAwaitDelete){
     _confirmMirrorDelete(false); return;
   }
-  if(ev.key==='Escape' && S.tool==='offset'){
-    S.offsetTargetId=null; S.drawing=false; termPrint('Décalage terminé','info'); setTool('select'); render(); return;
+  if(ev.key==='Escape' && (S.tool==='offset' || S.offsetPending || S.offsetAwaitDist)){
+    S.offsetTargetId=null; S.offsetPending=false; S.offsetAwaitDist=false; S.offsetDistPt1=null; S.selected=[]; termPrint('Décalage terminé','info'); setTool('select'); render(); return;
   }
   if(ev.key==='Escape' && S.tool==='join'){
     S.joinSelection=[]; S.selected=[]; setTool('select'); render(); return;
+  }
+  if(ev.key==='Escape' && S.tool==='hatch'){
+    setTool('select'); render(); return;
   }
   if(ev.key==='Escape' && isRubberBand){
     isRubberBand=false; rbStart=null; rbEnd=null; render(); return;
@@ -9599,13 +9767,32 @@ canvas.addEventListener('contextmenu', (ev) => {
     termPrint('EXTEND terminé','info'); render(); return;
   }
 
+  // États pending (sélection en cours pour MOVE/COPY/ROTATE/SCALE/MIRROR/OFFSET) → confirme comme Entrée
+  if (S.copyPending || S.mirrorPending || S.rotatePending || S.movePending || S.scalePending || S.offsetPending) {
+    if (!S.selected.length) { termPrint('Aucun objet sélectionné','warning'); return; }
+    if (S.copyPending)   { S.copyPending=false;   termPrint('COPIER: Point de base, puis destination','info'); setTool('copy'); }
+    else if (S.mirrorPending)  { S.mirrorPending=false;  termPrint('MIROIR: 1er point de l\'axe de symétrie','info'); setTool('mirror'); }
+    else if (S.rotatePending)  { S.rotatePending=false;  S.rotateIds=[...S.selected]; S.rotateStep=1; S.rotateBase=null; termPrint('ROTATE: Cliquer le point de base','info'); setTool('rotate'); }
+    else if (S.movePending)    { S.movePending=false;    termPrint('DÉPLACER: Point de base, puis destination','info'); setTool('move_obj'); }
+    else if (S.scalePending)   { S.scalePending=false;   S.scaleIds=[...S.selected]; S.scaleStep=1; S.scaleBase=null; termPrint('SCALE: Cliquer le point de base','info'); setTool('scale'); }
+    else if (S.offsetPending)  { S.offsetPending=false;  termPrint('DÉCALER: Cliquer du côté à décaler','info'); setTool('offset'); }
+    render(); return;
+  }
+
+  // Saisie distance offset en attente → valider la valeur actuelle
+  if (S.offsetAwaitDist) {
+    S.offsetAwaitDist=false; S.offsetPending=true; S.selected=[];
+    termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets, puis Entrée (Echap=fin)','info');
+    setTool('select'); render(); return;
+  }
+
   // Outil actif mais pas encore commencé → retour à select
   if (S.tool !== 'select') { setTool('select'); render(); return; }
 
   // Ctrl+clic droit → menu contextuel
   if (ev.ctrlKey) { showCanvasContext(ev); return; }
 
-  // Clic droit simple → répéter la dernière commande
+  // Clic droit simple en mode idle → répéter la dernière commande
   if (S.lastCmdRaw) {
     termPrint('Répéter: ' + S.lastCmdRaw.toUpperCase(), 'info');
     executeCommand(S.lastCmdRaw);

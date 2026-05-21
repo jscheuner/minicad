@@ -4,7 +4,34 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [0.05] — 2026-05-20 — Version courante
+## [0.05] — 2026-05-21 — Version courante
+
+### Ajouté (session 2026-05-21)
+- **HATCH** — hachures sur contour fermé (polyligne, rectangle, cercle)
+  - Patterns : `lines` (lignes parallèles) et `cross` (croisé)
+  - Angle et espacement configurables via dialogue
+  - Rendu dynamique par algorithme scanline (`computeHatchLines`) — aucun stockage de segments
+  - HitTest point-in-polygon, grip centroïde pour déplacement
+  - Commandes : `HATCH` / `H` / `HACHURE`
+- **Sélection additive** pour MOVE/COPY/ROTATE/SCALE/MIRROR/OFFSET
+  - Clic = toggle (ajoute si absent, retire si déjà sélectionné), sans Shift
+  - Clic dans le vide = ne vide pas la sélection
+  - Curseur `pick` (carré) pendant la sélection
+- **OFFSET refactorisé** — workflow identique à MOVE
+  - Sélection multiple → Entrée → clic du côté → décale tous en une fois
+  - Ghost preview pour tous les objets sélectionnés simultanément
+  - Retour automatique en mode sélection après chaque décalage
+- **Distance OFFSET par clic canvas** — curseur croix dès la saisie de distance, 2 clics définissent la distance (preview ligne orange avec valeur en direct)
+- **Clic droit = Entrée** — fonctionne pour tous les états pending, drawing actif, JOIN, TRIM/EXTEND
+
+### Corrigé (session 2026-05-21)
+- **Navigation navigateur** — `preventDefault` sur mousedown/mouseup bouton droit empêche le geste "retour"
+- **Terminal** — texte sélectionnable et copiable (`user-select:text`)
+- **Rubber-band parasite** — flag `_offsetJustApplied` + guard `offsetAwaitDist` dans mouseup
+
+---
+
+## [0.05] — 2026-05-20
 
 ### Ajouté
 - **Dialogue d'édition tube — colonne L. saisie [REF]**
