@@ -4,9 +4,9 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [0.05] — 2026-05-21 — Version courante
+## [0.06] — 2026-05-21 — Version courante
 
-### Ajouté (session 2026-05-21)
+### Ajouté
 - **HATCH** — hachures sur contour fermé (polyligne, rectangle, cercle)
   - Patterns : `lines` (lignes parallèles) et `cross` (croisé)
   - Angle et espacement configurables via dialogue
