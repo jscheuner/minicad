@@ -4,7 +4,45 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [0.06] — 2026-05-21 — Version courante
+## [0.07] — 2026-05-26 — Version courante
+
+### Ajouté
+- **DIVIDE / DIVISER** — divise une entité (ligne, arc, cercle, polyligne) en N segments égaux par des points
+  - Commandes : `DIVIDE` / `DIV` / `DIVISER`
+  - Sélectionner d'abord l'entité OU cliquer après la commande
+  - Bouton barre d'outils
+  - Export DXF (entité POINT)
+- **POINT / PT** — placement manuel d'un point ; forme configurable (`cross` / `x` / `dot`)
+  - Bouton barre d'outils
+  - Export DXF (entité POINT)
+- **Styles de cote** — remplacement des 3 styles ISO par 7 styles basés sur l'échelle du dessin
+  - `1:1` (texte 4 mm) → `1:100` (texte 100 mm) avec flèches et attaches proportionnelles
+  - Migration automatique depuis localStorage si anciens styles ISO-25 / ISO-35 / ISO-50 détectés
+- **FILLET / CHAMFER sur rectangle** — raccord et chanfrein sur les coins d'un rectangle
+  - Conversion automatique rect → polyligne lors du raccord (undo restaure le rectangle)
+- **STRETCH amélioré**
+  - Cercles et arcs : si le centre est dans la fenêtre croisante → déplacement complet
+  - Rectangle de sélection masqué dès la fin de la fenêtre croisante (plus de résidu visuel)
+- **LEADER lié au style de cote**
+  - Taille de texte, flèche et attache suivent le style de cote actif (`getDimStyle`)
+  - Stocke `dimStyle` à la création ; sélecteur dans le panneau Propriétés
+  - Texte aligné gauche/droite + ligne d'épaulement selon la direction du repère
+  - HitTest couvrant la ligne d'épaulement et la zone du texte
+  - Double-clic sur le texte → dialogue d'édition avec taille de police du style
+
+### Corrigé
+- **EXPLODE polyligne** — tous les arcs (bulge ≠ 0) sont correctement reconstruits ; auparavant seul le premier arc était conservé
+- **TUBELBL suit le tube** — `offsetEntity` déplace maintenant aussi `labelX`/`labelY` du tableau de nomenclature lors de MOVE, COPY, STRETCH et grip
+  - Helpers `applyMove` / `applyCopy` créés pour propager le déplacement aux entités liées (`linkedTubeId`)
+- **ESC** — ferme les popups (Styles de cotes, Gestionnaire de calques, Éditer tube, Hachures, Impression, Préférences, Réseau) et annule la sélection caoutchouc en cours ; remet le focus dans la barre de commande
+- **Focus barre de commande** — ESC hors infobulles DI replace toujours le curseur dans la ligne de commande
+- **Sélection sans délai** — hitTest exécuté dès `mousedown` pour feedback immédiat ; sélection caoutchouc démarrée en `mouseup` pour éviter la finalisation instantanée
+- **Bulle DI ne capte plus les clics canvas** — `pointer-events: none` sur `#dynamic-input`, `auto` sur `.di-input` uniquement
+- **LEADER** — texte positionné gauche/droite selon la direction ; hitTest couvre la zone texte ; double-clic sur le texte ouvre le dialogue d'édition
+
+---
+
+## [0.06] — 2026-05-21
 
 ### Ajouté
 - **HATCH** — hachures sur contour fermé (polyligne, rectangle, cercle)

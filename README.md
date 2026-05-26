@@ -3,7 +3,7 @@
 **Logiciel de dessin technique 2D dans un seul fichier HTML.**  
 Aucune dépendance, aucun serveur, aucune installation — ouvrir `minicad.html` et dessiner.
 
-Interface : commandes texte, OSNAP, saisie dynamique, cotations, import/export DXF.
+Interface: commandes texte, OSNAP, saisie dynamique, cotations, import/export DXF.
 
 ---
 
@@ -128,7 +128,7 @@ Les barres d'outils sont **déplaçables** (drag & drop dock/float, clic-droit p
 
 ---
 
-## Commandes terminales (style AutoCAD)
+## Commandes terminales
 
 Taper dans le champ en bas de l'interface :
 
@@ -234,7 +234,7 @@ minicad/
 
 ## Version
 
-**v0.06** — Voir [suivi/CHANGELOG.md](suivi/CHANGELOG.md) pour l'historique complet.
+**v0.07** — Voir [suivi/CHANGELOG.md](suivi/CHANGELOG.md) pour l'historique complet.
 
 ---
 

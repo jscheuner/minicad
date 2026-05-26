@@ -52,6 +52,13 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## ✅ Terminé (résumé)
 
+- ✅ **DIVIDE / POINT** — diviser entité en N segments par des points ; placement manuel de points ; export DXF
+- ✅ **Styles de cote 1:1→1:100** — 7 styles scale-based remplacent les 3 ISO ; migration localStorage automatique
+- ✅ **FILLET/CHAMFER sur rectangle** — conversion rect→polyligne en place ; undo restaure le rectangle
+- ✅ **EXPLODE polyligne avec bulge** — tous les arcs extraits correctement (bug : seul le 1er arc était conservé)
+- ✅ **STRETCH — cercles/arcs** — centre dans fenêtre → déplacement complet
+- ✅ **STRETCH — rectangle de sélection** — masqué dès la fin de la fenêtre croisante
+- ✅ **LEADER lié au style de cote** — taille/flèche/attache selon style ; épaulement gauche/droite ; hitText corrigé
 - ✅ **FILLET R=0** — raccord angle vif sur lignes, polylignes et arcs
 - ✅ **FILLET sur arc** — raccord ligne+arc (R=0 et R>0) via `applyFilletWithArc`
 - ✅ **hitTest par distance** — sélection au clic par proximité réelle au contour (plus premier-trouvé)
