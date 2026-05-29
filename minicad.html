@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MiniCAD v0.07</title>
+<title>MiniCAD v0.08</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=Oswald:wght@300;400;500&family=Share+Tech&display=swap');
 
@@ -399,6 +399,14 @@
     font-family: 'JetBrains Mono', monospace; box-sizing: border-box;
   }
   .ar-input:focus { outline: none; border-color: var(--accent); }
+  .ar-pick-row { display: flex; gap: 4px; }
+  .ar-pick-row .ar-input { flex: 1; min-width: 0; }
+  .ar-pick-btn {
+    background: #0d1525; border: 1px solid #ffffff22; border-radius: 4px;
+    color: #ffffff66; font-size: 14px; padding: 0 7px; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; transition: border-color .15s, color .15s;
+  }
+  .ar-pick-btn:hover { border-color: var(--accent); color: var(--accent); }
   .ar-info { padding: 6px 16px 0; font-size: 10px; color: #ffffff44; text-align: center; }
   .ar-footer {
     padding: 12px 16px; border-top: 1px solid #ffffff12;
@@ -409,6 +417,35 @@
   .ar-btn.cancel:hover { background: #ffffff20; }
   .ar-btn.ok { background: var(--accent); color: #000; }
   .ar-btn.ok:hover { opacity: 0.85; }
+
+  /* ── BIBLIOTHÈQUE — menus cascadants ─────────── */
+  .lib-sub-item {
+    position: relative;
+    padding: 5px 28px 5px 10px;
+    cursor: pointer; white-space: nowrap;
+    color: var(--text); font-size: 12px; user-select: none;
+  }
+  .lib-sub-item:hover { background: #ffffff0a; color: var(--text-bright); }
+  .lib-sub-item::after { content: '►'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 8px; opacity: 0.45; }
+  .lib-sub-item.disabled { opacity: 0.35; pointer-events: none; }
+  .lib-sub-list {
+    display: none; position: absolute; left: 100%; top: -1px;
+    background: #1a2133; border: 1px solid #ffffff22; border-radius: 4px;
+    z-index: 1002; box-shadow: 4px 8px 24px rgba(0,0,0,0.7);
+    min-width: 130px;
+  }
+  .lib-sub-item:hover > .lib-sub-list { display: block; }
+  .lib-size-list { max-height: 260px; overflow-y: auto; min-width: 110px; }
+  .lib-leaf-item {
+    padding: 5px 12px 5px 8px; cursor: pointer; white-space: nowrap;
+    color: var(--text); font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .lib-leaf-item:hover { background: #ffffff0a; color: var(--text-bright); }
+  .lib-leaf-item .lib-chk { color: var(--accent); opacity: 0; font-size: 10px; flex-shrink: 0; }
+  .lib-leaf-item.selected .lib-chk { opacity: 1; }
+  .lib-leaf-item.selected { color: var(--accent); }
 
   /* ===== AI ASSISTANT PANEL ===== */
   #ai-panel {
@@ -883,7 +920,7 @@
 
 <!-- MENU BAR -->
 <div class="menubar">
-  <div class="topbar-logo">MiniCAD <span>v0.07</span></div>
+  <div class="topbar-logo">MiniCAD <span>v0.08</span></div>
   <div class="menu-items">
     <div class="menu-dropdown" id="menu-fichier">
       <div class="menu-item" id="menu-fichier-btn" onclick="toggleMenuDropdown('menu-fichier',event)">Fichier</div>
@@ -915,6 +952,10 @@
           <span>Préférences…</span>
         </div>
       </div>
+    </div>
+    <div class="menu-dropdown" id="menu-lib">
+      <div class="menu-item" id="menu-lib-btn" onclick="toggleMenuDropdown('menu-lib',event)">Bibliothèque</div>
+      <div class="menu-dropdown-list" id="menu-lib-list"></div>
     </div>
     <div class="menu-item" onclick="showHelp()">Aide</div>
   </div>
@@ -1090,6 +1131,14 @@
           <line x1="8" y1="12" x2="2" y2="12"/><polygon points="4,10 4,14 1,12" fill="currentColor"/>
         </svg>
       </button>
+      <!-- Diviser  -->
+      <button class="tool-btn" data-tool="divide_pick" title="Diviser (DIV)" onclick="executeCommand('DIVIDE')">
+        <svg viewBox="0 0 24 24">
+          <line x1="4" y1="12" x2="20" y2="12"/>
+          <circle cx="9" cy="12" r="2" fill="currentColor" stroke="none"/>
+          <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
       <div class="tb-sep"></div>
       <!-- Annuler / Refaire -->
       <button class="tool-btn" title="Annuler (Ctrl+Z)" onclick="CMD.UNDO.exec()">
@@ -1131,6 +1180,13 @@
       <button class="tool-btn" data-tool="polyline" title="Polyligne (PL)" onclick="setTool('polyline')">
         <svg viewBox="0 0 24 24"><polyline points="4,18 8,8 14,14 20,4"/></svg>
       </button>
+      <button class="tool-btn" data-tool="point" title="Point (PT)" onclick="executeCommand('POINT')">
+        <svg viewBox="0 0 24 24">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+      <!-- Hachures -->
       <button class="tool-btn" data-tool="hatch" title="Hachures (H)" onclick="executeCommand('HATCH')">
         <svg viewBox="0 0 24 24">
           <rect x="3" y="3" width="18" height="18" rx="1"/>
@@ -1139,19 +1195,6 @@
           <line x1="3" y1="21" x2="21" y2="3"/>
           <line x1="9" y1="21" x2="21" y2="9"/>
           <line x1="15" y1="21" x2="21" y2="15"/>
-        </svg>
-      </button>
-      <button class="tool-btn" data-tool="point" title="Point (PT)" onclick="executeCommand('POINT')">
-        <svg viewBox="0 0 24 24">
-          <line x1="12" y1="5" x2="12" y2="19"/>
-          <line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-      </button>
-      <button class="tool-btn" data-tool="divide_pick" title="Diviser (DIV)" onclick="executeCommand('DIVIDE')">
-        <svg viewBox="0 0 24 24">
-          <line x1="4" y1="12" x2="20" y2="12"/>
-          <circle cx="9" cy="12" r="2" fill="currentColor" stroke="none"/>
-          <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
         </svg>
       </button>
       <button class="tool-btn" data-tool="tube" title="Tube 2 traits (TUBE)" onclick="executeCommand('TUBE')">
@@ -1406,7 +1449,7 @@
   <div class="lm-table">
     <table class="lm-grid">
       <thead><tr>
-        <th>Nom</th><th>Texte (mm)</th><th>Flèche (mm)</th><th>Attache (mm)</th><th></th>
+        <th>Nom</th><th>Texte (mm)</th><th>Flèche (mm)</th><th>Attache (mm)</th><th>Déc.</th><th></th>
       </tr></thead>
       <tbody id="dsm-body"></tbody>
     </table>
@@ -1428,7 +1471,10 @@
     </div>
     <div class="ar-group">
       <div class="ar-label">Espacement X</div>
-      <input id="ar-dx" class="ar-input" type="number" value="100" oninput="arrayPreviewUpdate()">
+      <div class="ar-pick-row">
+        <input id="ar-dx" class="ar-input" type="number" value="100" oninput="arrayPreviewUpdate()">
+        <button class="ar-pick-btn" title="Cliquer 2 points sur le dessin" onclick="arrayPickSpacing('x')">⊶</button>
+      </div>
     </div>
     <div class="ar-group">
       <div class="ar-label">Lignes</div>
@@ -1436,7 +1482,10 @@
     </div>
     <div class="ar-group">
       <div class="ar-label">Espacement Y</div>
-      <input id="ar-dy" class="ar-input" type="number" value="100" oninput="arrayPreviewUpdate()">
+      <div class="ar-pick-row">
+        <input id="ar-dy" class="ar-input" type="number" value="100" oninput="arrayPreviewUpdate()">
+        <button class="ar-pick-btn" title="Cliquer 2 points sur le dessin" onclick="arrayPickSpacing('y')" style="transform:rotate(90deg)">⊶</button>
+      </div>
     </div>
   </div>
   <div class="ar-info" id="ar-info">— entités : —</div>
@@ -1658,13 +1707,13 @@ const S = {
     { name: '3 - Texte',       color: '#ffab40', printColor: '#000000', visible: true, lineWidth: 0.25, lineType: 'solid' },
   ],
   dimStyles: [
-    { name: '1:1',   textHeight:   4, arrowSize:  2.5, extGap:  1.5 },
-    { name: '1:2',   textHeight:   4, arrowSize:  2.5, extGap:  1.5 },
-    { name: '1:5',   textHeight:   5, arrowSize:  3.0, extGap:  2.0 },
-    { name: '1:10',  textHeight:  10, arrowSize:  6.0, extGap:  4.0 },
-    { name: '1:20',  textHeight:  20, arrowSize: 12.0, extGap:  8.0 },
-    { name: '1:50',  textHeight:  50, arrowSize: 30.0, extGap: 20.0 },
-    { name: '1:100', textHeight: 100, arrowSize: 60.0, extGap: 40.0 },
+    { name: '1:1',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, decimals: 1 },
+    { name: '1:2',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, decimals: 1 },
+    { name: '1:5',   textHeight:   5, arrowSize:  3.0, extGap:  2.0, decimals: 1 },
+    { name: '1:10',  textHeight:  10, arrowSize:  6.0, extGap:  4.0, decimals: 0 },
+    { name: '1:20',  textHeight:  20, arrowSize: 12.0, extGap:  8.0, decimals: 0 },
+    { name: '1:50',  textHeight:  50, arrowSize: 30.0, extGap: 20.0, decimals: 0 },
+    { name: '1:100', textHeight: 100, arrowSize: 60.0, extGap: 40.0, decimals: 0 },
   ],
   currentDimStyle: '1:1',
   currentLayer: 0,
@@ -1746,6 +1795,9 @@ const S = {
   extendBoundaryIds: [],
   arraySourceIds: [],
   arrayPreview: null, // { cols, rows, dx, dy } for live preview in dialog
+  arrayPending: false,
+  arrayPickAxis: null,   // 'x' | 'y' | null — spacing pick in progress
+  arrayPickPt1: null,    // first click world coords
   // Grip edit
   _gripJustConfirmed: false,
   // MIRROR delete-source confirmation
@@ -1776,6 +1828,11 @@ const S = {
   offsetPending: false,
   // Hover pour highlight (offset, trim, etc.)
   hoverEntityId: null,
+  // BIBLIOTHÈQUE
+  libPending: false,
+  libDef: null,   // { family, size, params, view, drawFn }
+  // CIRCLE
+  circleDiamMode: false,
   // FILLET / CHAMFER
   filletRadius: 5,
   filletAwaitRadius: false,
@@ -1815,6 +1872,26 @@ const OSNAP_COLORS = {
   quadrant: '#cddc39',
   extension: '#ff9800',
 };
+
+// Retourne les directions de tracking pour un point acquis selon Ortho/Polaire
+function getExtTrackDirs(acq) {
+  const dirs = [];
+  if (S.ortho) {
+    dirs.push({ dx: 1, dy: 0, isExt: false, type: 'h' });
+    dirs.push({ dx: 0, dy: 1, isExt: false, type: 'v' });
+  } else if (S.polar) {
+    const inc = (S.polarAngle || 45) * Math.PI / 180;
+    for (let ang = 0; ang < Math.PI - 1e-6; ang += inc) {
+      dirs.push({ dx: Math.cos(ang), dy: Math.sin(ang), isExt: false, type: 'polar' });
+    }
+  } else {
+    dirs.push({ dx: 1, dy: 0, isExt: false, type: 'h' });
+    dirs.push({ dx: 0, dy: 1, isExt: false, type: 'v' });
+    if (Math.hypot(acq.dx, acq.dy) > 1e-6)
+      dirs.push({ dx: acq.dx, dy: acq.dy, isExt: true, type: 'ext' });
+  }
+  return dirs;
+}
 
 function findOsnap(wx, wy) {
   if (!S.osnapEnabled) return null;
@@ -2092,49 +2169,86 @@ function findOsnap(wx, wy) {
     }
   }
 
-  // EXTENSION — acquiert les extrémités survolées et snape sur leur prolongement
+  // EXTENSION + OTRACK — acquisition, prolongement, H/V, intersections
   if (S.osnapModes.extension) {
-    const acqTol = 15 / S.zoom;
-    const extTol = 10 / S.zoom;
+    const acqTol = 12 / S.zoom;
+    const extTol = 12 / S.zoom;
 
-    // Collecte les candidates (extrémité + direction sortante)
-    const addExt = (px, py, fromX, fromY) => {
-      const lx = px - fromX, ly = py - fromY, len = Math.hypot(lx, ly);
-      if (len < 1e-6) return;
-      const d = Math.hypot(px - wx, py - wy);
-      if (d < acqTol) {
-        if (!S.osnapAcquired.some(a => Math.hypot(a.ax - px, a.ay - py) < 1 / S.zoom)) {
-          S.osnapAcquired.push({ ax: px, ay: py, dx: lx / len, dy: ly / len });
-          if (S.osnapAcquired.length > 4) S.osnapAcquired.shift();
+    // Acquisition : survol de l'extrémité → mémorise le point + direction sortante
+    const tryAcquire = (px, py, extDx, extDy) => {
+      if (Math.hypot(px - wx, py - wy) < acqTol) {
+        if (!S.osnapAcquired.some(a => Math.hypot(a.ax - px, a.ay - py) < 2 / S.zoom)) {
+          S.osnapAcquired.push({ ax: px, ay: py, dx: extDx, dy: extDy });
+          if (S.osnapAcquired.length > 3) S.osnapAcquired.shift();
         }
       }
     };
     for (const e of S.entities) {
       if (!S.layers[e.layer]?.visible) continue;
       if (e.type === 'line' || e.type === 'wall') {
-        addExt(e.x1, e.y1, e.x2, e.y2);
-        addExt(e.x2, e.y2, e.x1, e.y1);
+        const len = Math.hypot(e.x2 - e.x1, e.y2 - e.y1);
+        if (len < 1e-6) continue;
+        tryAcquire(e.x1, e.y1, (e.x1 - e.x2) / len, (e.y1 - e.y2) / len);
+        tryAcquire(e.x2, e.y2, (e.x2 - e.x1) / len, (e.y2 - e.y1) / len);
+      }
+      if (e.type === 'arc') {
+        const sa = e.startAngle, ea = e.endAngle;
+        tryAcquire(e.cx + e.r * Math.cos(sa), e.cy + e.r * Math.sin(sa),  Math.sin(sa), -Math.cos(sa));
+        tryAcquire(e.cx + e.r * Math.cos(ea), e.cy + e.r * Math.sin(ea), -Math.sin(ea),  Math.cos(ea));
       }
       if (e.type === 'polyline' || e.type === 'cable') {
         const pts = e.points;
-        if (pts.length >= 2) {
-          addExt(pts[0][0], pts[0][1], pts[1][0], pts[1][1]);
-          const n = pts.length;
-          addExt(pts[n-1][0], pts[n-1][1], pts[n-2][0], pts[n-2][1]);
+        if (pts.length < 2) continue;
+        const p0 = pts[0], p1 = pts[1];
+        const l0 = Math.hypot(p1[0]-p0[0], p1[1]-p0[1]);
+        if (l0 > 1e-6) tryAcquire(p0[0], p0[1], (p0[0]-p1[0])/l0, (p0[1]-p1[1])/l0);
+        const pn = pts[pts.length-1], pn1 = pts[pts.length-2];
+        const ln = Math.hypot(pn[0]-pn1[0], pn[1]-pn1[1]);
+        if (ln > 1e-6) tryAcquire(pn[0], pn[1], (pn[0]-pn1[0])/ln, (pn[1]-pn1[1])/ln);
+      }
+    }
+
+    // Lignes de tracking : directions selon Ortho/Polaire/libre
+    // Les snaps de tracking ne s'activent que si aucun OSNAP standard n'a été trouvé
+    const tracks = [];
+    if (!best) {
+      for (const acq of S.osnapAcquired) {
+        for (const d of getExtTrackDirs(acq)) {
+          tracks.push({ acq, ...d });
         }
       }
     }
 
-    // Snap sur la droite de prolongement des points acquis
-    for (const acq of S.osnapAcquired) {
-      const t = (wx - acq.ax) * acq.dx + (wy - acq.ay) * acq.dy;
-      if (t < 0.5 / S.zoom) continue; // seulement en avant de l'extrémité
-      const px = acq.ax + t * acq.dx;
-      const py = acq.ay + t * acq.dy;
-      const perpD = Math.hypot(wx - px, wy - py);
+    // Snaps directs sur une ligne de tracking
+    for (const tr of tracks) {
+      const t = (wx - tr.acq.ax) * tr.dx + (wy - tr.acq.ay) * tr.dy;
+      if (tr.isExt && t < 1e-6) continue;
+      const snapX = tr.acq.ax + t * tr.dx, snapY = tr.acq.ay + t * tr.dy;
+      const perpD = Math.hypot(wx - snapX, wy - snapY);
       if (perpD < extTol && perpD < bestDist) {
         bestDist = perpD;
-        best = { x: px, y: py, type: 'extension', acq };
+        best = { x: snapX, y: snapY, type: 'extension', tr };
+      }
+    }
+
+    // Snaps sur l'intersection de deux lignes de tracking (points acquis différents)
+    for (let i = 0; i < tracks.length - 1; i++) {
+      for (let j = i + 1; j < tracks.length; j++) {
+        const a = tracks[i], b = tracks[j];
+        if (a.acq === b.acq) continue;
+        const denom = a.dx * b.dy - a.dy * b.dx;
+        if (Math.abs(denom) < 1e-9) continue; // parallèles
+        const dpx = b.acq.ax - a.acq.ax, dpy = b.acq.ay - a.acq.ay;
+        const t = (dpx * b.dy - dpy * b.dx) / denom;
+        const s = (dpx * a.dy - dpy * a.dx) / denom;
+        if (a.isExt && t < 1e-6) continue;
+        if (b.isExt && s < 1e-6) continue;
+        const ix = a.acq.ax + t * a.dx, iy = a.acq.ay + t * a.dy;
+        const d = Math.hypot(wx - ix, wy - iy);
+        if (d < extTol && d < bestDist) {
+          bestDist = d;
+          best = { x: ix, y: iy, type: 'extension', trA: a, trB: b };
+        }
       }
     }
   }
@@ -2638,7 +2752,12 @@ const CMD = {
   PRINT: { alias: ['PDF','IMPRIMER'], desc: 'Exporter en PDF (fenêtre de sélection + paramètres)', exec: () => openPrintDialog() },
   SAVEAS: { desc: 'Sauvegarder sous (SAVEAS [nom])', exec: (args) => cmdSave(args[0], true) },
   ARRAY: { alias: ['AR','RESEAU','RÉSEAU'], desc: 'Réseau rectangulaire (copies en grille)', exec: () => {
-    if (!S.selected.length) { termPrint('Sélectionner des objets avant ARRAY', 'warning'); return; }
+    if (!S.selected.length) {
+      S.arrayPending = true;
+      setTool('select');
+      termPrint('ARRAY: sélectionner les objets, puis Entrée', 'info');
+      return;
+    }
     S.arraySourceIds = [...S.selected];
     openArrayDialog();
   }},
@@ -3002,7 +3121,7 @@ function _drawStaticLayer() {
     if (!S.layers[e.layer]?.visible) return;
     if (!_inViewport(getEntityBBox(e), vp)) return;
     const layer = S.layers[e.layer];
-    const color = layer?.color || '#00d4ff';
+    const color = e.color || layer?.color || '#00d4ff';
     ctx.strokeStyle = color; ctx.fillStyle = color;
     ctx.lineWidth = getLayerLineWidthPx(layer?.lineWidth);
     ctx.setLineDash(e.dash || getLayerLineDash(layer?.lineType || 'solid'));
@@ -3041,6 +3160,26 @@ function drawAiPlacementPreview() {
   ctx.moveTo(scx - g, scy); ctx.lineTo(scx + g, scy);
   ctx.moveTo(scx, scy - g); ctx.lineTo(scx, scy + g);
   ctx.stroke();
+  ctx.restore();
+}
+
+function drawLibPreview() {
+  if (!S.libDef || !mouseOnCanvas) return;
+  const [wx, wy] = S.mouseWorld;
+  const [mx, my] = S.currentOsnap ? [S.currentOsnap.x, S.currentOsnap.y] : snapToGrid(wx, wy);
+  const before = S.entities.length;
+  try { window[S.libDef.drawFn](S.libDef.params, mx, my); } catch (_) {}
+  const ghosts = S.entities.splice(before);
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+  ctx.setLineDash([5, 4]);
+  ghosts.forEach(e => {
+    const layer = S.layers[e.layer] || S.layers[S.currentLayer];
+    ctx.strokeStyle = layer?.color || '#00d4ff';
+    ctx.lineWidth = Math.max(1, getLayerLineWidthPx(layer?.lineWidth));
+    drawEntity(e);
+  });
+  ctx.setLineDash([]);
   ctx.restore();
 }
 
@@ -3112,24 +3251,65 @@ function _drawDynamicLayer() {
     ctx.restore();
   }
   if (S.aiPendingEntities && S.aiPendingCenter && mouseOnCanvas) drawAiPlacementPreview();
-  // Extension trails: "+" sur les points acquis + ligne pointillée vers le snap courant
+  if (S.libPending && S.libDef && mouseOnCanvas) drawLibPreview();
+  // Extension + OTRACK trails : "+" + lignes de tracking H/V/prolongement
   if (S.osnapModes?.extension && S.osnapAcquired?.length > 0 && mouseOnCanvas) {
     ctx.save();
     ctx.strokeStyle = OSNAP_COLORS.extension;
+    const [mwx, mwy] = S.mouseWorld;
+    const snap = S.currentOsnap?.type === 'extension' ? S.currentOsnap : null;
+    const dispTol = 40 / S.zoom; // seuil d'affichage (plus large que le seuil de snap)
+
+    // "+" au point acquis
     S.osnapAcquired.forEach(acq => {
       const [asx, asy] = w2s(acq.ax, acq.ay);
       ctx.lineWidth = 1.5; ctx.setLineDash([]);
       ctx.beginPath();
-      ctx.moveTo(asx - 5, asy); ctx.lineTo(asx + 5, asy);
-      ctx.moveTo(asx, asy - 5); ctx.lineTo(asx, asy + 5);
+      ctx.moveTo(asx - 6, asy); ctx.lineTo(asx + 6, asy);
+      ctx.moveTo(asx, asy - 6); ctx.lineTo(asx, asy + 6);
       ctx.stroke();
-      if (S.currentOsnap?.type === 'extension' && S.currentOsnap?.acq === acq) {
-        const [ssx, ssy] = w2s(S.currentOsnap.x, S.currentOsnap.y);
-        ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
-        ctx.beginPath(); ctx.moveTo(asx, asy); ctx.lineTo(ssx, ssy); ctx.stroke();
-        ctx.setLineDash([]);
-      }
     });
+
+    // Déterminer quels trails afficher
+    // Cas 1 : snap sur intersection → 2 trails convergeant vers le snap
+    if (snap?.trA && snap?.trB) {
+      const drawTrail = (tr) => {
+        const [asx, asy] = w2s(tr.acq.ax, tr.acq.ay);
+        const [tsx, tsy] = w2s(snap.x, snap.y);
+        ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(asx, asy); ctx.lineTo(tsx, tsy); ctx.stroke();
+        ctx.setLineDash([]);
+      };
+      drawTrail(snap.trA); drawTrail(snap.trB);
+    }
+    // Cas 2 : snap direct sur une ligne de tracking
+    else if (snap?.tr) {
+      const [asx, asy] = w2s(snap.tr.acq.ax, snap.tr.acq.ay);
+      const [tsx, tsy] = w2s(snap.x, snap.y);
+      ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(asx, asy); ctx.lineTo(tsx, tsy); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // Cas 3 : pas de snap — afficher la meilleure direction par point acquis
+    else {
+      S.osnapAcquired.forEach(acq => {
+        const dirs = getExtTrackDirs(acq);
+        let bestDir = null, bestPerp = Infinity;
+        for (const d of dirs) {
+          const t = (mwx - acq.ax) * d.dx + (mwy - acq.ay) * d.dy;
+          if (d.isExt && t < 1e-6) continue;
+          const snapX = acq.ax + t * d.dx, snapY = acq.ay + t * d.dy;
+          const perp = Math.hypot(mwx - snapX, mwy - snapY);
+          if (perp < bestPerp) { bestPerp = perp; bestDir = { d, t, snapX, snapY }; }
+        }
+        if (!bestDir || bestPerp > dispTol) return;
+        const [asx, asy] = w2s(acq.ax, acq.ay);
+        const [tsx, tsy] = w2s(bestDir.snapX, bestDir.snapY);
+        ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(asx, asy); ctx.lineTo(tsx, tsy); ctx.stroke();
+        ctx.setLineDash([]);
+      });
+    }
     ctx.restore();
   }
   if (S.currentOsnap) drawOsnapMarker(S.currentOsnap);
@@ -3209,9 +3389,12 @@ function _doRender() {
 }
 
 function dimText(e, value) {
+  const ds = getDimStyle(e);
+  const dec = (ds && ds.decimals != null) ? ds.decimals : 1;
+  const formatted = value.toFixed(dec);
   const t = e.text || '';
-  if (!t || t === '<>') return value.toFixed(1);
-  return t.replace('<>', value.toFixed(1));
+  if (!t || t === '<>') return formatted;
+  return t.replace('<>', formatted);
 }
 
 // ===== TUBE TOOL — geometry =====
@@ -3382,13 +3565,14 @@ function getTubeTableData(e) {
 // Dimensions de base en unités monde (scale=1). La taille en pixels = dim*zoom → taille
 // fixe dans le dessin, identique au comportement des cotes et textes.
 const _TBL_CELL  = 26;   // hauteur d'une ligne (unités monde)
-const _TBL_COL1  = 90;   // largeur colonne longueur
-const _TBL_COL2  = 54;   // largeur colonne angle
+const _TBL_COL1  = 95;   // largeur colonne longueur
+const _TBL_GAP   = 14;   // espace entre les deux colonnes
+const _TBL_COL2  = 70;   // largeur colonne angle
 const _TBL_PAD   = 8;    // marge interne
 const _TBL_SEP   = 6;    // hauteur séparateur
 
 function _tubeTableDims(nRows, sc) {
-  const W = (_TBL_COL1 + _TBL_COL2 + _TBL_PAD * 2) * sc;
+  const W = (_TBL_COL1 + _TBL_GAP + _TBL_COL2 + _TBL_PAD * 2) * sc;
   const H = (_TBL_CELL * (nRows + 3) + _TBL_PAD * 2 + _TBL_SEP * 2) * sc;
   return { W, H };
 }
@@ -3409,6 +3593,7 @@ function drawTubeLabel(e) {
   const cellPx = _TBL_CELL * sc * z;
   const sepPx  = _TBL_SEP  * sc * z;
   const col1Px = _TBL_COL1 * sc * z;
+  const gapPx  = _TBL_GAP  * sc * z;
   const col2Px = _TBL_COL2 * sc * z;
   const fh = Math.max(7, Math.round(cellPx * 0.52));
 
@@ -3423,6 +3608,9 @@ function drawTubeLabel(e) {
   ctx.strokeStyle = '#00d4ff66';
   ctx.lineWidth = 1;
   ctx.strokeRect(sx, sy, Wpx, Hpx);
+
+  const _ds = getDimStyle(null);
+  const lenDec = (_ds && _ds.decimals != null) ? _ds.decimals : 1;
 
   let ry = sy + padPx;
 
@@ -3441,15 +3629,15 @@ function drawTubeLabel(e) {
   for (const row of data.rows) {
     ctx.fillStyle = '#e2e8f0';
     ctx.textAlign = 'right';
-    ctx.fillText(row.len.toFixed(0), sx + padPx + col1Px, ry);
+    ctx.fillText(row.len.toFixed(lenDec), sx + padPx + col1Px, ry);
     ctx.textAlign = 'center';
     if (row.bend) {
-      const deg = Math.round(row.bend.angle * 180 / Math.PI);
+      const deg = row.bend.angle * 180 / Math.PI;
       ctx.fillStyle = '#fbbf24';
-      ctx.fillText((row.bend.side < 0 ? '-' : '') + deg + '°', sx + padPx + col1Px + col2Px / 2, ry);
+      ctx.fillText((row.bend.side < 0 ? '-' : '') + deg.toFixed(2) + '°', sx + padPx + col1Px + gapPx + col2Px / 2, ry);
     } else {
       ctx.fillStyle = '#64748b';
-      ctx.fillText('-', sx + padPx + col1Px + col2Px / 2, ry);
+      ctx.fillText('-', sx + padPx + col1Px + gapPx + col2Px / 2, ry);
     }
     ry += cellPx;
   }
@@ -3462,7 +3650,7 @@ function drawTubeLabel(e) {
   // Longueur développée
   ctx.fillStyle = '#00d4ff';
   ctx.textAlign = 'left';
-  ctx.fillText('Dév. ' + data.totalLen.toFixed(0), sx + padPx, ry);
+  ctx.fillText('Dév. ' + data.totalLen.toFixed(lenDec), sx + padPx, ry);
 
   // Poignée déplacement — coin haut-gauche (bleu cyan plein)
   ctx.fillStyle = '#00d4ff';
@@ -3557,6 +3745,7 @@ function openTubeEditDialog(ent) {
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button id="te-cancel" style="background:#2a2a3e;border:1px solid #334;color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Annuler</button>
+      <button id="te-delcote" style="background:#2a2a3e;border:1px solid #644;color:#c88;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">✕ Cotes</button>
       <button id="te-cote" style="background:#2a2a3e;border:1px solid #556;color:#aac;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Coter</button>
       <button id="te-preview" style="background:#2a2a3e;border:1px solid var(--accent);color:var(--accent);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Prévisualiser</button>
       <button id="te-ok" style="background:var(--accent);border:none;color:#000;padding:4px 14px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold">Appliquer ↵</button>
@@ -3768,7 +3957,7 @@ function openTubeEditDialog(ent) {
   }
 
   function createLinkedDims(tubeEnt, ref) {
-    const { R, tr } = getRD();
+    const { tr } = getRD();
     const segs = tubeEnt.segments || [];
     const straights = [], bends = [];
     for (const s of segs) {
@@ -3776,35 +3965,120 @@ function openTubeEditDialog(ent) {
       else if (s.type === 'bend') bends.push(s);
     }
     if (!straights.length) return [];
-    function outwardPerp(theta, side) {
-      return [side * Math.sin(theta), -side * Math.cos(theta)];
+
+    // Step 1 — AXE miter corners directly from stored segments (no editRows dependency).
+    // Each corner is the virtual sharp intersection of the AXE lines extended (= clicked point).
+    function walkAXE() {
+      let jx = tubeEnt.startX, jy = tubeEnt.startY;
+      let jdir = tubeEnt.startAngle;
+      const out = [];
+      for (let i = 0; i < straights.length; i++) {
+        out.push({ x: jx, y: jy, dir: jdir });
+        const Rb   = (i > 0) ? bends[i - 1].bendRadius : 0;
+        const phib = (i > 0) ? bends[i - 1].angle       : 0;
+        const Ra   = (i < bends.length) ? bends[i].bendRadius : 0;
+        const phia = (i < bends.length) ? bends[i].angle       : 0;
+        const d = straights[i].length + Rb * Math.tan(phib / 2) + Ra * Math.tan(phia / 2);
+        jx += Math.cos(jdir) * d;
+        jy += Math.sin(jdir) * d;
+        if (i < bends.length) jdir += bends[i].angle * bends[i].side;
+      }
+      out.push({ x: jx, y: jy, dir: jdir });
+      return out;
     }
-    const side0 = bends.length ? bends[0].side : 1;
-    const op0   = outwardPerp(tubeEnt.startAngle, side0);
-    const refSign = ref === 'ext' ? 1 : ref === 'int' ? -1 : 0;
-    let jx = tubeEnt.startX + refSign * tr * op0[0];
-    let jy = tubeEnt.startY + refSign * tr * op0[1];
-    let jdir = tubeEnt.startAngle;
-    const junctions = [];
-    for (let i = 0; i < straights.length; i++) {
-      junctions.push({ x: jx, y: jy, dir: jdir });
-      jx += Math.cos(jdir) * saisieAt(i, R, tr, ref);
-      jy += Math.sin(jdir) * saisieAt(i, R, tr, ref);
-      if (i < bends.length) jdir += bends[i].angle * bends[i].side;
+
+    // Step 2 — Offset AXE corners by sign*tr using the same convention as _drawTubePath:
+    // EXT perp = +[sin(theta), -cos(theta)], INT perp = -[sin(theta), -cos(theta)].
+    // Interior corners are computed via miter-line intersection of adjacent offset walls.
+    function computeOffsetCorners(sign) {
+      const axe = axeCorners;
+      const n = axe.length;
+      if (sign === 0) return axe.map(c => ({ x: c.x, y: c.y }));
+
+      // Perpendicular vector (EXT side) for segment whose direction is stored at axe[i]
+      function perp(i) {
+        const th = axe[i].dir;
+        return { px: sign * Math.sin(th), py: -sign * Math.cos(th) };
+      }
+
+      const res = [];
+
+      // Start corner — simple offset of AXE start
+      const p0 = perp(0);
+      res.push({ x: axe[0].x + tr * p0.px, y: axe[0].y + tr * p0.py });
+
+      // Interior corners — intersect offset wall lines of adjacent segments
+      for (let i = 0; i < n - 2; i++) {
+        const pi  = perp(i);
+        const pi1 = perp(i + 1);
+        // A point on segment-i's offset wall (at the shared AXE corner i+1)
+        const q1x = axe[i + 1].x + tr * pi.px,  q1y = axe[i + 1].y + tr * pi.py;
+        // A point on segment-(i+1)'s offset wall (also at AXE corner i+1)
+        const q2x = axe[i + 1].x + tr * pi1.px, q2y = axe[i + 1].y + tr * pi1.py;
+        const d1x = Math.cos(axe[i].dir),   d1y = Math.sin(axe[i].dir);
+        const d2x = Math.cos(axe[i + 1].dir), d2y = Math.sin(axe[i + 1].dir);
+        const det = d1x * d2y - d1y * d2x;
+        if (Math.abs(det) < 1e-10) {
+          res.push({ x: (q1x + q2x) / 2, y: (q1y + q2y) / 2 });
+        } else {
+          const dx = q2x - q1x, dy = q2y - q1y;
+          const t = (dx * d2y - dy * d2x) / det;
+          res.push({ x: q1x + t * d1x, y: q1y + t * d1y });
+        }
+      }
+
+      // End corner — simple offset of AXE end (last segment direction = dir at corner n-2)
+      const pL = perp(n - 2);
+      res.push({ x: axe[n - 1].x + tr * pL.px, y: axe[n - 1].y + tr * pL.py });
+      return res;
     }
-    junctions.push({ x: jx, y: jy });
-    const offsetDist = Math.max(50, tr * 6);
+
+    const axeCorners = walkAXE();
+
+    // Determine which side is EXT from the bends' winding direction.
+    // totalTurn > 0 (CCW path): EXT = right-of-travel (+1 with [sin,−cos] formula).
+    // totalTurn ≤ 0 (CW path, e.g. portal frame): EXT = left-of-travel (−1).
+    let totalTurn = 0;
+    for (const b of bends) totalTurn += b.angle * b.side;
+    const handedness = totalTurn > 0 ? 1 : -1;
+
+    const refSign    = ref === 'ext' ? handedness : ref === 'int' ? -handedness : 0;
+    const corners    = computeOffsetCorners(refSign);
+    const extCorners = (ref === 'ext') ? corners : computeOffsetCorners(handedness);
+
     const result = [];
+
+    // Construction line (tiretés) — tracé de référence avec angles vifs R=0
+    result.push({
+      type: 'polyline',
+      points: corners.map(c => [c.x, c.y]),
+      dash: [10, 6],
+      color: '#6080a0',
+      id: S.nextId++,
+      layer: S.currentLayer,
+      linkedTubeId: tubeEnt.id,
+      isConstruction: true
+    });
+
+    // Cotes — une dim_aligned par segment de la ligne de construction
+    const offsetDist = Math.max(40, tr * 4);
     for (let i = 0; i < straights.length; i++) {
-      const j1 = junctions[i], j2 = junctions[i + 1];
-      const bendSide = i < bends.length ? bends[i].side
-                     : i > 0            ? bends[i-1].side
-                     : 1;
+      const c1 = corners[i],    c2 = corners[i + 1];
+      const a1 = axeCorners[i], a2 = axeCorners[i + 1];
+      const e1 = extCorners[i], e2 = extCorners[i + 1];
+      const segAngle = Math.atan2(c2.y - c1.y, c2.x - c1.x);
+      const dpx = -Math.sin(segAngle), dpy = Math.cos(segAngle);
+      const farX = (e1.x + e2.x) / 2 - (a1.x + a2.x) / 2;
+      const farY = (e1.y + e2.y) / 2 - (a1.y + a2.y) / 2;
+      const dot  = farX * dpx + farY * dpy;
+      // dim_aligned applies offset in screen-CCW direction; w2s flips y so screen-CCW
+      // is opposite to world-CCW (dpx/dpy). Negate to place dims on the EXT side.
+      const sgn  = -Math.sign(dot || 1);
       result.push({
         type: 'dim_aligned',
-        x1: j1.x, y1: j1.y,
-        x2: j2.x, y2: j2.y,
-        offset: bendSide * offsetDist,
+        x1: c1.x, y1: c1.y,
+        x2: c2.x, y2: c2.y,
+        offset: sgn * offsetDist,
         dimStyle: S.currentDimStyle,
         linkedTubeId: tubeEnt.id,
         id: S.nextId++,
@@ -3813,6 +4087,15 @@ function openTubeEditDialog(ent) {
     }
     return result;
   }
+
+  document.getElementById('te-delcote').onclick = () => {
+    const linked = S.entities.filter(e => e.linkedTubeId === ent.id);
+    if (!linked.length) return;
+    pushUndo();
+    S.entities = S.entities.filter(e => e.linkedTubeId !== ent.id);
+    render();
+    termPrint(linked.length + ' cote(s) supprimée(s)', 'info');
+  };
 
   document.getElementById('te-cote').onclick = () => {
     if (!ent.segments || !ent.segments.some(s => s.type === 'straight')) return;
@@ -4137,15 +4420,6 @@ function drawEntity(e) {
       const [vsx, vsy] = w2s(e.vx, e.vy);
       const r = (e.r || 40) * S.zoom;
       let sa = e.startAngle, ea = e.endAngle;
-      ctx.setLineDash([3,3]);
-      const rayLen = r * 1.3;
-      ctx.beginPath(); ctx.moveTo(vsx, vsy);
-      ctx.lineTo(vsx + rayLen * Math.cos(-sa), vsy - rayLen * Math.sin(sa));
-      ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(vsx, vsy);
-      ctx.lineTo(vsx + rayLen * Math.cos(-ea), vsy - rayLen * Math.sin(ea));
-      ctx.stroke();
-      ctx.setLineDash([]);
       ctx.beginPath(); ctx.arc(vsx, vsy, r, -ea, -sa); ctx.stroke();
       const arrowAngle1 = -sa, arrowAngle2 = -ea;
       drawArrowHead(vsx + r*Math.cos(arrowAngle1) + asz*Math.cos(arrowAngle1-Math.PI/2),
@@ -4481,7 +4755,7 @@ function getGripPoints(e) {
         // Bas-droit monde : x+W (droite), y-H (vers le bas en monde Y-up)
         gp(e.labelX + Wg, e.labelY - Hg, (ent, nx, ny) => {
           const dxW = nx - ent.labelX;
-          const baseW = (_TBL_COL1 + _TBL_COL2 + _TBL_PAD * 2);
+          const baseW = (_TBL_COL1 + _TBL_GAP + _TBL_COL2 + _TBL_PAD * 2);
           ent.labelScale = Math.max(0.4, Math.min(8, dxW / baseW));
         });
       }
@@ -4536,7 +4810,10 @@ function drawGripPreview() {
   const osnap = findOsnap(mx, my);
   if (osnap) { mx = osnap.x; my = osnap.y; }
   else { [mx, my] = snapToGrid(mx, my); }
-  [mx, my] = applyConstraint(S.gripEdit.origX, S.gripEdit.origY, mx, my);
+  if (!osnap) {
+    if (S.ortho) [mx, my] = applyOrtho(S.gripEdit.origX, S.gripEdit.origY, mx, my);
+    else if (S.polar) { [mx, my] = applyPolar(S.gripEdit.origX, S.gripEdit.origY, mx, my); drawPolarGuides(S.gripEdit.origX, S.gripEdit.origY, mx, my); }
+  }
 
   // Clone entity, apply grip, draw preview
   const clone = JSON.parse(JSON.stringify(ent));
@@ -4577,8 +4854,11 @@ function drawGripSelected() {
   let [mx, my] = S.mouseWorld;
   const osnap = findOsnap(mx, my);
   if (osnap) { mx = osnap.x; my = osnap.y; }
-  else { [mx, my] = snapToGrid(mx, my); }
-  [mx, my] = applyConstraint(S.gripSelected.origX, S.gripSelected.origY, mx, my);
+  else {
+    [mx, my] = snapToGrid(mx, my);
+    if (S.ortho) [mx, my] = applyOrtho(S.gripSelected.origX, S.gripSelected.origY, mx, my);
+    else if (S.polar) [mx, my] = applyPolar(S.gripSelected.origX, S.gripSelected.origY, mx, my);
+  }
 
   const clone = JSON.parse(JSON.stringify(ent));
   const grips = getGripPoints(clone);
@@ -4662,8 +4942,10 @@ function drawDimPreview(tool, p1, p2, mouseWorld) {
       ctx.beginPath(); ctx.moveTo(a1,b1); ctx.lineTo(a2,b2); ctx.stroke();
       drawArrowHead(a2,b2,a1,b1,_asz); drawArrowHead(a1,b1,a2,b2,_asz);
       ctx.font=_tpx+'px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='bottom';
-      ctx.fillText(Math.abs(p2[0]-p1[0]).toFixed(1),(a1+a2)/2,Math.min(b1,b2)-_tpx*0.3);
+      const _dec = (_ds.decimals != null) ? _ds.decimals : 1;
+      ctx.fillText(Math.abs(p2[0]-p1[0]).toFixed(_dec),(a1+a2)/2,Math.min(b1,b2)-_tpx*0.3);
     } else {
+      const _dec = (_ds.decimals != null) ? _ds.decimals : 1;
       const dimX = (p1[0] + p2[0]) / 2 + off;
       const [a1,b1]=w2s(dimX,p1[1]), [a2,b2]=w2s(dimX,p2[1]);
       const [e1a,e1b]=w2s(p1[0],p1[1]), [e2a,e2b]=w2s(p2[0],p2[1]);
@@ -4673,10 +4955,11 @@ function drawDimPreview(tool, p1, p2, mouseWorld) {
       drawArrowHead(a2,b2,a1,b1,_asz); drawArrowHead(a1,b1,a2,b2,_asz);
       ctx.save(); ctx.translate((a1+a2)/2,(b1+b2)/2); ctx.rotate(-Math.PI/2);
       ctx.font=_tpx+'px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='bottom';
-      ctx.fillText(Math.abs(p2[1]-p1[1]).toFixed(1),0,-_tpx*0.3); ctx.restore();
+      ctx.fillText(Math.abs(p2[1]-p1[1]).toFixed(_dec),0,-_tpx*0.3); ctx.restore();
     }
   } else {
     // Aligned
+    const _dec = (_ds.decimals != null) ? _ds.decimals : 1;
     const [a1,b1]=w2s(p1[0],p1[1]), [a2,b2]=w2s(p2[0],p2[1]);
     const angle=Math.atan2(b2-b1,a2-a1);
     const perp=angle+Math.PI/2;
@@ -4691,7 +4974,7 @@ function drawDimPreview(tool, p1, p2, mouseWorld) {
     ctx.save(); ctx.translate((dx1+dx2)/2,(dy1+dy2)/2);
     let ta=angle; if(ta>Math.PI/2||ta<-Math.PI/2)ta+=Math.PI;
     ctx.rotate(ta); ctx.font=_tpx+'px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='bottom';
-    ctx.fillText(dist.toFixed(1),0,-_tpx*0.3); ctx.restore();
+    ctx.fillText(dist.toFixed(_dec),0,-_tpx*0.3); ctx.restore();
   }
   ctx.restore();
 }
@@ -4719,7 +5002,8 @@ function drawPreview() {
     const [x1,y1]=w2s(pts[0][0],pts[0][1]), [x2,y2]=w2s(mx,my);
     ctx.beginPath(); ctx.rect(Math.min(x1,x2),Math.min(y1,y2),Math.abs(x2-x1),Math.abs(y2-y1)); ctx.stroke();
   } else if (tool==='circle' && pts.length===1) {
-    const r=Math.hypot(mx-pts[0][0],my-pts[0][1]);
+    const dist=Math.hypot(mx-pts[0][0],my-pts[0][1]);
+    const r = S.circleDiamMode ? dist/2 : dist;
     const [cx,cy]=w2s(pts[0][0],pts[0][1]);
     ctx.beginPath(); ctx.arc(cx,cy,r*S.zoom,0,Math.PI*2); ctx.stroke();
   } else if (['polyline','cable'].includes(tool) && pts.length>0) {
@@ -4849,7 +5133,12 @@ function drawPreview() {
   // Mirror preview: axis line + ghost of mirrored entities
   if (tool === 'mirror' && pts.length === 1) {
     const [ax,ay]=pts[0];
-    const angle=Math.atan2(my-ay,mx-ax);
+    // Ortho/Polar ont priorité sur OSNAP pour l'axe de symétrie
+    let cmx=mx, cmy=my;
+    if (S.ortho) [cmx,cmy]=applyOrtho(ax,ay,mx,my);
+    else if (S.polar) [cmx,cmy]=applyPolar(ax,ay,mx,my);
+    if (S.polar && !S.ortho) drawPolarGuides(ax,ay,cmx,cmy);
+    const angle=Math.atan2(cmy-ay,cmx-ax);
     const ext=6000/S.zoom;
     const [lx1,ly1]=w2s(ax-ext*Math.cos(angle),ay-ext*Math.sin(angle));
     const [lx2,ly2]=w2s(ax+ext*Math.cos(angle),ay+ext*Math.sin(angle));
@@ -4859,7 +5148,7 @@ function drawPreview() {
     ctx.globalAlpha=0.45;
     S.selected.forEach(id=>{
       const src=S.entities.find(e=>e.id===id); if(!src)return;
-      const ghost=mirrorEntity(src,ax,ay,mx,my);
+      const ghost=mirrorEntity(src,ax,ay,cmx,cmy);
       ctx.strokeStyle=S.layers[ghost.layer]?.color||'#00d4ff';
       ctx.fillStyle=ctx.strokeStyle; ctx.lineWidth=1.2;
       ctx.setLineDash([5,3]); drawEntity(ghost); ctx.setLineDash([5,3]);
@@ -5272,8 +5561,8 @@ function drawPolyArcSegToPath(p1w, p2w, bulge) {
   // Screen angles: negate world Y component due to Y-down screen
   const sa = Math.atan2(-(y1w-cyw), x1w-cxw);
   const ea = Math.atan2(-(y2w-cyw), x2w-cxw);
-  // b>0 (CCW world) → anticlockwise=true in canvas (Y-down)
-  ctx.arc(cxs, cys, rs, sa, ea, b > 0);
+  // Pour les arcs majeurs (|b|>1, dth>180°) la direction canvas s'inverse par rapport aux arcs mineurs
+  ctx.arc(cxs, cys, rs, sa, ea, (b > 0) !== (Math.abs(b) > 1));
 }
 
 function applyJoin() {
@@ -5294,11 +5583,15 @@ function applyJoin() {
     if (e.type==='line'||e.type==='wall') return [[e.x1,e.y1],[e.x2,e.y2]];
     if (e.type==='arc') {
       const dth = ((e.endAngle - e.startAngle) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
-      const b = Math.tan(dth / 4);
-      return [
-        [e.cx+e.r*Math.cos(e.startAngle), e.cy+e.r*Math.sin(e.startAngle), b],
-        [e.cx+e.r*Math.cos(e.endAngle),   e.cy+e.r*Math.sin(e.endAngle)]
-      ];
+      const absBulge = Math.tan(dth / 4);
+      const sx = e.cx + e.r*Math.cos(e.startAngle), sy = e.cy + e.r*Math.sin(e.startAngle);
+      const ex = e.cx + e.r*Math.cos(e.endAngle),   ey = e.cy + e.r*Math.sin(e.endAngle);
+      // Signe du bulge : centre sur le côté CCW (+) ou CW (-) de la corde startPt→endPt
+      const perpX = -(ey - sy), perpY = ex - sx; // CCW perp de la corde (non normalisé)
+      const midX = (sx + ex) / 2, midY = (sy + ey) / 2;
+      const sign = ((e.cx - midX) * perpX + (e.cy - midY) * perpY) >= 0 ? 1 : -1;
+      const b = sign * absBulge;
+      return [[sx, sy, b], [ex, ey]];
     }
     return e.points.map(p=>[...p]);
   }
@@ -5596,11 +5889,20 @@ function updateDynamicInput() {
       diAngle.value = Math.abs(my - last[1]).toFixed(1);
     }
   } else if (mode === 'radius') {
-    diLabel1.textContent = 'R'; diUnit1.textContent = '';
-    diAngleField.style.display = 'none';
-    cmdInput.placeholder = '⟶ Rayon (ex: 50) ou cliquez...';
-    if (!S.diLocked) {
-      diDist.value = Math.hypot(mx - last[0], my - last[1]).toFixed(1);
+    if (S.circleDiamMode) {
+      diLabel1.textContent = 'Ø'; diUnit1.textContent = '';
+      diAngleField.style.display = 'none';
+      cmdInput.placeholder = '⟶ Diamètre (ex: 100) ou cliquez...';
+      if (!S.diLocked) {
+        diDist.value = (Math.hypot(mx - last[0], my - last[1]) * 2).toFixed(1);
+      }
+    } else {
+      diLabel1.textContent = 'R'; diUnit1.textContent = '';
+      diAngleField.style.display = 'none';
+      cmdInput.placeholder = '⟶ Rayon (ex: 50) ou D=Diamètre, ou cliquez...';
+      if (!S.diLocked) {
+        diDist.value = Math.hypot(mx - last[0], my - last[1]).toFixed(1);
+      }
     }
   } else {
     diLabel1.textContent = 'D'; diUnit1.textContent = '';
@@ -5643,6 +5945,15 @@ diDist.addEventListener('keydown', (ev) => {
     if (diAngleField.style.display !== 'none') { diAngle.focus(); diAngle.select(); }
   } else if (ev.key === 'Enter') {
     ev.preventDefault(); ev.stopPropagation();
+    // Cercle : si la valeur tapée est "D", basculer en mode diamètre
+    if (S.tool === 'circle' && S.drawing && diDist.value.trim().toUpperCase() === 'D') {
+      S.circleDiamMode = true;
+      S.diLocked = false;
+      diDist.value = '';
+      termPrint('CERCLE — Diamètre (ex: 100) :', 'warning');
+      updateDynamicInput();
+      return;
+    }
     confirmDynamicInput();
   } else if (ev.key === 'Escape') {
     ev.preventDefault(); ev.stopPropagation();
@@ -5685,7 +5996,7 @@ function confirmDynamicInput() {
     if (S.tool === 'tube') S.tubePoints = [[x, y]];
     termPrint('Point 1: (' + x.toFixed(1) + ', ' + y.toFixed(1) + ')', 'info');
     if (S.tool === 'rect') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
-    else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou cliquez', 'warning');
+    else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
     else if (S.tool === 'dim_angular') termPrint('DIMANGULAR: cliquez la 1ère ligne', 'info');
     else if (S.tool === 'tube') termPrint('Longueur (ex: 500) ou 500<45 — Entrée pour terminer', 'warning');
     else termPrint('2ème point ou longueur (ex: 150, 100<45, 100,50)', 'warning');
@@ -5734,14 +6045,25 @@ function confirmDynamicInput() {
     termPrint('→ Largeur=' + w.toFixed(1) + '  Hauteur=' + h.toFixed(1), 'info');
 
   } else if (mode === 'radius') {
-    // CIRCLE: field1 = radius
-    const r = parseFloat(diDist.value);
-    if (isNaN(r) || r <= 0) { termPrint('Rayon invalide', 'error'); return; }
+    // CIRCLE: D dans le champ → basculer en mode diamètre
+    if (diDist.value.trim().toUpperCase() === 'D') {
+      S.circleDiamMode = true;
+      S.diLocked = false;
+      diDist.value = '';
+      termPrint('CERCLE — Diamètre (ex: 100) :', 'warning');
+      updateDynamicInput();
+      return;
+    }
+    // CIRCLE: field1 = radius (or diameter if circleDiamMode)
+    let rv = parseFloat(diDist.value);
+    if (isNaN(rv) || rv <= 0) { termPrint(S.circleDiamMode ? 'Diamètre invalide' : 'Rayon invalide', 'error'); return; }
+    const r = S.circleDiamMode ? rv / 2 : rv;
     // Point on circle at current mouse angle
     const angle = Math.atan2(S.mouseWorld[1] - base[1], S.mouseWorld[0] - base[0]);
     nx = base[0] + r * Math.cos(angle);
     ny = base[1] + r * Math.sin(angle);
-    termPrint('→ Rayon=' + r.toFixed(1), 'info');
+    if (S.circleDiamMode) { termPrint('→ Diamètre=' + rv.toFixed(1) + '  Rayon=' + r.toFixed(1), 'info'); S.circleDiamMode = false; }
+    else termPrint('→ Rayon=' + r.toFixed(1), 'info');
 
   } else {
     // POLAR: field1 = distance, field2 = angle
@@ -5832,7 +6154,9 @@ let mouseOnCanvas = false;
 function getCursorMode() {
   const t = S.tool;
   if (S.offsetAwaitDist) return 'draw';
-  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending) ? 'pick' : 'idle';
+  if (S.arrayPickAxis) return 'draw';
+  if (S.libPending) return 'draw';
+  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.arrayPending) ? 'pick' : 'idle';
   if (t === 'stretch' && S.stretchStep === 0) return 'pick';
   if (t === 'trim' || t === 'extend') return 'pick';
   if (t === 'fillet' || t === 'chamfer' || t === 'join' || t === 'hatch') return 'pick';
@@ -5971,6 +6295,39 @@ canvas.addEventListener('mousedown', (ev) => {
     return;
   }
 
+  // BIBLIOTHÈQUE — placement d'une pièce au clic
+  if (ev.button === 0 && S.libPending && S.libDef) {
+    const osnap = findOsnap(wx, wy);
+    const [px, py] = osnap ? [osnap.x, osnap.y] : snapToGrid(wx, wy);
+    pushUndo();
+    window[S.libDef.drawFn](S.libDef.params, px, py);
+    termPrint(S.libDef.label + ' inséré en (' + px.toFixed(1) + ', ' + py.toFixed(1) + ')', 'success');
+    S.libPending = false; S.libDef = null;
+    render(); return;
+  }
+
+  // ARRAY — saisie espacement par 2 clics sur le canvas
+  if (ev.button === 0 && S.arrayPickAxis) {
+    const osnap = findOsnap(wx, wy);
+    const [px, py] = osnap ? [osnap.x, osnap.y] : snapToGrid(wx, wy);
+    if (!S.arrayPickPt1) {
+      S.arrayPickPt1 = [px, py];
+      termPrint('ARRAY — cliquer le 2e point de l\'espacement ' + S.arrayPickAxis.toUpperCase(), 'info');
+    } else {
+      const [x1, y1] = S.arrayPickPt1;
+      let val;
+      if (S.arrayPickAxis === 'x')      val = Math.abs(px - x1);
+      else if (S.arrayPickAxis === 'y') val = Math.abs(py - y1);
+      document.getElementById('ar-d' + S.arrayPickAxis).value = parseFloat(val.toFixed(2));
+      S.arrayPickAxis = null;
+      S.arrayPickPt1 = null;
+      document.getElementById('array-dialog').style.display = 'flex';
+      arrayPreviewUpdate();
+      termPrint('Espacement saisi : ' + val.toFixed(2), 'info');
+    }
+    render(); return;
+  }
+
   // OFFSET — saisie distance par 2 clics sur le canvas
   if (ev.button === 0 && S.offsetAwaitDist) {
     const [rwx, rwy] = s2w(sx, sy);
@@ -5996,15 +6353,13 @@ canvas.addEventListener('mousedown', (ev) => {
     if (S.selected.length > 0) {
       const gripHit = findGripHit(wx, wy);
       if (gripHit) {
-        S.gripSelected = gripHit;
-        termPrint('Poignée sélectionnée — Espace pour déplacer · cliquer destination · Echap pour annuler', 'warning');
-        render(); return;
-      } else if (S.gripSelected) {
-        S.gripEdit = S.gripSelected;
+        S.gripEdit = gripHit;
         S.gripSelected = null;
         S.drawing = true; S.awaitingInput = true;
-        const [rwx, rwy] = resolvePoint(wx, wy);
-        handleClick(rwx, rwy, ev, wx, wy);
+        S.drawPoints = [[gripHit.origX, gripHit.origY]];
+        termPrint('Poignée active (' + gripHit.origX.toFixed(1) + ', ' + gripHit.origY.toFixed(1) + ') — Tapez distance ou cliquez destination (Ortho/Polaire actifs)', 'info');
+        render();
+        setTimeout(smartFocus, 0);
         return;
       }
     }
@@ -6022,6 +6377,47 @@ canvas.addEventListener('mousedown', (ev) => {
       }
       // Pas d'entité : rubber band démarré dans mouseup comme avant
     }
+    return;
+  }
+
+  // JOIN mode : clic sur entité → toggle ; clic dans le vide → rubber band
+  if (ev.button === 0 && S.tool === 'join') {
+    const supported = ['line','wall','arc','polyline','cable'];
+    S._selectHitOnMousedown = false;
+    if (isRubberBand) {
+      // 2ème clic → finalise le rubber band
+      isRubberBand = false;
+      const isWin = wx >= rbStart.wx;
+      const minX = Math.min(rbStart.wx, wx), maxX = Math.max(rbStart.wx, wx);
+      const minY = Math.min(rbStart.wy, wy), maxY = Math.max(rbStart.wy, wy);
+      const found = S.entities.filter(e =>
+        S.layers[e.layer]?.visible && supported.includes(e.type) &&
+        entityInRect(e, minX, minY, maxX, maxY, isWin)
+      );
+      found.forEach(e => { if (!S.joinSelection.includes(e.id)) S.joinSelection.push(e.id); });
+      S.selected = [...S.joinSelection];
+      rbStart = null; rbEnd = null;
+      const mode = isWin ? 'fenêtre' : 'croisement';
+      termPrint(found.length + ' entité(s) ajoutée(s) [' + mode + '] — ' + S.joinSelection.length + ' au total', 'info');
+      render();
+    } else {
+      const hit = hitTest(wx, wy);
+      if (hit && supported.includes(hit.type)) {
+        S._selectHitOnMousedown = true;
+        const idx = S.joinSelection.indexOf(hit.id);
+        if (idx >= 0) {
+          S.joinSelection.splice(idx, 1);
+          termPrint('#'+hit.id+' retiré ('+S.joinSelection.length+' sélectionné'+(S.joinSelection.length>1?'s':'')+')', 'info');
+        } else {
+          S.joinSelection.push(hit.id);
+          termPrint('#'+hit.id+' ajouté ('+S.joinSelection.length+' sélectionné'+(S.joinSelection.length>1?'s':'')+')', 'info');
+        }
+        S.selected = [...S.joinSelection];
+        render();
+      }
+      // Clic dans le vide → rubber band démarré dans mouseup
+    }
+    setTimeout(smartFocus, 0);
     return;
   }
 
@@ -6102,6 +6498,21 @@ canvas.addEventListener('mouseup', (ev) => {
     render(); setTimeout(smartFocus, 0); return;
   }
 
+  // JOIN mouseup : démarrer rubber band si clic dans le vide
+  if (ev.button === 0 && S.tool === 'join') {
+    if (!S._selectHitOnMousedown && !isRubberBand) {
+      const rect = canvas.getBoundingClientRect();
+      const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
+      const [wx, wy] = s2w(sx, sy);
+      isRubberBand = true;
+      rbStart = { sx, sy, wx, wy };
+      rbEnd   = { sx, sy, wx, wy };
+      render();
+    }
+    setTimeout(smartFocus, 0);
+    return;
+  }
+
   if (ev.button === 0 && S.tool === 'select' && !S.gripEdit && !S.drawing) {
     const rect = canvas.getBoundingClientRect();
     const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
@@ -6142,7 +6553,7 @@ canvas.addEventListener('wheel', (ev) => {
   const [wx,wy] = s2w(sx, sy);
   const factor = ev.deltaY < 0 ? 1.15 : 0.87;
   S.zoom *= factor;
-  S.zoom = Math.max(0.05, Math.min(50, S.zoom));
+  S.zoom = Math.max(0.001, Math.min(500, S.zoom));
   const [nsx,nsy] = w2s(wx, wy);
   S.panX += sx - nsx; S.panY += sy - nsy;
   document.getElementById('zoom-badge').textContent = S.zoom.toFixed(2) + ':1';
@@ -6297,16 +6708,26 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       S.drawing = true; S.drawPoints = [[wx, wy]]; S.awaitingInput = true;
       termPrint('Point 1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ')', 'info');
       if (tool === 'rect') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
-      else if (tool === 'circle') termPrint('Rayon (ex: 50) ou cliquez', 'warning');
+      else if (tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
       else termPrint('Longueur (ex: 150) ou 100<45 ou cliquez le 2ème point', 'warning');
     } else {
       let tx = wx, ty = wy;
       if (S.drawPoints.length > 0) [tx, ty] = applyConstraint(S.drawPoints[0][0], S.drawPoints[0][1], wx, wy);
+      // Mode diamètre : réduire le rayon de moitié
+      if (tool === 'circle' && S.circleDiamMode) {
+        const base = S.drawPoints[0];
+        const dist = Math.hypot(tx - base[0], ty - base[1]);
+        const r = dist / 2;
+        const angle = Math.atan2(ty - base[1], tx - base[0]);
+        tx = base[0] + r * Math.cos(angle);
+        ty = base[1] + r * Math.sin(angle);
+      }
       finishEntity(tool, [...S.drawPoints, [tx, ty]]);
       if (tool === 'line') {
         S.drawPoints = [[tx, ty]]; // repart du dernier point
         termPrint('Point suivant (Echap pour terminer)', 'warning');
       } else {
+        if (tool === 'circle') S.circleDiamMode = false;
         S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
       }
     }
@@ -6485,21 +6906,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
   }
 
   // JOIN
-  if (tool === 'join') {
-    const hit = hitTest(rawWx, rawWy);
-    const supported = ['line','wall','arc','polyline','cable'];
-    if (!hit || !supported.includes(hit.type)) { termPrint('Cliquez une ligne, un mur, un arc ou une polyligne','warning'); render(); return; }
-    const idx = S.joinSelection.indexOf(hit.id);
-    if (idx >= 0) {
-      S.joinSelection.splice(idx, 1);
-      termPrint('#'+hit.id+' retiré ('+S.joinSelection.length+' sélectionné'+(S.joinSelection.length>1?'s':'')+')', 'info');
-    } else {
-      S.joinSelection.push(hit.id);
-      termPrint('#'+hit.id+' ajouté ('+S.joinSelection.length+' sélectionné'+(S.joinSelection.length>1?'s':'')+')', 'info');
-    }
-    S.selected = [...S.joinSelection];
-    render(); return;
-  }
+  if (tool === 'join') { render(); return; } // géré dans mousedown/mouseup
 
   // HATCH
   if (tool === 'hatch') {
@@ -6548,12 +6955,16 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       termPrint('2ème point de l\'axe de symétrie','info');
     } else {
       const [ax,ay]=S.drawPoints[0];
-      if(Math.hypot(wx-ax,wy-ay)<1e-6){ termPrint('Axe nul, cliquez un 2ème point différent','warning'); return; }
+      // Ortho/Polar sur coordonnées brutes pour ne pas être bloqués par OSNAP
+      let cx=wx, cy=wy;
+      if (S.ortho) [cx,cy]=applyOrtho(ax,ay,rawWx??wx,rawWy??wy);
+      else if (S.polar) [cx,cy]=applyPolar(ax,ay,rawWx??wx,rawWy??wy);
+      if(Math.hypot(cx-ax,cy-ay)<1e-6){ termPrint('Axe nul, cliquez un 2ème point différent','warning'); return; }
       pushUndo();
       const srcIds=[...S.selected];
       S.selected.forEach(id=>{
         const src=S.entities.find(e=>e.id===id); if(!src)return;
-        const ne=mirrorEntity(src,ax,ay,wx,wy); ne.id=S.nextId++;
+        const ne=mirrorEntity(src,ax,ay,cx,cy); ne.id=S.nextId++;
         S.entities.push(ne);
       });
       termPrint(srcIds.length+' objet(s) mis en miroir','success');
@@ -7600,6 +8011,7 @@ function hitTest(wx,wy) {
   for(let i=S.entities.length-1;i>=0;i--){
     const e=S.entities[i];
     if(!S.layers[e.layer]?.visible) continue;
+    if(e.isConstruction) continue;
 
     if(e.type==='point'){
       tryHit(e, Math.hypot(wx-e.x, wy-e.y));
@@ -7906,7 +8318,7 @@ function selectInRect(wx1, wy1, wx2, wy2, shiftKey) {
   const minX = Math.min(wx1, wx2), maxX = Math.max(wx1, wx2);
   const minY = Math.min(wy1, wy2), maxY = Math.max(wy1, wy2);
   const newSel = S.entities
-    .filter(e => S.layers[e.layer]?.visible && entityInRect(e, minX, minY, maxX, maxY, isWindow))
+    .filter(e => S.layers[e.layer]?.visible && !e.isConstruction && entityInRect(e, minX, minY, maxX, maxY, isWindow))
     .map(e => e.id);
   if (shiftKey) { newSel.forEach(id => { if (!S.selected.includes(id)) S.selected.push(id); }); }
   else S.selected = newSel;
@@ -7965,6 +8377,7 @@ const _toolCmdName = {
 function setTool(t) {
   if(t !== 'select' && t !== 'copy') S.copyPending=false;
   if(t !== 'select') S.explodePending=false;
+  if(t !== 'select') S.arrayPending=false;
   if(t !== 'select' && t !== 'mirror') S.mirrorPending=false;
   if(t !== 'select' && t !== 'rotate') S.rotatePending=false;
   if(t !== 'select' && t !== 'move_obj') S.movePending=false;
@@ -7973,6 +8386,7 @@ function setTool(t) {
   if(t !== 'stretch') { S.stretchRect=null; S.stretchStep=0; }
   if(t !== 'divide_pick') { S.divideStep=0; S.divideEntId=null; }
   if(_toolCmdName[t]) S.lastCmdRaw = _toolCmdName[t];
+  if(t !== 'circle') S.circleDiamMode=false;
   S.tool=t; S.drawing=false; S.drawPoints=[]; S.awaitingInput=false;
   if(t !== 'tube') S.tubePoints=[];
   if(t !== 'dim_angular') { S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null; S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null; }
@@ -8252,6 +8666,8 @@ function refreshDimStyleManagerTable() {
         ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsProp('+i+',\'arrowSize\',+this.value)"></td>'+
       '<td><input type="number" class="lm-name-input" style="width:60px" step="0.1" min="0" value="'+ds.extGap.toFixed(1)+'"'+
         ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsProp('+i+',\'extGap\',+this.value)"></td>'+
+      '<td><input type="number" class="lm-name-input" style="width:44px" step="1" min="0" max="6" value="'+(ds.decimals != null ? ds.decimals : 1)+'"'+
+        ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsDecimals('+i+',+this.value)"></td>'+
       '<td><button class="lm-del-btn" onclick="event.stopPropagation();_dsDelete('+i+')" title="Supprimer">✕</button></td>'+
       '</tr>';
   }).join('');
@@ -8264,8 +8680,14 @@ function _dsSet(name) {
 }
 function _dsAdd() {
   const n = 'Style ' + (S.dimStyles.length + 1);
-  S.dimStyles.push({ name: n, textHeight: 3.5, arrowSize: 3.5, extGap: 1.5 });
+  S.dimStyles.push({ name: n, textHeight: 3.5, arrowSize: 3.5, extGap: 1.5, decimals: 1 });
   refreshDimStylePanel(); refreshDimStyleManagerTable(); autoSave();
+}
+function _dsDecimals(i, v) {
+  const d = Math.round(v);
+  if (isNaN(d) || d < 0 || d > 6 || !S.dimStyles[i]) return;
+  S.dimStyles[i].decimals = d;
+  render(); autoSave();
 }
 function _dsDelete(i) {
   if (S.dimStyles.length <= 1) { termPrint('Impossible de supprimer le dernier style', 'warning'); return; }
@@ -8296,9 +8718,17 @@ function openArrayDialog() {
   arrayPreviewUpdate();
   setTimeout(() => document.getElementById('ar-cols').focus(), 50);
 }
+function arrayPickSpacing(axis) {
+  document.getElementById('array-dialog').style.display = 'none';
+  S.arrayPickAxis = axis;
+  S.arrayPickPt1 = null;
+  termPrint('ARRAY — cliquer le 1er point de l\'espacement ' + axis.toUpperCase(), 'info');
+  scheduleRender();
+}
 function closeArrayDialog() {
   document.getElementById('array-dialog').style.display = 'none';
   S.arrayPreview = null;
+  S.arrayPickAxis = null; S.arrayPickPt1 = null;
   scheduleRender();
 }
 function arrayPreviewUpdate() {
@@ -8534,54 +8964,19 @@ EXEMPLE — "plaque 200x100 avec 4 trous Ø10 à 15mm des coins":
 {"type":"circle","cx":185,"cy":85,"r":5,"layer":0}
 ]</entities>
 
-EXEMPLE - "IPE 120"
-Dmensions à disposition;
-Profil,h (mm),b (mm),tw (mm),tf (mm),r (mm),Poids (kg/m)
-IPE 80,80,46,"3,8","5,2","5,0","6,0"
-IPE 100,100,55,"4,1","5,7","7,0","8,1"
-IPE 120,120,64,"4,4","6,3","7,0","10,4"
-IPE 140,140,73,"4,7","6,9","7,0","12,9"
-IPE 160,160,82,"5,0","7,4","9,0","15,8"
-IPE 180,180,91,"5,3","8,0","9,0","18,8"
-IPE 200,200,100,"5,6","8,5","12,0","22,4"
-IPE 220,220,110,"5,9","9,2","12,0","26,2"
-IPE 240,240,120,"6,2","9,8","15,0","30,7"
-IPE 270,270,135,"6,6","10,2","15,0","36,1"
-IPE 300,300,150,"7,1","10,7","15,0","42,2"
-IPE 330,330,160,"7,5","11,5","18,0","49,1"
-IPE 360,360,170,"8,0","12,7","18,0","58,2"
-IPE 400,400,180,"8,6","13,5","21,0","67,6"
-IPE 450,450,190,"9,4","14,6","21,0","79,1"
-IPE 500,500,200,"10,2","16,0","21,0","92,4"
-IPE 550,550,210,"11,1","17,2","21,0","108,0"
-IPE 600,600,220,"12,0","19,0","24,0","125,0"
-
-Récapitulatif des coordonnées (IPE 120 centré) :
-Hauteur totale : 120 mm → Y de -60 à +60
-Largeur ailes : 64 mm → X de -32 à +32
-Épaisseur âme : 4,4 mm → X de -2,2 à +2,2
-Épaisseur ailes : 6,3 mm → Y de ±53,7 à ±60
-12 segments de ligne pour tracer le contour complet
-
-Détails techniques :
-Contour : 12 segments line suivant le profil extérieur
-Congés : 4 arcs arc de rayon 7 mm aux jonctions intérieures âme/ailes
-Angles : en radians, sens trigonométrique (anti-horaire), origine des angles → droite (axe X+)
-Centres d'arcs : décalés de r par rapport aux arêtes pour une tangence parfaite
-
-Recaluler les coordonnées exactes des segments et arcs pour respecter les dimensions données, en centrant le profil à l'origine (0,0)(huteur totale, largeur ailes, Epaisseur ame, Epaisseur ailes, rayon congés).
-Si dimensions n'est pas dans le tableau alors demander une autre dimensions
-
-<entities>[{"type":"arc","cx":-9.2,"cy":46.7,"r":7,"startAngle":0,"endAngle":1.5708,"layer":0},{"type":"line","x1":-9.2,"y1":53.7,"x2":-32,"y2":53.7,"layer":0},{"type":"line","x1":-32,"y1":53.7,"x2":-32,"y2":60,"layer":0},{"type":"line","x1":-32,"y1":60,"x2":32,"y2":60,"layer":0},{"type":"line","x1":32,"y1":60,"x2":32,"y2":53.7,"layer":0},{"type":"line","x1":32,"y1":53.7,"x2":9.2,"y2":53.7,"layer":0},{"type":"arc","cx":9.2,"cy":46.7,"r":7,"startAngle":1.5708,"endAngle":3.14159,"layer":0},{"type":"line","x1":2.2,"y1":46.7,"x2":2.2,"y2":-46.7,"layer":0},{"type":"arc","cx":9.2,"cy":-46.7,"r":7,"startAngle":3.14159,"endAngle":4.71239,"layer":0},{"type":"line","x1":9.2,"y1":-53.7,"x2":32,"y2":-53.7,"layer":0},{"type":"line","x1":32,"y1":-53.7,"x2":32,"y2":-60,"layer":0},{"type":"line","x1":32,"y1":-60,"x2":-32,"y2":-60,"layer":0},{"type":"line","x1":-32,"y1":-60,"x2":-32,"y2":-53.7,"layer":0},{"type":"line","x1":-32,"y1":-53.7,"x2":-9.2,"y2":-53.7,"layer":0},{"type":"arc","cx":-9.2,"cy":-46.7,"r":7,"startAngle":4.71239,"endAngle":6.28318,"layer":0},{"type":"line","x1":-2.2,"y1":-46.7,"x2":-2.2,"y2":46.7,"layer":0}]</entities>
-
-
-
 
 N'utilise JAMAIS de blocs markdown \`\`\`json pour les entités. Toujours les balises <entities>.
 
 IMPORTANT — si une demande de dessin manque de précisions indispensables (dimensions, espacement, nombre d'éléments…), pose d'abord les questions nécessaires en français AVANT de générer quoi que ce soit. Ne suppose pas de valeurs arbitraires.
 
-Pour les questions sur MiniCAD (pas de dessin), réponds en français sans balises.`;
+Pour les questions sur MiniCAD (pas de dessin), réponds en français sans balises.
+
+BIBLIOTHÈQUE DE PROFILÉS:
+Quand l'utilisateur veut insérer un profilé, utilise UNIQUEMENT la balise <lib>FAMILLE TAILLE</lib>.
+N'utilise JAMAIS <entities> pour un profilé de bibliothèque.
+Si la famille ou la taille n'est PAS dans la liste ci-dessous, réponds en texte que ce profilé n'est pas disponible — ne génère PAS de balise <lib>.
+Familles et tailles DISPONIBLES (uniquement celles-ci):
+${(_activeLib||MINICAD_LIB).categories.flatMap(c=>c.families.filter(f=>f.data).map(f=>`${f.name}: ${Object.keys(f.data).join(', ')}`)).join('\n')}`;
 }
 
 function aiAppendMsg(role, text, entitiesJson) {
@@ -8723,6 +9118,26 @@ async function sendAiMessage() {
         btn2.onclick = () => aiStartPlacement(parsed, btn2);
         msgDiv.appendChild(document.createElement('br'));
         msgDiv.appendChild(btn2);
+      }
+    }
+
+    // Extraire la balise bibliothèque <lib>FAMILLE TAILLE</lib>
+    const libMatch = full.match(/<lib>([\s\S]*?)<\/lib>/);
+    if (libMatch) {
+      const parts = libMatch[1].trim().split(/\s+/);
+      const famName = parts[0]?.toUpperCase();
+      const sz = parts[1];
+      const cleaned = full.replace(/<lib>[\s\S]*?<\/lib>/g, '').trim();
+      if (famName && sz && libFind(famName, sz)) {
+        msgDiv.textContent = cleaned || famName + ' ' + sz;
+        const btn2 = document.createElement('button');
+        btn2.className = 'ai-entities-btn';
+        btn2.textContent = '📍 Insérer ' + famName + ' ' + sz;
+        btn2.onclick = () => { libInsertFromCmd(famName, sz); btn2.textContent = '✓ En attente de placement…'; btn2.disabled = true; };
+        msgDiv.appendChild(document.createElement('br'));
+        msgDiv.appendChild(btn2);
+      } else {
+        msgDiv.textContent = cleaned || ('Profilé ' + (famName||'') + ' ' + (sz||'') + ' non disponible dans la bibliothèque.');
       }
     }
 
@@ -9395,10 +9810,34 @@ function executeCommand(input) {
       S.awaitingInput = true;
       // Show next step prompt
       if (S.tool === 'rect') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
-      else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou cliquez', 'warning');
+      else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
       else if (S.tool === 'dim_angular') termPrint('DIMANGULAR: cliquez la 1ère ligne', 'info');
       else termPrint('2ème point ou longueur (ex: 150, 100<45, 100,50)', 'warning');
       render(); return;
+    }
+  }
+
+  // ---- CIRCLE : D pour basculer en mode Diamètre ----
+  if (S.tool === 'circle' && S.drawing && S.drawPoints.length > 0) {
+    if (raw.toUpperCase() === 'D') {
+      S.circleDiamMode = true;
+      termPrint('CERCLE — Diamètre (ex: 100) :', 'warning');
+      return;
+    }
+    if (S.circleDiamMode) {
+      const d = parseFloat(raw);
+      if (!isNaN(d) && d > 0) {
+        termPrint('❯ ' + raw, '');
+        const base = S.drawPoints[0];
+        const r = d / 2;
+        const angle = Math.atan2(S.mouseWorld[1] - base[1], S.mouseWorld[0] - base[0]);
+        finishEntity('circle', [base, [base[0] + r * Math.cos(angle), base[1] + r * Math.sin(angle)]]);
+        termPrint('→ Diamètre=' + d.toFixed(1) + '  Rayon=' + r.toFixed(1), 'info');
+        S.circleDiamMode = false;
+        S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
+        render(); setTimeout(smartFocus, 0); return;
+      }
+      termPrint('Diamètre invalide — ex: 100', 'warning'); return;
     }
   }
 
@@ -9483,6 +9922,9 @@ function executeCommand(input) {
       termPrint('Tapez: LOAD '+key,'info'); return;
     }
   }
+
+  // Raccourci bibliothèque : IPE 160, HEA 200…
+  if (args.length === 1 && libInsertFromCmd(cmd, args[0])) return;
 
   termPrint('Commande inconnue: "'+cmd+'". Tapez HELP','error');
 }
@@ -9608,6 +10050,16 @@ document.addEventListener('keydown',(ev)=>{
     S.explodePending=false; executeCommand('EXPLODE'); return;
   }
 
+  // Enter global: valider sélection arrayPending
+  if(ev.key==='Enter' && S.arrayPending){
+    ev.preventDefault();
+    if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
+    S.arrayPending = false;
+    S.arraySourceIds = [...S.selected];
+    openArrayDialog();
+    return;
+  }
+
   // Enter global: valider sélection copyPending / mirrorPending / rotatePending / movePending
   if(ev.key==='Enter' && (S.copyPending || S.mirrorPending || S.rotatePending || S.movePending || S.scalePending)){
     ev.preventDefault();
@@ -9651,6 +10103,17 @@ document.addEventListener('keydown',(ev)=>{
   }
   if(ev.key==='Escape' && S.explodePending){
     S.explodePending=false; termPrint('Éclater annulé','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S.arrayPickAxis){
+    S.arrayPickAxis=null; S.arrayPickPt1=null;
+    document.getElementById('array-dialog').style.display='flex';
+    termPrint('Saisie espacement annulée','warning'); return;
+  }
+  if(ev.key==='Escape' && S.libPending){
+    S.libPending=false; S.libDef=null; termPrint('Insertion annulée','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S.arrayPending){
+    S.arrayPending=false; termPrint('ARRAY annulé','warning'); setTool('select'); return;
   }
   if(ev.key==='Escape' && S.copyPending){
     S.copyPending=false; termPrint('Copie annulée','warning'); setTool('select'); return;
@@ -9700,6 +10163,7 @@ document.addEventListener('keydown',(ev)=>{
     S.offsetTargetId=null; S.offsetPending=false; S.offsetAwaitDist=false; S.offsetDistPt1=null; S.selected=[]; termPrint('Décalage terminé','info'); setTool('select'); render(); return;
   }
   if(ev.key==='Escape' && S.tool==='join'){
+    if(isRubberBand){ isRubberBand=false; rbStart=null; rbEnd=null; render(); return; }
     S.joinSelection=[]; S.selected=[]; setTool('select'); render(); return;
   }
   if(ev.key==='Escape' && S.tool==='hatch'){
@@ -10122,7 +10586,7 @@ let _fileHandle = null; // File System Access API — handle fichier courant
 
 function buildSaveData(name) {
   return {
-    version: '0.07', app: 'MiniCAD',
+    version: '0.08', app: 'MiniCAD',
     name: name || (_fileHandle?.name?.replace(/\.mcad$/i,'')) || 'projet',
     date: new Date().toISOString(),
     layers: S.layers, entities: S.entities,
@@ -11076,6 +11540,362 @@ termPrint('Modules: LOAD arch|elec|dim|annot','info');
 termPrint('Raccourcis: L R C V Tab Espace F3 F4 F8 F10','info');
 
 cmdInput.focus();
+
+// ═══════════════════════════════════════════════════════
+// BIBLIOTHÈQUE DE PIÈCES PARAMÉTRIQUES
+// ═══════════════════════════════════════════════════════
+
+// ── API publique pour les fonctions de dessin ──────────
+window.minicadAPI = {
+  line(x1,y1,x2,y2) {
+    S.entities.push({type:'line',x1,y1,x2,y2,id:S.nextId++,layer:S.currentLayer});
+  },
+  polyline(pts, closed=false) {
+    S.entities.push({type:'polyline',points:pts.map(p=>[p[0],p[1]]),closed,id:S.nextId++,layer:S.currentLayer});
+  },
+  circle(cx,cy,r) {
+    S.entities.push({type:'circle',cx,cy,r,id:S.nextId++,layer:S.currentLayer});
+  },
+  arc(cx,cy,r,startAngle,endAngle) {
+    S.entities.push({type:'arc',cx,cy,r,startAngle,endAngle,id:S.nextId++,layer:S.currentLayer});
+  }
+};
+
+// @@LIB_BEGIN — Généré par build.py — ne pas éditer directement
+// Éditer les fichiers dans libraries/ puis relancer build.py
+const MINICAD_LIB = {
+  categories: [
+    {
+      name: "\ud83c\udfd7\ufe0f Profil\u00e9s de charpente",
+      families: [
+        { name: "IPE", draw: "drawProfileI", data: {
+        "80": {"h": 80, "b": 46, "tw": 3.8, "tf": 5.2, "r": 5},
+        "100": {"h": 100, "b": 55, "tw": 4.1, "tf": 5.7, "r": 7},
+        "120": {"h": 120, "b": 64, "tw": 4.4, "tf": 6.3, "r": 7},
+        "140": {"h": 140, "b": 73, "tw": 4.7, "tf": 6.9, "r": 7},
+        "160": {"h": 160, "b": 82, "tw": 5.0, "tf": 7.4, "r": 9},
+        "180": {"h": 180, "b": 91, "tw": 5.3, "tf": 8.0, "r": 9},
+        "200": {"h": 200, "b": 100, "tw": 5.6, "tf": 8.5, "r": 12},
+        "220": {"h": 220, "b": 110, "tw": 5.9, "tf": 9.2, "r": 12},
+        "240": {"h": 240, "b": 120, "tw": 6.2, "tf": 9.8, "r": 15},
+        "270": {"h": 270, "b": 135, "tw": 6.6, "tf": 10.2, "r": 15},
+        "300": {"h": 300, "b": 150, "tw": 7.1, "tf": 10.7, "r": 15},
+        "330": {"h": 330, "b": 160, "tw": 7.5, "tf": 11.5, "r": 18},
+        "360": {"h": 360, "b": 170, "tw": 8.0, "tf": 12.7, "r": 18},
+        "400": {"h": 400, "b": 180, "tw": 8.6, "tf": 13.5, "r": 21},
+        "450": {"h": 450, "b": 190, "tw": 9.4, "tf": 14.6, "r": 21},
+        "500": {"h": 500, "b": 200, "tw": 10.2, "tf": 16.0, "r": 21},
+        "550": {"h": 550, "b": 210, "tw": 11.1, "tf": 17.2, "r": 24},
+        "600": {"h": 600, "b": 220, "tw": 12.0, "tf": 19.0, "r": 24}
+      } },
+        { name: "HEA", draw: "drawProfileI", data: {
+        "100": {"h": 96, "b": 100, "tw": 5.0, "tf": 8.0, "r": 12},
+        "120": {"h": 114, "b": 120, "tw": 5.0, "tf": 8.0, "r": 12},
+        "140": {"h": 133, "b": 140, "tw": 5.5, "tf": 8.5, "r": 12},
+        "160": {"h": 152, "b": 160, "tw": 6.0, "tf": 9.0, "r": 15},
+        "180": {"h": 171, "b": 180, "tw": 6.0, "tf": 9.5, "r": 15},
+        "200": {"h": 190, "b": 200, "tw": 6.5, "tf": 10.0, "r": 18},
+        "220": {"h": 210, "b": 220, "tw": 7.0, "tf": 11.0, "r": 18},
+        "240": {"h": 230, "b": 240, "tw": 7.5, "tf": 12.0, "r": 21},
+        "260": {"h": 250, "b": 260, "tw": 7.5, "tf": 12.5, "r": 24},
+        "280": {"h": 270, "b": 280, "tw": 8.0, "tf": 13.0, "r": 24},
+        "300": {"h": 290, "b": 300, "tw": 8.5, "tf": 14.0, "r": 27},
+        "320": {"h": 310, "b": 300, "tw": 9.0, "tf": 15.5, "r": 27},
+        "340": {"h": 330, "b": 300, "tw": 9.5, "tf": 16.5, "r": 27},
+        "360": {"h": 350, "b": 300, "tw": 10.0, "tf": 17.5, "r": 27},
+        "400": {"h": 390, "b": 300, "tw": 11.0, "tf": 19.0, "r": 27},
+        "450": {"h": 440, "b": 300, "tw": 11.5, "tf": 21.0, "r": 27},
+        "500": {"h": 490, "b": 300, "tw": 12.0, "tf": 23.0, "r": 27},
+        "550": {"h": 540, "b": 300, "tw": 12.5, "tf": 24.0, "r": 27},
+        "600": {"h": 590, "b": 300, "tw": 13.0, "tf": 25.0, "r": 27},
+        "650": {"h": 640, "b": 300, "tw": 13.5, "tf": 26.0, "r": 27},
+        "700": {"h": 690, "b": 300, "tw": 14.0, "tf": 27.0, "r": 27},
+        "800": {"h": 790, "b": 300, "tw": 15.0, "tf": 29.0, "r": 27},
+        "900": {"h": 890, "b": 300, "tw": 16.0, "tf": 31.0, "r": 27},
+        "1000": {"h": 990, "b": 300, "tw": 17.0, "tf": 33.0, "r": 27}
+      } },
+        { name: "HEB", draw: "drawProfileI", data: {
+        "100": {"h": 100, "b": 100, "tw": 6.0, "tf": 10.0, "r": 12},
+        "120": {"h": 120, "b": 120, "tw": 6.5, "tf": 11.0, "r": 12},
+        "140": {"h": 140, "b": 140, "tw": 7.0, "tf": 12.0, "r": 12},
+        "160": {"h": 160, "b": 160, "tw": 8.0, "tf": 13.0, "r": 15},
+        "180": {"h": 180, "b": 180, "tw": 8.5, "tf": 14.0, "r": 15},
+        "200": {"h": 200, "b": 200, "tw": 9.0, "tf": 15.0, "r": 18},
+        "220": {"h": 220, "b": 220, "tw": 9.5, "tf": 16.0, "r": 18},
+        "240": {"h": 240, "b": 240, "tw": 10.0, "tf": 17.0, "r": 21},
+        "260": {"h": 260, "b": 260, "tw": 10.0, "tf": 17.5, "r": 24},
+        "280": {"h": 280, "b": 280, "tw": 10.5, "tf": 18.0, "r": 24},
+        "300": {"h": 300, "b": 300, "tw": 11.0, "tf": 19.0, "r": 27},
+        "320": {"h": 320, "b": 300, "tw": 11.5, "tf": 20.5, "r": 27},
+        "340": {"h": 340, "b": 300, "tw": 12.0, "tf": 21.5, "r": 27},
+        "360": {"h": 360, "b": 300, "tw": 12.5, "tf": 22.5, "r": 27},
+        "400": {"h": 400, "b": 300, "tw": 13.5, "tf": 24.0, "r": 27},
+        "450": {"h": 450, "b": 300, "tw": 14.0, "tf": 26.0, "r": 27},
+        "500": {"h": 500, "b": 300, "tw": 14.5, "tf": 28.0, "r": 27},
+        "550": {"h": 550, "b": 300, "tw": 15.0, "tf": 29.0, "r": 27},
+        "600": {"h": 600, "b": 300, "tw": 15.5, "tf": 30.0, "r": 27},
+        "650": {"h": 650, "b": 300, "tw": 16.0, "tf": 31.5, "r": 27},
+        "700": {"h": 700, "b": 300, "tw": 17.0, "tf": 32.0, "r": 27},
+        "800": {"h": 800, "b": 300, "tw": 18.0, "tf": 35.0, "r": 27},
+        "900": {"h": 900, "b": 300, "tw": 19.0, "tf": 38.0, "r": 27},
+        "1000": {"h": 1000, "b": 300, "tw": 20.0, "tf": 40.0, "r": 27}
+      } },
+        { name: "UPE", draw: "drawProfileUPE", data: {
+        "80": {"h": 80, "b": 45, "tw": 4.5, "tf": 8.0, "r1": 8.5, "r2": 4.5},
+        "100": {"h": 100, "b": 50, "tw": 5.0, "tf": 8.5, "r1": 9.0, "r2": 4.5},
+        "120": {"h": 120, "b": 55, "tw": 5.0, "tf": 9.0, "r1": 9.0, "r2": 4.5},
+        "140": {"h": 140, "b": 60, "tw": 5.5, "tf": 9.5, "r1": 9.5, "r2": 4.8},
+        "160": {"h": 160, "b": 65, "tw": 6.0, "tf": 10.0, "r1": 10.0, "r2": 5.0},
+        "180": {"h": 180, "b": 70, "tw": 6.5, "tf": 10.5, "r1": 10.5, "r2": 5.3},
+        "200": {"h": 200, "b": 75, "tw": 7.0, "tf": 11.0, "r1": 11.0, "r2": 5.5},
+        "220": {"h": 220, "b": 80, "tw": 7.5, "tf": 11.5, "r1": 11.5, "r2": 5.8},
+        "240": {"h": 240, "b": 85, "tw": 8.0, "tf": 12.0, "r1": 12.0, "r2": 6.0},
+        "270": {"h": 270, "b": 90, "tw": 8.5, "tf": 12.5, "r1": 12.5, "r2": 6.3},
+        "300": {"h": 300, "b": 100, "tw": 9.0, "tf": 14.0, "r1": 14.0, "r2": 7.0},
+        "330": {"h": 330, "b": 100, "tw": 9.5, "tf": 14.5, "r1": 14.5, "r2": 7.3},
+        "360": {"h": 360, "b": 100, "tw": 10.0, "tf": 15.0, "r1": 15.0, "r2": 7.5},
+        "400": {"h": 400, "b": 100, "tw": 11.0, "tf": 16.0, "r1": 16.0, "r2": 8.0}
+      } }
+      ]
+    },
+    {
+      name: "\u2b55 Tubes",
+      families: [
+
+      ]
+    },
+    {
+      name: "\ud83d\udd29 Visserie",
+      families: [
+
+      ]
+    },
+    {
+      name: "\ud83d\udcd0 Plats et corni\u00e8res",
+      families: [
+
+      ]
+    }
+  ]
+};
+// Profilés en I — vue de face (section transversale)
+// Paramètres : h (hauteur), b (largeur aile), tw (ép. âme), tf (ép. aile), r (congé)
+// Point d'insertion : centroïde
+
+function drawProfileI(p, x, y) {
+  var api = window.minicadAPI;
+  var hh = p.h / 2, bh = p.b / 2, twh = p.tw / 2, tf = p.tf, r = p.r;
+  var PI = Math.PI;
+
+  function arc(cx, cy, a0, a1) {
+    var pts = [];
+    for (var i = 0; i <= 6; i++) {
+      var a = a0 + (a1 - a0) * i / 6;
+      pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+    }
+    return pts;
+  }
+
+  var pts = [];
+  pts.push([x - bh, y - hh], [x + bh, y - hh], [x + bh, y - hh + tf]);
+  arc(x + twh + r, y - hh + tf + r, -PI / 2, -PI).forEach(p => pts.push(p));
+  arc(x + twh + r, y + hh - tf - r,  PI,  PI / 2).forEach(p => pts.push(p));
+  pts.push([x + bh, y + hh - tf], [x + bh, y + hh], [x - bh, y + hh], [x - bh, y + hh - tf]);
+  arc(x - twh - r, y + hh - tf - r,  PI / 2,  0).forEach(p => pts.push(p));
+  arc(x - twh - r, y - hh + tf + r,  0, -PI / 2).forEach(p => pts.push(p));
+  pts.push([x - bh, y - hh + tf], [x - bh, y - hh]);
+
+  api.polyline(pts, true);
+}
+
+// Profilés en U à ailes parallèles (UPE) — vue de face (section transversale)
+// Paramètres : h, b, tw, tf, r1 (congé racine âme/aile), r2 (congé bout d'aile intérieur)
+// Point d'insertion : centre de la boîte englobante
+// Âme à gauche, ailes vers la droite
+
+function drawProfileUPE(p, x, y) {
+  var api = window.minicadAPI;
+  var h = p.h, b = p.b, tw = p.tw, tf = p.tf, r1 = p.r1, r2 = p.r2;
+  var PI = Math.PI;
+
+  var xL = x - b / 2;   // face arrière (dos de l'âme)
+  var xR = x + b / 2;   // bouts d'ailes
+  var xW = xL + tw;      // face intérieure de l'âme
+  var yB = y - h / 2;
+  var yT = y + h / 2;
+
+  function arc(cx, cy, r, a0, a1) {
+    var pts = [];
+    for (var i = 0; i <= 6; i++) {
+      var a = a0 + (a1 - a0) * i / 6;
+      pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+    }
+    return pts;
+  }
+
+  var pts = [];
+
+  // Coin bas-gauche (vif)
+  pts.push([xL, yB]);
+
+  // Face inférieure → coin vif bas-droit aile basse
+  pts.push([xR, yB]);
+
+  // Face droite aile basse → congé r2 coin intérieur haut (CCW : 0 → π/2)
+  // Segment implicite [xR,yB]→(xR,yB+tf-r2), puis arc
+  arc(xR - r2, yB + tf - r2, r2, 0, PI / 2).forEach(p => pts.push(p));
+  // arc : (xR, yB+tf-r2) → (xR-r2, yB+tf)
+
+  // Face intérieure aile basse → congé r1 racine bas (CW : -π/2 → -π)
+  // Segment implicite (xR-r2,yB+tf)→(xW+r1,yB+tf)
+  arc(xW + r1, yB + tf + r1, r1, -PI / 2, -PI).forEach(p => pts.push(p));
+  // arc : (xW+r1,yB+tf) → (xW,yB+tf+r1)
+
+  // Face intérieure âme → congé r1 racine haut (CW : π → π/2)
+  // Segment implicite (xW,yB+tf+r1)→(xW,yT-tf-r1)
+  arc(xW + r1, yT - tf - r1, r1, PI, PI / 2).forEach(p => pts.push(p));
+  // arc : (xW,yT-tf-r1) → (xW+r1,yT-tf)
+
+  // Face intérieure aile haute → congé r2 coin intérieur bas (CCW : -π/2 → 0)
+  // Segment implicite (xW+r1,yT-tf)→(xR-r2,yT-tf)
+  arc(xR - r2, yT - tf + r2, r2, -PI / 2, 0).forEach(p => pts.push(p));
+  // arc : (xR-r2,yT-tf) → (xR,yT-tf+r2)
+
+  // Face droite aile haute → coin vif haut-droit aile haute
+  // Segment implicite (xR,yT-tf+r2)→[xR,yT]
+  pts.push([xR, yT]);
+
+  // Face supérieure et fermeture
+  pts.push([xL, yT]);
+  pts.push([xL, yB]);
+
+  api.polyline(pts, true);
+}
+// @@LIB_END
+
+// ── Construction du menu cascadant ────────────────────
+function buildLibMenu(lib) {
+  lib = lib || MINICAD_LIB;
+  const list = document.getElementById('menu-lib-list');
+  list.innerHTML = '';
+  lib.categories.forEach(cat => {
+    const catEl = document.createElement('div');
+    catEl.className = 'lib-sub-item' + (!cat.families.length ? ' disabled' : '');
+    catEl.textContent = cat.name;
+
+    if (cat.families.length) {
+      const famList = document.createElement('div');
+      famList.className = 'lib-sub-list';
+
+      cat.families.forEach(fam => {
+        const famEl = document.createElement('div');
+        famEl.className = 'lib-sub-item' + (!fam.data ? ' disabled' : '');
+        famEl.textContent = fam.name;
+
+        if (fam.data) {
+          const sizeList = document.createElement('div');
+          sizeList.className = 'lib-sub-list lib-size-list';
+
+          Object.keys(fam.data).forEach(sz => {
+            const sizeEl = document.createElement('div');
+            sizeEl.className = 'lib-leaf-item';
+            sizeEl.dataset.fam = fam.name; sizeEl.dataset.sz = sz;
+            sizeEl.innerHTML = '<span class="lib-chk">✓</span>' + fam.name + ' ' + sz;
+            sizeEl.onclick = e => { e.stopPropagation(); libInsertSize(fam, sz, sizeEl); };
+            sizeList.appendChild(sizeEl);
+          });
+          famEl.appendChild(sizeList);
+        }
+        famList.appendChild(famEl);
+      });
+      catEl.appendChild(famList);
+    }
+    list.appendChild(catEl);
+  });
+}
+
+let _libLastEl = null;
+
+function libInsertSize(fam, sz, el) {
+  if (_libLastEl) _libLastEl.classList.remove('selected');
+  el.classList.add('selected');
+  _libLastEl = el;
+  closeMenus();
+  const params = fam.data[sz];
+  S.libDef = { drawFn: fam.draw, params, label: fam.name + ' ' + sz };
+  S.libPending = true;
+  setTool('select');
+  termPrint('BIBLIOTHÈQUE — Cliquer le point d\'insertion pour ' + S.libDef.label, 'info');
+}
+
+let _activeLib = null; // initialisé par initLibrary (dev=fetched, prod=MINICAD_LIB)
+
+function libFind(famName, sz) {
+  const fn = famName.toUpperCase();
+  for (const cat of (_activeLib || MINICAD_LIB).categories)
+    for (const fam of cat.families)
+      if (fam.name.toUpperCase() === fn && fam.data && fam.data[sz])
+        return { fam, params: fam.data[sz] };
+  return null;
+}
+
+function libInsertFromCmd(famName, sz) {
+  const found = libFind(famName, sz);
+  if (!found) return false;
+  const { fam, params } = found;
+  S.libDef = { drawFn: fam.draw, params, label: fam.name + ' ' + sz };
+  S.libPending = true;
+  setTool('select');
+  termPrint('BIBLIOTHÈQUE — Cliquer le point d\'insertion pour ' + S.libDef.label, 'info');
+  scheduleRender();
+  return true;
+}
+
+// ── Chargement dev (HTTP) ou prod (embarqué) ──────────
+function _libLoadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src + '?t=' + Date.now(); // cache-bust
+    s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+async function initLibrary() {
+  // Mode dev : serveur HTTP → charger les fichiers à la demande
+  if (window.location.protocol.startsWith('http')) {
+    try {
+      const index = await fetch('libraries/index.json?t=' + Date.now()).then(r => r.json());
+      const scriptsLoaded = new Set();
+      for (const cat of index.categories) {
+        for (const fam of cat.families) {
+          // Charger les données (fam.data est un nom de fichier dans index.json)
+          if (typeof fam.data === 'string') {
+            const d = await fetch('libraries/' + fam.data + '?t=' + Date.now()).then(r => r.json());
+            fam.data = d.data;
+          }
+          // Charger le script de dessin
+          if (fam.script && !scriptsLoaded.has(fam.script)) {
+            await _libLoadScript('libraries/' + fam.script);
+            scriptsLoaded.add(fam.script);
+          }
+        }
+      }
+      _activeLib = index;
+      buildLibMenu(index);
+      console.info('[MiniCAD] Bibliothèque chargée depuis libraries/ (mode dev)');
+      return;
+    } catch (e) {
+      console.warn('[MiniCAD] Chargement dev échoué, fallback embarqué :', e);
+    }
+  }
+  // Mode prod : utiliser MINICAD_LIB embarqué
+  _activeLib = MINICAD_LIB;
+  buildLibMenu(MINICAD_LIB);
+}
+
+initLibrary();
+
 </script>
 </body>
 </html>

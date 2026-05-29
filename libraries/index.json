@@ -1,0 +1,16 @@
+{
+  "categories": [
+    {
+      "name": "🏗️ Profilés de charpente",
+      "families": [
+        { "name": "IPE", "draw": "drawProfileI", "data": "ipe.json",  "script": "draws/ipe.js" },
+        { "name": "HEA", "draw": "drawProfileI", "data": "hea.json",        "script": "draws/ipe.js" },
+        { "name": "HEB", "draw": "drawProfileI", "data": "heb.json",        "script": "draws/ipe.js" },
+        { "name": "UPE", "draw": "drawProfileUPE", "data": "upe.json", "script": "draws/upe.js" }
+      ]
+    },
+    { "name": "⭕ Tubes",              "families": [] },
+    { "name": "🔩 Visserie",           "families": [] },
+    { "name": "📐 Plats et cornières", "families": [] }
+  ]
+}
