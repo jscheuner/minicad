@@ -36,59 +36,112 @@ Aucun npm, aucun build, aucune connexion internet requise (version locale).
 ## Fonctionnalités
 
 ### Outils de dessin
-- Ligne, Rectangle, Cercle, Arc
-- Polyligne (avec segments droits **et** arcs — bulge compatible DXF)
-- Mur (épaisseur configurable), Porte, Fenêtre
-- Prise électrique, Interrupteur, Câble
-- **Tube** (2 parois + axe trait-point, coudes calculés par tangentes)
+
+| Commande | Alias | Description |
+|----------|-------|-------------|
+| `LINE` | `L` | Ligne |
+| `RECT` | `R`, `REC` | Rectangle |
+| `CIRCLE` | `C` | Cercle |
+| `ARC` | `A` | Arc (centre, rayon, angles) |
+| `POLYLINE` | `PL` | Polyligne (segments droits + arcs, bulge DXF) |
+| `SPLINE` | `SPL` | Spline Catmull-Rom (C = clore) |
+| `XLINE` | `XL` | Ligne infinie (construction, 2 directions) |
+| `RAY` | — | Demi-droite depuis un point |
+| `RAY_REV` | — | Demi-droite inverse |
+| `HATCH` | `H` | Hachures sur contour fermé (lignes ou croisé) |
+| `POINT` | `PT` | Point de construction |
+| `WALL [ép]` | — | Mur (épaisseur configurable, défaut 20) |
+| `DOOR [l]` | — | Porte (largeur, défaut 80) |
+| `WINDOW [l]` | — | Fenêtre (largeur, défaut 120) |
+| `OUTLET` | — | Prise électrique |
+| `SWITCH` | — | Interrupteur |
+| `CABLE` | — | Câble (polyligne électrique) |
+| `TUBE [formule]` | — | Tube 2 parois + axe trait-point (ex : `1000+90R67+500`) |
+| `TEXT` | `T` | Texte libre |
+| `LEADER [texte]` | — | Repère avec flèche et annotation |
+| `DIMLINEAR` | — | Cote linéaire horizontale / verticale |
+| `DIMALIGNED` | `DIMPAR` | Cote parallèle à la droite mesurée |
+| `DIMANGULAR` | `DIMANG` | Cote angulaire (2 lignes + arc) |
+| `DIMRADIUS` | `DIMRAD` | Cote de rayon (cliquer un cercle/arc) |
+| `DIMDIAMETER` | `DIMDIA` | Cote de diamètre (cliquer un cercle/arc) |
 
 ### Modification
-| Commande | Description |
-|----------|-------------|
-| `MOVE` / `COPY` | Déplacer / Copier la sélection |
-| `ERASE` | Supprimer |
-| `OFFSET` | Décaler parallèle (O) |
-| `MIRROR` | Symétrie axiale (MI) |
-| `ROTATE` | Rotation avec point de base |
-| `SCALE` | Mise à l'échelle avec point de base |
-| `FILLET` | Raccord arrondi entre deux segments (F) |
-| `CHAMFER` | Chanfrein entre deux segments (CHA) |
-| `TRIM` | Raccourcir au croisement |
-| `JOIN` | Fusionner des lignes en une polyligne (J) |
-| `DIST` | Mesure distance entre deux points |
-| `TUBE [formule]` | Tube 2 parois + axe (ex : `TUBE 1000+90R67+500`) |
-| `ARRAY` | Réseau rectangulaire (dialogue) |
+
+| Commande | Alias | Description |
+|----------|-------|-------------|
+| `ERASE` | `E` | Supprimer la sélection |
+| `MOVE` | `M` | Déplacer |
+| `COPY` | `CO` | Copier |
+| `ROTATE` | `RO` | Pivoter avec point de base |
+| `SCALE` | `SC` | Mise à l'échelle avec point de base |
+| `MIRROR` | `MI` | Symétrie axiale |
+| `OFFSET` | `O` | Décaler parallèle (`OFFSET [dist]`) |
+| `TRIM` | `TR` | Couper au croisement |
+| `EXTEND` | `EX` | Prolonger jusqu'à une limite |
+| `STRETCH` | `ET` | Étirer (fenêtre croisante) |
+| `FILLET` | `F` | Raccord arrondi entre deux segments |
+| `CHAMFER` | `CHA` | Chanfrein entre deux segments |
+| `JOIN` | `J` | Fusionner des lignes en polyligne |
+| `ARRAY` | `AR` | Réseau rectangulaire (dialogue) |
+| `EXPLODE` | `X` | Éclater un bloc/polyligne en primitives |
+| `DIVIDE` | `DIV` | Diviser en N segments égaux (points) |
+| `DIST` | `DI` | Mesurer une distance entre deux points |
+| `TUBED [Ø]` | — | Diamètre du tube actif (défaut 40) |
+| `TUBEBR [R]` | — | Rayon de coude tube (défaut 67) |
+| `TUBREF` | — | Référence tracé : `AXE` / `EXT` / `INT` |
+| `TUBELBL` | — | Afficher/masquer la nomenclature tube |
 
 Grip editing sur toutes les entités : cliquer un objet sélectionné pour déplacer ses extrémités.
 
 ### Précision
-- **OSNAP** — 8 modes : extrémité, milieu, centre, intersection, perpendiculaire, tangente, plus proche, quadrant
-- **Ortho** (F8) — contraint à 0°/90°
-- **Polaire** (F10) — snap angulaire configurable (`POLAR [angle]`)
-- **Saisie dynamique** — bulle D/A éditable près du curseur (Tab pour basculer Distance ↔ Angle)
-- **Snap de grille** (F3)
-- **Saisie précise** : `100<45`, `@50,30`, `#x,y`, coordonnées relatives/absolues
 
-### Cotation (module `dim`)
-- DIMLINEAR — cote linéaire horizontale/verticale
-- DIMALIGNED — cote parallèle à la droite mesurée
-- DIMANGULAR — cote angulaire
-- DIMRADIUS / DIMDIAMETER — rayon et diamètre
-- Texte, Repère (module `annot`)
+| Mode | Touche | Description |
+|------|--------|-------------|
+| **OSNAP** | `F4` | 8 modes : extrémité, milieu, centre, intersection, perpendiculaire, tangente, proche, quadrant |
+| **Ortho** | `F8` | Contraint à 0° / 90° |
+| **Polaire** | `F10` | Snap angulaire (`POLAR [angle]`) |
+| **Saisie dynamique** | — | Bulle D / A éditable, `Tab` pour basculer |
+| **Snap de grille** | `F3` | Grille configurable (`GRID [n]`) |
+
+Formats de saisie : `100<45` (dist. + angle), `@50,30` (relatif), `#x,y` (absolu).
+
+### Cotation et annotation
+
+Intégrés directement (pas besoin de `LOAD`) : `DIMLINEAR`, `DIMALIGNED`, `DIMANGULAR`, `DIMRADIUS`, `DIMDIAMETER`, `TEXT`, `LEADER`.  
+Styles configurables : `DIMSTYLE [nom]`.
+
+### Bibliothèque de profilés
+
+Profilés de charpente insérables depuis le panneau ou via la commande `ipe 160`, `upn 200`, etc.
+
+> ⚠️ Les données dimensionnelles sont en cours de vérification — voir [libraries/README.md](libraries/README.md).
+
+| Famille | Norme | Tailles disponibles |
+|---------|-------|---------------------|
+| IPE | SN EN 10365:2017 | 80 → 600 |
+| IPN | SN EN 10365:2017 | 80 → 600 |
+| HEA | SN EN 10365:2017 | 100 → 1000 |
+| HEB | SN EN 10365:2017 | 100 → 1000 |
+| UPE | SN EN 10365:2017 | 80 → 400 |
+| UPN | SN EN 10365:2017 | 50 → 400 |
 
 ### Calques et organisation
-- Calques avec couleur et visibilité
-- Sélection par clic, par fenêtre (gauche→droite) ou par croisement (droite→gauche)
-- Sélection Shift pour accumuler, Ctrl+A pour tout sélectionner
+
+- Calques avec couleur, visibilité et type de ligne
+- Sélection par clic, fenêtre (gauche→droite) ou croisement (droite→gauche)
+- `Shift+clic` pour sélection additive, `Ctrl+A` pour tout sélectionner
 
 ### Fichiers
+
 | Format | Import | Export |
 |--------|:------:|:------:|
-| `.mcad` (JSON natif) | ✓ | ✓ |
+| `.mcad` (JSON natif MiniCAD) | ✓ | ✓ |
 | `.dxf` AC1015 (AutoCAD 2000) | ✓ | ✓ |
+| `.svg` | — | ✓ |
+| `.pdf` | — | ✓ |
 
-- **Auto-save** localStorage — restauration automatique au rechargement (F5)
-- **File System Access API** (Chrome/Edge) — `Ctrl+S` écrit dans le même fichier sans télécharger
+- **Auto-save** localStorage — restauration automatique au rechargement
+- **File System Access API** (Chrome/Edge) — `Ctrl+S` écrit dans le fichier ouvert directement
 
 ---
 
@@ -139,71 +192,94 @@ Les barres d'outils sont **déplaçables** (drag & drop dock/float, clic-droit p
 
 ## Commandes terminales
 
-Taper dans le champ en bas de l'interface :
+Taper dans le champ en bas de l'interface (insensible à la casse) :
 
-```
-LINE / L          Ligne
-RECT / R          Rectangle
-CIRCLE / C        Cercle
-ARC               Arc
-PL                Polyligne
-WALL [ep]         Mur (épaisseur)
-OFFSET [dist]     Décalage
-MIRROR / MI       Miroir
-FILLET / F [r]    Raccord arrondi
-CHAMFER / CHA     Chanfrein (ECART/EC pour distances asymétriques)
-JOIN / J          Fusionner en polyligne
-MOVE / M          Déplacer
-COPY              Copier
-ERASE / E         Supprimer
-UNDO / U          Annuler
-REDO              Refaire
-ZOOM [facteur]    Zoom
-POLAR [angle]     Incrément polaire
-OSNAP [mode]      Activer un mode OSNAP
-TUBE [formule]    Tube 2 parois + axe (ex: 1000+90R67+500)
-TUBED <Ø>         Diamètre du tube (défaut 40)
-TUBEBR <R>        Rayon de coude (défaut 67)
-DIMLINEAR         Cote linéaire
-DIMALIGNED        Cote parallèle
-DIMANGULAR        Cote angulaire (cliquer ligne 1, ligne 2, puis placer)
-DIMRADIUS         Cote rayon
-DIMDIAMETER       Cote diamètre
-DIST              Mesure distance entre deux points
-ARRAY             Réseau rectangulaire (dialogue)
-LOAD arch         Charger module Architecture
-LOAD elec         Charger module Électricité
-LOAD dim          Charger module Cotation
-LOAD annot        Charger module Annotation
-AI / OLLAMA       Assistant IA Ollama local
-SAVE / Ctrl+S     Sauvegarder
-SAVEAS            Sauvegarder sous…
-OPEN / Ctrl+O     Ouvrir
-EXPORT DXF        Exporter en DXF
-EXPORT SVG        Exporter en SVG
-CLEAR / NOUVEAU   Effacer le dessin
-```
+| Commande | Description |
+|----------|-------------|
+| `LINE` / `L` | Ligne |
+| `RECT` / `R` | Rectangle |
+| `CIRCLE` / `C` | Cercle |
+| `ARC` / `A` | Arc |
+| `PL` | Polyligne |
+| `SPL` | Spline |
+| `XL` | Ligne infinie |
+| `RAY` / `RAY_REV` | Demi-droite / inverse |
+| `H` | Hachures |
+| `PT` | Point |
+| `WALL [ép]` | Mur |
+| `DOOR [l]` | Porte |
+| `WINDOW [l]` | Fenêtre |
+| `OUTLET` / `SWITCH` | Prise / Interrupteur |
+| `CABLE` | Câble |
+| `TEXT` / `T` | Texte |
+| `LEADER [texte]` | Repère |
+| `TUBE [formule]` | Tube (ex : `TUBE 1000+90R67+500`) |
+| `TUBED [Ø]` / `TUBEBR [R]` | Diamètre / rayon de coude tube |
+| `TUBREF AXE\|EXT\|INT` | Référence tracé tube |
+| `TUBELBL` | Nomenclature tube |
+| `DIMLINEAR` | Cote linéaire H/V |
+| `DIMALIGNED` / `DIMPAR` | Cote parallèle |
+| `DIMANGULAR` / `DIMANG` | Cote angulaire |
+| `DIMRADIUS` / `DIMRAD` | Cote rayon |
+| `DIMDIAMETER` / `DIMDIA` | Cote diamètre |
+| `DIMSTYLE [nom]` / `DS` | Gérer les styles de cotes |
+| `ERASE` / `E` | Supprimer |
+| `MOVE` / `M` | Déplacer |
+| `COPY` / `CO` | Copier |
+| `ROTATE` / `RO` | Pivoter |
+| `SCALE` / `SC` | Mise à l'échelle |
+| `MIRROR` / `MI` | Miroir |
+| `OFFSET` / `O` | Décalage parallèle |
+| `TRIM` / `TR` | Couper |
+| `EXTEND` / `EX` | Prolonger |
+| `STRETCH` / `ET` | Étirer |
+| `FILLET` / `F [r]` | Raccord arrondi |
+| `CHAMFER` / `CHA [d1] [d2]` | Chanfrein |
+| `JOIN` / `J` | Fusionner en polyligne |
+| `ARRAY` / `AR` | Réseau rectangulaire |
+| `EXPLODE` / `X` | Éclater |
+| `DIVIDE` / `DIV` | Diviser en N points |
+| `DIST` / `DI` | Mesurer distance |
+| `UNDO` / `U` | Annuler |
+| `REDO` | Refaire |
+| `ZOOM` / `Z [E\|n]` | Zoom étendue ou facteur |
+| `PAN` / `P` | Panoramique |
+| `LAYER` / `LA [n]` | Calque |
+| `COLOR [#hex]` | Couleur du calque |
+| `POLAR [angle]` | Incrément polaire |
+| `OSNAP [mode]` | Mode OSNAP |
+| `GRID [n]` | Taille de la grille |
+| `AI` / `OLLAMA` | Assistant IA |
+| `SAVE` | Sauvegarder |
+| `SAVEAS [nom]` | Sauvegarder sous |
+| `OPEN` | Ouvrir |
+| `EXPORT DXF\|SVG` | Exporter |
+| `PRINT` / `PDF` | Imprimer / export PDF |
+| `CLEAR` / `NOUVEAU` | Effacer tout |
+| `PREFS` | Préférences |
+| `HELP` / `?` | Aide |
 
 ---
 
 ## Architecture technique
 
 ```
-minicad.html   (~8 000 lignes, un seul fichier)
+minicad.html   (~12 000 lignes, un seul fichier)
 │
-├── CSS         dark theme, barres d'outils, dialogue texte
+├── CSS         dark theme, barres d'outils, dialogues
 ├── HTML        canvas + sidebar + terminal
 └── JavaScript
     ├── État global S{}           zoom, pan, calques, outil actif, historique…
     ├── Moteur de rendu           drawEntity() → canvas 2D
-    ├── OSNAP engine              findOsnap(), 7 modes
+    ├── OSNAP engine              findOsnap(), 8 modes
     ├── Commandes CMD{}           objets exécutables, alias AutoCAD
     ├── Saisie dynamique          Dynamic Input (bulles D/A)
     ├── Grip editing              poignées bleues sur toutes les entités
     ├── Sélection                 clic, fenêtre, croisement
-    ├── Outils de modification    offset, mirror, fillet, chamfer, join
-    ├── Import/Export             DXF AC1015, SVG, JSON .mcad
-    └── Modules métier            arch, elec, dim, annot (chargés à la demande)
+    ├── Outils de modification    offset, mirror, fillet, chamfer, trim, extend…
+    ├── Import/Export             DXF AC1015, SVG, PDF, JSON .mcad
+    ├── Bibliothèques             profilés injectés via build.py
+    └── Assistant IA              Ollama local (insertion depuis langage naturel)
 ```
 
 **Contrainte fondamentale :** tout reste dans un seul fichier HTML. Pas de npm, pas de bundler, pas de framework.
