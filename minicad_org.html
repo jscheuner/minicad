@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MiniCAD v0.08</title>
+<title>MiniCAD v0.09</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=Oswald:wght@300;400;500&family=Share+Tech&display=swap');
 
@@ -915,96 +915,12 @@
   .td-footer button:hover { color: #fff; border-color: #ffffff44; }
   .td-ok { background: var(--accent-dim) !important; color: var(--accent) !important; border-color: var(--accent) !important; }
 </style>
-<!-- Cookie Consent + Google Tag Manager (chargé après consentement) -->
-<style>
-  #cookie-banner {
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 99999;
-    background: #16213e; border-top: 1px solid #00d4ff44;
-    padding: 14px 24px; display: flex; align-items: center; gap: 16px;
-    flex-wrap: wrap; font-family: 'IBM Plex Sans', sans-serif; font-size: 13px;
-    color: #a0b4c8; box-shadow: 0 -4px 24px #00000066;
-  }
-  #cookie-banner p { margin: 0; flex: 1; min-width: 200px; line-height: 1.5; }
-  #cookie-banner a { color: #00d4ff; text-decoration: underline; }
-  #cookie-banner .cb-btns { display: flex; gap: 10px; flex-shrink: 0; }
-  #cookie-banner button {
-    padding: 7px 18px; border-radius: 4px; border: 1px solid;
-    cursor: pointer; font-size: 13px; font-family: inherit; transition: opacity .2s;
-  }
-  #cookie-banner button:hover { opacity: .8; }
-  #cb-accept {
-    background: #00d4ff22; color: #00d4ff; border-color: #00d4ff88;
-  }
-  #cb-decline {
-    background: transparent; color: #607080; border-color: #607080;
-  }
-</style>
-<script>
-(function(){
-  var GTM_ID = 'GTM-TW3P5FF7';
-  var CONSENT_KEY = 'minicad_cookie_consent';
-
-  function loadGTM() {
-    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer',GTM_ID);
-    var ns=document.createElement('noscript');
-    var ifr=document.createElement('iframe');
-    ifr.src='https://www.googletagmanager.com/ns.html?id='+GTM_ID;
-    ifr.height='0'; ifr.width='0';
-    ifr.style.cssText='display:none;visibility:hidden';
-    ns.appendChild(ifr);
-    document.body.insertBefore(ns, document.body.firstChild);
-  }
-
-  function hideBanner() {
-    var b=document.getElementById('cookie-banner');
-    if(b) b.remove();
-  }
-
-  function accept() {
-    localStorage.setItem(CONSENT_KEY,'accepted');
-    hideBanner(); loadGTM();
-  }
-
-  function decline() {
-    localStorage.setItem(CONSENT_KEY,'declined');
-    hideBanner();
-  }
-
-  var consent = localStorage.getItem(CONSENT_KEY);
-  if (consent === 'accepted') {
-    document.addEventListener('DOMContentLoaded', loadGTM);
-  } else if (!consent) {
-    document.addEventListener('DOMContentLoaded', function() {
-      var banner = document.getElementById('cookie-banner');
-      if (!banner) return;
-      document.getElementById('cb-accept').onclick = accept;
-      document.getElementById('cb-decline').onclick = decline;
-    });
-  }
-})();
-</script>
 </head>
 <body>
-<!-- Bannière cookies RGPD -->
-<div id="cookie-banner" style="display:none;"></div>
-<script>
-(function(){
-  if (!localStorage.getItem('minicad_cookie_consent')) {
-    var b = document.getElementById('cookie-banner');
-    b.style.display = 'flex';
-    b.innerHTML = '<p>Ce site utilise des cookies analytiques (Google Tag Manager) pour mesurer l\'audience. Aucune donnée personnelle identifiable n\'est collectée.</p>'
-      + '<div class="cb-btns"><button id="cb-accept">Accepter</button><button id="cb-decline">Refuser</button></div>';
-  }
-})();
-</script>
 
 <!-- MENU BAR -->
 <div class="menubar">
-  <div class="topbar-logo">MiniCAD <span>v0.08</span></div>
+  <div class="topbar-logo">MiniCAD <span>v0.09</span></div>
   <div class="menu-items">
     <div class="menu-dropdown" id="menu-fichier">
       <div class="menu-item" id="menu-fichier-btn" onclick="toggleMenuDropdown('menu-fichier',event)">Fichier</div>
@@ -1263,6 +1179,31 @@
       </button>
       <button class="tool-btn" data-tool="polyline" title="Polyligne (PL)" onclick="setTool('polyline')">
         <svg viewBox="0 0 24 24"><polyline points="4,18 8,8 14,14 20,4"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="spline" title="Spline (SPL)" onclick="setTool('spline');termPrint('SPLINE: Cliquez les points de passage — C=Clore  Echap=Finir','info')">
+        <svg viewBox="0 0 24 24"><path d="M4,18 C6,18 7,8 10,8 S16,14 20,4" fill="none"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="xline" title="Ligne infinie (XL)" onclick="executeCommand('XLINE')">
+        <svg viewBox="0 0 24 24" fill="none">
+          <line x1="2" y1="12" x2="22" y2="12"/>
+          <polyline points="5,9 2,12 5,15"/>
+          <polyline points="19,9 22,12 19,15"/>
+          <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+        </svg>
+      </button>
+      <button class="tool-btn" data-tool="ray" title="Demi-droite (RAY)" onclick="executeCommand('RAY')">
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="4" cy="12" r="2" fill="currentColor"/>
+          <line x1="4" y1="12" x2="22" y2="12"/>
+          <polyline points="19,9 22,12 19,15"/>
+        </svg>
+      </button>
+      <button class="tool-btn" data-tool="ray_rev" title="Demi-droite inverse (RAY_REV)" onclick="executeCommand('RAY_REV')">
+        <svg viewBox="0 0 24 24" fill="none">
+          <line x1="2" y1="12" x2="20" y2="12"/>
+          <polyline points="5,9 2,12 5,15"/>
+          <circle cx="20" cy="12" r="2" fill="currentColor"/>
+        </svg>
       </button>
       <button class="tool-btn" data-tool="point" title="Point (PT)" onclick="executeCommand('POINT')">
         <svg viewBox="0 0 24 24">
@@ -2022,8 +1963,11 @@ function findOsnap(wx, wy) {
         check(e.x2, e.y2, 'endpoint', e);
         check(e.x1, e.y2, 'endpoint', e);
       }
-      if (e.type === 'polyline' || e.type === 'cable') {
+      if (e.type === 'polyline' || e.type === 'cable' || e.type === 'spline') {
         for (const p of e.points) check(p[0], p[1], 'endpoint', e);
+      }
+      if (e.type === 'xline' || e.type === 'ray') {
+        check(e.x, e.y, 'endpoint', e);
       }
       if (e.type === 'arc') {
         check(e.cx + e.r * Math.cos(e.startAngle), e.cy + e.r * Math.sin(e.startAngle), 'endpoint', e);
@@ -2049,7 +1993,7 @@ function findOsnap(wx, wy) {
         check((e.x1 + e.x2) / 2, e.y2, 'midpoint', e);
         check(e.x1, (e.y1 + e.y2) / 2, 'midpoint', e);
       }
-      if (e.type === 'polyline' || e.type === 'cable') {
+      if (e.type === 'polyline' || e.type === 'cable' || e.type === 'spline') {
         for (let i = 0; i < e.points.length - 1; i++) {
           check((e.points[i][0] + e.points[i + 1][0]) / 2, (e.points[i][1] + e.points[i + 1][1]) / 2, 'midpoint', e);
         }
@@ -2084,9 +2028,10 @@ function findOsnap(wx, wy) {
         const segs = [[e.x1,e.y1,e.x2,e.y1],[e.x2,e.y1,e.x2,e.y2],[e.x2,e.y2,e.x1,e.y2],[e.x1,e.y2,e.x1,e.y1]];
         for (const s of segs) { const p = projectOnSeg(wx, wy, ...s); if (p) check(p[0], p[1], 'nearest', e); }
       }
-      if (e.type === 'polyline' || e.type === 'cable') {
-        for (let i = 0; i < e.points.length - 1; i++) {
-          const p = projectOnSeg(wx, wy, e.points[i][0], e.points[i][1], e.points[i + 1][0], e.points[i + 1][1]);
+      if (e.type === 'polyline' || e.type === 'cable' || e.type === 'spline') {
+        const sOsnap = e.type === 'spline' ? catmullRom(e.points, e.closed, 16) : e.points;
+        for (let i = 0; i < sOsnap.length - 1; i++) {
+          const p = projectOnSeg(wx, wy, sOsnap[i][0], sOsnap[i][1], sOsnap[i + 1][0], sOsnap[i + 1][1]);
           if (p) check(p[0], p[1], 'nearest', e);
         }
       }
@@ -2233,7 +2178,7 @@ function findOsnap(wx, wy) {
   }
 
   // OSNAP sur la polyligne/ligne en cours de tracé (drawPoints pas encore dans S.entities)
-  if (S.drawing && (S.tool === 'polyline' || S.tool === 'cable' || S.tool === 'line') && S.drawPoints.length >= 1) {
+  if (S.drawing && (S.tool === 'polyline' || S.tool === 'cable' || S.tool === 'line' || S.tool === 'spline') && S.drawPoints.length >= 1) {
     const pts = S.drawPoints;
     // Extrémités (tous les sommets confirmés)
     if (S.osnapModes.endpoint) {
@@ -2280,7 +2225,7 @@ function findOsnap(wx, wy) {
         tryAcquire(e.cx + e.r * Math.cos(sa), e.cy + e.r * Math.sin(sa),  Math.sin(sa), -Math.cos(sa));
         tryAcquire(e.cx + e.r * Math.cos(ea), e.cy + e.r * Math.sin(ea), -Math.sin(ea),  Math.cos(ea));
       }
-      if (e.type === 'polyline' || e.type === 'cable') {
+      if (e.type === 'polyline' || e.type === 'cable' || e.type === 'spline') {
         const pts = e.points;
         if (pts.length < 2) continue;
         const p0 = pts[0], p1 = pts[1];
@@ -2416,8 +2361,9 @@ function getEntitySegments(e) {
   if (e.type === 'rect') {
     segs.push([e.x1,e.y1,e.x2,e.y1],[e.x2,e.y1,e.x2,e.y2],[e.x2,e.y2,e.x1,e.y2],[e.x1,e.y2,e.x1,e.y1]);
   }
-  if (e.type === 'polyline' || e.type === 'cable') {
-    for (let i = 0; i < e.points.length - 1; i++) segs.push([e.points[i][0], e.points[i][1], e.points[i+1][0], e.points[i+1][1]]);
+  if (e.type === 'polyline' || e.type === 'cable' || e.type === 'spline') {
+    const sPts = e.type === 'spline' ? catmullRom(e.points, e.closed, 16) : e.points;
+    for (let i = 0; i < sPts.length - 1; i++) segs.push([sPts[i][0], sPts[i][1], sPts[i+1][0], sPts[i+1][1]]);
   }
   // Ligne de cote (segment entre les deux flèches) — pour intersection
   if (e.type === 'dim_linear' || e.type === 'dim_aligned') {
@@ -2614,6 +2560,10 @@ const CMD = {
   CIRCLE: { alias: ['C','CERCLE'], desc: 'Cercle (taper rayon ex: 50)', exec: () => { setTool('circle'); termPrint('CERCLE: Cliquez ou tapez X,Y pour le centre', 'info'); }},
   ARC: { alias: ['A'], desc: 'Arc', exec: () => { setTool('arc'); termPrint('ARC: Cliquez ou tapez X,Y pour le centre', 'info'); }},
   POLYLINE: { alias: ['PL','POLYLIGNE'], desc: 'Polyligne', exec: () => { setTool('polyline'); termPrint('POLYLIGNE: Cliquez ou tapez X,Y, Echap pour finir', 'info'); }},
+  SPLINE:   { alias: ['SPL'], desc: 'Spline (Catmull-Rom)', exec: () => { setTool('spline'); termPrint('SPLINE: Cliquez les points de passage — C=Clore  Echap=Finir', 'info'); }},
+  XLINE:    { alias: ['XL','LIGNEINFINIE'], desc: 'Ligne infinie (2 directions)', exec: () => { setTool('xline'); termPrint('XLINE: Cliquez le point de base puis un point de passage', 'info'); }},
+  RAY:      { alias: ['DEMIDROITE'], desc: 'Demi-droite (depuis un point)', exec: () => { setTool('ray'); termPrint('DEMI-DROITE: Cliquez le point de départ puis la direction', 'info'); }},
+  RAY_REV:  { alias: ['RAYREV'], desc: 'Demi-droite inverse', exec: () => { setTool('ray_rev'); termPrint('DEMI-DROITE INVERSE: Cliquez le point de départ puis la direction opposée', 'info'); }},
   ERASE: { alias: ['E','EFFACER','DEL'], desc: 'Supprimer sélection', exec: () => {
     if (!S.selected.length) { termPrint('Aucun objet sélectionné', 'warning'); return; }
     pushUndo();
@@ -3115,7 +3065,9 @@ function getEntityBBox(e) {
       return { minX:e.vx-armR-pad, maxX:e.vx+armR+pad,
                minY:e.vy-armR-pad, maxY:e.vy+armR+pad };
     }
-    case 'polyline': case 'cable': case 'hatch': {
+    case 'xline': case 'ray':
+      return { minX:e.x, maxX:e.x, minY:e.y, maxY:e.y };
+    case 'polyline': case 'cable': case 'hatch': case 'spline': {
       if (!e.points?.length) return null;
       let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
       e.points.forEach(p=>{ x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1]); });
@@ -4387,6 +4339,34 @@ function drawEntity(e) {
       if (e.type === 'cable') ctx.setLineDash([]);
       break;
     }
+    case 'spline': {
+      if (e.points.length < 2) return;
+      const spts = catmullRom(e.points, e.closed, 16);
+      ctx.beginPath();
+      const [spx,spy] = w2s(spts[0][0],spts[0][1]);
+      ctx.moveTo(spx,spy);
+      for (let i=1; i<spts.length; i++) { const [sqx,sqy]=w2s(spts[i][0],spts[i][1]); ctx.lineTo(sqx,sqy); }
+      if (e.closed) ctx.closePath();
+      ctx.stroke();
+      break;
+    }
+    case 'xline': case 'ray': {
+      const [bsx,bsy] = w2s(e.x, e.y);
+      const sdx = e.dx * S.zoom, sdy = -e.dy * S.zoom;
+      const W = canvas.width, H = canvas.height;
+      let tMin = -1e9, tMax = 1e9;
+      if (Math.abs(sdx) > 1e-10) { const t1=-bsx/sdx, t2=(W-bsx)/sdx; tMin=Math.max(tMin,Math.min(t1,t2)); tMax=Math.min(tMax,Math.max(t1,t2)); }
+      else if (bsx<0||bsx>W) break;
+      if (Math.abs(sdy) > 1e-10) { const t1=-bsy/sdy, t2=(H-bsy)/sdy; tMin=Math.max(tMin,Math.min(t1,t2)); tMax=Math.min(tMax,Math.max(t1,t2)); }
+      else if (bsy<0||bsy>H) break;
+      if (tMin > tMax) break;
+      ctx.beginPath();
+      const tStart = e.type==='ray' ? Math.max(0, tMin) : tMin;
+      ctx.moveTo(bsx+tStart*sdx, bsy+tStart*sdy);
+      ctx.lineTo(bsx+tMax*sdx, bsy+tMax*sdy);
+      ctx.stroke();
+      break;
+    }
     case 'tube': {
       const tr = e.tubeRadius || 20;
       ctx.setLineDash([]);
@@ -4791,6 +4771,14 @@ function getGripPoints(e) {
         gp(p[0], p[1], (ent, nx, ny) => { ent.points[i] = [nx, ny]; });
       });
       break;
+    case 'spline':
+      e.points.forEach((p, i) => {
+        gp(p[0], p[1], (ent, nx, ny) => { ent.points[i] = [nx, ny]; });
+      });
+      break;
+    case 'xline': case 'ray':
+      gp(e.x, e.y, (ent, nx, ny) => { ent.x = nx; ent.y = ny; });
+      break;
     case 'hatch': {
       const hpts = getHatchPoints(e);
       if (!hpts?.length) break;
@@ -5113,6 +5101,43 @@ function drawPreview() {
     }
     const[lx,ly]=w2s(last[0],last[1]), [ex,ey]=w2s(tx,ty);
     ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(ex,ey); ctx.stroke();
+  } else if (['xline','ray','ray_rev'].includes(tool) && pts.length===1) {
+    // Preview: show the infinite/semi-infinite line toward mouse
+    let tx=mx,ty=my; [tx,ty]=applyConstraint(pts[0][0],pts[0][1],mx,my);
+    const dx=tx-pts[0][0], dy=ty-pts[0][1], len=Math.hypot(dx,dy);
+    if (len > 1e-10) {
+      const [bsx,bsy] = w2s(pts[0][0],pts[0][1]);
+      const sdx=dx/len*S.zoom, sdy=-dy/len*S.zoom;
+      const W=canvas.width, H=canvas.height;
+      let tMin=-1e9, tMax=1e9;
+      if(Math.abs(sdx)>1e-10){const t1=-bsx/sdx,t2=(W-bsx)/sdx;tMin=Math.max(tMin,Math.min(t1,t2));tMax=Math.min(tMax,Math.max(t1,t2));}
+      if(Math.abs(sdy)>1e-10){const t1=-bsy/sdy,t2=(H-bsy)/sdy;tMin=Math.max(tMin,Math.min(t1,t2));tMax=Math.min(tMax,Math.max(t1,t2));}
+      ctx.strokeStyle='#ffffff66'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      if (tool==='ray'||tool==='ray_rev') { ctx.moveTo(bsx,bsy); ctx.lineTo(bsx+tMax*sdx,bsy+tMax*sdy); }
+      else { ctx.moveTo(bsx+tMin*sdx,bsy+tMin*sdy); ctx.lineTo(bsx+tMax*sdx,bsy+tMax*sdy); }
+      ctx.stroke();
+    }
+  } else if (tool === 'spline' && pts.length>0) {
+    let tx=mx,ty=my;
+    const last=pts[pts.length-1];
+    [tx,ty]=applyConstraint(last[0],last[1],mx,my);
+
+    // Spline confirmée jusqu'ici (Catmull-Rom en preview)
+    if (pts.length >= 2) {
+      const color = S.layers[S.currentLayer]?.color || '#00d4ff';
+      ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.setLineDash([]);
+      const spts = catmullRom(pts, false, 16);
+      ctx.beginPath();
+      const [spx,spy]=w2s(spts[0][0],spts[0][1]); ctx.moveTo(spx,spy);
+      for (let i=1;i<spts.length;i++){const[sqx,sqy]=w2s(spts[i][0],spts[i][1]);ctx.lineTo(sqx,sqy);}
+      ctx.stroke();
+    }
+
+    // Rubber-band vers la souris
+    ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+    const[lx,ly]=w2s(last[0],last[1]), [ex,ey]=w2s(tx,ty);
+    ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(ex,ey); ctx.stroke();
   } else if (tool === 'dim_angular') {
     if (S._dimAngVtx) {
       // Étape 2: vertex connu, afficher secteur dynamique sous la souris
@@ -5256,7 +5281,7 @@ function drawPreview() {
       let affected = fully;
       if (!affected) {
         if (e.type === 'line' || e.type === 'wall') affected = inBox(e.x1,e.y1)||inBox(e.x2,e.y2);
-        else if (e.type === 'polyline'||e.type==='cable') affected = e.points.some(p=>inBox(p[0],p[1]));
+        else if (e.type === 'polyline'||e.type==='cable'||e.type==='spline') affected = e.points.some(p=>inBox(p[0],p[1]));
         else if (e.type === 'rect') affected = inBox(e.x1,e.y1)||inBox(e.x2,e.y1)||inBox(e.x2,e.y2)||inBox(e.x1,e.y2);
       }
       if (!affected) continue;
@@ -5893,7 +5918,7 @@ const diUnit2 = document.getElementById('di-unit2');
 
 // Returns the input mode for the current tool and drawing state
 function getDIMode() {
-  const drawingTools = ['line','rect','circle','arc','wall','leader','polyline','cable','dim_linear','dim_aligned','dim_angular','tube'];
+  const drawingTools = ['line','xline','ray','ray_rev','rect','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube'];
   // First point: show X,Y
   if (!S.drawing && drawingTools.includes(S.tool)) return 'xy';
   if (S.tool === 'rect') return 'wh'; // Width × Height
@@ -6091,9 +6116,9 @@ function confirmDynamicInput() {
 
   // === CLORE polyligne via bulle DI ===
   const diVal = diDist.value.trim().toUpperCase();
-  if (['C','CL','CLO','CLOR','CLORE','CLOSE'].includes(diVal) && ['polyline','cable'].includes(S.tool)) {
+  if (['C','CL','CLO','CLOR','CLORE','CLOSE'].includes(diVal) && ['polyline','cable','spline'].includes(S.tool)) {
     S.diLocked = false; diDist.blur(); diAngle.blur();
-    closePolyline(S.tool); return;
+    if (S.tool === 'spline') closeSpline(); else closePolyline(S.tool); return;
   }
 
   // === GRIP EDIT via dynamic input ===
@@ -6175,8 +6200,8 @@ function confirmDynamicInput() {
     render(); setTimeout(smartFocus, 0); return;
   }
 
-  // For polyline/cable: add point
-  if (['polyline','cable'].includes(S.tool)) {
+  // For polyline/cable/spline: add point
+  if (['polyline','cable','spline'].includes(S.tool)) {
     S.drawPoints.push([nx, ny]);
     termPrint('Point ' + S.drawPoints.length + ': (' + nx.toFixed(1) + ', ' + ny.toFixed(1) + ')', 'info');
     render(); setTimeout(smartFocus, 0); return;
@@ -6223,6 +6248,7 @@ function confirmDynamicInput() {
 function cancelDrawing() {
   if (S.drawing) {
     if (['polyline','cable'].includes(S.tool)) finishPolyline(S.tool);
+    else if (S.tool === 'spline') finishSpline();
     else { S.drawing = false; S.drawPoints = []; S.awaitingInput = false; termPrint('Annulé', 'warning'); }
     render();
   }
@@ -6787,7 +6813,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
   }
 
   // Drawing tools (2-point) — WITHOUT dimensions
-  if (['line','rect','circle','arc','wall','leader'].includes(tool)) {
+  if (['line','rect','circle','arc','wall','leader','xline','ray','ray_rev'].includes(tool)) {
     if (!S.drawing) {
       S.drawing = true; S.drawPoints = [[wx, wy]]; S.awaitingInput = true;
       termPrint('Point 1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ')', 'info');
@@ -6944,6 +6970,23 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       const d = Math.hypot(tx-last[0], ty-last[1]);
       termPrint('Point ' + S.drawPoints.length + ': (' + tx.toFixed(1) + ', ' + ty.toFixed(1) + ') L=' + d.toFixed(1), 'info');
       termPrint('Cliquez ou tapez distance — C=Clore  Echap=Finir', 'warning');
+    }
+    render(); return;
+  }
+
+  // Spline
+  if (tool === 'spline') {
+    if (!S.drawing) {
+      S.drawing = true; S.drawPoints = [[wx, wy]]; S.awaitingInput = true;
+      termPrint('Point 1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ')', 'info');
+      termPrint('Cliquez les points de passage — C=Clore  Echap=Finir', 'warning');
+    } else {
+      let tx = wx, ty = wy;
+      const last = S.drawPoints[S.drawPoints.length-1];
+      [tx,ty] = applyConstraint(last[0],last[1],wx,wy);
+      S.drawPoints.push([tx, ty]);
+      termPrint('Point ' + S.drawPoints.length + ': (' + tx.toFixed(1) + ', ' + ty.toFixed(1) + ')', 'info');
+      termPrint('Cliquez les points de passage — C=Clore  Echap=Finir', 'warning');
     }
     render(); return;
   }
@@ -7349,7 +7392,7 @@ function applyStretchToEntity(e, minX, minY, maxX, maxY, dx, dy) {
     if (inBox(e.x2, e.y2)) { e.x2 += dx; e.y2 += dy; moved = true; }
     return moved;
   }
-  if (e.type === 'polyline' || e.type === 'cable') {
+  if (e.type === 'polyline' || e.type === 'cable' || e.type === 'spline') {
     let moved = false;
     for (const p of e.points) { if (inBox(p[0], p[1])) { p[0] += dx; p[1] += dy; moved = true; } }
     return moved;
@@ -8055,6 +8098,9 @@ function finishEntity(tool, pts) {
   let ent;
   switch(tool) {
     case 'line': ent={type:'line',x1:p1[0],y1:p1[1],x2:p2[0],y2:p2[1]}; break;
+    case 'xline': { const len=Math.hypot(p2[0]-p1[0],p2[1]-p1[1]); if(len<1e-10)return; ent={type:'xline',x:p1[0],y:p1[1],dx:(p2[0]-p1[0])/len,dy:(p2[1]-p1[1])/len}; break; }
+    case 'ray':   { const len=Math.hypot(p2[0]-p1[0],p2[1]-p1[1]); if(len<1e-10)return; ent={type:'ray',  x:p1[0],y:p1[1],dx:(p2[0]-p1[0])/len,dy:(p2[1]-p1[1])/len}; break; }
+    case 'ray_rev':{ const len=Math.hypot(p2[0]-p1[0],p2[1]-p1[1]); if(len<1e-10)return; ent={type:'ray',  x:p1[0],y:p1[1],dx:(p2[0]-p1[0])/len,dy:(p2[1]-p1[1])/len}; break; }
     case 'rect': ent={type:'rect',x1:p1[0],y1:p1[1],x2:p2[0],y2:p2[1]}; break;
     case 'circle': ent={type:'circle',cx:p1[0],cy:p1[1],r:Math.hypot(p2[0]-p1[0],p2[1]-p1[1])}; break;
     case 'arc': {const r=Math.hypot(p2[0]-p1[0],p2[1]-p1[1]); const sa=Math.atan2(p2[1]-p1[1],p2[0]-p1[0]); ent={type:'arc',cx:p1[0],cy:p1[1],r,startAngle:0,endAngle:sa}; break;}
@@ -8086,6 +8132,43 @@ function closePolyline(tool) {
   setTool('select');
 }
 
+function catmullRom(pts, closed, nSeg) {
+  nSeg = nSeg || 16;
+  const n = pts.length;
+  if (n < 2) return pts.slice();
+  const result = [];
+  const count = closed ? n : n - 1;
+  for (let i = 0; i < count; i++) {
+    const p0 = pts[(i - 1 + n) % n], p1 = pts[i % n];
+    const p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+    for (let j = 0; j < nSeg; j++) {
+      const t = j / nSeg, t2 = t * t, t3 = t2 * t;
+      result.push([
+        0.5 * ((2*p1[0]) + (-p0[0]+p2[0])*t + (2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*t2 + (-p0[0]+3*p1[0]-3*p2[0]+p3[0])*t3),
+        0.5 * ((2*p1[1]) + (-p0[1]+p2[1])*t + (2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*t2 + (-p0[1]+3*p1[1]-3*p2[1]+p3[1])*t3)
+      ]);
+    }
+  }
+  if (!closed) result.push([...pts[n - 1]]);
+  return result;
+}
+
+function finishSpline(closed) {
+  if (S.drawPoints.length < 2) { S.drawing=false; S.drawPoints=[]; S.awaitingInput=false; return; }
+  pushUndo();
+  const pts = [...S.drawPoints];
+  const ent = { type:'spline', points:pts, closed:!!closed, id:S.nextId++, layer:S.currentLayer };
+  S.entities.push(ent);
+  termPrint('#'+ent.id+' spline'+(closed?' fermée':'')+' ('+pts.length+' pts)', 'success');
+  S.drawing=false; S.drawPoints=[]; S.awaitingInput=false; render();
+}
+
+function closeSpline() {
+  if (S.drawPoints.length < 2) { termPrint('Au moins 2 points pour clore','warning'); return; }
+  finishSpline(true);
+  setTool('select');
+}
+
 function hitTest(wx,wy) {
   const tol=8/S.zoom;
   let best=null, bestDist=Infinity;
@@ -8102,6 +8185,15 @@ function hitTest(wx,wy) {
     }
     else if(e.type==='line'||e.type==='wall'){
       tryHit(e, distToSeg(wx,wy,e.x1,e.y1,e.x2,e.y2));
+    }
+    else if(e.type==='xline'){
+      // perpendicular distance to infinite line
+      tryHit(e, Math.abs(e.dx*(wy-e.y)-e.dy*(wx-e.x)));
+    }
+    else if(e.type==='ray'){
+      const t=(wx-e.x)*e.dx+(wy-e.y)*e.dy;
+      if(t<0) tryHit(e, Math.hypot(wx-e.x,wy-e.y));
+      else tryHit(e, Math.abs(e.dx*(wy-e.y)-e.dy*(wx-e.x)));
     }
     else if(e.type==='rect'){
       tryHit(e, Math.min(
@@ -8128,6 +8220,13 @@ function hitTest(wx,wy) {
       let d=Infinity;
       for(let j=0;j<e.points.length-1;j++)
         d=Math.min(d, distToSeg(wx,wy,e.points[j][0],e.points[j][1],e.points[j+1][0],e.points[j+1][1]));
+      tryHit(e,d);
+    }
+    else if(e.type==='spline'){
+      const spts=catmullRom(e.points,e.closed,16);
+      let d=Infinity;
+      for(let j=0;j<spts.length-1;j++)
+        d=Math.min(d, distToSeg(wx,wy,spts[j][0],spts[j][1],spts[j+1][0],spts[j+1][1]));
       tryHit(e,d);
     }
     else if(e.type==='hatch'){
@@ -8380,8 +8479,8 @@ function entityInRect(e, minX, minY, maxX, maxY, windowMode) {
            segIntersectsRect(e.x2,e.y1,e.x2,e.y2, minX,minY,maxX,maxY)||
            segIntersectsRect(e.x2,e.y2,e.x1,e.y2, minX,minY,maxX,maxY)||
            segIntersectsRect(e.x1,e.y2,e.x1,e.y1, minX,minY,maxX,maxY);
-  if(e.type==='polyline'||e.type==='cable'||e.type==='hatch'){
-    const pts=e.type==='hatch' ? getHatchPoints(e) : e.points;
+  if(e.type==='polyline'||e.type==='cable'||e.type==='hatch'||e.type==='spline'){
+    const pts = e.type==='hatch' ? getHatchPoints(e) : e.type==='spline' ? catmullRom(e.points,e.closed,16) : e.points;
     if(!pts) return false;
     for(let j=0;j<pts.length-1;j++)
       if(segIntersectsRect(pts[j][0],pts[j][1],pts[j+1][0],pts[j+1][1], minX,minY,maxX,maxY)) return true;
@@ -9718,9 +9817,9 @@ function executeCommand(input) {
     return;
   }
 
-  // ---- POLYLINE / CABLE : C ou CLORE pour fermer ----
-  if(S.drawing && ['polyline','cable'].includes(S.tool) && (raw.toUpperCase()==='C'||raw.toUpperCase()==='CLORE'||raw.toUpperCase()==='CLOSE')){
-    closePolyline(S.tool); return;
+  // ---- POLYLINE / CABLE / SPLINE : C ou CLORE pour fermer ----
+  if(S.drawing && ['polyline','cable','spline'].includes(S.tool) && (raw.toUpperCase()==='C'||raw.toUpperCase()==='CLORE'||raw.toUpperCase()==='CLOSE')){
+    if(S.tool==='spline') closeSpline(); else closePolyline(S.tool); return;
   }
 
   // ---- OFFSET : saisie de la distance ----
@@ -9880,7 +9979,7 @@ function executeCommand(input) {
   }
 
   // ---- FIRST POINT INPUT: tool active but no drawing started yet ----
-  const drawingTools = ['line','rect','circle','arc','wall','leader','polyline','cable','dim_linear','dim_aligned','dim_angular','tube'];
+  const drawingTools = ['line','xline','ray','ray_rev','rect','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube'];
   if (!S.drawing && drawingTools.includes(S.tool)) {
     // Try to parse as absolute coordinates for the 1st point
     const fpMatch = raw.match(/^#?\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
@@ -10061,6 +10160,7 @@ cmdInput.addEventListener('keydown',(ev)=>{
     if(S.tool==='text_place'||S.tool==='text_edit'){ S._textLivePreview=null; S._textEditId=null; document.getElementById('text-dialog').style.display='none'; setTool('select'); render(); return; }
     if(S.drawing){
       if(['polyline','cable'].includes(S.tool))finishPolyline(S.tool);
+      else if(S.tool==='spline')finishSpline();
       else if(S.tool==='tube'){ finishTube(); return; }
       else{S.drawing=false;S.drawPoints=[];S.awaitingInput=false;termPrint('Annulé','warning');}
       render();
@@ -10295,6 +10395,7 @@ document.addEventListener('keydown',(ev)=>{
     }
     if(S.drawing){
       if(['polyline','cable'].includes(S.tool))finishPolyline(S.tool);
+      else if(S.tool==='spline')finishSpline();
       else if(S.tool==='tube'){ finishTube(); return; }
       else{S.drawing=false;S.drawPoints=[];S.awaitingInput=false;termPrint('Annulé','warning');}
       render();
@@ -10378,37 +10479,134 @@ function exportSVG() {
 function exportDXF() {
   const dxf = [];
   const w = (s) => dxf.push(s);
+  const f = (n) => String(parseFloat(n.toFixed(6)));
 
-  // HEADER section
+  // ── Compute drawing extents ──────────────────────────────────────────────────
+  let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+  S.entities.forEach(e => {
+    const pts = [];
+    if (e.x1!==undefined){ pts.push([e.x1,e.y1],[e.x2,e.y2]); }
+    if (e.cx!==undefined){ pts.push([e.cx-e.r,e.cy-e.r],[e.cx+e.r,e.cy+e.r]); }
+    if (e.x !==undefined && e.y!==undefined){ pts.push([e.x,e.y]); }
+    if (e.points){ e.points.forEach(p=>pts.push([p[0],p[1]])); }
+    if (e.vx!==undefined){ pts.push([e.vx,e.vy]); }
+    pts.forEach(([px,py])=>{ minX=Math.min(minX,px); minY=Math.min(minY,py); maxX=Math.max(maxX,px); maxY=Math.max(maxY,py); });
+  });
+  if (!isFinite(minX)){ minX=-1000; minY=-1000; maxX=1000; maxY=1000; }
+
+  // ── HEADER ───────────────────────────────────────────────────────────────────
   w('0'); w('SECTION');
   w('2'); w('HEADER');
-  w('9'); w('$ACADVER'); w('1'); w('AC1015'); // AutoCAD 2000
+  w('9'); w('$ACADVER'); w('1'); w('AC1015');
   w('9'); w('$INSBASE'); w('10'); w('0.0'); w('20'); w('0.0'); w('30'); w('0.0');
-  w('9'); w('$EXTMIN'); w('10'); w('-1000.0'); w('20'); w('-1000.0'); w('30'); w('0.0');
-  w('9'); w('$EXTMAX'); w('10'); w('1000.0'); w('20'); w('1000.0'); w('30'); w('0.0');
+  w('9'); w('$EXTMIN'); w('10'); w(f(minX)); w('20'); w(f(minY)); w('30'); w('0.0');
+  w('9'); w('$EXTMAX'); w('10'); w(f(maxX)); w('20'); w(f(maxY)); w('30'); w('0.0');
+  w('9'); w('$LIMMIN'); w('10'); w(f(minX)); w('20'); w(f(minY));
+  w('9'); w('$LIMMAX'); w('10'); w(f(maxX)); w('20'); w(f(maxY));
+  w('9'); w('$INSUNITS'); w('70'); w('4'); // millimetres
+  w('9'); w('$MEASUREMENT'); w('70'); w('1'); // metric
+  w('9'); w('$LTSCALE'); w('40'); w('1.0');
+  w('9'); w('$DIMSCALE'); w('40'); w('1.0');
+  w('9'); w('$DIMASSOC'); w('280'); w('2');
   w('0'); w('ENDSEC');
 
-  // TABLES section
+  // ── CLASSES (required, may be empty) ─────────────────────────────────────────
+  w('0'); w('SECTION');
+  w('2'); w('CLASSES');
+  w('0'); w('ENDSEC');
+
+  // ── TABLES ───────────────────────────────────────────────────────────────────
   w('0'); w('SECTION');
   w('2'); w('TABLES');
 
-  // Layer table
-  w('0'); w('TABLE');
-  w('2'); w('LAYER');
+  // VPORT table
+  w('0'); w('TABLE'); w('2'); w('VPORT'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('VPORT'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbViewportTableRecord');
+  w('2'); w('*ACTIVE'); w('70'); w('0');
+  w('10'); w('0.0'); w('20'); w('0.0'); w('11'); w('1.0'); w('21'); w('1.0');
+  w('12'); w(f((minX+maxX)/2)); w('22'); w(f((minY+maxY)/2));
+  w('13'); w('0.0'); w('23'); w('0.0'); w('14'); w('10.0'); w('24'); w('10.0');
+  w('15'); w('10.0'); w('25'); w('10.0'); w('16'); w('0.0'); w('26'); w('0.0'); w('36'); w('1.0');
+  w('17'); w('0.0'); w('27'); w('0.0'); w('37'); w('0.0');
+  w('40'); w(f(Math.max(maxY-minY, (maxX-minX)*0.75, 100)));
+  w('41'); w('1.5'); w('42'); w('50.0'); w('43'); w('0.0'); w('44'); w('0.0');
+  w('50'); w('0.0'); w('51'); w('0.0'); w('71'); w('0'); w('72'); w('1000');
+  w('73'); w('1'); w('74'); w('3'); w('75'); w('0'); w('76'); w('1'); w('77'); w('0'); w('78'); w('0');
+  w('0'); w('ENDTAB');
+
+  // LTYPE table
+  w('0'); w('TABLE'); w('2'); w('LTYPE'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('LTYPE'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLinetypeTableRecord');
+  w('2'); w('CONTINUOUS'); w('70'); w('0'); w('3'); w('Solid line'); w('72'); w('65'); w('73'); w('0'); w('40'); w('0.0');
+  w('0'); w('ENDTAB');
+
+  // LAYER table
+  w('0'); w('TABLE'); w('2'); w('LAYER'); w('100'); w('AcDbSymbolTable');
   w('70'); w(String(S.layers.length));
-  S.layers.forEach((lay, i) => {
-    w('0'); w('LAYER');
-    w('2'); w(lay.name.replace(/[^a-zA-Z0-9_-]/g,'_'));
+  S.layers.forEach(lay => {
+    const ln = lay.name.replace(/[^a-zA-Z0-9_-]/g,'_');
+    w('0'); w('LAYER'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLayerTableRecord');
+    w('2'); w(ln);
     w('70'); w(lay.visible ? '0' : '1');
     w('62'); w(String(dxfColorIndex(lay.color)));
     w('6'); w('CONTINUOUS');
   });
   w('0'); w('ENDTAB');
+
+  // STYLE table
+  w('0'); w('TABLE'); w('2'); w('STYLE'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('STYLE'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbTextStyleTableRecord');
+  w('2'); w('STANDARD'); w('70'); w('0'); w('40'); w('0.0'); w('41'); w('1.0'); w('50'); w('0.0'); w('71'); w('0'); w('42'); w('0.2'); w('3'); w(''); w('4'); w('');
+  w('0'); w('ENDTAB');
+
+  // VIEW table (empty)
+  w('0'); w('TABLE'); w('2'); w('VIEW'); w('100'); w('AcDbSymbolTable'); w('70'); w('0'); w('0'); w('ENDTAB');
+
+  // UCS table (empty)
+  w('0'); w('TABLE'); w('2'); w('UCS'); w('100'); w('AcDbSymbolTable'); w('70'); w('0'); w('0'); w('ENDTAB');
+
+  // APPID table
+  w('0'); w('TABLE'); w('2'); w('APPID'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('APPID'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbRegAppTableRecord');
+  w('2'); w('ACAD'); w('70'); w('0');
+  w('0'); w('ENDTAB');
+
+  // DIMSTYLE table
+  w('0'); w('TABLE'); w('2'); w('DIMSTYLE'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('DIMSTYLE'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbDimStyleTableRecord');
+  w('2'); w('STANDARD'); w('70'); w('0');
+  w('0'); w('ENDTAB');
+
+  // BLOCK_RECORD table (required by AC1015)
+  w('0'); w('TABLE'); w('2'); w('BLOCK_RECORD'); w('100'); w('AcDbSymbolTable'); w('70'); w('2');
+  w('0'); w('BLOCK_RECORD'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Model_Space');
+  w('0'); w('BLOCK_RECORD'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Paper_Space');
+  w('0'); w('ENDTAB');
+
   w('0'); w('ENDSEC');
 
-  // ENTITIES section
+  // ── BLOCKS (required by AC1015) ───────────────────────────────────────────────
+  w('0'); w('SECTION');
+  w('2'); w('BLOCKS');
+  w('0'); w('BLOCK'); w('100'); w('AcDbEntity'); w('8'); w('0');
+  w('100'); w('AcDbBlockBegin'); w('2'); w('*Model_Space'); w('70'); w('0');
+  w('10'); w('0.0'); w('20'); w('0.0'); w('30'); w('0.0'); w('3'); w('*Model_Space'); w('1'); w('');
+  w('0'); w('ENDBLK'); w('100'); w('AcDbEntity'); w('8'); w('0'); w('100'); w('AcDbBlockEnd');
+  w('0'); w('BLOCK'); w('100'); w('AcDbEntity'); w('8'); w('0');
+  w('100'); w('AcDbBlockBegin'); w('2'); w('*Paper_Space'); w('70'); w('0');
+  w('10'); w('0.0'); w('20'); w('0.0'); w('30'); w('0.0'); w('3'); w('*Paper_Space'); w('1'); w('');
+  w('0'); w('ENDBLK'); w('100'); w('AcDbEntity'); w('8'); w('0'); w('100'); w('AcDbBlockEnd');
+  w('0'); w('ENDSEC');
+
+  // ── ENTITIES ─────────────────────────────────────────────────────────────────
   w('0'); w('SECTION');
   w('2'); w('ENTITIES');
+
+  function wEnt(layer, col) {
+    w('100'); w('AcDbEntity');
+    w('8'); w(layer);
+    w('62'); w(String(col));
+  }
 
   S.entities.forEach(e => {
     const layerName = (S.layers[e.layer]?.name || '0').replace(/[^a-zA-Z0-9_-]/g,'_');
@@ -10416,138 +10614,306 @@ function exportDXF() {
 
     switch(e.type) {
       case 'line':
-      case 'wall':
-      case 'leader':
-      case 'dim_linear':
-      case 'dim_aligned':
-        w('0'); w('LINE');
-        w('8'); w(layerName);
-        w('62'); w(String(col));
-        w('10'); w(String(e.x1));
-        w('20'); w(String(e.y1));
-        w('30'); w('0.0');
-        w('11'); w(String(e.x2));
-        w('21'); w(String(e.y2));
-        w('31'); w('0.0');
+        w('0'); w('LINE'); wEnt(layerName,col); w('100'); w('AcDbLine');
+        w('10'); w(f(e.x1)); w('20'); w(f(e.y1)); w('30'); w('0.0');
+        w('11'); w(f(e.x2)); w('21'); w(f(e.y2)); w('31'); w('0.0');
         break;
 
-      case 'dim_angular':
-        // Export as two lines from vertex
-        w('0'); w('LINE'); w('8'); w(layerName); w('62'); w(String(col));
-        w('10'); w(String(e.vx)); w('20'); w(String(e.vy)); w('30'); w('0.0');
-        w('11'); w(String(e.x1)); w('21'); w(String(e.y1)); w('31'); w('0.0');
-        w('0'); w('LINE'); w('8'); w(layerName); w('62'); w(String(col));
-        w('10'); w(String(e.vx)); w('20'); w(String(e.vy)); w('30'); w('0.0');
-        w('11'); w(String(e.x2)); w('21'); w(String(e.y2)); w('31'); w('0.0');
+      case 'wall': {
+        const dx=e.x2-e.x1, dy=e.y2-e.y1, len=Math.hypot(dx,dy);
+        if (len<1e-10) break;
+        const nx=-dy/len*e.thickness/2, ny=dx/len*e.thickness/2;
+        const c=[[e.x1+nx,e.y1+ny],[e.x2+nx,e.y2+ny],[e.x2-nx,e.y2-ny],[e.x1-nx,e.y1-ny]];
+        w('0'); w('LWPOLYLINE'); wEnt(layerName,col); w('100'); w('AcDbPolyline');
+        w('90'); w('4'); w('70'); w('1');
+        c.forEach(p=>{ w('10'); w(f(p[0])); w('20'); w(f(p[1])); });
         break;
+      }
 
-      case 'dim_radius':
+      case 'leader': {
+        w('0'); w('LEADER'); wEnt(layerName,col); w('100'); w('AcDbLeader');
+        w('3'); w('STANDARD');
+        w('71'); w('1');  // arrow
+        w('72'); w('0');  // straight
+        w('73'); w('3');  // created with text
+        w('74'); w('1');  // hookline above
+        w('75'); w('0');  // hookline
+        w('76'); w('2');  // 2 vertices
+        w('10'); w(f(e.x1)); w('20'); w(f(e.y1)); w('30'); w('0.0');
+        w('10'); w(f(e.x2)); w('20'); w(f(e.y2)); w('30'); w('0.0');
+        if (e.text) {
+          const ta = e.x2>=e.x1 ? 0 : Math.PI;
+          w('0'); w('MTEXT'); wEnt(layerName,col); w('100'); w('AcDbMText');
+          w('10'); w(f(e.x2+(e.x2>=e.x1?5:-5))); w('20'); w(f(e.y2)); w('30'); w('0.0');
+          w('40'); w('10'); w('41'); w('200');
+          w('71'); w('1'); // top-left attachment
+          w('72'); w(e.x2>=e.x1 ? '1' : '3'); // text direction
+          w('1'); w(e.text);
+        }
+        break;
+      }
+
+      case 'dim_linear': {
+        const isHoriz = e.isHoriz !== undefined ? e.isHoriz : (Math.abs(e.x2-e.x1) >= Math.abs(e.y2-e.y1));
+        const off = e.offset || 30;
+        let defPtX, defPtY, txtPtX, txtPtY, rot;
+        if (isHoriz) {
+          const dimY = (e.y1+e.y2)/2 + off;
+          defPtX=e.x2; defPtY=dimY; txtPtX=(e.x1+e.x2)/2+(e.textOffset||0); txtPtY=dimY; rot=0;
+        } else {
+          const dimX = (e.x1+e.x2)/2 + off;
+          defPtX=dimX; defPtY=e.y2; txtPtX=dimX; txtPtY=(e.y1+e.y2)/2+(e.textOffset||0); rot=90;
+        }
+        w('0'); w('DIMENSION'); wEnt(layerName,col); w('100'); w('AcDbDimension');
+        w('3'); w('STANDARD');
+        w('10'); w(f(defPtX)); w('20'); w(f(defPtY)); w('30'); w('0.0');
+        w('11'); w(f(txtPtX)); w('21'); w(f(txtPtY)); w('31'); w('0.0');
+        w('70'); w('0'); w('1'); w('');
+        w('100'); w('AcDbAlignedDimension');
+        w('13'); w(f(e.x1)); w('23'); w(f(e.y1)); w('33'); w('0.0');
+        w('14'); w(f(e.x2)); w('24'); w(f(e.y2)); w('34'); w('0.0');
+        w('100'); w('AcDbRotatedDimension');
+        w('50'); w(String(rot));
+        break;
+      }
+
+      case 'dim_aligned': {
+        const off = e.offset || 30;
+        const ang = Math.atan2(e.y2-e.y1, e.x2-e.x1);
+        const perp = ang+Math.PI/2;
+        const ox=Math.cos(perp)*off, oy=Math.sin(perp)*off;
+        const to = e.textOffset || 0;
+        const tox = Math.cos(ang)*to, toy = Math.sin(ang)*to;
+        w('0'); w('DIMENSION'); wEnt(layerName,col); w('100'); w('AcDbDimension');
+        w('3'); w('STANDARD');
+        w('10'); w(f(e.x2+ox)); w('20'); w(f(e.y2+oy)); w('30'); w('0.0');
+        w('11'); w(f((e.x1+e.x2)/2+ox+tox)); w('21'); w(f((e.y1+e.y2)/2+oy+toy)); w('31'); w('0.0');
+        w('70'); w('1'); w('1'); w('');
+        w('100'); w('AcDbAlignedDimension');
+        w('13'); w(f(e.x1)); w('23'); w(f(e.y1)); w('33'); w('0.0');
+        w('14'); w(f(e.x2)); w('24'); w(f(e.y2)); w('34'); w('0.0');
+        break;
+      }
+
+      case 'dim_angular': {
+        const midA = e.startAngle + e.angle/2;
+        const arcPtX = e.vx + e.r*Math.cos(midA);
+        const arcPtY = e.vy + e.r*Math.sin(midA);
+        w('0'); w('DIMENSION'); wEnt(layerName,col); w('100'); w('AcDbDimension');
+        w('3'); w('STANDARD');
+        w('10'); w(f(e.x2)); w('20'); w(f(e.y2)); w('30'); w('0.0');
+        w('11'); w(f(arcPtX)); w('21'); w(f(arcPtY)); w('31'); w('0.0');
+        w('70'); w('2'); w('1'); w('');
+        w('100'); w('AcDb2LineAngularDimension');
+        w('13'); w(f(e.vx)); w('23'); w(f(e.vy)); w('33'); w('0.0');
+        w('14'); w(f(e.x1)); w('24'); w(f(e.y1)); w('34'); w('0.0');
+        w('15'); w(f(e.vx)); w('25'); w(f(e.vy)); w('35'); w('0.0');
+        w('16'); w(f(arcPtX)); w('26'); w(f(arcPtY)); w('36'); w('0.0');
+        break;
+      }
+
+      case 'dim_radius': {
+        const a = e.angle||0;
+        const px=e.cx+e.r*Math.cos(a), py=e.cy+e.r*Math.sin(a);
+        w('0'); w('DIMENSION'); wEnt(layerName,col); w('100'); w('AcDbDimension');
+        w('3'); w('STANDARD');
+        w('10'); w(f(e.cx)); w('20'); w(f(e.cy)); w('30'); w('0.0');
+        w('11'); w(f(e.cx+e.r*0.5*Math.cos(a))); w('21'); w(f(e.cy+e.r*0.5*Math.sin(a))); w('31'); w('0.0');
+        w('70'); w('4'); w('1'); w('');
+        w('100'); w('AcDbRadialDimension');
+        w('15'); w(f(px)); w('25'); w(f(py)); w('35'); w('0.0');
+        w('40'); w('0.0');
+        break;
+      }
+
       case 'dim_diameter': {
-        const da = e.angle || 0;
-        w('0'); w('LINE'); w('8'); w(layerName); w('62'); w(String(col));
-        w('10'); w(String(e.cx)); w('20'); w(String(e.cy)); w('30'); w('0.0');
-        w('11'); w(String(e.cx + e.r * Math.cos(da))); w('21'); w(String(e.cy + e.r * Math.sin(da))); w('31'); w('0.0');
-        const dimLabel = e.type === 'dim_radius' ? 'R=' + e.r.toFixed(1) : 'D=' + (e.r*2).toFixed(1);
-        w('0'); w('TEXT'); w('8'); w(layerName); w('62'); w(String(col));
-        w('10'); w(String(e.cx + e.r*0.5*Math.cos(da))); w('20'); w(String(e.cy + e.r*0.5*Math.sin(da)));
-        w('30'); w('0.0'); w('40'); w('8'); w('1'); w(dimLabel);
+        const a = e.angle||0;
+        const px=e.cx+e.r*Math.cos(a), py=e.cy+e.r*Math.sin(a);
+        const qx=e.cx-e.r*Math.cos(a), qy=e.cy-e.r*Math.sin(a);
+        w('0'); w('DIMENSION'); wEnt(layerName,col); w('100'); w('AcDbDimension');
+        w('3'); w('STANDARD');
+        w('10'); w(f(px)); w('20'); w(f(py)); w('30'); w('0.0');
+        w('11'); w(f(e.cx)); w('21'); w(f(e.cy)); w('31'); w('0.0');
+        w('70'); w('3'); w('1'); w('');
+        w('100'); w('AcDbDiametricDimension');
+        w('15'); w(f(qx)); w('25'); w(f(qy)); w('35'); w('0.0');
+        w('40'); w('0.0');
         break;
       }
 
       case 'rect': {
-        // Rectangle as LWPOLYLINE
-        const pts = [[e.x1,e.y1],[e.x2,e.y1],[e.x2,e.y2],[e.x1,e.y2]];
-        w('0'); w('LWPOLYLINE');
-        w('8'); w(layerName);
-        w('62'); w(String(col));
-        w('90'); w('4');
-        w('70'); w('1'); // closed
-        pts.forEach(p => { w('10'); w(String(p[0])); w('20'); w(String(p[1])); });
+        w('0'); w('LWPOLYLINE'); wEnt(layerName,col); w('100'); w('AcDbPolyline');
+        w('90'); w('4'); w('70'); w('1');
+        [[e.x1,e.y1],[e.x2,e.y1],[e.x2,e.y2],[e.x1,e.y2]].forEach(p=>{ w('10'); w(f(p[0])); w('20'); w(f(p[1])); });
         break;
       }
 
       case 'circle':
-        w('0'); w('CIRCLE');
-        w('8'); w(layerName);
-        w('62'); w(String(col));
-        w('10'); w(String(e.cx));
-        w('20'); w(String(e.cy));
-        w('30'); w('0.0');
-        w('40'); w(String(e.r));
+        w('0'); w('CIRCLE'); wEnt(layerName,col); w('100'); w('AcDbCircle');
+        w('10'); w(f(e.cx)); w('20'); w(f(e.cy)); w('30'); w('0.0');
+        w('40'); w(f(e.r));
         break;
 
       case 'arc':
-        w('0'); w('ARC');
-        w('8'); w(layerName);
-        w('62'); w(String(col));
-        w('10'); w(String(e.cx));
-        w('20'); w(String(e.cy));
-        w('30'); w('0.0');
-        w('40'); w(String(e.r));
-        w('50'); w(String((e.startAngle || 0) * 180 / Math.PI));
-        w('51'); w(String((e.endAngle || Math.PI) * 180 / Math.PI));
+        w('0'); w('ARC'); wEnt(layerName,col); w('100'); w('AcDbCircle');
+        w('10'); w(f(e.cx)); w('20'); w(f(e.cy)); w('30'); w('0.0');
+        w('40'); w(f(e.r));
+        w('100'); w('AcDbArc');
+        w('50'); w(f((e.startAngle||0)*180/Math.PI));
+        w('51'); w(f((e.endAngle||Math.PI)*180/Math.PI));
+        break;
+
+      case 'xline':
+        w('0'); w('XLINE'); wEnt(layerName,col); w('100'); w('AcDbXline');
+        w('10'); w(f(e.x)); w('20'); w(f(e.y)); w('30'); w('0.0');
+        w('11'); w(f(e.dx)); w('21'); w(f(e.dy)); w('31'); w('0.0');
+        break;
+
+      case 'ray':
+        w('0'); w('RAY'); wEnt(layerName,col); w('100'); w('AcDbRay');
+        w('10'); w(f(e.x)); w('20'); w(f(e.y)); w('30'); w('0.0');
+        w('11'); w(f(e.dx)); w('21'); w(f(e.dy)); w('31'); w('0.0');
         break;
 
       case 'polyline':
       case 'cable': {
-        w('0'); w('LWPOLYLINE');
-        w('8'); w(layerName);
-        w('62'); w(String(col));
+        w('0'); w('LWPOLYLINE'); wEnt(layerName,col); w('100'); w('AcDbPolyline');
         w('90'); w(String(e.points.length));
-        w('70'); w('0'); // open
-        e.points.forEach(p => { w('10'); w(String(p[0])); w('20'); w(String(p[1])); if(p[2]) { w('42'); w(String(p[2])); } });
+        w('70'); w(e.closed ? '1' : '0');
+        e.points.forEach(p=>{ w('10'); w(f(p[0])); w('20'); w(f(p[1])); if(p[2]){ w('42'); w(f(p[2])); } });
+        break;
+      }
+
+      case 'spline': {
+        w('0'); w('SPLINE'); wEnt(layerName,col); w('100'); w('AcDbSpline');
+        w('70'); w(e.closed ? '9' : '8');
+        w('71'); w('3');
+        w('72'); w('0'); w('73'); w('0');
+        w('74'); w(String(e.points.length));
+        e.points.forEach(p=>{ w('11'); w(f(p[0])); w('21'); w(f(p[1])); w('31'); w('0.0'); });
+        break;
+      }
+
+      case 'hatch': {
+        const hpts = getHatchPoints(e);
+        if (!hpts || hpts.length < 3) break;
+        const patternName = e.pattern === 'cross' ? 'ANSI37' : 'ANSI31';
+        const ang = e.angle || 45;
+        const sc  = (e.spacing || 10);
+        w('0'); w('HATCH'); wEnt(layerName,col); w('100'); w('AcDbHatch');
+        w('10'); w('0.0'); w('20'); w('0.0'); w('30'); w('0.0');
+        w('210'); w('0.0'); w('220'); w('0.0'); w('230'); w('1.0');
+        w('2'); w(patternName);
+        w('70'); w('0'); // not solid
+        w('71'); w('0'); // non-associative
+        w('91'); w('1'); // 1 boundary path
+        w('92'); w('1'); // outer
+        w('93'); w(String(hpts.length)); // number of edges (lines)
+        for (let i=0; i<hpts.length; i++) {
+          const p1=hpts[i], p2=hpts[(i+1)%hpts.length];
+          w('72'); w('1'); // edge type = line
+          w('10'); w(f(p1[0])); w('20'); w(f(p1[1]));
+          w('11'); w(f(p2[0])); w('21'); w(f(p2[1]));
+        }
+        w('97'); w('0'); // no source boundary objects
+        w('75'); w('1'); // outer style
+        w('76'); w('1'); // predefined pattern
+        w('52'); w(f(ang)); // pattern angle
+        w('41'); w(f(sc));  // pattern scale
+        w('77'); w(e.pattern==='cross' ? '1' : '0'); // double flag
+        w('78'); w('1'); // 1 pattern def line
+        w('53'); w(f(ang));
+        w('43'); w('0.0'); w('44'); w('0.0');
+        w('45'); w('0.0'); w('46'); w(f(sc));
+        w('79'); w('0');
+        w('98'); w('0'); // no seed points
+        break;
+      }
+
+      case 'tube': {
+        // Export tube as LINE/ARC pairs (outer wall + inner wall centerline)
+        const tr = e.tubeRadius || 20;
+        function tubePathEntities(offset) {
+          let cx=e.startX, cy=e.startY, theta=e.startAngle;
+          let px=cx+offset*Math.sin(theta), py=cy-offset*Math.cos(theta);
+          for (const seg of e.segments) {
+            if (seg.type==='straight') {
+              const nx2=cx+seg.length*Math.cos(theta), ny2=cy+seg.length*Math.sin(theta);
+              const ex=nx2+offset*Math.sin(theta), ey=ny2-offset*Math.cos(theta);
+              if (Math.hypot(ex-px,ey-py)>0.1) {
+                w('0'); w('LINE'); wEnt(layerName,col); w('100'); w('AcDbLine');
+                w('10'); w(f(px)); w('20'); w(f(py)); w('30'); w('0.0');
+                w('11'); w(f(ex)); w('21'); w(f(ey)); w('31'); w('0.0');
+              }
+              cx=nx2; cy=ny2; px=ex; py=ey;
+            } else if (seg.type==='bend') {
+              const {angle:phi,bendRadius:R,side}=seg;
+              const bcx=cx-side*R*Math.sin(theta), bcy=cy+side*R*Math.cos(theta);
+              const arcR=Math.abs(side*R+offset);
+              const arcStart=theta-side*Math.PI/2, arcEnd=arcStart+side*phi;
+              if (arcR>0.1) {
+                const sa=arcStart*180/Math.PI, ea=arcEnd*180/Math.PI;
+                w('0'); w('ARC'); wEnt(layerName,col); w('100'); w('AcDbCircle');
+                w('10'); w(f(bcx)); w('20'); w(f(bcy)); w('30'); w('0.0'); w('40'); w(f(arcR));
+                w('100'); w('AcDbArc');
+                if (side>0) { w('50'); w(f(((sa%360)+360)%360)); w('51'); w(f(((ea%360)+360)%360)); }
+                else         { w('50'); w(f(((ea%360)+360)%360)); w('51'); w(f(((sa%360)+360)%360)); }
+              }
+              cx=bcx+R*Math.cos(arcEnd); cy=bcy+R*Math.sin(arcEnd);
+              theta+=side*phi;
+              px=cx+offset*Math.sin(theta); py=cy-offset*Math.cos(theta);
+            }
+          }
+        }
+        tubePathEntities(tr);
+        tubePathEntities(-tr);
         break;
       }
 
       case 'text':
-        w('0'); w('TEXT');
-        w('8'); w(layerName);
-        w('62'); w(String(col));
-        w('10'); w(String(e.x));
-        w('20'); w(String(e.y));
-        w('30'); w('0.0');
-        w('40'); w(String(e.size || 14));
-        w('1'); w(e.content || 'Texte');
+        w('0'); w('TEXT'); wEnt(layerName,col); w('100'); w('AcDbText');
+        w('10'); w(f(e.x)); w('20'); w(f(e.y)); w('30'); w('0.0');
+        w('40'); w(f(e.size||14));
+        w('1'); w(e.content||'Texte');
+        if (e.angle) { w('50'); w(f(e.angle*180/Math.PI)); }
+        w('100'); w('AcDbText');
         break;
 
       case 'point':
-        w('0'); w('POINT');
-        w('8'); w(layerName);
-        w('62'); w(String(col));
-        w('10'); w(String(e.x));
-        w('20'); w(String(e.y));
-        w('30'); w('0.0');
+        w('0'); w('POINT'); wEnt(layerName,col); w('100'); w('AcDbPoint');
+        w('10'); w(f(e.x)); w('20'); w(f(e.y)); w('30'); w('0.0');
         break;
 
       case 'door':
       case 'outlet':
       case 'switch_sym':
       case 'window_sym':
-        // Export as POINT + TEXT annotation
-        w('0'); w('POINT');
-        w('8'); w(layerName);
-        w('62'); w(String(col));
-        w('10'); w(String(e.x));
-        w('20'); w(String(e.y));
-        w('30'); w('0.0');
-        w('0'); w('TEXT');
-        w('8'); w(layerName);
-        w('62'); w(String(col));
-        w('10'); w(String(e.x + 5));
-        w('20'); w(String(e.y + 5));
-        w('30'); w('0.0');
-        w('40'); w('8');
-        w('1'); w('[' + e.type + ']');
+        w('0'); w('POINT'); wEnt(layerName,col); w('100'); w('AcDbPoint');
+        w('10'); w(f(e.x)); w('20'); w(f(e.y)); w('30'); w('0.0');
+        w('0'); w('TEXT'); wEnt(layerName,col); w('100'); w('AcDbText');
+        w('10'); w(f(e.x+5)); w('20'); w(f(e.y+5)); w('30'); w('0.0');
+        w('40'); w('8'); w('1'); w('['+e.type+']');
+        w('100'); w('AcDbText');
         break;
     }
   });
 
   w('0'); w('ENDSEC');
+
+  // ── OBJECTS (required by AC1015) ──────────────────────────────────────────────
+  w('0'); w('SECTION');
+  w('2'); w('OBJECTS');
+  w('0'); w('DICTIONARY');
+  w('100'); w('AcDbDictionary');
+  w('281'); w('1');
+  w('0'); w('ENDSEC');
+
   w('0'); w('EOF');
 
   const content = dxf.join('\n');
   downloadBlob(content, 'application/dxf', 'minicad_export.dxf');
-  termPrint('DXF exporté ('+S.entities.length+' entités, format AC1015/AutoCAD 2000)','success');
+  const nEnt = S.entities.length;
+  termPrint('DXF exporté — '+nEnt+' entité'+(nEnt>1?'s':'')+' — AC1015/AutoCAD 2000','success');
 }
 
 function exportDWG() {
@@ -10670,7 +11036,7 @@ let _fileHandle = null; // File System Access API — handle fichier courant
 
 function buildSaveData(name) {
   return {
-    version: '0.08', app: 'MiniCAD',
+    version: '0.09', app: 'MiniCAD',
     name: name || (_fileHandle?.name?.replace(/\.mcad$/i,'')) || 'projet',
     date: new Date().toISOString(),
     layers: S.layers, entities: S.entities,
@@ -11371,6 +11737,8 @@ canvas.addEventListener('contextmenu', (ev) => {
   if (S.drawing || S.gripEdit) {
     if (['polyline','cable'].includes(S.tool)) {
       finishPolyline(S.tool);
+    } else if (S.tool === 'spline') {
+      finishSpline();
     } else if (S.tool === 'tube') {
       finishTube();
     } else if (S.tool === 'line') {
@@ -11672,6 +12040,29 @@ const MINICAD_LIB = {
         "550": {"h": 550, "b": 210, "tw": 11.1, "tf": 17.2, "r": 24},
         "600": {"h": 600, "b": 220, "tw": 12.0, "tf": 19.0, "r": 24}
       } },
+        { name: "IPN", draw: "drawProfileIPN", data: {
+        "80": {"h": 80, "b": 42, "tw": 3.9, "tf": 5.9, "r1": 5.0, "r2": 2.5},
+        "100": {"h": 100, "b": 50, "tw": 4.5, "tf": 6.8, "r1": 6.0, "r2": 3.0},
+        "120": {"h": 120, "b": 58, "tw": 5.1, "tf": 7.7, "r1": 6.5, "r2": 3.3},
+        "140": {"h": 140, "b": 66, "tw": 5.7, "tf": 8.6, "r1": 7.0, "r2": 3.5},
+        "160": {"h": 160, "b": 74, "tw": 6.3, "tf": 9.5, "r1": 8.0, "r2": 4.0},
+        "180": {"h": 180, "b": 82, "tw": 6.9, "tf": 10.4, "r1": 8.5, "r2": 4.3},
+        "200": {"h": 200, "b": 90, "tw": 7.5, "tf": 11.3, "r1": 9.0, "r2": 4.5},
+        "220": {"h": 220, "b": 98, "tw": 8.1, "tf": 12.2, "r1": 9.5, "r2": 4.8},
+        "240": {"h": 240, "b": 106, "tw": 8.7, "tf": 13.1, "r1": 10.0, "r2": 5.0},
+        "260": {"h": 260, "b": 113, "tw": 9.4, "tf": 14.1, "r1": 10.5, "r2": 5.3},
+        "280": {"h": 280, "b": 119, "tw": 10.1, "tf": 15.2, "r1": 11.0, "r2": 5.5},
+        "300": {"h": 300, "b": 125, "tw": 10.8, "tf": 16.2, "r1": 12.0, "r2": 6.0},
+        "320": {"h": 320, "b": 131, "tw": 11.5, "tf": 17.3, "r1": 12.5, "r2": 6.3},
+        "340": {"h": 340, "b": 137, "tw": 12.2, "tf": 18.3, "r1": 13.0, "r2": 6.5},
+        "360": {"h": 360, "b": 143, "tw": 13.0, "tf": 19.5, "r1": 14.0, "r2": 7.0},
+        "380": {"h": 380, "b": 149, "tw": 13.7, "tf": 20.5, "r1": 14.5, "r2": 7.3},
+        "400": {"h": 400, "b": 155, "tw": 14.6, "tf": 21.6, "r1": 15.0, "r2": 7.5},
+        "450": {"h": 450, "b": 162, "tw": 16.2, "tf": 24.3, "r1": 16.5, "r2": 8.3},
+        "500": {"h": 500, "b": 170, "tw": 18.0, "tf": 27.0, "r1": 18.0, "r2": 9.0},
+        "550": {"h": 550, "b": 178, "tw": 19.8, "tf": 29.7, "r1": 19.5, "r2": 9.8},
+        "600": {"h": 600, "b": 185, "tw": 21.6, "tf": 32.4, "r1": 21.0, "r2": 10.5}
+      } },
         { name: "HEA", draw: "drawProfileI", data: {
         "100": {"h": 96, "b": 100, "tw": 5.0, "tf": 8.0, "r": 12},
         "120": {"h": 114, "b": 120, "tw": 5.0, "tf": 8.0, "r": 12},
@@ -11788,6 +12179,126 @@ function drawProfileI(p, x, y) {
   arc(x - twh - r, y + hh - tf - r,  PI / 2,  0).forEach(p => pts.push(p));
   arc(x - twh - r, y - hh + tf + r,  0, -PI / 2).forEach(p => pts.push(p));
   pts.push([x - bh, y - hh + tf], [x - bh, y - hh]);
+
+  api.polyline(pts, true);
+}
+
+// Profilés IPN — vue de face (section transversale)
+// Paramètres : h, b, tw, tf, r1 (congé racine), r2 (congé bout d'aile)
+// Pente des ailes : 14% (norme SN EN 10365)
+
+function drawProfileIPN(p, x, y) {
+  var api = window.minicadAPI;
+  var h = p.h, b = p.b, tw = p.tw, tf = p.tf, r1 = p.r1, r2 = p.r2;
+  var slope = 0.14; 
+  var PI = Math.PI;
+
+  // Demi-dimensions
+  var hh = h / 2, bh = b / 2, twh = tw / 2;
+  
+  // Calcul de l'épaisseur à l'extrémité de l'aile (la pente réduit l'épaisseur vers le bout? 
+  // NON, pour un IPN l'aile est plus épaisse à la racine et s'amincit vers le bout? 
+  // Correction: L'âme est au centre. La face extérieure est plate. La face intérieure a une pente de 14%.
+  // Donc l'aile est PLUS ÉPAISSE à la racine (tf) et PLUS MINCE au bout.
+  
+  // Épaisseur au bout de l'aile (théorique sans rayons)
+  var wingLength = bh - twh;
+  var tf_tip_theoretical = tf - (slope * wingLength);
+  
+  // Centres des arcs (calculés pour tangence exacte)
+  // Arc r1 (racine): tangent à l'âme (x=twh) et à la pente.
+  // Pour simplifier et garantir la fermeture, on place le centre à (twh + r1, hh - tf - r1) 
+  // et on ajuste légèrement pour la pente, mais pour le dessin technique standard, 
+  // on utilise l'approximation tangente verticale/horizontale corrigée.
+  
+  // Méthode robuste : tracer le contour point par point
+  var pts = [];
+
+  // Fonction arc simplifiée (quart de cercle)
+  function addArc(cx, cy, r, startDeg, endDeg) {
+    var start = startDeg * PI / 180;
+    var end = endDeg * PI / 180;
+    // Sens anti-horaire ou horaire selon les besoins, ici on force 8 segments
+    var steps = 8;
+    for (var i = 0; i <= steps; i++) {
+      var angle = start + (end - start) * i / steps;
+      pts.push([x + cx + r * Math.cos(angle), y + cy + r * Math.sin(angle)]);
+    }
+  }
+
+  // --- CONTOUR (Sens horaire pour compatibilité, ou anti-horaire) ---
+  // On part du coin supérieur gauche extérieur
+  
+  // 1. Face supérieure (plate)
+  pts.push([x - bh, y + hh]);
+  pts.push([x + bh, y + hh]);
+  
+  // 2. Bout d'aile droit (extérieur vers intérieur avec r2)
+  // Le bout n'est pas parfaitement vertical, il est arrondi par r2
+  // On va jusqu'à la hauteur de début de l'arrondi r2
+  var y_tip_outer = y + hh - r2; 
+  // Note: pour IPN, le bout est souvent considéré vertical sur une petite hauteur ou directement arrondi
+  // Ici on fait simple : ligne verticale courte puis arc
+  pts.push([x + bh, y + hh - r2]); 
+  
+  // Arc r2 (bout d'aile droit, quadrant haut-droit vers bas)
+  // Centre approximatif du r2 : (bh - r2, hh - tf_tip) -> complexe avec pente.
+  // Simplification visuelle robuste :
+  addArc(bh - r2, hh - tf + (slope*(bh-twh)) - r2, r2, 90, 180); // Ajustement pour pente
+  
+  // 3. Face intérieure inclinée (pente 14%)
+  // Du bout vers l'âme
+  var y_slope_at_bh = hh - tf + (slope * (bh - twh));
+  var y_slope_at_twh_r1 = hh - tf - r1; // Hauteur de début de l'arc r1
+  
+  // On trace la ligne de pente jusqu'au début de l'arc r1
+  // Coordonnée X de fin de pente (tangence r1)
+  var x_slope_end = twh + r1;
+  pts.push([x + x_slope_end, y + y_slope_at_twh_r1]);
+
+  // 4. Congé racine r1 (droit)
+  addArc(twh + r1, hh - tf - r1, r1, 180, 270);
+
+  // 5. Âme (descente)
+  pts.push([x + twh, y - hh + tf + r1]);
+
+  // 6. Congé racine r1 (bas-droit)
+  addArc(twh + r1, -hh + tf + r1, r1, 270, 360);
+
+  // 7. Face intérieure inclinée (bas-droit, vers l'extérieur)
+  pts.push([x + bh - r2, y - hh + r2]); // Approximation pente
+
+  // 8. Bout d'aile bas-droit (r2)
+  addArc(bh - r2, -hh + tf - (slope*(bh-twh)) + r2, r2, 0, 90); // Ajustement
+  
+  // 9. Face inférieure (plate, droite à gauche)
+  pts.push([x + bh, y - hh]);
+  pts.push([x - bh, y - hh]);
+
+  // 10. Bout d'aile bas-gauche (r2)
+  pts.push([x - bh, y - hh + r2]);
+  addArc(-bh + r2, -hh + tf - (slope*(bh-twh)) + r2, r2, 90, 180);
+
+  // 11. Face intérieure inclinée (bas-gauche, vers l'âme)
+  pts.push([x - twh - r1, y - hh + tf + r1]);
+
+  // 12. Congé racine r1 (bas-gauche)
+  addArc(-twh - r1, -hh + tf + r1, r1, 0, 90);
+
+  // 13. Âme (montée)
+  pts.push([x - twh, y + hh - tf - r1]);
+
+  // 14. Congé racine r1 (haut-gauche)
+  addArc(-twh - r1, hh - tf - r1, r1, 90, 180);
+
+  // 15. Face intérieure inclinée (haut-gauche, vers l'extérieur)
+  pts.push([x - bh + r2, y + hh - r2]);
+
+  // 16. Bout d'aile haut-gauche (r2)
+  addArc(-bh + r2, hh - tf + (slope*(bh-twh)) - r2, r2, 270, 360);
+
+  // Fermeture
+  pts.push([x - bh, y + hh]);
 
   api.polyline(pts, true);
 }
