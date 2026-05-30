@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-MiniCAD — Script de build des bibliothèques
-============================================
+MiniCAD — Script de build des bibliothèques (+ démo optionnelle)
+=================================================================
 Lit les fichiers dans libraries/ et injecte le bloc généré
 entre les marqueurs @@LIB_BEGIN / @@LIB_END dans minicad.html.
 
 Usage:
-    python build.py
+    python build.py            # build normal (sans démo)
+    python build.py --demo     # build avec séquence démo injectée
 
 Ajouter une famille :
   1. Créer libraries/<nom>.json  (copier ipe.json comme modèle)
@@ -24,9 +25,12 @@ BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 HTML_FILE   = os.path.join(BASE_DIR, 'minicad.html')
 LIB_DIR     = os.path.join(BASE_DIR, 'libraries')
 INDEX_FILE  = os.path.join(LIB_DIR, 'index.json')
+DEMO_FILE   = os.path.join(BASE_DIR, 'demo', 'demo_sequence.js')
 
-MARKER_BEGIN = '// @@LIB_BEGIN'
-MARKER_END   = '// @@LIB_END'
+MARKER_BEGIN      = '// @@LIB_BEGIN'
+MARKER_END        = '// @@LIB_END'
+DEMO_MARKER_BEGIN = '// @@DEMO_BEGIN'
+DEMO_MARKER_END   = '// @@DEMO_END'
 
 
 def load_json(path):
@@ -99,7 +103,49 @@ def build_lib_js(index):
     )
 
 
+def build_demo_js():
+    """Construit le bloc JS de démo à injecter."""
+    if not os.path.exists(DEMO_FILE):
+        sys.exit(f'Erreur : {DEMO_FILE} introuvable.')
+    with open(DEMO_FILE, 'r', encoding='utf-8') as f:
+        src = f.read().strip()
+    return (
+        f'{DEMO_MARKER_BEGIN} — Généré par build.py --demo — ne pas éditer directement\n'
+        f'// Éditer demo/demo_sequence.js puis relancer build.py --demo\n'
+        f'{src}\n'
+        f'{DEMO_MARKER_END}'
+    )
+
+
+def inject_block(html, marker_begin, marker_end, block):
+    """Remplace le contenu entre deux marqueurs."""
+    pattern = re.compile(
+        re.escape(marker_begin) + r'.*?' + re.escape(marker_end),
+        re.DOTALL
+    )
+    if not pattern.search(html):
+        sys.exit(
+            f'Erreur : marqueurs introuvables dans {HTML_FILE}\n'
+            f'Attendu : {marker_begin} … {marker_end}'
+        )
+    return pattern.sub(lambda _: block, html)
+
+
+def clear_demo_block(html):
+    """Remet le bloc démo à vide (build normal sans --demo)."""
+    pattern = re.compile(
+        re.escape(DEMO_MARKER_BEGIN) + r'.*?' + re.escape(DEMO_MARKER_END),
+        re.DOTALL
+    )
+    if pattern.search(html):
+        empty = f'{DEMO_MARKER_BEGIN}\n{DEMO_MARKER_END}'
+        return pattern.sub(lambda _: empty, html)
+    return html
+
+
 def main():
+    with_demo = '--demo' in sys.argv
+
     # ── Vérifications ────────────────────────────────────
     if not os.path.exists(HTML_FILE):
         sys.exit(f'Erreur : {HTML_FILE} introuvable.')
@@ -109,30 +155,27 @@ def main():
     # ── Lire l'index ─────────────────────────────────────
     index = load_json(INDEX_FILE)
 
-    # ── Construire le bloc JS ─────────────────────────────
-    print('📦 MiniCAD build — injection bibliothèques')
-    injected = build_lib_js(index)
+    # ── Construire le bloc bibliothèques ─────────────────
+    tag = '📦 MiniCAD build' + (' + démo' if with_demo else '')
+    print(f'{tag} — injection bibliothèques')
+    lib_block = build_lib_js(index)
 
     # ── Lire le HTML ──────────────────────────────────────
     with open(HTML_FILE, 'r', encoding='utf-8') as f:
         html = f.read()
 
-    # ── Vérifier la présence des marqueurs ───────────────
-    pattern = re.compile(
-        re.escape(MARKER_BEGIN) + r'.*?' + re.escape(MARKER_END),
-        re.DOTALL
-    )
-    if not pattern.search(html):
-        sys.exit(
-            f'Erreur : marqueurs introuvables dans {HTML_FILE}\n'
-            f'Attendu : {MARKER_BEGIN} … {MARKER_END}'
-        )
+    # ── Injecter bibliothèques ───────────────────────────
+    html = inject_block(html, MARKER_BEGIN, MARKER_END, lib_block)
 
-    # ── Injecter ──────────────────────────────────────────
-    new_html = pattern.sub(lambda _: injected, html)
+    # ── Injecter / vider démo ────────────────────────────
+    if with_demo:
+        demo_block = build_demo_js()
+        html = inject_block(html, DEMO_MARKER_BEGIN, DEMO_MARKER_END, demo_block)
+    else:
+        html = clear_demo_block(html)
 
     with open(HTML_FILE, 'w', encoding='utf-8') as f:
-        f.write(new_html)
+        f.write(html)
 
     # ── Résumé ────────────────────────────────────────────
     n_cats  = len(index['categories'])
@@ -143,6 +186,8 @@ def main():
         if f.get('data')
     )
     print(f'  ✓ {n_cats} catégories, {n_fams} familles, {n_data} avec données')
+    if with_demo:
+        print(f'  ✓ démo injectée (demo/demo_sequence.js)')
     print(f'  ✓ minicad.html mis à jour')
 
 
