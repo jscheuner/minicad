@@ -12276,95 +12276,56 @@ function drawProfileI(p, x, y) {
   api.polyline(pts, true);
 }
 
-// Profilés IPN — vue de face (section transversale)
-// Paramètres : h, b, tw, tf, r1, r2
-// Pente des ailes : 14% (exactement comme dans la norme)
+// Profilés IPN — vue de face (section transversale, ailes inclinées à 14%)
+// Paramètres : h (hauteur), b (largeur aile), tw (ép. âme),
+//              tf (ép. aile mesurée à b/4), r1 (congé racine), r2 (congé de pied)
 // Point d'insertion : centroïde
 
 function drawProfileIPN(p, x, y) {
   var api = window.minicadAPI;
-  var h = p.h, b = p.b, tw = p.tw, tf = p.tf, r1 = p.r1, r2 = p.r2;
-  var hh = h / 2, bh = b / 2, twh = tw / 2;
-  var slope = 0.14; // 14%
-  var PI = Math.PI;
+  var m  = 0.14;                          // pente intérieure des ailes (14 %)
+  var hh = p.h / 2, bh = p.b / 2, twh = p.tw / 2;
+  var tf = p.tf, r1 = p.r1, r2 = p.r2;
+  var s1 = Math.sqrt(1 + m * m);
 
-  // Fonction arc (8 segments, sens anti-horaire)
+  // Face inférieure (intérieure) de l'aile sup. droite : v = C - m*u   (v vers le bas)
+  var C = -hh + tf + m * (p.b / 4);
+
+  // Congé de pied r2 (haut-droit) : tangent au chant vertical (u=bh) et à la face inclinée
+  var uc2 = bh - r2;
+  var vc2 = C - m * uc2 - r2 * s1;
+
+  // Congé de racine r1 (haut-droit) : tangent à l'âme (u=twh) et à la face inclinée
+  var uc1 = twh + r1;
+  var vc1 = C - m * uc1 + r1 * s1;
+
   function arc(cx, cy, r, a0, a1) {
-    var pts = [];
-    for (var i = 0; i <= 8; i++) {
-      var a = a0 + (a1 - a0) * i / 8;
-      pts.push([x + cx + r * Math.cos(a), y + cy + r * Math.sin(a)]);
+    var out = [];
+    for (var i = 0; i <= 6; i++) {
+      var a = a0 + (a1 - a0) * i / 6;
+      out.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
     }
-    return pts;
+    return out;
   }
 
-  var pts = [];
+  // Quart supérieur droit, ordonné de l'extérieur (pointe) vers l'âme
+  var Q = [[bh, -hh]];                                                       // coin ext. de la pointe
+  arc(uc2, vc2, r2, 0, Math.atan2(1, m)).forEach(q => Q.push(q));            // congé de pied
+  arc(uc1, vc1, r1, Math.atan2(-1, -m), -Math.PI).forEach(q => Q.push(q));   // congé de racine -> (twh,vc1)
 
-  // === 1. Coin inférieur gauche extérieur ===
-  pts.push([x - bh, y - hh]);
+  var negV  = q => [ q[0], -q[1]];
+  var negU  = q => [-q[0],  q[1]];
+  var negUV = q => [-q[0], -q[1]];
+  var rev   = a => a.slice().reverse();
 
-  // === 2. Face extérieure bas (horizontale) → droite ===
-  pts.push([x + bh, y - hh]);
+  // Contour complet (sens horaire) par symétrie du quart
+  var L = [[-bh, -hh]];                        // pointe haut-gauche
+  Q.forEach(q => L.push(q));                   // arête sup. + quart haut-droit  -> (twh, vc1)
+  rev(Q.map(negV)).forEach(q => L.push(q));    // âme droite + quart bas-droit   -> (bh, hh)
+  Q.map(negUV).forEach(q => L.push(q));        // arête inf. + quart bas-gauche  -> (-twh,-vc1)
+  rev(Q.map(negU)).forEach(q => L.push(q));    // âme gauche + quart haut-gauche -> (-bh,-hh)
 
-  // === 3. Montée verticale à l’extrémité droite (jusqu’à hauteur du bout d’aile) ===
-  // L’aile a une épaisseur réduite au bout : tf_tip = tf - slope * (bh - twh)
-  var wingWidth = bh - twh;
-  var tf_tip = tf - slope * wingWidth;
-  if (tf_tip < 0) tf_tip = 0;
-
-  // Hauteur du début de l’arc r2 (bord extérieur)
-  var y_r2_bot = y - hh + tf_tip + r2;
-
-  pts.push([x + bh, y_r2_bot]);
-
-  // === 4. Arc r2 (bout d’aile droit, quadrant haut-droit → bas-droit) ===
-  // Centre de r2 : (x + bh - r2, y_r2_bot)
-  arc(bh - r2, y_r2_bot - y, r2, -PI/2, 0).forEach(pt => pts.push(pt));
-
-  // === 5. Face intérieure inclinée (aile inférieure droite) ===
-  // De l’arc r2 vers l’arc r1 : ligne droite de pente 14%
-  // Point de départ : fin de l’arc r2 = (x + bh - r2, y - hh + tf_tip)
-  // Point d’arrivée : début de l’arc r1 = (x + twh + r1, y - hh + tf - r1)
-  // Mais pour la tangence, on utilise :
-  var y_r1_bot = y - hh + tf - r1;
-  var x_r1_right = twh + r1;
-  var dx = bh - r2 - x_r1_right;
-  var dy = (y_r2_bot - r2) - y_r1_bot; // ≈ slope * dx → vérifié
-  pts.push([x + x_r1_right, y_r1_bot]);
-
-  // === 6. Arc r1 (racine, bas-droit) ===
-  // Centre : (x + twh + r1, y - hh + tf - r1)
-  arc(twh + r1, y_r1_bot - y, r1, -PI, -PI/2).forEach(pt => pts.push(pt));
-
-  // === 7. Âme (montée verticale droite) ===
-  pts.push([x + twh, y + hh - tf + r1]);
-
-  // === 8. Arc r1 (haut-droit) ===
-  arc(twh + r1, y + hh - tf + r1 - y, r1, PI/2, PI).forEach(pt => pts.push(pt));
-
-  // === 9. Face intérieure inclinée (aile supérieure droite) ===
-  pts.push([x + bh - r2, y + hh - tf_tip - r2]);
-
-  // === 10. Arc r2 (haut-droit) ===
-  arc(bh - r2, y + hh - tf_tip - r2 - y, r2, PI, 3*PI/2).forEach(pt => pts.push(pt));
-
-  // === 11. Face extérieure haut (horizontale) → gauche ===
-  pts.push([x - bh, y + hh]);
-
-  // === 12. Symétrique gauche (même logique) ===
-  pts.push([x - bh, y + hh - tf_tip - r2]);
-  arc(-bh + r2, y + hh - tf_tip - r2 - y, r2, 3*PI/2, 2*PI).forEach(pt => pts.push(pt));
-  pts.push([x - twh - r1, y + hh - tf + r1]);
-  arc(-twh - r1, y + hh - tf + r1 - y, r1, 0, PI/2).forEach(pt => pts.push(pt));
-  pts.push([x - twh, y - hh + tf - r1]);
-  arc(-twh - r1, y - hh + tf - r1 - y, r1, PI, 3*PI/2).forEach(pt => pts.push(pt));
-  pts.push([x - bh + r2, y - hh + tf_tip + r2]);
-  arc(-bh + r2, y - hh + tf_tip + r2 - y, r2, PI/2, PI).forEach(pt => pts.push(pt));
-
-  // === 13. Fermeture ===
-  pts.push([x - bh, y - hh]);
-
-  api.polyline(pts, true);
+  api.polyline(L.map(q => [x + q[0], y + q[1]]), true);
 }
 
 // Profilés en U à ailes parallèles (UPE) — vue de face (section transversale)
