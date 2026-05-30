@@ -1,5 +1,14 @@
 # MiniCAD
 
+> ⚠️ **PROGRAMME EN DÉVELOPPEMENT — UTILISATION À VOS RISQUES**
+>
+> MiniCAD est un projet en cours de développement actif.  
+> Des **bugs, comportements inattendus ou pertes de données** peuvent survenir à tout moment.  
+> **Ne pas utiliser pour des travaux critiques sans vérification indépendante des résultats.**  
+> Sauvegardez régulièrement vos fichiers (`.mcad`). Les formats et fonctionnalités peuvent évoluer sans préavis.
+
+---
+
 **Logiciel de dessin technique 2D dans un seul fichier HTML.**  
 Aucune dépendance, aucun serveur, aucune installation — ouvrir `minicad.html` et dessiner.
 
@@ -234,7 +243,7 @@ minicad/
 
 ## Version
 
-**v0.07** — Voir [suivi/CHANGELOG.md](suivi/CHANGELOG.md) pour l'historique complet.
+**v0.09** — Voir [suivi/CHANGELOG.md](suivi/CHANGELOG.md) pour l'historique complet.
 
 ---
 
