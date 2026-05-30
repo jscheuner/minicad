@@ -11456,84 +11456,177 @@ function openDXF(content, filename) {
 
         case 'ARC':
           ent = { type: 'arc', cx: g(10,0), cy: g(20,0), r: g(40,10),
-                  startAngle: (g(50,0)) * Math.PI / 180,
-                  endAngle: (g(51,180)) * Math.PI / 180 };
+                  startAngle: g(50,0) * Math.PI / 180,
+                  endAngle:   g(51,180) * Math.PI / 180 };
           break;
 
         case 'LWPOLYLINE': {
-          const n = parseInt(gs(90, '0')) || 0;
-          const closed = (parseInt(gs(70, '0')) & 1) === 1;
-          const xVals = props[10] || [];
-          const yVals = props[20] || [];
+          const closed = (parseInt(gs(70,'0')) & 1) === 1;
+          const xVals = props[10] || [], yVals = props[20] || [];
           const pts = [];
-          for (let k = 0; k < Math.max(xVals.length, yVals.length); k++) {
-            pts.push([parseFloat(xVals[k] || 0), parseFloat(yVals[k] || 0)]);
-          }
-          if (closed && pts.length >= 3) {
-            // Closed polyline with 4 points → rect
-            if (pts.length === 4 && isRectangle(pts)) {
-              const xs = pts.map(p=>p[0]), ys = pts.map(p=>p[1]);
-              ent = { type: 'rect', x1: Math.min(...xs), y1: Math.min(...ys), x2: Math.max(...xs), y2: Math.max(...ys) };
+          for (let k = 0; k < Math.max(xVals.length, yVals.length); k++)
+            pts.push([parseFloat(xVals[k]||0), parseFloat(yVals[k]||0)]);
+          if (pts.length >= 2) {
+            if (closed && pts.length === 4 && isRectangle(pts)) {
+              const xs=pts.map(p=>p[0]), ys=pts.map(p=>p[1]);
+              ent = { type:'rect', x1:Math.min(...xs), y1:Math.min(...ys), x2:Math.max(...xs), y2:Math.max(...ys) };
             } else {
-              pts.push([...pts[0]]); // close it
-              ent = { type: 'polyline', points: pts };
+              ent = { type:'polyline', points: pts, closed };
             }
-          } else if (pts.length >= 2) {
-            ent = { type: 'polyline', points: pts };
           }
           break;
         }
 
         case 'POLYLINE': {
-          // Old-style POLYLINE with VERTEX entities
+          const closedPL = (parseInt(gs(70,'0')) & 1) === 1;
           const pts = [];
-          for (let j = i + 1; j < tokens.length; j++) {
+          for (let j = i+1; j < tokens.length; j++) {
             if (tokens[j].code === 0 && tokens[j].value === 'SEQEND') break;
             if (tokens[j].code === 0 && tokens[j].value === 'VERTEX') {
-              let vx = 0, vy = 0;
-              for (let k = j + 1; k < tokens.length && tokens[k].code !== 0; k++) {
-                if (tokens[k].code === 10) vx = parseFloat(tokens[k].value);
-                if (tokens[k].code === 20) vy = parseFloat(tokens[k].value);
+              let vx=0, vy=0;
+              for (let k=j+1; k<tokens.length && tokens[k].code!==0; k++) {
+                if (tokens[k].code===10) vx=parseFloat(tokens[k].value);
+                if (tokens[k].code===20) vy=parseFloat(tokens[k].value);
               }
-              pts.push([vx, vy]);
+              pts.push([vx,vy]);
             }
           }
-          if (pts.length >= 2) ent = { type: 'polyline', points: pts };
+          if (pts.length >= 2) ent = { type:'polyline', points:pts, closed:closedPL };
+          break;
+        }
+
+        case 'XLINE': {
+          const dx=g(11,1), dy=g(21,0);
+          const len=Math.hypot(dx,dy);
+          if (len>1e-10) ent = { type:'xline', x:g(10,0), y:g(20,0), dx:dx/len, dy:dy/len };
+          break;
+        }
+
+        case 'RAY': {
+          const dx=g(11,1), dy=g(21,0);
+          const len=Math.hypot(dx,dy);
+          if (len>1e-10) ent = { type:'ray', x:g(10,0), y:g(20,0), dx:dx/len, dy:dy/len };
           break;
         }
 
         case 'TEXT':
-        case 'MTEXT':
-          ent = { type: 'text', x: g(10,0), y: g(20,0), content: gs(1,'Texte'), size: g(40,14) };
+          ent = { type:'text', x:g(10,0), y:g(20,0), content:gs(1,'Texte'), size:g(40,14) };
           break;
 
+        case 'MTEXT': {
+          // MTEXT: position via code 10/20, text in code 1 (may have RTF-style {\ ... } codes)
+          const raw = gs(1,'');
+          const clean = raw.replace(/\\[pPfFhHcCbBiIlLoO0Ww][^;]*;/g,'').replace(/[{}]/g,'').replace(/\\~/g,' ').replace(/\\U\+([0-9A-Fa-f]{4})/g, (_,h)=>String.fromCharCode(parseInt(h,16))).trim() || 'Texte';
+          ent = { type:'text', x:g(10,0), y:g(20,0), content:clean, size:g(40,14) };
+          break;
+        }
+
         case 'POINT':
-          // Skip points (often used as reference marks)
+          ent = { type:'point', x:g(10,0), y:g(20,0) };
           break;
 
         case 'INSERT':
-          // Block reference — note it but can't fully resolve
           termPrint('  ⚠ INSERT (bloc) ignoré: ' + gs(2,'?'), 'warning');
           break;
 
-        case 'DIMENSION':
-          ent = { type: 'dim_linear', x1: g(13,0), y1: g(23,0), x2: g(14,0), y2: g(24,0) };
+        case 'DIMENSION': {
+          const dimType = parseInt(gs(70,'0')) & 0x0F; // low bits only (ignore flags 32/64/128)
+          if (dimType === 0 || dimType === 1) {
+            // Linear (rotated) or aligned: ext line origins in 13/23 and 14/24
+            const x1=g(13,0), y1=g(23,0), x2=g(14,0), y2=g(24,0);
+            const rot = g(50, -1); // rotation angle (only for linear)
+            if (dimType === 0 && rot >= 0) {
+              const isHoriz = (Math.abs(rot) < 1 || Math.abs(rot-180) < 1);
+              ent = { type:'dim_linear', x1, y1, x2, y2, isHoriz, offset:30 };
+            } else {
+              ent = { type:'dim_aligned', x1, y1, x2, y2, offset:30 };
+            }
+          } else if (dimType === 2) {
+            // Angular: vertex=13/23, end1=14/24, end2 derived from arc pt 16/26
+            const vx=g(13,0), vy=g(23,0), x1=g(14,0), y1=g(24,0);
+            const ax=g(16,vx+50), ay=g(26,vy);
+            const x2=ax, y2=ay; // approximate
+            const r=Math.hypot(ax-vx,ay-vy)||50;
+            const sa=Math.atan2(y1-vy,x1-vx), ea=Math.atan2(y2-vy,x2-vx);
+            let angle=ea-sa; while(angle<0)angle+=Math.PI*2; while(angle>Math.PI*2)angle-=Math.PI*2;
+            ent = { type:'dim_angular', vx, vy, x1, y1, x2, y2, startAngle:sa, endAngle:ea, r, angle };
+          } else if (dimType === 4) {
+            // Radius: center=10/20, chord pt=15/25
+            const cx=g(10,0), cy=g(20,0), px=g(15,cx+50), py=g(25,cy);
+            const r=Math.hypot(px-cx,py-cy)||10;
+            ent = { type:'dim_radius', cx, cy, r, angle:Math.atan2(py-cy,px-cx) };
+          } else if (dimType === 3) {
+            // Diameter: one end=10/20, far end=15/25
+            const px=g(10,0), py=g(20,0), qx=g(15,px-20), qy=g(25,py);
+            const cx=(px+qx)/2, cy=(py+qy)/2, r=Math.hypot(px-cx,py-cy)||10;
+            ent = { type:'dim_diameter', cx, cy, r, angle:Math.atan2(py-cy,px-cx) };
+          } else {
+            // Unsupported dim type — import as a simple line if we have ext pts
+            const x1=g(13,0),y1=g(23,0),x2=g(14,0),y2=g(24,0);
+            if (Math.hypot(x2-x1,y2-y1)>0.1) ent = { type:'line', x1, y1, x2, y2 };
+          }
           break;
+        }
+
+        case 'LEADER': {
+          // Leader: vertices via multiple code 10/20
+          const xL=props[10]||[], yL=props[20]||[];
+          if (xL.length >= 2) {
+            const x1=parseFloat(xL[0]), y1=parseFloat(yL[0]||0);
+            const x2=parseFloat(xL[xL.length-1]), y2=parseFloat(yL[yL.length-1]||0);
+            ent = { type:'leader', x1, y1, x2, y2, text:gs(1,'') };
+          }
+          break;
+        }
+
+        case 'HATCH': {
+          // Extract boundary edges (type=1 lines: 10/20 start, 11/21 end)
+          // We reconstruct the polygon from the first loop's line edges
+          const hBdyPts = [];
+          let inBdy = false;
+          for (let j=i+1; j<tokens.length && tokens[j].code!==0; j++) {
+            if (tokens[j].code===91) { inBdy=true; continue; }
+            if (!inBdy) continue;
+            if (tokens[j].code===72 && parseInt(tokens[j].value)===1) {
+              // Line edge: next 10/20 is start, 11/21 is end
+              let ex1=0,ey1=0;
+              for (let k=j+1; k<tokens.length && tokens[k].code!==0; k++) {
+                if (tokens[k].code===10){ ex1=parseFloat(tokens[k].value); }
+                if (tokens[k].code===20){ ey1=parseFloat(tokens[k].value); break; }
+              }
+              if (!hBdyPts.length || Math.hypot(hBdyPts[hBdyPts.length-1][0]-ex1, hBdyPts[hBdyPts.length-1][1]-ey1) > 0.1)
+                hBdyPts.push([ex1,ey1]);
+            }
+          }
+          if (hBdyPts.length >= 3) {
+            const ang = g(52,45), sc = Math.max(0.1,g(41,10));
+            const pat = (parseInt(gs(77,'0'))===1) ? 'cross' : 'lines';
+            ent = { type:'hatch', points:hBdyPts, angle:ang, spacing:sc, pattern:pat };
+          }
+          break;
+        }
 
         case 'ELLIPSE':
-          // Approximate as circle using major axis length
-          ent = { type: 'circle', cx: g(10,0), cy: g(20,0), r: Math.hypot(g(11,10), g(21,0)) };
+          ent = { type:'circle', cx:g(10,0), cy:g(20,0), r:Math.hypot(g(11,10),g(21,0)) };
           termPrint('  ⚠ Ellipse approximée en cercle', 'warning');
           break;
 
-        case 'SPLINE':
-          // Extract control points as polyline
-          const xS = props[10] || [], yS = props[20] || [];
-          const sPts = [];
-          for (let k = 0; k < xS.length; k++) sPts.push([parseFloat(xS[k]), parseFloat(yS[k] || 0)]);
-          if (sPts.length >= 2) ent = { type: 'polyline', points: sPts };
-          if (sPts.length) termPrint('  ⚠ Spline convertie en polyligne (' + sPts.length + ' pts)', 'warning');
+        case 'SPLINE': {
+          // Prefer fit points (11/21) — that's what MiniCAD exports
+          // Fall back to control points (10/20) if no fit points
+          const fitX=props[11]||[], fitY=props[21]||[];
+          const ctlX=props[10]||[], ctlY=props[20]||[];
+          const useX = fitX.length >= 2 ? fitX : ctlX;
+          const useY = fitX.length >= 2 ? fitY : ctlY;
+          const sPts=[];
+          for (let k=0; k<useX.length; k++) sPts.push([parseFloat(useX[k]),parseFloat(useY[k]||0)]);
+          if (sPts.length >= 2) {
+            const sFlags = parseInt(gs(70,'0'));
+            const sClosed = (sFlags & 1) === 1;
+            ent = { type:'spline', points:sPts, closed:sClosed };
+          }
           break;
+        }
       }
 
       if (ent) {
@@ -12184,121 +12277,92 @@ function drawProfileI(p, x, y) {
 }
 
 // Profilés IPN — vue de face (section transversale)
-// Paramètres : h, b, tw, tf, r1 (congé racine), r2 (congé bout d'aile)
-// Pente des ailes : 14% (norme SN EN 10365)
+// Paramètres : h, b, tw, tf, r1, r2
+// Pente des ailes : 14% (exactement comme dans la norme)
+// Point d'insertion : centroïde
 
 function drawProfileIPN(p, x, y) {
   var api = window.minicadAPI;
   var h = p.h, b = p.b, tw = p.tw, tf = p.tf, r1 = p.r1, r2 = p.r2;
-  var slope = 0.14; 
+  var hh = h / 2, bh = b / 2, twh = tw / 2;
+  var slope = 0.14; // 14%
   var PI = Math.PI;
 
-  // Demi-dimensions
-  var hh = h / 2, bh = b / 2, twh = tw / 2;
-  
-  // Calcul de l'épaisseur à l'extrémité de l'aile (la pente réduit l'épaisseur vers le bout? 
-  // NON, pour un IPN l'aile est plus épaisse à la racine et s'amincit vers le bout? 
-  // Correction: L'âme est au centre. La face extérieure est plate. La face intérieure a une pente de 14%.
-  // Donc l'aile est PLUS ÉPAISSE à la racine (tf) et PLUS MINCE au bout.
-  
-  // Épaisseur au bout de l'aile (théorique sans rayons)
-  var wingLength = bh - twh;
-  var tf_tip_theoretical = tf - (slope * wingLength);
-  
-  // Centres des arcs (calculés pour tangence exacte)
-  // Arc r1 (racine): tangent à l'âme (x=twh) et à la pente.
-  // Pour simplifier et garantir la fermeture, on place le centre à (twh + r1, hh - tf - r1) 
-  // et on ajuste légèrement pour la pente, mais pour le dessin technique standard, 
-  // on utilise l'approximation tangente verticale/horizontale corrigée.
-  
-  // Méthode robuste : tracer le contour point par point
-  var pts = [];
-
-  // Fonction arc simplifiée (quart de cercle)
-  function addArc(cx, cy, r, startDeg, endDeg) {
-    var start = startDeg * PI / 180;
-    var end = endDeg * PI / 180;
-    // Sens anti-horaire ou horaire selon les besoins, ici on force 8 segments
-    var steps = 8;
-    for (var i = 0; i <= steps; i++) {
-      var angle = start + (end - start) * i / steps;
-      pts.push([x + cx + r * Math.cos(angle), y + cy + r * Math.sin(angle)]);
+  // Fonction arc (8 segments, sens anti-horaire)
+  function arc(cx, cy, r, a0, a1) {
+    var pts = [];
+    for (var i = 0; i <= 8; i++) {
+      var a = a0 + (a1 - a0) * i / 8;
+      pts.push([x + cx + r * Math.cos(a), y + cy + r * Math.sin(a)]);
     }
+    return pts;
   }
 
-  // --- CONTOUR (Sens horaire pour compatibilité, ou anti-horaire) ---
-  // On part du coin supérieur gauche extérieur
-  
-  // 1. Face supérieure (plate)
-  pts.push([x - bh, y + hh]);
-  pts.push([x + bh, y + hh]);
-  
-  // 2. Bout d'aile droit (extérieur vers intérieur avec r2)
-  // Le bout n'est pas parfaitement vertical, il est arrondi par r2
-  // On va jusqu'à la hauteur de début de l'arrondi r2
-  var y_tip_outer = y + hh - r2; 
-  // Note: pour IPN, le bout est souvent considéré vertical sur une petite hauteur ou directement arrondi
-  // Ici on fait simple : ligne verticale courte puis arc
-  pts.push([x + bh, y + hh - r2]); 
-  
-  // Arc r2 (bout d'aile droit, quadrant haut-droit vers bas)
-  // Centre approximatif du r2 : (bh - r2, hh - tf_tip) -> complexe avec pente.
-  // Simplification visuelle robuste :
-  addArc(bh - r2, hh - tf + (slope*(bh-twh)) - r2, r2, 90, 180); // Ajustement pour pente
-  
-  // 3. Face intérieure inclinée (pente 14%)
-  // Du bout vers l'âme
-  var y_slope_at_bh = hh - tf + (slope * (bh - twh));
-  var y_slope_at_twh_r1 = hh - tf - r1; // Hauteur de début de l'arc r1
-  
-  // On trace la ligne de pente jusqu'au début de l'arc r1
-  // Coordonnée X de fin de pente (tangence r1)
-  var x_slope_end = twh + r1;
-  pts.push([x + x_slope_end, y + y_slope_at_twh_r1]);
+  var pts = [];
 
-  // 4. Congé racine r1 (droit)
-  addArc(twh + r1, hh - tf - r1, r1, 180, 270);
-
-  // 5. Âme (descente)
-  pts.push([x + twh, y - hh + tf + r1]);
-
-  // 6. Congé racine r1 (bas-droit)
-  addArc(twh + r1, -hh + tf + r1, r1, 270, 360);
-
-  // 7. Face intérieure inclinée (bas-droit, vers l'extérieur)
-  pts.push([x + bh - r2, y - hh + r2]); // Approximation pente
-
-  // 8. Bout d'aile bas-droit (r2)
-  addArc(bh - r2, -hh + tf - (slope*(bh-twh)) + r2, r2, 0, 90); // Ajustement
-  
-  // 9. Face inférieure (plate, droite à gauche)
-  pts.push([x + bh, y - hh]);
+  // === 1. Coin inférieur gauche extérieur ===
   pts.push([x - bh, y - hh]);
 
-  // 10. Bout d'aile bas-gauche (r2)
-  pts.push([x - bh, y - hh + r2]);
-  addArc(-bh + r2, -hh + tf - (slope*(bh-twh)) + r2, r2, 90, 180);
+  // === 2. Face extérieure bas (horizontale) → droite ===
+  pts.push([x + bh, y - hh]);
 
-  // 11. Face intérieure inclinée (bas-gauche, vers l'âme)
-  pts.push([x - twh - r1, y - hh + tf + r1]);
+  // === 3. Montée verticale à l’extrémité droite (jusqu’à hauteur du bout d’aile) ===
+  // L’aile a une épaisseur réduite au bout : tf_tip = tf - slope * (bh - twh)
+  var wingWidth = bh - twh;
+  var tf_tip = tf - slope * wingWidth;
+  if (tf_tip < 0) tf_tip = 0;
 
-  // 12. Congé racine r1 (bas-gauche)
-  addArc(-twh - r1, -hh + tf + r1, r1, 0, 90);
+  // Hauteur du début de l’arc r2 (bord extérieur)
+  var y_r2_bot = y - hh + tf_tip + r2;
 
-  // 13. Âme (montée)
-  pts.push([x - twh, y + hh - tf - r1]);
+  pts.push([x + bh, y_r2_bot]);
 
-  // 14. Congé racine r1 (haut-gauche)
-  addArc(-twh - r1, hh - tf - r1, r1, 90, 180);
+  // === 4. Arc r2 (bout d’aile droit, quadrant haut-droit → bas-droit) ===
+  // Centre de r2 : (x + bh - r2, y_r2_bot)
+  arc(bh - r2, y_r2_bot - y, r2, -PI/2, 0).forEach(pt => pts.push(pt));
 
-  // 15. Face intérieure inclinée (haut-gauche, vers l'extérieur)
-  pts.push([x - bh + r2, y + hh - r2]);
+  // === 5. Face intérieure inclinée (aile inférieure droite) ===
+  // De l’arc r2 vers l’arc r1 : ligne droite de pente 14%
+  // Point de départ : fin de l’arc r2 = (x + bh - r2, y - hh + tf_tip)
+  // Point d’arrivée : début de l’arc r1 = (x + twh + r1, y - hh + tf - r1)
+  // Mais pour la tangence, on utilise :
+  var y_r1_bot = y - hh + tf - r1;
+  var x_r1_right = twh + r1;
+  var dx = bh - r2 - x_r1_right;
+  var dy = (y_r2_bot - r2) - y_r1_bot; // ≈ slope * dx → vérifié
+  pts.push([x + x_r1_right, y_r1_bot]);
 
-  // 16. Bout d'aile haut-gauche (r2)
-  addArc(-bh + r2, hh - tf + (slope*(bh-twh)) - r2, r2, 270, 360);
+  // === 6. Arc r1 (racine, bas-droit) ===
+  // Centre : (x + twh + r1, y - hh + tf - r1)
+  arc(twh + r1, y_r1_bot - y, r1, -PI, -PI/2).forEach(pt => pts.push(pt));
 
-  // Fermeture
+  // === 7. Âme (montée verticale droite) ===
+  pts.push([x + twh, y + hh - tf + r1]);
+
+  // === 8. Arc r1 (haut-droit) ===
+  arc(twh + r1, y + hh - tf + r1 - y, r1, PI/2, PI).forEach(pt => pts.push(pt));
+
+  // === 9. Face intérieure inclinée (aile supérieure droite) ===
+  pts.push([x + bh - r2, y + hh - tf_tip - r2]);
+
+  // === 10. Arc r2 (haut-droit) ===
+  arc(bh - r2, y + hh - tf_tip - r2 - y, r2, PI, 3*PI/2).forEach(pt => pts.push(pt));
+
+  // === 11. Face extérieure haut (horizontale) → gauche ===
   pts.push([x - bh, y + hh]);
+
+  // === 12. Symétrique gauche (même logique) ===
+  pts.push([x - bh, y + hh - tf_tip - r2]);
+  arc(-bh + r2, y + hh - tf_tip - r2 - y, r2, 3*PI/2, 2*PI).forEach(pt => pts.push(pt));
+  pts.push([x - twh - r1, y + hh - tf + r1]);
+  arc(-twh - r1, y + hh - tf + r1 - y, r1, 0, PI/2).forEach(pt => pts.push(pt));
+  pts.push([x - twh, y - hh + tf - r1]);
+  arc(-twh - r1, y - hh + tf - r1 - y, r1, PI, 3*PI/2).forEach(pt => pts.push(pt));
+  pts.push([x - bh + r2, y - hh + tf_tip + r2]);
+  arc(-bh + r2, y - hh + tf_tip + r2 - y, r2, PI/2, PI).forEach(pt => pts.push(pt));
+
+  // === 13. Fermeture ===
+  pts.push([x - bh, y - hh]);
 
   api.polyline(pts, true);
 }
