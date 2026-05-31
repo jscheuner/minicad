@@ -40,7 +40,7 @@
 | 2.6 | Module Électricité (Prise, Interrupteur, Câble) | ✅ |
 | 2.7 | Module Cotation (5 types) | ✅ |
 | 2.8 | Module Annotation (Texte, Repère) | ✅ |
-| 2.9 | Export/Import DXF (AC1015) | ✅ |
+| 2.9 | Export/Import DXF (AC1015) | ✅ | Réécriture complète v0.08 : CLASSES/BLOCKS/OBJECTS, AcDb*, 5 types DIMENSION, HATCH, TUBE |
 | 2.10 | Toolbars dock/float/drag | ✅ |
 
 ---
@@ -57,7 +57,7 @@
 | 3.6 | **ROTATE** — rotation d'objets | ✅ | Moyenne | Sélection préalable + point base |
 | 3.7 | **SCALE** — mise à l'échelle | ✅ | Moyenne | Point base + facteur |
 | 3.8 | **MIRROR** — symétrie axiale | ✅ | Moyenne | Axe en 2 points |
-| 3.9 | **Arc 3 points** | 🟡 | Moyenne | P1, P2, P3 sur l'arc |
+| 3.9 | **Arc 3 points** | ✅ | Moyenne | ARC multi-mode : 3P, SCE, SCA, SER — mots-clés DI, grips départ/fin |
 
 ---
 
@@ -119,16 +119,34 @@
 
 Éléments prioritaires :
 - **4.3 Menu contextuel** clic-droit canvas (Couper/Copier/Coller/Propriétés)
-- **3.4 EXTEND** — prolonger jusqu'à limite
+- **3.4 EXTEND** — vérification cas limites (multi-limites fait)
 - **5.2 AREA** — calcul de surface d'un polygone
+- **OSNAP Extension** — prolongement de ligne (non fonctionnel, à reprendre)
+
+Terminé en session v0.09 (2026-05-30) :
+- **ARC multi-mode** ✅ — 3P, SCE, SCA, SER ; mots-clés DI ; grips départ/fin ; preview live
+- **Système démo** ✅ — `demo/demo_sequence.js`, `build.py --demo` → `minicad_demo.html`, bouton ▶ DÉMO
+- **Build séparé** ✅ — `--demo` écrit dans `minicad_demo.html`, `minicad.html` toujours propre
+
+Terminé en session v0.08 (2026-05-28) :
+- **DXF Export AC1015** ✅ — réécriture complète : CLASSES/BLOCKS/OBJECTS, AcDb*, DIMENSION 5 types, LEADER+MTEXT, HATCH, TUBE
+- **DXF Import** ✅ — SPLINE fit points, XLINE/RAY, DIMENSION, LEADER/MTEXT, HATCH, POINT, closed polyline
+- **SPLINE / XLINE / RAY / RAY_REV** ✅ — outils avec boutons barre d'outils
+- **Bibliothèque IPN** ✅ — profils 80→600
+
+Terminé en session v0.07 (2026-05-26) :
+- **DIVIDE / POINT** ✅ — diviser entité en N segments ; placement manuel de points
+- **Styles de cote 1:1→1:100** ✅ — 7 styles scale-based
+- **FILLET/CHAMFER sur rectangle** ✅ — conversion rect→polyligne
+- **STRETCH cercles/arcs** ✅ — centre dans fenêtre → déplacement complet
+- **LEADER lié au style de cote** ✅
 
 Terminé en session v0.05 (2026-05-21) :
 - **HATCH** ✅ — hachures lignes/croisé sur polyligne/rect/cercle
 - **Sélection additive** ✅ — MOVE/COPY/ROTATE/SCALE/MIRROR/OFFSET sans Shift
 - **OFFSET refactorisé** ✅ — sélection multiple, distance par clic, clic droit = Entrée
-- **Clic droit = Entrée** ✅ — tous les états pending et commandes actives
 - **JOIN arcs** ✅ — arc joinable avec lignes/polylignes, bulge correct dans le résultat
-- **Dialogue édition tube** ✅ — L. saisie REF, Prévisualiser, longeur AXE fixe, sens coude ⟳/⟲, Coter avec cotes liées
+- **Dialogue édition tube** ✅ — L. saisie REF, Prévisualiser, sens coude, Coter avec cotes liées
 
 Terminé en session v0.04 :
 - **6.6 Préférences utilisateur** ✅ — dialogue PREFS, stockage hybride localStorage + USER_PREFS embarqué

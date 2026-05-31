@@ -4,7 +4,64 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [0.07] — 2026-05-26 — Version courante
+## [0.09] — 2026-05-30 — Version courante
+
+### Ajouté
+- **ARC multi-mode** — commande ARC refaite comme AutoCAD, 4 modes de tracé
+  - **3P** (défaut) : 3 clics — P1 départ, P2 milieu, P3 fin (arc par circumcercle)
+  - **S,C,E** : taper `C` après P1 — P1 départ → Centre → P3 fin (CCW)
+  - **S,C,A** : taper `A` après le centre — angle inclus en degrés au clavier
+  - **S,E,R** : taper `E` après P1 — P1 départ → P2 fin → rayon au clavier (négatif = arc majeur)
+  - Mots-clés `C`, `E`, `A` interceptés dans la bulle DI avant le parsing de distance
+  - Preview live pour chaque mode (rubber-band, arc 3P, arc SCE, corde SER)
+  - Poignées grip départ et fin ajoutées (change l'angle de début/fin)
+- **Système démo** — démonstration automatique des fonctions dans le navigateur
+  - `demo/demo_sequence.js` — séquence indépendante, injectée par le build
+  - `build.py --demo` — génère `minicad_demo.html` (minicad.html inchangé)
+  - Curseur MiniCAD réel animé (`S.mouseScreen` + `render()` frame par frame)
+  - Dot flottant pour naviguer dans la barre d'outils (flash doré sur chaque bouton)
+  - Sélection visuelle du style de cote 1:10 dans le panneau latéral
+  - Correction FILLET : raccourcissement des deux lignes aux points de tangence
+  - Bouton **▶ DÉMO** visible sur `minicad.html` → redirige vers `minicad_demo.html?demo`
+  - Bouton **✕ Sortir du mode démo** pendant la séquence
+- **Build séparé** — `python3 build.py --demo` écrit dans `minicad_demo.html`, jamais dans `minicad.html`
+  - Les bibliothèques sont toujours injectées dans `minicad.html` quelle que soit la commande
+  - `BUILD.md` documenté
+
+---
+
+## [0.08] — 2026-05-28
+
+### Ajouté
+- **DXF Export — réécriture complète AC1015**
+  - Sections requises : HEADER (extents réelles), CLASSES (vide), TABLES, BLOCKS, ENTITIES, OBJECTS
+  - Marqueurs `AcDb*` sur toutes les entités (requis AutoCAD 2000)
+  - DIMENSION : `dim_linear` → `AcDbRotatedDimension`, `dim_aligned` → `AcDbAlignedDimension`, `dim_angular` → `AcDb2LineAngularDimension`, `dim_radius` → `AcDbRadialDimension`, `dim_diameter` → `AcDbDiametricDimension`
+  - LEADER + MTEXT (repère avec texte RTF)
+  - Wall → LWPOLYLINE fermée (2 segments + fermeture)
+  - Hatch → HATCH AC1015 (boundary path + PATTERN)
+  - Tube → lignes (parois) + arcs (coudes)
+  - XLINE → RAY (DXF natif)
+- **DXF Import — amélioré**
+  - SPLINE : priorité aux fit points (code 11/21) sur les control points (10/20)
+  - XLINE, RAY : entités importées en tant que `xline`/`ray` MiniCAD
+  - DIMENSION : routage vers `dim_linear`, `dim_aligned`, `dim_angular`, `dim_radius`, `dim_diameter` selon le code 70
+  - LEADER + MTEXT : import avec nettoyage du RTF (`{\f...}`, `\P`, `\~`)
+  - HATCH : reconstruction du contour depuis les `LINE` edges de la boundary path
+  - POINT : importé comme `point` MiniCAD
+  - Polyline fermée (flag 1) → `closed: true`
+- **SPLINE** — outil de dessin (Catmull-Rom), bouton dans la barre d'outils après POLYLINE
+- **XLINE** — ligne infinie depuis le centre (dans les deux directions), bouton barre d'outils
+- **RAY** — demi-droite depuis le point cliqué vers la souris
+- **RAY_REV** — demi-droite inverse (direction opposée)
+- **Bibliothèque IPN** — profils IPN 80→600 (SN EN 10365:2017) avec fonction de dessin
+
+### Corrigé
+- DXF export : sections BLOCKS et OBJECTS manquantes → rejet par AutoCAD/LibreCAD
+
+---
+
+## [0.07] — 2026-05-26
 
 ### Ajouté
 - **DIVIDE / DIVISER** — divise une entité (ligne, arc, cercle, polyligne) en N segments égaux par des points

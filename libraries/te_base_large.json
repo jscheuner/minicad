@@ -1,0 +1,54 @@
+{
+  "family": "TE_BASE_LARGE",
+  "label": "Acier à T, à base large",
+  "standard": "EN 10025-2:2004",
+  "grade": "S235JR",
+  "unit": "mm",
+  "params": [
+    "b",
+    "h",
+    "d",
+    "r1",
+    "r2"
+  ],
+  "notes": {
+    "b": "largeur de bride",
+    "h": "hauteur totale",
+    "d": "épaisseur (bride = âme)",
+    "r1": "congé de raccordement bride/âme (optionnel ; défaut = d)",
+    "r2": "arrondi de bouts (optionnel ; défaut = d/2)",
+    "m": "masse linéique (kg/m), valeur du tableau"
+  },
+  "data": {
+    "60x30x5.5": {
+      "b": 60,
+      "h": 30,
+      "d": 5.5,
+      "m": 3.64
+    },
+    "70x35x6": {
+      "b": 70,
+      "h": 35,
+      "d": 6.0,
+      "m": 4.66
+    },
+    "80x40x7": {
+      "b": 80,
+      "h": 40,
+      "d": 7.0,
+      "m": 6.21
+    },
+    "100x50x8.5": {
+      "b": 100,
+      "h": 50,
+      "d": 8.5,
+      "m": 9.42
+    },
+    "120x60x10": {
+      "b": 120,
+      "h": 60,
+      "d": 10.0,
+      "m": 13.35
+    }
+  }
+}

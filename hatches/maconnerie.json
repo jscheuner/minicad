@@ -1,0 +1,11 @@
+{
+  "id": "MACONNERIE",
+  "label": "Maçonnerie",
+  "category": "Maçonnerie",
+  "defaultAngle": 0,
+  "dxfName": "ANSI31",
+  "families": [
+    { "angleOffset":  0, "spacingFactor": 1.0 },
+    { "angleOffset": 90, "spacingFactor": 3.5 }
+  ]
+}

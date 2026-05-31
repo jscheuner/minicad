@@ -5,6 +5,38 @@ Format : `## [YYYY-MM-DD] — Résumé court`
 
 ---
 
+## [2026-05-30] — v0.09 : ARC multi-mode + système démo
+
+**Contexte :** Continuation depuis session compactée. Objectifs : améliorer l'outil ARC (comme AutoCAD) et finaliser le système de démo publique.
+
+**Réalisé :**
+- [x] **ARC multi-mode** — refonte complète de l'outil ARC
+  - 4 modes : 3P (circumcercle), SCE (Start/Center/End CCW), SCA (Start/Center/Angle), SER (Start/End/Radius)
+  - Mots-clés `C`, `E`, `A` interceptés dans `confirmDI` (bulle DI) avant le parsing de distance
+  - Helpers `_arc3pt()`, `_arcSCE()`, `_arcFinish()` ; handler dédié dans `handleClick`, `confirmDI`, `executeCommand`
+  - Preview live pour chaque mode ; grips départ/fin ajoutés
+- [x] **Système démo** — `demo/demo_sequence.js`, curseur réel MiniCAD, dot toolbar, 10 étapes
+  - `build.py --demo` → `minicad_demo.html` ; `build.py` → `minicad.html` seulement
+  - Bouton **▶ DÉMO** sur `minicad.html` ; **✕ Sortir** pendant la démo
+  - Sélection visuelle style 1:10 ; FILLET avec raccourcissement des lignes ; `dimStyle:'1:10'` dans l'entité
+
+**Prochaine étape :** 4.3 Menu contextuel, 5.2 AREA, OSNAP Extension
+
+---
+
+## [2026-05-28] — v0.08 : DXF AC1015 + SPLINE/XLINE/RAY + IPN
+
+**Contexte :** Refonte complète du DXF et ajout de nouveaux outils de tracé.
+
+**Réalisé :**
+- [x] **DXF Export réécriture** — AC1015 : CLASSES, BLOCKS, OBJECTS, AcDb*, 5 types DIMENSION, LEADER+MTEXT, HATCH, TUBE→lignes+arcs
+- [x] **DXF Import** — SPLINE fit points, XLINE/RAY, DIMENSION routage, LEADER/MTEXT RTF, HATCH contour, POINT, polyline fermée
+- [x] **SPLINE / XLINE / RAY / RAY_REV** — outils avec boutons barre d'outils
+- [x] **Bibliothèque IPN** — profils 80→600 (SN EN 10365:2017)
+- [x] **README** — bannière avertissement, tableaux outils/modification, v0.09
+
+---
+
 ## [2026-05-21] — v0.06 suite : grip→move, preview déplacement, HATCH amélioré, OSNAP Extension (partiel)
 
 **Contexte :** Session de continuation v0.06 (context compacté depuis session précédente).

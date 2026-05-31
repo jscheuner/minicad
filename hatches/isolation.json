@@ -1,0 +1,11 @@
+{
+  "id": "ISOLATION",
+  "label": "Isolation",
+  "category": "Divers",
+  "defaultAngle": 0,
+  "showAngle": false,
+  "dxfName": "ANSI31",
+  "families": [
+    { "type": "zigzag", "angleOffset": 0, "spacingFactor": 1.0 }
+  ]
+}

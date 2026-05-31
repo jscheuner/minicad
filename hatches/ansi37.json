@@ -1,0 +1,11 @@
+{
+  "id": "ANSI37",
+  "label": "Acier croisé",
+  "category": "Métal",
+  "defaultAngle": 45,
+  "dxfName": "ANSI37",
+  "families": [
+    { "angleOffset":  0, "spacingFactor": 1.0 },
+    { "angleOffset": 90, "spacingFactor": 1.0 }
+  ]
+}

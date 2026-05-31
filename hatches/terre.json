@@ -1,0 +1,11 @@
+{
+  "id": "TERRE",
+  "label": "Terre",
+  "category": "Pierre / Sol",
+  "defaultAngle": 45,
+  "dxfName": "ANSI31",
+  "families": [
+    { "angleOffset":  0, "spacingFactor": 1.0 },
+    { "angleOffset": 45, "spacingFactor": 3.5 }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "family": "Z_VIF",
+  "label": "Acier à Z vif (Scharfkantig)",
+  "standard": "EN 10025-2:2004",
+  "grade": "S235JR",
+  "unit": "mm",
+  "params": ["h", "b", "b1", "d", "t"],
+  "notes": {
+    "h": "hauteur totale (mm)",
+    "b": "largeur bride extérieure (mm)",
+    "b1": "largeur bride intérieure / cote de pliage (mm)",
+    "d": "épaisseur âme (mm)",
+    "t": "épaisseur bride (mm)",
+    "m": "masse linéique (kg/m)"
+  },
+  "data": {
+    "30x16": { "h": 30, "b": 16, "b1": 20, "d": 3.0, "t": 3.0, "m": 1.40 },
+    "40x17": { "h": 40, "b": 17, "b1": 22, "d": 4.5, "t": 4.5, "m": 2.45 }
+  }
+}

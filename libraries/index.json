@@ -3,14 +3,48 @@
     {
       "name": "🏗️ Profilés de charpente",
       "families": [
-        { "name": "IPE", "draw": "drawProfileI", "data": "ipe.json",  "script": "draws/ipe.js" },
-        { "name": "IPN", "draw": "drawProfileIPN", "data": "ipn.json",  "script": "draws/ipn.js" },
-        { "name": "HEA", "draw": "drawProfileI", "data": "hea.json",        "script": "draws/ipe.js" },
-        { "name": "HEB", "draw": "drawProfileI", "data": "heb.json",        "script": "draws/ipe.js" },
-        { "name": "UPE", "draw": "drawProfileUPE", "data": "upe.json", "script": "draws/upe.js" }
+        { "name": "IPE", "draw": "drawProfileI",   "data": "ipe.json", "script": "draws/ipe.js" },
+        { "name": "IPN", "draw": "drawProfileIPN", "data": "ipn.json", "script": "draws/ipn.js" },
+        { "name": "HEA", "draw": "drawProfileI",   "data": "hea.json", "script": "draws/ipe.js" },
+        { "name": "HEB", "draw": "drawProfileI",   "data": "heb.json", "script": "draws/ipe.js" },
+        { "name": "HEM", "draw": "drawProfileI",   "data": "hem.json", "script": "draws/ipe.js" },
+        { "name": "UPE", "draw": "drawProfileUPE", "data": "upe.json", "script": "draws/upe.js" },
+        { "name": "UPN", "draw": "drawProfileUPN", "data": "upn.json", "script": "draws/upn.js" }
       ]
     },
-    { "name": "⭕ Tubes",              "families": [] },
+    {
+      "name": "🟫 Marchands",
+      "families": [
+        { "name": "Acier rond", "draw": "drawProfileROND", "data": "acier_rond.json", "script": "draws/rond.js" },
+        { "name": "Acier carré", "draw": "drawProfileCARRE", "data": "acier_carre.json", "script": "draws/carre.js" },
+        { "name": "Acier plat",   "draw": "drawProfilePLAT",  "data": "acier_plat.json",  "script": "draws/plat.js" },
+        { "name": "Acier large-plat", "draw": "drawProfilePLAT", "data": "acier_large_plat.json", "script": "draws/plat.js" },
+        { "name": "Acier bandage", "draw": "drawProfileBANDAGE", "data": "acier_bandage.json", "script": "draws/bandage.js" },
+        { "name": "Acier cornière égale", "draw": "drawProfileCORNIERE", "data": "acier_corniere_egale.json", "script": "draws/corniere.js" },
+        { "name": "Acier cornière inégale", "draw": "drawProfileCORNIERE", "data": "acier_corniere_inegale.json", "script": "draws/corniere.js" },
+        { "name": "Acier équerre égale", "draw": "drawProfileEQUERRE", "data": "acier_equerre_egale.json", "script": "draws/equerre.js" },
+        { "name": "Acier équerre inégale", "draw": "drawProfileEQUERRE", "data": "acier_equerre_inegale.json", "script": "draws/equerre.js" },
+        { "name": "Acier à T, à base large (arrondi)", "draw": "drawProfileT", "data": "te_base_large.json", "script": "draws/te.js" },
+        { "name": "Acier à T, à âme haute (arrondi)", "draw": "drawProfileT", "data": "te_ame_haute.json", "script": "draws/te.js" },
+        { "name": "Acier à T, arêtes vives", "draw": "drawProfileTVIF", "data": "acier_te_angle_vif.json", "script": "draws/te_vif.js" },
+        { "name": "Acier à U", "draw": "drawProfileU", "data": "acier_u.json", "script": "draws/u_marchand.js" },
+        { "name": "Acier U à coulisse", "draw": "drawProfileUVIF", "data": "acier_u_coulisse.json", "script": "draws/u_vif.js" },
+        { "name": "Acier Z normal", "draw": "drawProfileZ_NORMAL", "data": "acier_z.json", "script": "draws/z.js" },
+        { "name": "Acier Z vif", "draw": "drawProfileZ_VIF", "data": "acier_z_vif.json", "script": "draws/z_vif.js" }
+      ]
+    },
+    {
+      "name": "📐 Profilé moleté",
+      "families": [
+        { "name": "Acier équerre égale moletée à froid", "draw": "drawProfileEQUERREMOLETEE", "data": "acier_equerre_moletee_egale.json", "script": "draws/equerre_moletee.js" },
+        { "name": "Acier équerre inégale moletée à froid", "draw": "drawProfileEQUERREMOLETEE", "data": "acier_equerre_moletee_inegale.json", "script": "draws/equerre_moletee.js" },
+        { "name": "Acier U moletés à froid", "draw": "drawProfileUMOLETE", "data": "acier_u_molete.json", "script": "draws/u_molete.js" }
+      ]
+    },
+    { "name": "⭕ Tubes",
+    "families": [
+        { "name": "Tube gaz et eau - série moyenne", "draw": "drawProfileTUBEROND", "data": "acier_tube_gaz_eau.json", "script": "draws/tube_rond.js" }
+    ] },
     { "name": "🔩 Visserie",           "families": [] },
     { "name": "📐 Plats et cornières", "families": [] }
   ]

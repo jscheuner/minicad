@@ -1,0 +1,11 @@
+{
+  "id": "VERRE",
+  "label": "Verre / Synth.",
+  "category": "Divers",
+  "defaultAngle": 0,
+  "showAngle": false,
+  "dxfName": "ANSI31",
+  "families": [
+    { "angleOffset": 0, "spacingFactor": 1.0 }
+  ]
+}

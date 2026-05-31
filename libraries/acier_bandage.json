@@ -1,0 +1,21 @@
+{
+  "family": "BANDAGE",
+  "label": "Bandage à champs arrondis",
+  "standard": "EN 10025-2:2004",
+  "grade": "S235JR",
+  "unit": "mm",
+  "params": ["B", "d", "b1"],
+  "notes": {
+    "B":  "largeur totale",
+    "d":  "épaisseur",
+    "b":  "largeur de la face plate (= B - 2·b1)",
+    "b1": "rayon des coins arrondis",
+    "m":  "masse linéique (kg/m), valeur du tableau"
+  },
+  "data": {
+    "40": { "B": 40, "d": 10, "b": 36, "b1": 2.0, "m": 3.05 },
+    "44": { "B": 44, "d": 10, "b": 40, "b1": 2.0, "m": 3.36 },
+    "45": { "B": 45, "d": 12, "b": 40, "b1": 2.5, "m": 4.10 },
+    "52": { "B": 52, "d": 10, "b": 48, "b1": 2.0, "m": 4.30 }
+  }
+}

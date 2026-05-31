@@ -3,26 +3,29 @@
 ## Commandes
 
 ```bash
-# Build normal (développement)
+# Build normal (développement) → minicad.html
 python3 build.py
 
-# Build avec séquence démo injectée (publication minicad.org)
+# Build démo (publication minicad.org) → minicad_demo.html
 python3 build.py --demo
 ```
 
 ## Ce que fait le build
 
-- Lit `libraries/index.json`
-- Injecte les données JSON + fonctions de dessin JS entre les marqueurs `@@LIB_BEGIN` / `@@LIB_END` dans `minicad.html`
-- Avec `--demo` : injecte aussi `demo/demo_sequence.js` entre `@@DEMO_BEGIN` / `@@DEMO_END`
-- Sans `--demo` : vide le bloc démo (pour garder `minicad.html` léger en dev)
+| Commande | Fichier de sortie | Démo injectée |
+|----------|-------------------|:-------------:|
+| `python3 build.py` | `minicad.html` | non |
+| `python3 build.py --demo` | `minicad_demo.html` | oui |
+
+`minicad.html` n'est **jamais modifié** par `--demo` — il reste propre pour le développement.
 
 ## Activer la démo
 
-Après un build `--demo`, ouvrir dans le navigateur :
+Ouvrir `minicad_demo.html` dans le navigateur. Le bouton **▶ DÉMO** en haut à droite est toujours visible ; cliquer lance la séquence automatique.
 
 ```
-minicad.html?demo
+minicad_demo.html        ← bouton visible, clic → démarre
+minicad_demo.html?demo   ← démarre automatiquement au chargement
 ```
 
 ## Ajouter une famille de profilés

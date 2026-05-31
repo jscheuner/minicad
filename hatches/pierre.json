@@ -1,0 +1,11 @@
+{
+  "id": "PIERRE",
+  "label": "Pierre nat.",
+  "category": "Pierre / Sol",
+  "defaultAngle": 30,
+  "dxfName": "ANSI31",
+  "families": [
+    { "angleOffset":  0, "spacingFactor": 1.0 },
+    { "angleOffset": 60, "spacingFactor": 1.0 }
+  ]
+}

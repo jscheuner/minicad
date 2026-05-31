@@ -1,0 +1,11 @@
+{
+  "id": "BOIS",
+  "label": "Bois dérivé",
+  "category": "Bois",
+  "defaultAngle": 0,
+  "dxfName": "ANSI31",
+  "families": [
+    { "angleOffset": 0, "spacingFactor": 1.0 },
+    { "angleOffset": 0, "spacingFactor": 4.0 }
+  ]
+}

@@ -23,14 +23,19 @@ import sys
 
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 HTML_FILE   = os.path.join(BASE_DIR, 'minicad.html')
+DEMO_OUT    = os.path.join(BASE_DIR, 'minicad_demo.html')
 LIB_DIR     = os.path.join(BASE_DIR, 'libraries')
 INDEX_FILE  = os.path.join(LIB_DIR, 'index.json')
+HATCH_DIR   = os.path.join(BASE_DIR, 'hatches')
+HATCH_INDEX = os.path.join(HATCH_DIR, 'index.json')
 DEMO_FILE   = os.path.join(BASE_DIR, 'demo', 'demo_sequence.js')
 
-MARKER_BEGIN      = '// @@LIB_BEGIN'
-MARKER_END        = '// @@LIB_END'
-DEMO_MARKER_BEGIN = '// @@DEMO_BEGIN'
-DEMO_MARKER_END   = '// @@DEMO_END'
+MARKER_BEGIN       = '// @@LIB_BEGIN'
+MARKER_END         = '// @@LIB_END'
+HATCH_MARKER_BEGIN = '// @@HATCH_BEGIN'
+HATCH_MARKER_END   = '// @@HATCH_END'
+DEMO_MARKER_BEGIN  = '// @@DEMO_BEGIN'
+DEMO_MARKER_END    = '// @@DEMO_END'
 
 
 def load_json(path):
@@ -56,10 +61,14 @@ def build_lib_js(index):
         for fam in cat.get('families', []):
             # ── Charger les données ──────────────────────────
             data_js = 'null'
+            fam_standard = ''
+            fam_family = ''
             if fam.get('data'):
                 data_path = os.path.join(LIB_DIR, fam['data'])
                 if os.path.exists(data_path):
                     raw = load_json(data_path)
+                    fam_standard = raw.get('standard', '')
+                    fam_family   = raw.get('family', '')
                     # Sérialiser chaque taille sur une ligne pour lisibilité
                     lines = [f'        {json.dumps(k)}: {json.dumps(v)}'
                              for k, v in raw['data'].items()]
@@ -80,7 +89,9 @@ def build_lib_js(index):
             draw_fn = json.dumps(fam.get('draw', ''))
             fam_name = json.dumps(fam['name'])
             fam_entries.append(
-                f'        {{ name: {fam_name}, draw: {draw_fn}, data: {data_js} }}'
+                f'        {{ name: {fam_name}, draw: {draw_fn},'
+                f' standard: {json.dumps(fam_standard)}, family: {json.dumps(fam_family)},'
+                f' data: {data_js} }}'
             )
 
         cat_name = json.dumps(cat['name'])
@@ -100,6 +111,25 @@ def build_lib_js(index):
         f'}};\n'
         f'{draws_js}\n'
         f'{MARKER_END}'
+    )
+
+
+def build_hatch_js(index):
+    """Construit le bloc JS MINICAD_HATCHES à partir de hatches/index.json."""
+    patterns = []
+    for name in index:
+        path = os.path.join(HATCH_DIR, name + '.json')
+        if os.path.exists(path):
+            pat = load_json(path)
+            patterns.append(json.dumps(pat, ensure_ascii=False))
+        else:
+            print(f'  ⚠  Pattern hachure introuvable : {path}')
+    pats_js = ',\n  '.join(patterns)
+    return (
+        f'{HATCH_MARKER_BEGIN} — Généré par build.py — ne pas éditer directement\n'
+        f'// Éditer les fichiers dans hatches/ puis relancer build.py\n'
+        f'const MINICAD_HATCHES = [\n  {pats_js}\n];\n'
+        f'{HATCH_MARKER_END}'
     )
 
 
@@ -155,10 +185,12 @@ def main():
     # ── Lire l'index ─────────────────────────────────────
     index = load_json(INDEX_FILE)
 
-    # ── Construire le bloc bibliothèques ─────────────────
+    # ── Construire les blocs ──────────────────────────────
     tag = '📦 MiniCAD build' + (' + démo' if with_demo else '')
-    print(f'{tag} — injection bibliothèques')
-    lib_block = build_lib_js(index)
+    print(f'{tag} — injection bibliothèques + hachures')
+    lib_block   = build_lib_js(index)
+    hatch_index = load_json(HATCH_INDEX) if os.path.exists(HATCH_INDEX) else []
+    hatch_block = build_hatch_js(hatch_index)
 
     # ── Lire le HTML ──────────────────────────────────────
     with open(HTML_FILE, 'r', encoding='utf-8') as f:
@@ -167,15 +199,21 @@ def main():
     # ── Injecter bibliothèques ───────────────────────────
     html = inject_block(html, MARKER_BEGIN, MARKER_END, lib_block)
 
-    # ── Injecter / vider démo ────────────────────────────
+    # ── Injecter hachures ────────────────────────────────
+    if HATCH_MARKER_BEGIN in html:
+        html = inject_block(html, HATCH_MARKER_BEGIN, HATCH_MARKER_END, hatch_block)
+
+    # ── minicad.html : toujours mis à jour (libs, bloc démo vide) ────────
+    html_dev = clear_demo_block(html)
+    with open(HTML_FILE, 'w', encoding='utf-8') as f:
+        f.write(html_dev)
+
+    # ── minicad_demo.html : uniquement avec --demo ────────────────────────
     if with_demo:
         demo_block = build_demo_js()
-        html = inject_block(html, DEMO_MARKER_BEGIN, DEMO_MARKER_END, demo_block)
-    else:
-        html = clear_demo_block(html)
-
-    with open(HTML_FILE, 'w', encoding='utf-8') as f:
-        f.write(html)
+        html_demo  = inject_block(html, DEMO_MARKER_BEGIN, DEMO_MARKER_END, demo_block)
+        with open(DEMO_OUT, 'w', encoding='utf-8') as f:
+            f.write(html_demo)
 
     # ── Résumé ────────────────────────────────────────────
     n_cats  = len(index['categories'])
@@ -186,9 +224,10 @@ def main():
         if f.get('data')
     )
     print(f'  ✓ {n_cats} catégories, {n_fams} familles, {n_data} avec données')
-    if with_demo:
-        print(f'  ✓ démo injectée (demo/demo_sequence.js)')
+    print(f'  ✓ {len(hatch_index)} patterns de hachure')
     print(f'  ✓ minicad.html mis à jour')
+    if with_demo:
+        print(f'  ✓ démo injectée → minicad_demo.html')
 
 
 if __name__ == '__main__':

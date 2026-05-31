@@ -1,0 +1,26 @@
+{
+  "family": "Z_NORMAL",
+  "label": "Acier à Z (Profils normaux)",
+  "standard": "EN 10025-2:2004",
+  "grade": "S235JR",
+  "unit": "mm",
+  "params": ["np", "h", "b", "d", "t"],
+  "notes": {
+    "np": "Numéro du profilé normalisé",
+    "h": "hauteur totale (mm)",
+    "b": "largeur bride (mm)",
+    "d": "épaisseur âme (mm)",
+    "t": "épaisseur bride (mm)",
+    "m": "masse linéique (kg/m)"
+  },
+  "data": {
+    "NP3":  { "np": 3,  "h": 30,  "b": 38, "d": 4.0, "t": 4.5, "m": 3.39 },
+    "NP4":  { "np": 4,  "h": 40,  "b": 40, "d": 4.5, "t": 5.0, "m": 4.26 },
+    "NP5":  { "np": 5,  "h": 50,  "b": 43, "d": 5.0, "t": 5.5, "m": 5.31 },
+    "NP6":  { "np": 6,  "h": 60,  "b": 45, "d": 5.0, "t": 6.0, "m": 6.21 },
+    "NP8":  { "np": 8,  "h": 80,  "b": 50, "d": 6.0, "t": 7.0, "m": 8.71 },
+    "NP10": { "np": 10, "h": 100, "b": 55, "d": 6.5, "t": 8.0, "m": 11.40 },
+    "NP12": { "np": 12, "h": 120, "b": 60, "d": 7.0, "t": 9.0, "m": 14.30 },
+    "NP14": { "np": 14, "h": 140, "b": 65, "d": 8.0, "t": 10.0, "m": 18.00 }
+  }
+}

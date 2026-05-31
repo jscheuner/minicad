@@ -3,18 +3,54 @@
 // Activé par ?demo dans l'URL (ex: minicad.html?demo)
 
 (function () {
-  if (!location.search.includes('demo') && !location.hash.includes('demo')) return;
+  const IS_DEMO = location.search.includes('demo') || location.hash.includes('demo');
+
+  // ── Bouton DÉMO toujours visible (même sans ?demo) ────────────────────
+  window.addEventListener('load', () => {
+    const btn = document.createElement('button');
+    btn.id = 'demo-launch-entry';
+    btn.textContent = IS_DEMO ? '▶  DÉMO' : '▶  DÉMO';
+    btn.style.cssText = [
+      'position:fixed', 'top:34px', 'right:14px',
+      'background:#ffd700', 'color:#0a0f1a',
+      'border:none', 'border-radius:4px', 'padding:6px 14px',
+      'font:700 12px "JetBrains Mono",monospace',
+      'cursor:pointer', 'z-index:9998',
+      'box-shadow:0 2px 8px rgba(0,0,0,0.45)',
+      'letter-spacing:.04em',
+      'transition:background .2s'
+    ].join(';');
+    btn.onmouseenter = () => { btn.style.background = '#ffe94d'; };
+    btn.onmouseleave = () => { btn.style.background = '#ffd700'; };
+    btn.onclick = () => {
+      if (!IS_DEMO) { location.href = location.pathname + '?demo'; }
+      else if (_demoRunning) { _demoRunning = false; location.href = location.pathname; }
+      else { S.entities = []; render(); startDemo(); }
+    };
+    document.body.appendChild(btn);
+    // remplacer par le bouton géré par la démo si on est en mode démo
+    if (IS_DEMO) window._demoBtnEntry = btn;
+  });
+
+  if (!IS_DEMO) return;
 
   // ── Utilitaires ──────────────────────────────────────────────────────
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+  function worldToCanvas(wx, wy) {
+    // Coordonnées canvas (pixels, pas screen)
+    const sx = (wx - S.panX) * S.zoom + canvas.width  / 2;
+    const sy = -(wy - S.panY) * S.zoom + canvas.height / 2;
+    return [sx, sy];
+  }
+
   function worldToScreen(wx, wy) {
-    const cv = document.getElementById('main-canvas');
-    const rect = cv.getBoundingClientRect();
-    const sx = (wx - S.panX) * S.zoom + cv.width  / 2;
-    const sy = -(wy - S.panY) * S.zoom + cv.height / 2;
-    return [rect.left + sx * (rect.width  / cv.width),
-            rect.top  + sy * (rect.height / cv.height)];
+    const rect = canvas.getBoundingClientRect();
+    const [sx, sy] = worldToCanvas(wx, wy);
+    return [
+      rect.left + sx * (rect.width  / canvas.width),
+      rect.top  + sy * (rect.height / canvas.height)
+    ];
   }
 
   function addEnt(e) {
@@ -24,42 +60,156 @@
     render();
   }
 
-  // ── Curseur simulé ────────────────────────────────────────────────────
+  // ── Curseur flottant (pour navigation toolbar) ────────────────────────
   let dot;
-  function createCursor() {
+  function createDot() {
     dot = document.createElement('div');
-    dot.id = 'demo-cursor';
+    dot.id = 'demo-dot';
     dot.style.cssText = [
-      'position:fixed', 'width:18px', 'height:18px', 'border-radius:50%',
-      'background:rgba(255,215,0,0.9)', 'border:2px solid rgba(0,0,0,0.5)',
+      'position:fixed', 'width:16px', 'height:16px', 'border-radius:50%',
+      'background:rgba(255,215,0,0.92)', 'border:2px solid rgba(0,0,0,0.5)',
       'box-shadow:0 0 10px #ffd70099', 'pointer-events:none', 'z-index:9999',
       'transform:translate(-50%,-50%)',
-      'transition:left .55s cubic-bezier(.4,0,.2,1),top .55s cubic-bezier(.4,0,.2,1)',
       'display:none'
     ].join(';');
     document.body.appendChild(dot);
   }
 
-  async function moveTo(wx, wy, delay) {
-    const [sx, sy] = worldToScreen(wx, wy);
-    dot.style.display = 'block';
-    dot.style.left = sx + 'px';
-    dot.style.top  = sy + 'px';
-    if (delay) await sleep(delay);
+  function dotPos(px, py) {
+    dot.style.left = px + 'px';
+    dot.style.top  = py + 'px';
   }
 
-  async function click(wx, wy) {
-    await moveTo(wx, wy, 620);
-    dot.style.transform = 'translate(-50%,-50%) scale(1.7)';
-    dot.style.transition = 'transform .1s';
-    await sleep(130);
+  async function dotMoveTo(px, py, ms) {
+    dot.style.display = 'block';
+    dot.style.transition = `left ${ms}ms cubic-bezier(.4,0,.2,1), top ${ms}ms cubic-bezier(.4,0,.2,1)`;
+    dotPos(px, py);
+    await sleep(ms + 80);
+  }
+
+  async function dotClick() {
+    dot.style.transition = 'transform .12s';
+    dot.style.transform = 'translate(-50%,-50%) scale(1.6)';
+    await sleep(140);
     dot.style.transform = 'translate(-50%,-50%) scale(1)';
-    dot.style.transition = [
-      'left .55s cubic-bezier(.4,0,.2,1)',
-      'top .55s cubic-bezier(.4,0,.2,1)',
-      'transform .2s'
-    ].join(',');
-    await sleep(200);
+    await sleep(320);
+  }
+
+  // ── Curseur canvas MiniCAD (vrais réticules) ──────────────────────────
+  // Anime S.mouseScreen avec easing et appelle render() à chaque frame
+  let _cursorAnim = null;
+
+  function easeInOut(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+
+  async function moveCursor(wx, wy, ms) {
+    if (_cursorAnim) { _cursorAnim.cancel = true; }
+    dot.style.display = 'none';   // cacher le dot pendant qu'on dessine
+    mouseOnCanvas = true;
+
+    const startX = S.mouseScreen ? S.mouseScreen[0] : canvas.width  / 2;
+    const startY = S.mouseScreen ? S.mouseScreen[1] : canvas.height / 2;
+    const [endX, endY] = worldToCanvas(wx, wy);
+
+    const anim = { cancel: false };
+    _cursorAnim = anim;
+    const t0 = performance.now();
+
+    await new Promise(resolve => {
+      function frame(now) {
+        if (anim.cancel) { resolve(); return; }
+        const t = Math.min(1, (now - t0) / ms);
+        const e = easeInOut(t);
+        S.mouseScreen = [
+          startX + (endX - startX) * e,
+          startY + (endY - startY) * e
+        ];
+        render();
+        if (t < 1) requestAnimationFrame(frame);
+        else { resolve(); }
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+
+  async function clickWorld(wx, wy, moveMs) {
+    await moveCursor(wx, wy, moveMs || 1600);
+    // Pulse visuel : cercle flash sur le canvas
+    const [cx, cy] = worldToCanvas(wx, wy);
+    const ctx = canvas.getContext('2d');
+    for (let r = 4; r <= 18; r += 7) {
+      render();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,215,0,0.7)';
+      ctx.lineWidth   = 2;
+      ctx.stroke();
+      await sleep(50);
+    }
+    await sleep(120);
+  }
+
+  // ── Sélection style de cote dans le panneau latéral ─────────────────
+  async function selectDimStyle(name) {
+    const sel = document.querySelector('#dimstyle-panel select');
+    if (!sel) { _dsSet(name); return; }
+
+    mouseOnCanvas = false;
+    S.mouseScreen = null;
+    render();
+
+    const rect = sel.getBoundingClientRect();
+    const px   = rect.left + rect.width  / 2;
+    const py   = rect.top  + rect.height / 2;
+
+    dot.style.display = 'block';
+    dot.style.transition = 'left 840ms cubic-bezier(.4,0,.2,1), top 840ms cubic-bezier(.4,0,.2,1)';
+    dotPos(px, py);
+    await sleep(960);
+
+    sel.style.outline = '2px solid #ffd700';
+    sel.style.boxShadow = '0 0 8px #ffd70088';
+    await dotClick();
+
+    _dsSet(name);          // applique le style + rafraîchit le select
+    sel.value = name;      // met le select à jour visuellement
+
+    await sleep(500);
+    sel.style.outline = '';
+    sel.style.boxShadow = '';
+    dot.style.display = 'none';
+    await sleep(400);
+  }
+
+  // ── Clic sur un bouton toolbar ────────────────────────────────────────
+  async function clickToolBtn(toolName) {
+    const btn = document.querySelector(`[data-tool="${toolName}"]`);
+    if (!btn) return;
+
+    mouseOnCanvas = false;
+    S.mouseScreen = null;
+    render();
+
+    const rect  = btn.getBoundingClientRect();
+    const px    = rect.left + rect.width  / 2;
+    const py    = rect.top  + rect.height / 2;
+
+    // Déplacer le dot vers le bouton
+    dot.style.display = 'block';
+    dot.style.transition = 'left 840ms cubic-bezier(.4,0,.2,1), top 840ms cubic-bezier(.4,0,.2,1)';
+    dotPos(px, py);
+    await sleep(960);
+
+    // Flash doré sur le bouton
+    const origOutline = btn.style.outline;
+    btn.style.outline = '2px solid #ffd700';
+    btn.style.boxShadow = '0 0 8px #ffd70088';
+    await dotClick();
+    await sleep(240);
+    btn.style.outline = origOutline || '';
+    btn.style.boxShadow = '';
+
+    dot.style.display = 'none';
+    await sleep(400);
   }
 
   // ── Bandeau d'explication ─────────────────────────────────────────────
@@ -85,24 +235,15 @@
     if (hold) { await sleep(hold); panel.style.opacity = '0'; await sleep(280); }
   }
 
-  // ── Bouton Rejouer ────────────────────────────────────────────────────
-  function createReplayBtn() {
-    const btn = document.createElement('button');
-    btn.id = 'demo-replay';
-    btn.textContent = '▶  Rejouer';
-    btn.style.cssText = [
-      'position:fixed', 'bottom:62px', 'right:18px',
-      'background:#ffd700', 'color:#0a0f1a',
-      'border:none', 'border-radius:4px', 'padding:7px 15px',
-      'font:600 12px "JetBrains Mono",monospace',
-      'cursor:pointer', 'z-index:9998',
-      'box-shadow:0 2px 8px rgba(0,0,0,0.45)'
-    ].join(';');
-    btn.onclick = () => { _demoRunning = false; S.entities = []; render(); startDemo(); };
-    document.body.appendChild(btn);
+  function demoBtnRunning(running) {
+    const btn = window._demoBtnEntry;
+    if (!btn) return;
+    btn.textContent  = running ? '✕  Sortir du mode démo' : '▶  DÉMO';
+    btn.style.background = running ? '#ffb300' : '#ffd700';
+    btn.style.cursor = 'pointer';
   }
 
-  // ── IPE 160 simplifié (section en I sans congés) ──────────────────────
+  // ── IPE 160 simplifié ─────────────────────────────────────────────────
   function ipeProfile(cx, cy) {
     const h=160, b=82, tw=5.0, tf=7.4;
     const hh=h/2, bh=b/2, th=tw/2;
@@ -122,108 +263,178 @@
   async function startDemo() {
     if (_demoRunning) return;
     _demoRunning = true;
+    demoBtnRunning(true);
 
     S.entities = []; S.selected = [];
     S.panX = 0; S.panY = 0; S.zoom = 1.1;
+    mouseOnCanvas = false;
+    S.mouseScreen = null;
     termPrint('━━ Démo MiniCAD ━━', 'info');
     render();
-    await sleep(500);
+    await sleep(1000);
 
-    // ── 1. Cadre de travail (4 lignes) ───────────────────────────────
+    // ── 1. Lignes — LINE ──────────────────────────────────────────────
     await explain('Lignes — LINE');
+    await clickToolBtn('line');
+    S.tool = 'line';
+
     termPrint('LINE', 'info');
-    await click(-220, -130); await click( 220, -130);
+    await clickWorld(-220, -130);
+    await clickWorld( 220, -130, 1400);
     addEnt({ type:'line', x1:-220, y1:-130, x2: 220, y2:-130 });
-    await click( 220,  130);
+    await clickWorld( 220,  130, 1400);
     addEnt({ type:'line', x1: 220, y1:-130, x2: 220, y2: 130 });
-    await click(-220,  130);
+    await clickWorld(-220,  130, 1400);
     addEnt({ type:'line', x1: 220, y1: 130, x2:-220, y2: 130 });
-    await click(-220, -130);
+    await clickWorld(-220, -130, 1400);
     addEnt({ type:'line', x1:-220, y1: 130, x2:-220, y2:-130 });
-    await sleep(350);
+    await sleep(600);
 
     if (!_demoRunning) return;
 
-    // ── 2. Cercle central ────────────────────────────────────────────
-    await explain('Cercle — CIRCLE');
+    // ── 2. Cercle — CIRCLE ────────────────────────────────────────────
+    await explain('Cercle — CIRCLE', 0);
+    await clickToolBtn('circle');
+    S.tool = 'circle';
+
     termPrint('CIRCLE', 'info');
-    await click(0, 0); await moveTo(0, 65, 550);
+    await clickWorld(0, 0, 1400);
+    await moveCursor(0, 65, 1200);
     addEnt({ type:'circle', cx:0, cy:0, r:65 });
-    await sleep(350);
+    await sleep(700);
 
     if (!_demoRunning) return;
 
-    // ── 3. Polyligne en triangle ──────────────────────────────────────
-    await explain('Polyligne — POLYLINE');
+    // ── 3. Polyligne — POLYLINE ───────────────────────────────────────
+    await explain('Polyligne — POLYLINE', 0);
+    await clickToolBtn('polyline');
+    S.tool = 'polyline';
+
     termPrint('PL', 'info');
     const tri = [[-190,-120],[-90,-120],[-140,-30],[-190,-120]];
-    for (const [tx,ty] of tri.slice(0,-1)) await click(tx, ty);
+    for (const [tx,ty] of tri.slice(0,-1)) await clickWorld(tx, ty, 1400);
     addEnt({ type:'polyline', points:tri, closed:false });
-    await sleep(350);
+    await sleep(600);
 
     if (!_demoRunning) return;
 
-    // ── 4. Hachures sur le triangle ───────────────────────────────────
-    await explain('Hachures — HATCH');
+    // ── 4. Arc — ARC ──────────────────────────────────────────────────
+    await explain('Arc — ARC', 0);
+    await clickToolBtn('arc');
+    S.tool = 'arc';
+
+    termPrint('ARC', 'info');
+    await moveCursor(110, 60, 1400);
+    addEnt({ type:'arc', cx:110, cy:0, r:60, startAngle: Math.PI/6, endAngle: 5*Math.PI/6 });
+    await sleep(700);
+
+    if (!_demoRunning) return;
+
+    // ── 5. Hachures — HATCH ───────────────────────────────────────────
+    await explain('Hachures — HATCH', 0);
+    await clickToolBtn('hatch');
+    S.tool = 'pick';
+
     termPrint('H', 'info');
-    await moveTo(-140, -90, 700);
+    await moveCursor(-140, -90, 1400);
     addEnt({ type:'hatch', points:[[-190,-120],[-90,-120],[-140,-30]], angle:45, spacing:14, pattern:'lines' });
-    await sleep(400);
+    await sleep(700);
 
     if (!_demoRunning) return;
 
-    // ── 5. Cotation linéaire ──────────────────────────────────────────
-    await explain('Cotation — DIMLINEAR');
+    // ── 6. Raccord — FILLET ───────────────────────────────────────────
+    await explain('Raccord — FILLET (r=30)', 0);
+    await clickToolBtn('fillet');
+    S.tool = 'pick';
+
+    termPrint('F 30', 'info');
+    await clickWorld(-220, -50, 1400);   // clic sur la ligne verticale gauche
+    await clickWorld(-160, -130, 1400);  // clic sur la ligne horizontale basse
+
+    // Raccourcir les deux lignes aux points de tangence (r=30)
+    const bLine = S.entities.find(e => e.type==='line' && Math.abs(e.x1+220)<1 && Math.abs(e.y1+130)<1 && Math.abs(e.y2+130)<1);
+    if (bLine) bLine.x1 = -190;   // tangente sur ligne basse
+    const lLine = S.entities.find(e => e.type==='line' && Math.abs(e.x1+220)<1 && Math.abs(e.x2+220)<1 && Math.abs(e.y2+130)<1);
+    if (lLine) lLine.y2 = -100;   // tangente sur ligne gauche
+
+    addEnt({ type:'arc', cx:-190, cy:-100, r:30, startAngle:-Math.PI, endAngle:-Math.PI/2 });
+    await sleep(700);
+
+    if (!_demoRunning) return;
+
+    // ── 7. Cotation 1:10 — DIMLINEAR ─────────────────────────────────
+    await explain('Cotation 1:10 — DIMLINEAR', 0);
+    S.tool = 'pick';
+    await selectDimStyle('1:10');
+
     termPrint('DIMLINEAR', 'info');
-    await click(-220, -130); await click(220, -130);
-    addEnt({ type:'dim_linear', x1:-220, y1:-130, x2:220, y2:-130, isHoriz:true, offset:-40 });
-    await sleep(350);
+    await clickWorld(-220, -130, 1400);
+    await clickWorld( 220, -130, 1400);
+    addEnt({ type:'dim_linear', x1:-220, y1:-130, x2:220, y2:-130, isHoriz:true, offset:-40, dimStyle:'1:10' });
+    await sleep(700);
 
     if (!_demoRunning) return;
 
-    // ── 6. Décalage du cercle ─────────────────────────────────────────
-    await explain('Décalage — OFFSET 20');
+    // ── 8. Offset cercle — OFFSET ─────────────────────────────────────
+    await explain('Décalage — OFFSET 20', 0);
+    await clickToolBtn('offset');
+    S.tool = 'pick';
+
     termPrint('OFFSET 20', 'info');
-    await moveTo(0, 65, 800);
+    await moveCursor(0, 65, 1400);
     addEnt({ type:'circle', cx:0, cy:0, r:85 });
-    await sleep(350);
+    await sleep(700);
 
     if (!_demoRunning) return;
 
-    // ── 7. Profilé IPE 160 (bibliothèque) ────────────────────────────
-    await explain('Bibliothèque — IPE 160');
+    // ── 9. Profilé IPE 160 ────────────────────────────────────────────
+    await explain('Bibliothèque — IPE 160', 0);
+    mouseOnCanvas = false;
+    S.mouseScreen = null;
+    render();
+
     termPrint('ipe 160', 'info');
-    await moveTo(140, 0, 800);
-    ipeProfile(140, 0);
-    await sleep(500);
-
-    if (!_demoRunning) return;
-
-    // ── 8. Texte ──────────────────────────────────────────────────────
-    await explain('Annotation — TEXT');
-    termPrint('TEXT', 'info');
-    await click(-210, 115);
-    addEnt({ type:'text', x:-210, y:115, content:'MiniCAD v0.09', size:14 });
-    await sleep(500);
-
-    if (!_demoRunning) return;
-
-    // ── Fin et boucle ─────────────────────────────────────────────────
+    await sleep(700);
     dot.style.display = 'none';
-    await explain('✓  Dessin technique 2D — un seul fichier HTML', 2800);
+    await moveCursor(140, 0, 1400);
+    ipeProfile(140, 0);
+    await sleep(800);
+
+    if (!_demoRunning) return;
+
+    // ── 10. Texte — TEXT ─────────────────────────────────────────────
+    await explain('Annotation — TEXT', 0);
+    await clickToolBtn('text_place');
+    S.tool = 'text_place';
+
+    termPrint('TEXT', 'info');
+    await clickWorld(-205, 118, 1400);
+    addEnt({ type:'text', x:-205, y:118, content:'MiniCAD v0.09', size:14 });
+    await sleep(800);
+
+    if (!_demoRunning) return;
+
+    // ── Fin ───────────────────────────────────────────────────────────
+    mouseOnCanvas = false;
+    S.mouseScreen = null;
+    S.tool = 'select';
+    dot.style.display = 'none';
+    render();
+
+    await explain('✓  Dessin technique 2D — un seul fichier HTML', 3600);
     termPrint('━━ Fin démo — rechargement… ━━', 'success');
 
-    await sleep(1200);
+    await sleep(2000);
     _demoRunning = false;
+    demoBtnRunning(false);
     startDemo();
   }
 
   // ── Démarrage après init MiniCAD ──────────────────────────────────────
   window.addEventListener('load', () => {
     setTimeout(() => {
-      createCursor();
+      createDot();
       createPanel();
-      createReplayBtn();
       startDemo();
     }, 900);
   });

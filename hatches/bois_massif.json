@@ -1,0 +1,10 @@
+{
+  "id": "BOIS_MASSIF",
+  "label": "Bois massif",
+  "category": "Bois",
+  "defaultAngle": 45,
+  "dxfName": "ANSI31",
+  "families": [
+    { "angleOffset": 0, "spacingFactor": 1.0 }
+  ]
+}

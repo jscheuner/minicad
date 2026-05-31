@@ -28,7 +28,7 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
   - En mode multi-tronçons, le dernier point confirmé peut légèrement bouger lors du changement d'angle du tronçon suivant (bisectrice dynamique)
   - Piste : pré-calculer et stocker l'offset de chaque point confirmé dans `S.tubeOffsets[]`, le réutiliser dans la preview sans le recalculer depuis l'angle souris
   - La position finale à la validation (Enter) est correcte — c'est uniquement la preview qui est imparfaite
-- [ ] **3.9 — Arc 3 points** (commande ARC3 ou variante A)
+- [x] **3.9 — Arc 3 points** ✅ — ARC multi-mode complet (3P, SCE, SCA, SER)
 - [ ] **4.6 — Ctrl+Drag pour copier** (drag d'un objet sélectionné avec Ctrl)
 - [x] **5.3 — HATCH** (hachures / remplissage) ✅
 - [ ] **5.5 — Tableaux** (grilles texte annotatives)
@@ -52,6 +52,12 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## ✅ Terminé (résumé)
 
+- ✅ **ARC multi-mode** — 3P / SCE / SCA / SER, mots-clés DI, grips départ/fin, preview live
+- ✅ **Système démo** — `demo/demo_sequence.js`, `build.py --demo` → `minicad_demo.html`, bouton ▶ DÉMO
+- ✅ **DXF Export AC1015** — réécriture complète : CLASSES/BLOCKS/OBJECTS, AcDb*, DIMENSION 5 types, LEADER+MTEXT, HATCH, TUBE
+- ✅ **DXF Import amélioré** — SPLINE fit points, XLINE/RAY, DIMENSION routage, LEADER/MTEXT, HATCH, POINT, closed polyline
+- ✅ **SPLINE / XLINE / RAY / RAY_REV** — outils avec boutons barre d'outils
+- ✅ **Bibliothèque IPN** — profils 80→600 SN EN 10365:2017
 - ✅ **DIVIDE / POINT** — diviser entité en N segments par des points ; placement manuel de points ; export DXF
 - ✅ **Styles de cote 1:1→1:100** — 7 styles scale-based remplacent les 3 ISO ; migration localStorage automatique
 - ✅ **FILLET/CHAMFER sur rectangle** — conversion rect→polyligne en place ; undo restaure le rectangle
