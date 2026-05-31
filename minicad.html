@@ -1752,6 +1752,7 @@ const S = {
   zoom: 1,
   panX: 0, panY: 0,
   selected: [],
+  prevSelected: [],
   drawing: false,
   drawPoints: [],
   awaitingInput: false,
@@ -2566,6 +2567,7 @@ const CMD = {
   RAY_REV:  { alias: ['RAYREV'], desc: 'Demi-droite inverse', exec: () => { setTool('ray_rev'); termPrint('DEMI-DROITE INVERSE: Cliquez le point de départ puis la direction opposée', 'info'); }},
   ERASE: { alias: ['E','EFFACER','DEL'], desc: 'Supprimer sélection', exec: () => {
     if (!S.selected.length) { termPrint('Aucun objet sélectionné', 'warning'); return; }
+    S.prevSelected = [...S.selected];
     pushUndo();
     // Détacher les hachures liées aux entités supprimées (snapshot des points actuels)
     S.entities.forEach(e => {
@@ -2584,6 +2586,7 @@ const CMD = {
       termPrint('COPIER: Sélectionner les objets à copier, puis Entrée', 'warning');
       return;
     }
+    S.prevSelected = [...S.selected];
     termPrint('COPIER: Point de base, puis destination', 'info'); setTool('copy');
   }},
   MOVE: { alias: ['M','DEPLACER'], desc: 'Déplacer sélection', exec: () => {
@@ -2593,6 +2596,7 @@ const CMD = {
       termPrint('DÉPLACER: Sélectionner les objets à déplacer, puis Entrée', 'warning');
       return;
     }
+    S.prevSelected = [...S.selected];
     termPrint('DÉPLACER: Point de base, puis destination', 'info'); setTool('move_obj');
   }},
   STRETCH: { alias: ['ET','ETIRER'], desc: 'Étirer les objets (fenêtre croisante)', exec: () => {
@@ -2607,6 +2611,7 @@ const CMD = {
       termPrint('SCALE: Sélectionner les objets à mettre à l\'échelle, puis Entrée', 'warning');
       return;
     }
+    S.prevSelected = [...S.selected];
     S.scaleIds = [...S.selected]; S.scaleStep = 1; S.scaleBase = null;
     setTool('scale');
     termPrint('SCALE: Cliquer le point de base', 'info');
@@ -2619,6 +2624,7 @@ const CMD = {
       termPrint('ROTATE: Sélectionner les objets à pivoter, puis Entrée', 'warning');
       return;
     }
+    S.prevSelected = [...S.selected];
     S.rotateIds = [...S.selected]; S.rotateStep = 1; S.rotateBase = null;
     setTool('rotate');
     termPrint('ROTATE: Cliquer le point de base', 'info');
@@ -2646,7 +2652,15 @@ const CMD = {
       termPrint('MIROIR: Sélectionner les objets, puis Entrée', 'warning');
       return;
     }
+    S.prevSelected = [...S.selected];
     termPrint('MIROIR: 1er point de l\'axe de symétrie', 'info'); setTool('mirror');
+  }},
+  PREVIOUS: { alias: ['P','PREV'], desc: 'Resélectionner la dernière sélection (Previous)', exec: () => {
+    const valid = S.prevSelected.filter(id => S.entities.find(e => e.id === id));
+    if (!valid.length) { termPrint('Aucune sélection précédente', 'warning'); return; }
+    S.selected = valid;
+    termPrint(valid.length + ' objet(s) resélectionné(s) [Previous]', 'success');
+    updateProperties(); render();
   }},
   TRIM: { alias: ['TR'], desc: 'Couper une entité avec une ou plusieurs limites', exec() {
     S.trimStep=1; S.trimCuttingIds=[];
@@ -10555,6 +10569,7 @@ document.addEventListener('keydown',(ev)=>{
   if(ev.key==='Enter' && (S.copyPending || S.mirrorPending || S.rotatePending || S.movePending || S.scalePending)){
     ev.preventDefault();
     if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
+    S.prevSelected = [...S.selected];
     if(S.copyPending){
       S.copyPending=false;
       termPrint('COPIER: Point de base, puis destination','info');
