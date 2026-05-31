@@ -24,11 +24,100 @@ import sys
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 HTML_FILE   = os.path.join(BASE_DIR, 'minicad.html')
 DEMO_OUT    = os.path.join(BASE_DIR, 'minicad_demo.html')
+ORG_OUT     = os.path.join(BASE_DIR, 'minicad_org.html')
 LIB_DIR     = os.path.join(BASE_DIR, 'libraries')
 INDEX_FILE  = os.path.join(LIB_DIR, 'index.json')
 HATCH_DIR   = os.path.join(BASE_DIR, 'hatches')
 HATCH_INDEX = os.path.join(HATCH_DIR, 'index.json')
 DEMO_FILE   = os.path.join(BASE_DIR, 'demo', 'demo_sequence.js')
+
+GTM_BLOCK = """\
+<!-- Cookie Consent + Google Tag Manager (chargé après consentement) -->
+<style>
+  #cookie-banner {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 99999;
+    background: #16213e; border-top: 1px solid #00d4ff44;
+    padding: 14px 24px; display: flex; align-items: center; gap: 16px;
+    flex-wrap: wrap; font-family: 'IBM Plex Sans', sans-serif; font-size: 13px;
+    color: #a0b4c8; box-shadow: 0 -4px 24px #00000066;
+  }
+  #cookie-banner p { margin: 0; flex: 1; min-width: 200px; line-height: 1.5; }
+  #cookie-banner a { color: #00d4ff; text-decoration: underline; }
+  #cookie-banner .cb-btns { display: flex; gap: 10px; flex-shrink: 0; }
+  #cookie-banner button {
+    padding: 7px 18px; border-radius: 4px; border: 1px solid;
+    cursor: pointer; font-size: 13px; font-family: inherit; transition: opacity .2s;
+  }
+  #cookie-banner button:hover { opacity: .8; }
+  #cb-accept {
+    background: #00d4ff22; color: #00d4ff; border-color: #00d4ff88;
+  }
+  #cb-decline {
+    background: transparent; color: #607080; border-color: #607080;
+  }
+</style>
+<script>
+(function(){
+  var GTM_ID = 'GTM-TW3P5FF7';
+  var CONSENT_KEY = 'minicad_cookie_consent';
+
+  function loadGTM() {
+    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer',GTM_ID);
+    var ns=document.createElement('noscript');
+    var ifr=document.createElement('iframe');
+    ifr.src='https://www.googletagmanager.com/ns.html?id='+GTM_ID;
+    ifr.height='0'; ifr.width='0';
+    ifr.style.cssText='display:none;visibility:hidden';
+    ns.appendChild(ifr);
+    document.body.insertBefore(ns, document.body.firstChild);
+  }
+
+  function hideBanner() {
+    var b=document.getElementById('cookie-banner');
+    if(b) b.remove();
+  }
+
+  function accept() {
+    localStorage.setItem(CONSENT_KEY,'accepted');
+    hideBanner(); loadGTM();
+  }
+
+  function decline() {
+    localStorage.setItem(CONSENT_KEY,'declined');
+    hideBanner();
+  }
+
+  var consent = localStorage.getItem(CONSENT_KEY);
+  if (consent === 'accepted') {
+    document.addEventListener('DOMContentLoaded', loadGTM);
+  } else if (!consent) {
+    document.addEventListener('DOMContentLoaded', function() {
+      var banner = document.getElementById('cookie-banner');
+      if (!banner) return;
+      document.getElementById('cb-accept').onclick = accept;
+      document.getElementById('cb-decline').onclick = decline;
+    });
+  }
+})();
+</script>"""
+
+COOKIE_BLOCK = """\
+<!-- Bannière cookies RGPD -->
+<div id="cookie-banner" style="display:none;"></div>
+<script>
+(function(){
+  if (!localStorage.getItem('minicad_cookie_consent')) {
+    var b = document.getElementById('cookie-banner');
+    b.style.display = 'flex';
+    b.innerHTML = '<p>Ce site utilise des cookies analytiques (Google Tag Manager) pour mesurer l\\'audience. Aucune donnée personnelle identifiable n\\'est collectée.</p>'
+      + '<div class="cb-btns"><button id="cb-accept">Accepter</button><button id="cb-decline">Refuser</button></div>';
+  }
+})();
+</script>"""
 
 MARKER_BEGIN       = '// @@LIB_BEGIN'
 MARKER_END         = '// @@LIB_END'
@@ -161,6 +250,13 @@ def inject_block(html, marker_begin, marker_end, block):
     return pattern.sub(lambda _: block, html)
 
 
+def build_org_html(html):
+    """Injecte GTM + cookie banner dans le HTML pour générer minicad_org.html."""
+    html = html.replace('</head>', GTM_BLOCK + '\n</head>', 1)
+    html = html.replace('<body>', '<body>\n' + COOKIE_BLOCK, 1)
+    return html
+
+
 def clear_demo_block(html):
     """Remet le bloc démo à vide (build normal sans --demo)."""
     pattern = re.compile(
@@ -208,12 +304,16 @@ def main():
     with open(HTML_FILE, 'w', encoding='utf-8') as f:
         f.write(html_dev)
 
-    # ── minicad_demo.html : uniquement avec --demo ────────────────────────
+    # ── minicad_demo.html + minicad_org.html : uniquement avec --demo ───────
     if with_demo:
         demo_block = build_demo_js()
         html_demo  = inject_block(html, DEMO_MARKER_BEGIN, DEMO_MARKER_END, demo_block)
         with open(DEMO_OUT, 'w', encoding='utf-8') as f:
             f.write(html_demo)
+
+        html_org = build_org_html(html_demo)   # basé sur minicad_demo.html (avec démo)
+        with open(ORG_OUT, 'w', encoding='utf-8') as f:
+            f.write(html_org)
 
     # ── Résumé ────────────────────────────────────────────
     n_cats  = len(index['categories'])
@@ -228,6 +328,7 @@ def main():
     print(f'  ✓ minicad.html mis à jour')
     if with_demo:
         print(f'  ✓ démo injectée → minicad_demo.html')
+        print(f'  ✓ GTM + cookies injectés → minicad_org.html')
 
 
 if __name__ == '__main__':

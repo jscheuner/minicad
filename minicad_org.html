@@ -915,8 +915,92 @@
   .td-footer button:hover { color: #fff; border-color: #ffffff44; }
   .td-ok { background: var(--accent-dim) !important; color: var(--accent) !important; border-color: var(--accent) !important; }
 </style>
+<!-- Cookie Consent + Google Tag Manager (chargé après consentement) -->
+<style>
+  #cookie-banner {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 99999;
+    background: #16213e; border-top: 1px solid #00d4ff44;
+    padding: 14px 24px; display: flex; align-items: center; gap: 16px;
+    flex-wrap: wrap; font-family: 'IBM Plex Sans', sans-serif; font-size: 13px;
+    color: #a0b4c8; box-shadow: 0 -4px 24px #00000066;
+  }
+  #cookie-banner p { margin: 0; flex: 1; min-width: 200px; line-height: 1.5; }
+  #cookie-banner a { color: #00d4ff; text-decoration: underline; }
+  #cookie-banner .cb-btns { display: flex; gap: 10px; flex-shrink: 0; }
+  #cookie-banner button {
+    padding: 7px 18px; border-radius: 4px; border: 1px solid;
+    cursor: pointer; font-size: 13px; font-family: inherit; transition: opacity .2s;
+  }
+  #cookie-banner button:hover { opacity: .8; }
+  #cb-accept {
+    background: #00d4ff22; color: #00d4ff; border-color: #00d4ff88;
+  }
+  #cb-decline {
+    background: transparent; color: #607080; border-color: #607080;
+  }
+</style>
+<script>
+(function(){
+  var GTM_ID = 'GTM-TW3P5FF7';
+  var CONSENT_KEY = 'minicad_cookie_consent';
+
+  function loadGTM() {
+    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer',GTM_ID);
+    var ns=document.createElement('noscript');
+    var ifr=document.createElement('iframe');
+    ifr.src='https://www.googletagmanager.com/ns.html?id='+GTM_ID;
+    ifr.height='0'; ifr.width='0';
+    ifr.style.cssText='display:none;visibility:hidden';
+    ns.appendChild(ifr);
+    document.body.insertBefore(ns, document.body.firstChild);
+  }
+
+  function hideBanner() {
+    var b=document.getElementById('cookie-banner');
+    if(b) b.remove();
+  }
+
+  function accept() {
+    localStorage.setItem(CONSENT_KEY,'accepted');
+    hideBanner(); loadGTM();
+  }
+
+  function decline() {
+    localStorage.setItem(CONSENT_KEY,'declined');
+    hideBanner();
+  }
+
+  var consent = localStorage.getItem(CONSENT_KEY);
+  if (consent === 'accepted') {
+    document.addEventListener('DOMContentLoaded', loadGTM);
+  } else if (!consent) {
+    document.addEventListener('DOMContentLoaded', function() {
+      var banner = document.getElementById('cookie-banner');
+      if (!banner) return;
+      document.getElementById('cb-accept').onclick = accept;
+      document.getElementById('cb-decline').onclick = decline;
+    });
+  }
+})();
+</script>
 </head>
 <body>
+<!-- Bannière cookies RGPD -->
+<div id="cookie-banner" style="display:none;"></div>
+<script>
+(function(){
+  if (!localStorage.getItem('minicad_cookie_consent')) {
+    var b = document.getElementById('cookie-banner');
+    b.style.display = 'flex';
+    b.innerHTML = '<p>Ce site utilise des cookies analytiques (Google Tag Manager) pour mesurer l\'audience. Aucune donnée personnelle identifiable n\'est collectée.</p>'
+      + '<div class="cb-btns"><button id="cb-accept">Accepter</button><button id="cb-decline">Refuser</button></div>';
+  }
+})();
+</script>
 
 <!-- MENU BAR -->
 <div class="menubar">
@@ -1752,6 +1836,7 @@ const S = {
   zoom: 1,
   panX: 0, panY: 0,
   selected: [],
+  prevSelected: [],
   drawing: false,
   drawPoints: [],
   awaitingInput: false,
@@ -2558,7 +2643,7 @@ const CMD = {
   LINE: { alias: ['L','LIGNE'], desc: 'Dessiner une ligne', exec: () => { setTool('line'); termPrint('LIGNE: Cliquez ou tapez X,Y pour le 1er point', 'info'); }},
   RECT: { alias: ['REC','RECTANGLE'], desc: 'Rectangle (taper L,H ex: 100,100)', exec: () => { setTool('rect'); termPrint('RECTANGLE: Cliquez ou tapez X,Y pour le 1er coin', 'info'); }},
   CIRCLE: { alias: ['C','CERCLE'], desc: 'Cercle (taper rayon ex: 50)', exec: () => { setTool('circle'); termPrint('CERCLE: Cliquez ou tapez X,Y pour le centre', 'info'); }},
-  ARC: { alias: ['A'], desc: 'Arc', exec: () => { setTool('arc'); termPrint('ARC: Cliquez ou tapez X,Y pour le centre', 'info'); }},
+  ARC: { alias: ['A'], desc: 'Arc', exec: () => { S._arcMode='3p'; setTool('arc'); termPrint('ARC — P1 départ  |  C=Centre-Début-Fin  |  E=Début-Fin-Rayon', 'info'); }},
   POLYLINE: { alias: ['PL','POLYLIGNE'], desc: 'Polyligne', exec: () => { setTool('polyline'); termPrint('POLYLIGNE: Cliquez ou tapez X,Y, Echap pour finir', 'info'); }},
   SPLINE:   { alias: ['SPL'], desc: 'Spline (Catmull-Rom)', exec: () => { setTool('spline'); termPrint('SPLINE: Cliquez les points de passage — C=Clore  Echap=Finir', 'info'); }},
   XLINE:    { alias: ['XL','LIGNEINFINIE'], desc: 'Ligne infinie (2 directions)', exec: () => { setTool('xline'); termPrint('XLINE: Cliquez le point de base puis un point de passage', 'info'); }},
@@ -2566,6 +2651,7 @@ const CMD = {
   RAY_REV:  { alias: ['RAYREV'], desc: 'Demi-droite inverse', exec: () => { setTool('ray_rev'); termPrint('DEMI-DROITE INVERSE: Cliquez le point de départ puis la direction opposée', 'info'); }},
   ERASE: { alias: ['E','EFFACER','DEL'], desc: 'Supprimer sélection', exec: () => {
     if (!S.selected.length) { termPrint('Aucun objet sélectionné', 'warning'); return; }
+    S.prevSelected = [...S.selected];
     pushUndo();
     // Détacher les hachures liées aux entités supprimées (snapshot des points actuels)
     S.entities.forEach(e => {
@@ -2582,8 +2668,9 @@ const CMD = {
       S.copyPending = true;
       setTool('select');
       termPrint('COPIER: Sélectionner les objets à copier, puis Entrée', 'warning');
-      return;
+      setTimeout(smartFocus, 0); return;
     }
+    S.prevSelected = [...S.selected];
     termPrint('COPIER: Point de base, puis destination', 'info'); setTool('copy');
   }},
   MOVE: { alias: ['M','DEPLACER'], desc: 'Déplacer sélection', exec: () => {
@@ -2591,22 +2678,25 @@ const CMD = {
       S.movePending = true;
       setTool('select');
       termPrint('DÉPLACER: Sélectionner les objets à déplacer, puis Entrée', 'warning');
-      return;
+      setTimeout(smartFocus, 0); return;
     }
+    S.prevSelected = [...S.selected];
     termPrint('DÉPLACER: Point de base, puis destination', 'info'); setTool('move_obj');
   }},
   STRETCH: { alias: ['ET','ETIRER'], desc: 'Étirer les objets (fenêtre croisante)', exec: () => {
     S.stretchRect = null; S.stretchStep = 0;
     setTool('stretch');
     termPrint('ÉTIRER: 1er coin de la fenêtre croisante', 'info');
+    setTimeout(smartFocus, 0);
   }},
   SCALE: { alias: ['SC','ECHELLE'], desc: 'Mise à l\'échelle des objets sélectionnés', exec() {
     if (!S.selected.length) {
       S.scalePending = true;
       setTool('select');
       termPrint('SCALE: Sélectionner les objets à mettre à l\'échelle, puis Entrée', 'warning');
-      return;
+      setTimeout(smartFocus, 0); return;
     }
+    S.prevSelected = [...S.selected];
     S.scaleIds = [...S.selected]; S.scaleStep = 1; S.scaleBase = null;
     setTool('scale');
     termPrint('SCALE: Cliquer le point de base', 'info');
@@ -2617,8 +2707,9 @@ const CMD = {
       S.rotatePending = true;
       setTool('select');
       termPrint('ROTATE: Sélectionner les objets à pivoter, puis Entrée', 'warning');
-      return;
+      setTimeout(smartFocus, 0); return;
     }
+    S.prevSelected = [...S.selected];
     S.rotateIds = [...S.selected]; S.rotateStep = 1; S.rotateBase = null;
     setTool('rotate');
     termPrint('ROTATE: Cliquer le point de base', 'info');
@@ -2644,9 +2735,17 @@ const CMD = {
       S.mirrorPending = true;
       setTool('select');
       termPrint('MIROIR: Sélectionner les objets, puis Entrée', 'warning');
-      return;
+      setTimeout(smartFocus, 0); return;
     }
+    S.prevSelected = [...S.selected];
     termPrint('MIROIR: 1er point de l\'axe de symétrie', 'info'); setTool('mirror');
+  }},
+  PREVIOUS: { alias: ['P','PREV'], desc: 'Resélectionner la dernière sélection (Previous)', exec: () => {
+    const valid = S.prevSelected.filter(id => S.entities.find(e => e.id === id));
+    if (!valid.length) { termPrint('Aucune sélection précédente', 'warning'); return; }
+    S.selected = valid;
+    termPrint(valid.length + ' objet(s) resélectionné(s) [Previous]', 'success');
+    updateProperties(); render();
   }},
   TRIM: { alias: ['TR'], desc: 'Couper une entité avec une ou plusieurs limites', exec() {
     S.trimStep=1; S.trimCuttingIds=[];
@@ -4285,6 +4384,45 @@ function computeHatchLines(pts, angleDeg, spacing) {
   return segs;
 }
 
+function computeZigzagLines(pts, angleDeg, spacing) {
+  if (!pts || pts.length < 3 || spacing <= 0) return [];
+  const amp   = spacing * 0.55;
+  const halfW = spacing * 0.75;
+  const step  = halfW * 2;
+  const a = angleDeg * Math.PI / 180;
+  const ca = Math.cos(a), sa = Math.sin(a);
+  const rpts = pts.map(p => [p[0]*ca + p[1]*sa, -p[0]*sa + p[1]*ca]);
+  let yMin=Infinity, yMax=-Infinity, xMin=Infinity, xMax=-Infinity;
+  rpts.forEach(p => {
+    if(p[1]<yMin)yMin=p[1]; if(p[1]>yMax)yMax=p[1];
+    if(p[0]<xMin)xMin=p[0]; if(p[0]>xMax)xMax=p[0];
+  });
+  function inPoly(rx, ry) {
+    let inside=false, n=rpts.length;
+    for(let i=0,j=n-1;i<n;j=i++){
+      const [xi,yi]=rpts[i],[xj,yj]=rpts[j];
+      if(((yi>ry)!==(yj>ry))&&(rx<(xj-xi)*(ry-yi)/(yj-yi)+xi)) inside=!inside;
+    }
+    return inside;
+  }
+  const unrot = (rx,ry) => [rx*ca-ry*sa, rx*sa+ry*ca];
+  const segs = [];
+  for(let y=Math.ceil(yMin/spacing)*spacing; y<=yMax; y+=spacing) {
+    const xStart = Math.floor(xMin/step)*step - step;
+    for(let x=xStart; x<=xMax+step; x+=step) {
+      const verts = [[x,y],[x+halfW,y-amp],[x+step,y]];
+      for(let i=0;i<2;i++){
+        const [rx1,ry1]=verts[i],[rx2,ry2]=verts[i+1];
+        if(inPoly((rx1+rx2)/2,(ry1+ry2)/2)){
+          const [wx1,wy1]=unrot(rx1,ry1),[wx2,wy2]=unrot(rx2,ry2);
+          segs.push([wx1,wy1,wx2,wy2]);
+        }
+      }
+    }
+  }
+  return segs;
+}
+
 function drawEntity(e) {
   switch (e.type) {
     case 'point': {
@@ -4592,11 +4730,17 @@ function drawEntity(e) {
     case 'hatch': {
       const _hpts = getHatchPoints(e);
       if (!_hpts || _hpts.length < 3) break;
-      const segs = computeHatchLines(_hpts, e.angle ?? 45, e.spacing || 10);
-      const extra = e.pattern === 'cross' ? computeHatchLines(_hpts, (e.angle ?? 45) + 90, e.spacing || 10) : [];
+      const def = _hatchDef(e.pattern);
+      const baseAngle = e.angle ?? (def.defaultAngle ?? 45);
+      const allSegs = def.families.flatMap(f => {
+        const sp = (e.spacing || 10) * (f.spacingFactor ?? 1);
+        const ang = baseAngle + (f.angleOffset ?? 0);
+        return f.type === 'zigzag' ? computeZigzagLines(_hpts, ang, sp)
+                                   : computeHatchLines(_hpts, ang, sp);
+      });
       ctx.save(); ctx.lineWidth = 0.8;
       ctx.beginPath();
-      [...segs, ...extra].forEach(s => {
+      allSegs.forEach(s => {
         const [x1s, y1s] = w2s(s[0], s[1]), [x2s, y2s] = w2s(s[2], s[3]);
         ctx.moveTo(x1s, y1s); ctx.lineTo(x2s, y2s);
       });
@@ -4731,6 +4875,10 @@ function getGripPoints(e) {
       break;
     case 'arc':
       gp(e.cx, e.cy, (ent, nx, ny) => { ent.cx = nx; ent.cy = ny; });
+      gp(e.cx + e.r*Math.cos(e.startAngle), e.cy + e.r*Math.sin(e.startAngle),
+        (ent, nx, ny) => { ent.startAngle = Math.atan2(ny - ent.cy, nx - ent.cx); });
+      gp(e.cx + e.r*Math.cos(e.endAngle), e.cy + e.r*Math.sin(e.endAngle),
+        (ent, nx, ny) => { ent.endAngle = Math.atan2(ny - ent.cy, nx - ent.cx); });
       break;
     case 'dim_angular':
       gp(e.vx, e.vy, (ent, nx, ny) => { ent.vx = nx; ent.vy = ny; });
@@ -5078,6 +5226,32 @@ function drawPreview() {
     const r = S.circleDiamMode ? dist/2 : dist;
     const [cx,cy]=w2s(pts[0][0],pts[0][1]);
     ctx.beginPath(); ctx.arc(cx,cy,r*S.zoom,0,Math.PI*2); ctx.stroke();
+  } else if (tool==='arc') {
+    const mode = S._arcMode||'3p';
+    if (pts.length===1) {
+      // Rubber-band vers la souris
+      const [x1,y1]=w2s(pts[0][0],pts[0][1]), [x2,y2]=w2s(mx,my);
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    } else if (pts.length===2 && mode==='3p') {
+      const arc=_arc3pt(pts[0],pts[1],[mx,my]);
+      if(arc){const[csx,csy]=w2s(arc.cx,arc.cy);ctx.beginPath();ctx.arc(csx,csy,arc.r*S.zoom,-arc.endAngle,-arc.startAngle);ctx.stroke();}
+    } else if (pts.length===2 && (mode==='sce'||mode==='sca')) {
+      // Preview SCE : arc de pts[0] (départ) autour de pts[1] (centre) vers souris
+      const arc=_arcSCE(pts[0],pts[1],[mx,my]);
+      if(arc){
+        const[csx,csy]=w2s(arc.cx,arc.cy);
+        ctx.beginPath();ctx.arc(csx,csy,arc.r*S.zoom,-arc.endAngle,-arc.startAngle);ctx.stroke();
+      }
+      // Croix sur le centre
+      const[ccx,ccy]=w2s(pts[1][0],pts[1][1]);
+      ctx.setLineDash([]); ctx.strokeStyle='#ffaa0099';
+      ctx.beginPath();ctx.moveTo(ccx-6,ccy);ctx.lineTo(ccx+6,ccy);ctx.moveTo(ccx,ccy-6);ctx.lineTo(ccx,ccy+6);ctx.stroke();
+      ctx.setLineDash([4,4]); ctx.strokeStyle='#ffffff66';
+    } else if (pts.length===2 && mode==='ser') {
+      // Preview SER : corde P1-P2 + ligne vers souris (future position centre approx)
+      const[x1,y1]=w2s(pts[0][0],pts[0][1]),[x2,y2]=w2s(pts[1][0],pts[1][1]);
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    }
   } else if (['polyline','cable'].includes(tool) && pts.length>0) {
     let tx=mx,ty=my;
     const last=pts[pts.length-1];
@@ -5760,48 +5934,141 @@ function applyJoin() {
   updateSaveIndicator('modified'); autoSave(); render();
 }
 
+function _drawHatchPreview(canvas, def, baseAngle) {
+  const c = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  c.fillStyle = '#0d0d1f'; c.fillRect(0, 0, w, h);
+  c.strokeStyle = '#6699bb'; c.lineWidth = 0.8;
+  def.families.forEach(f => {
+    const angleDeg = (baseAngle ?? def.defaultAngle ?? 45) + (f.angleOffset || 0);
+    const sp = Math.max(4, 7 * (f.spacingFactor || 1));
+    if (f.type === 'zigzag') {
+      const amp = sp * 0.55, halfW = sp * 0.75, step = halfW * 2;
+      const rad = angleDeg * Math.PI / 180;
+      const ca = Math.cos(rad), sa = Math.sin(rad);
+      c.beginPath();
+      for (let d = -h; d <= h + sp; d += sp) {
+        const ox = w/2 - sa*d, oy = h/2 + ca*d;
+        for (let t = -w*2; t <= w*2; t += step) {
+          const px = ox + ca*t, py = oy + sa*t;
+          const px2 = ox + ca*(t+halfW) - sa*(-amp), py2 = oy + sa*(t+halfW) + ca*(-amp);
+          const px3 = ox + ca*(t+step), py3 = oy + sa*(t+step);
+          c.moveTo(px, py); c.lineTo(px2, py2); c.lineTo(px3, py3);
+        }
+      }
+      c.stroke();
+    } else {
+      const ang = angleDeg * Math.PI / 180;
+      const ca = Math.cos(ang), sa = Math.sin(ang);
+      const nx = -sa, ny = ca;
+      const diag = Math.hypot(w, h);
+      c.beginPath();
+      for (let d = -diag; d <= diag + sp; d += sp) {
+        const ox = w/2 + d*nx, oy = h/2 + d*ny;
+        c.moveTo(ox - ca*diag, oy - sa*diag);
+        c.lineTo(ox + ca*diag, oy + sa*diag);
+      }
+      c.stroke();
+    }
+  });
+  c.strokeStyle = '#223355'; c.lineWidth = 1;
+  c.strokeRect(0.5, 0.5, w-1, h-1);
+}
+
 function openHatchDialog(pts, layer, existingEntity, sourceId) {
   const editing = !!existingEntity;
-  const initAngle   = editing ? (existingEntity.angle ?? 45) : 45;
+  // Normalise legacy pattern names
+  const rawPat = editing ? (existingEntity.pattern || 'ANSI31') : 'ANSI31';
+  const initPid = rawPat === 'lines' ? 'ANSI31' : rawPat === 'cross' ? 'ANSI37' : rawPat;
+  const initDef = _hatchDef(initPid);
+  const initAngle   = editing ? (existingEntity.angle ?? (initDef.defaultAngle ?? 45)) : (initDef.defaultAngle ?? 45);
   const initSpacing = editing ? (existingEntity.spacing || 10) : 10;
-  const initPattern = editing ? (existingEntity.pattern || 'lines') : 'lines';
+
   const dlg = document.createElement('div');
-  dlg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1a2e;border:1px solid #334;border-radius:6px;padding:16px;z-index:3000;min-width:260px;color:var(--text);font-family:JetBrains Mono,monospace;font-size:12px;box-shadow:0 4px 20px #000a';
+  dlg.id = 'hatch-dialog';
+  dlg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1a2e;border:1px solid #334;border-radius:6px;padding:16px;z-index:3000;min-width:310px;color:var(--text);font-family:JetBrains Mono,monospace;font-size:12px;box-shadow:0 4px 20px #000a';
+
+  const patList = MINICAD_HATCHES.length ? MINICAD_HATCHES : [
+    {id:'ANSI31',label:'Acier',defaultAngle:45,category:'Métal',families:[{angleOffset:0}]},
+    {id:'ANSI37',label:'Croisé',defaultAngle:45,category:'Métal',families:[{angleOffset:0},{angleOffset:90}]}
+  ];
+  // Grouper par catégorie (ordre d'apparition)
+  const catOrder = [], catMap = {};
+  patList.forEach(h => {
+    const cat = h.category || 'Autres';
+    if (!catMap[cat]) { catMap[cat] = []; catOrder.push(cat); }
+    catMap[cat].push(h);
+  });
+  const tileHtml = h =>
+    `<div class="hpat-tile" data-pid="${h.id}" data-dangle="${h.defaultAngle??45}" data-show-angle="${h.showAngle!==false}"
+      style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;
+      background:${h.id===initPid?'#00d4ff18':'transparent'};border:1px solid ${h.id===initPid?'#00d4ff66':'#334'};
+      border-radius:4px;padding:5px 4px">
+      <canvas class="hpat-prev" width="48" height="34" data-pid="${h.id}"></canvas>
+      <span style="font-size:9px;text-align:center;line-height:1.1;max-width:52px">${h.label}</span>
+    </div>`;
+  const patsHtml = catOrder.map(cat =>
+    `<div style="grid-column:1/-1;font-size:9px;color:#ffffff55;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px">${cat}</div>` +
+    catMap[cat].map(tileHtml).join('')
+  ).join('');
+
   dlg.innerHTML = `
-    <div style="font-size:13px;font-weight:bold;margin-bottom:12px;color:#00d4ff">${editing ? 'Modifier hachures' : 'Hachures'}</div>
-    <div style="display:flex;gap:16px;margin-bottom:12px">
-      <label style="cursor:pointer"><input type="radio" name="hp" value="lines" ${initPattern==='lines'?'checked':''}> Lignes</label>
-      <label style="cursor:pointer"><input type="radio" name="hp" value="cross" ${initPattern==='cross'?'checked':''}> Croisé</label>
-    </div>
-    <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin-bottom:14px">
-      <span>Angle (°)</span>
-      <input id="h-angle" type="number" value="${initAngle}" style="background:#12122a;border:1px solid #334;color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
-      <span>Espacement</span>
-      <input id="h-spacing" type="number" value="${initSpacing}" min="0.1" style="background:#12122a;border:1px solid #334;color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
+    <div style="font-size:13px;font-weight:bold;margin-bottom:10px;color:#00d4ff">${editing?'Modifier hachures':'Hachures'}</div>
+    <div id="hpat-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:12px;max-height:260px;overflow-y:auto;padding-right:2px">${patsHtml}</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+      <div id="h-angle-row" style="display:${initDef.showAngle===false?'none':'flex'};align-items:center;gap:10px">
+        <span style="width:90px;flex-shrink:0">Angle (°)</span>
+        <input id="h-angle" type="number" value="${initAngle}" style="background:#12122a;border:1px solid #334;color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
+      </div>
+      <div id="h-spacing-row" style="display:flex;align-items:center;gap:10px">
+        <span style="width:90px;flex-shrink:0">Espacement</span>
+        <input id="h-spacing" type="number" value="${initSpacing}" min="0.1" style="background:#12122a;border:1px solid #334;color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
+      </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button id="h-cancel" style="background:#223;border:1px solid #334;color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer">Annuler</button>
       <button id="h-ok" style="background:#00d4ff22;border:1px solid #00d4ff66;color:#00d4ff;padding:4px 12px;border-radius:3px;cursor:pointer">OK ↵</button>
     </div>`;
-  dlg.id = 'hatch-dialog';
+
   document.body.appendChild(dlg);
+
+  // Dessiner les mini-previews
+  dlg.querySelectorAll('.hpat-prev').forEach(cv => {
+    const pid = cv.dataset.pid;
+    const def = _hatchDef(pid);
+    _drawHatchPreview(cv, def, def.defaultAngle ?? 45);
+  });
+
+  // Sélection de pattern
+  let selectedPid = initPid;
+  dlg.querySelectorAll('.hpat-tile').forEach(tile => {
+    tile.onclick = () => {
+      dlg.querySelectorAll('.hpat-tile').forEach(t => {
+        t.style.background = 'transparent'; t.style.borderColor = '#334';
+      });
+      tile.style.background = '#00d4ff18'; tile.style.borderColor = '#00d4ff66';
+      selectedPid = tile.dataset.pid;
+      const dangle = parseFloat(tile.dataset.dangle);
+      document.getElementById('h-angle').value = isNaN(dangle) ? 45 : dangle;
+      document.getElementById('h-angle-row').style.display = tile.dataset.showAngle === 'true' ? 'flex' : 'none';
+    };
+  });
+
   const close = () => dlg.remove();
   document.getElementById('h-cancel').onclick = close;
   document.getElementById('h-ok').onclick = () => {
-    const angle   = parseFloat(document.getElementById('h-angle').value) || 45;
+    const _a = parseFloat(document.getElementById('h-angle').value);
+    const angle = isNaN(_a) ? 45 : _a;
     const spacing = Math.max(0.1, parseFloat(document.getElementById('h-spacing').value) || 10);
-    const pattern = dlg.querySelector('input[name="hp"]:checked').value;
     pushUndo();
     if (editing) {
-      existingEntity.angle = angle;
-      existingEntity.spacing = spacing;
-      existingEntity.pattern = pattern;
+      existingEntity.angle = angle; existingEntity.spacing = spacing; existingEntity.pattern = selectedPid;
       termPrint('Hachures modifiées', 'success');
     } else {
-      const hEnt = { type:'hatch', points: pts || [], angle, spacing, pattern, id:S.nextId++, layer: layer ?? S.currentLayer };
+      const hEnt = { type:'hatch', points:pts||[], angle, spacing, pattern:selectedPid, id:S.nextId++, layer:layer??S.currentLayer };
       if (sourceId) hEnt.sourceId = sourceId;
       S.entities.push(hEnt);
-      termPrint('Hachures créées', 'success');
+      termPrint('Hachures créées ('+selectedPid+')', 'success');
     }
     updateSaveIndicator('modified'); autoSave(); render();
     close();
@@ -6121,6 +6388,20 @@ function confirmDynamicInput() {
     if (S.tool === 'spline') closeSpline(); else closePolyline(S.tool); return;
   }
 
+  // === ARC : mots-clés C / E / A via bulle DI ===
+  if (S.tool === 'arc') {
+    const mode2 = S._arcMode || '3p';
+    S.diLocked = false; diDist.blur(); diAngle.blur();
+    if (S.drawPoints.length === 1) {
+      if (diVal === 'C') { S._arcMode='sce'; termPrint('ARC S,C,E — Centre: cliquez le centre','info'); render(); return; }
+      if (diVal === 'E') { S._arcMode='ser'; termPrint('ARC S,E,R — Fin: cliquez le point final','info'); render(); return; }
+    }
+    if (mode2 === 'sce' && S.drawPoints.length === 2 && diVal === 'A') {
+      S._arcMode='sca'; termPrint('ARC S,C,A — Angle inclus (°):','info'); render(); return;
+    }
+    // Sinon : laisser continuer le parsing normal (coordonnées/distance)
+  }
+
   // === GRIP EDIT via dynamic input ===
   if (S.gripEdit) {
     const d = parseFloat(diDist.value);
@@ -6189,7 +6470,7 @@ function confirmDynamicInput() {
   diDist.blur(); diAngle.blur();
 
   // For 2-point tools: finish
-  if (['line','rect','circle','arc','wall','leader'].includes(S.tool)) {
+  if (['line','rect','circle','wall','leader'].includes(S.tool)) {
     finishEntity(S.tool, [...S.drawPoints, [nx, ny]]);
     if (S.tool === 'line') {
       S.drawPoints = [[nx, ny]]; // repart du dernier point
@@ -6197,6 +6478,10 @@ function confirmDynamicInput() {
     } else {
       S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
     }
+    render(); setTimeout(smartFocus, 0); return;
+  }
+  if (S.tool === 'arc') {
+    handleClick(nx, ny, {shiftKey:false}, nx, ny);
     render(); setTimeout(smartFocus, 0); return;
   }
 
@@ -6224,12 +6509,13 @@ function confirmDynamicInput() {
     pushUndo();
     if (S.tool === 'copy') {
       applyCopy(S.selected, dx, dy);
-      termPrint(S.selected.length + ' copié(s)', 'success');
+      updateSaveIndicator('modified'); autoSave(); render();
+      termPrint(S.selected.length + ' copié(s) — autre destination ou [Entrée/clic droit/ESC] pour terminer', 'success');
     } else {
       applyMove(S.selected, dx, dy);
       termPrint(S.selected.length + ' déplacé(s)', 'success');
+      S.drawing = false; S.drawPoints = []; S.awaitingInput = false; setTool('select'); render();
     }
-    S.drawing = false; S.drawPoints = []; S.awaitingInput = false; setTool('select'); render();
   }
 
   // For stretch (step 2 — destination via DI)
@@ -6249,7 +6535,7 @@ function cancelDrawing() {
   if (S.drawing) {
     if (['polyline','cable'].includes(S.tool)) finishPolyline(S.tool);
     else if (S.tool === 'spline') finishSpline();
-    else { S.drawing = false; S.drawPoints = []; S.awaitingInput = false; termPrint('Annulé', 'warning'); }
+    else { S.drawing = false; S.drawPoints = []; S.awaitingInput = false; if(S.tool==='arc') S._arcMode='3p'; termPrint('Annulé', 'warning'); }
     render();
   }
   setTool('select');
@@ -6410,7 +6696,15 @@ canvas.addEventListener('mousedown', (ev) => {
     const osnap = findOsnap(wx, wy);
     const [px, py] = osnap ? [osnap.x, osnap.y] : snapToGrid(wx, wy);
     pushUndo();
+    const idBefore = S.nextId;
     window[S.libDef.drawFn](S.libDef.params, px, py);
+    const { famName, sz, standard, G } = S.libDef;
+    S.entities.filter(e => e.id >= idBefore).forEach(e => {
+      if (famName)   e.profileFamily   = famName;
+      if (sz)        e.profileSize     = sz;
+      if (standard)  e.profileStandard = standard;
+      if (G != null) e.profileG        = G;
+    });
     termPrint(S.libDef.label + ' inséré en (' + px.toFixed(1) + ', ' + py.toFixed(1) + ')', 'success');
     S.libPending = false; S.libDef = null;
     render(); return;
@@ -6585,7 +6879,7 @@ canvas.addEventListener('mouseup', (ev) => {
     isRubberBand = true;
     rbStart = { sx, sy, wx, wy };
     rbEnd   = { sx, sy, wx, wy };
-    render(); return;
+    render(); setTimeout(smartFocus, 0); return;
   }
 
   // STRETCH — fin de fenêtre croisante
@@ -6764,6 +7058,36 @@ function _dimAngSector(vx,vy,la1,la2,mx,my){
   return{startAngle:sa,endAngle:ea>=T?ea-T:ea,angle:ea-sa};
 }
 
+// ── Arc multi-mode helpers ──────────────────────────────────────────────
+function _arc3pt(p1, p2, p3) {
+  const ax=p1[0],ay=p1[1], bx=p2[0],by=p2[1], cx=p3[0],cy=p3[1];
+  const D=2*(ax*(by-cy)+bx*(cy-ay)+cx*(ay-by));
+  if(Math.abs(D)<1e-10) return null;
+  const ux=((ax*ax+ay*ay)*(by-cy)+(bx*bx+by*by)*(cy-ay)+(cx*cx+cy*cy)*(ay-by))/D;
+  const uy=((ax*ax+ay*ay)*(cx-bx)+(bx*bx+by*by)*(ax-cx)+(cx*cx+cy*cy)*(bx-ax))/D;
+  const r=Math.hypot(ax-ux,ay-uy);
+  if(r<1e-10) return null;
+  let sa=Math.atan2(ay-uy,ax-ux), ea=Math.atan2(cy-uy,cx-ux);
+  const cross=(bx-ax)*(cy-ay)-(by-ay)*(cx-ax);
+  if(cross>=0){while(ea<sa)ea+=Math.PI*2;}else{while(ea>sa)ea-=Math.PI*2;}
+  return {type:'arc',cx:ux,cy:uy,r,startAngle:sa,endAngle:ea};
+}
+function _arcSCE(pS, pC, pE) {
+  const cx=pC[0],cy=pC[1];
+  const r=Math.hypot(pS[0]-cx,pS[1]-cy);
+  if(r<1e-10) return null;
+  const sa=Math.atan2(pS[1]-cy,pS[0]-cx);
+  let ea=Math.atan2(pE[1]-cy,pE[0]-cx);
+  while(ea<sa) ea+=Math.PI*2;
+  return {type:'arc',cx,cy,r,startAngle:sa,endAngle:ea};
+}
+function _arcFinish(arc) {
+  arc.id=S.nextId++; arc.layer=S.currentLayer;
+  S.entities.push(arc);
+  termPrint('#'+arc.id+' arc créé r='+arc.r.toFixed(1),'success');
+  S.drawing=false; S.drawPoints=[]; S.awaitingInput=false; S._arcMode='3p';
+}
+
 function handleClick(wx, wy, ev, rawWx, rawWy) {
   // rawWx/rawWy: cursor position before OSNAP/grid snap — use for entity picking (hitTest)
   // wx/wy: snapped position — use for new point creation
@@ -6808,12 +7132,40 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     if (hit) {
       if (ev.shiftKey) { const idx = S.selected.indexOf(hit.id); if (idx >= 0) S.selected.splice(idx, 1); else S.selected.push(hit.id); }
       else S.selected = [hit.id];
+      if (S.selected.length) S.prevSelected = [...S.selected];
     } else S.selected = [];
     updateProperties(); render(); return;
   }
 
+  // ARC — multi-mode: 3P | SCE | SCA | SER
+  if (tool === 'arc') {
+    const mode = S._arcMode || '3p';
+    if (!S.drawing) {
+      S.drawing=true; S.drawPoints=[[wx,wy]]; S.awaitingInput=true; S._arcMode='3p';
+      termPrint('ARC — P1 ('+wx.toFixed(1)+','+wy.toFixed(1)+')  |  C=Centre  E=Fin+Rayon','info');
+    } else if (mode==='3p' && S.drawPoints.length===1) {
+      S.drawPoints.push([wx,wy]);
+      termPrint('ARC 3P — P2 milieu ('+wx.toFixed(1)+','+wy.toFixed(1)+') — cliquez la fin','info');
+    } else if (mode==='3p' && S.drawPoints.length===2) {
+      const arc=_arc3pt(S.drawPoints[0],S.drawPoints[1],[wx,wy]);
+      if(!arc){termPrint('Points colinéaires — impossible','error');render();return;}
+      pushUndo(); _arcFinish(arc);
+    } else if (mode==='sce' && S.drawPoints.length===1) {
+      S.drawPoints.push([wx,wy]);
+      termPrint('ARC SCE — Centre ('+wx.toFixed(1)+','+wy.toFixed(1)+') — cliquez la fin  |  A=angle','info');
+    } else if ((mode==='sce'||mode==='sca') && S.drawPoints.length===2) {
+      const arc=_arcSCE(S.drawPoints[0],S.drawPoints[1],[wx,wy]);
+      if(!arc){termPrint('Rayon nul — impossible','error');render();return;}
+      pushUndo(); _arcFinish(arc);
+    } else if (mode==='ser' && S.drawPoints.length===1) {
+      S.drawPoints.push([wx,wy]);
+      termPrint('ARC SER — P2 fin ('+wx.toFixed(1)+','+wy.toFixed(1)+') — tapez le rayon (négatif=arc majeur)','info');
+    }
+    render(); return;
+  }
+
   // Drawing tools (2-point) — WITHOUT dimensions
-  if (['line','rect','circle','arc','wall','leader','xline','ray','ray_rev'].includes(tool)) {
+  if (['line','rect','circle','wall','leader','xline','ray','ray_rev'].includes(tool)) {
     if (!S.drawing) {
       S.drawing = true; S.drawPoints = [[wx, wy]]; S.awaitingInput = true;
       termPrint('Point 1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ')', 'info');
@@ -7234,6 +7586,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       S.drawPoints = [[wx, wy]];
       S.stretchStep = 2;
       termPrint('ÉTIRER: Cliquer la destination', 'info');
+      setTimeout(smartFocus, 0);
     } else if (S.stretchStep === 2) {
       const [cx, cy] = applyConstraint(S.drawPoints[0][0], S.drawPoints[0][1], wx, wy);
       const dx = cx - S.drawPoints[0][0], dy = cy - S.drawPoints[0][1];
@@ -7279,7 +7632,9 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       pushUndo();
       if (tool==='copy') {
         applyCopy(S.selected,dx,dy);
-        termPrint(S.selected.length+' copié(s)','success');
+        updateSaveIndicator('modified'); autoSave(); render();
+        termPrint(S.selected.length+' copié(s) — autre destination ou [Entrée/clic droit/ESC] pour terminer','success');
+        return; // reste en mode copy, drawPoints[0] conservé
       } else {
         applyMove(S.selected,dx,dy);
         termPrint(S.selected.length+' déplacé(s)','success');
@@ -8239,9 +8594,9 @@ function hitTest(wx,wy) {
         d=Math.min(d, distToSeg(wx,wy,pts[j][0],pts[j][1],pts[j+1][0],pts[j+1][1]));
       // lignes de remplissage
       if(d>=tol){
-        const segs=computeHatchLines(pts,e.angle??45,e.spacing||10);
-        const extra=e.pattern==='cross'?computeHatchLines(pts,(e.angle??45)+90,e.spacing||10):[];
-        for(const s of [...segs,...extra]){
+        const _hdef=_hatchDef(e.pattern), _hba=e.angle??(_hdef.defaultAngle??45);
+        const allHSegs=_hdef.families.flatMap(f=>{const _sp=(e.spacing||10)*(f.spacingFactor??1),_ang=_hba+(f.angleOffset??0);return f.type==='zigzag'?computeZigzagLines(pts,_ang,_sp):computeHatchLines(pts,_ang,_sp);});
+        for(const s of allHSegs){
           d=Math.min(d,distToSeg(wx,wy,s[0],s[1],s[2],s[3]));
           if(d<tol) break;
         }
@@ -8505,6 +8860,7 @@ function selectInRect(wx1, wy1, wx2, wy2, shiftKey) {
     .map(e => e.id);
   if (shiftKey) { newSel.forEach(id => { if (!S.selected.includes(id)) S.selected.push(id); }); }
   else S.selected = newSel;
+  if (S.selected.length) S.prevSelected = [...S.selected];
   const mode = isWindow ? 'fenêtre' : 'croisement';
   if (newSel.length) termPrint(newSel.length + ' objet(s) sélectionné(s) [' + mode + ']', 'info');
   else termPrint('Aucun objet dans la sélection', 'info');
@@ -8735,6 +9091,11 @@ function updateProperties() {
       S.dimStyles.map(ds=>'<option value="'+ds.name+'"'+(e.dimStyle===ds.name?' selected':'')+'>'+ds.name+'</option>').join('')+
       '</select>';
     h += row('Style cote', dsSel);
+  }
+  if (e.profileFamily) {
+    h += row('Profil', '<span class="prop-value">'+e.profileFamily+(e.profileSize?' '+e.profileSize:'')+'</span>');
+    if (e.profileStandard) h += row('Norme', '<span class="prop-value">'+e.profileStandard+'</span>');
+    if (e.profileG != null) h += row('Poids/m', '<span class="prop-value">'+e.profileG+' kg/m</span>');
   }
   c.innerHTML = h;
 }
@@ -9817,6 +10178,47 @@ function executeCommand(input) {
     return;
   }
 
+  // ---- ARC : options de dessin (C, E, A, rayon, angle) ----
+  if (S.drawing && S.tool==='arc') {
+    const up=raw.toUpperCase(), mode=S._arcMode||'3p';
+    if(S.drawPoints.length===1){
+      if(up==='C'||up==='CENTER'||up==='CENTRE'){S._arcMode='sce';termPrint('ARC S,C,E — Centre: cliquez le centre','info');render();return;}
+      if(up==='E'||up==='END'||up==='FIN'){S._arcMode='ser';termPrint('ARC S,E,R — Fin: cliquez le point final','info');render();return;}
+    }
+    if(mode==='sce' && S.drawPoints.length===2 && (up==='A'||up==='ANGLE')){
+      S._arcMode='sca';termPrint('ARC S,C,A — Angle inclus (°):','info');render();return;
+    }
+    const num=parseFloat(raw);
+    if(!isNaN(num)){
+      if((mode==='sca') && S.drawPoints.length===2){
+        const[pS,pC]=S.drawPoints, r=Math.hypot(pS[0]-pC[0],pS[1]-pC[1]);
+        const sa=Math.atan2(pS[1]-pC[1],pS[0]-pC[0]), ea=sa+num*Math.PI/180;
+        const arc={type:'arc',cx:pC[0],cy:pC[1],r,startAngle:sa,endAngle:ea};
+        pushUndo(); _arcFinish(arc); render(); return;
+      }
+      if(mode==='ser' && S.drawPoints.length===2){
+        const[p1,p2]=S.drawPoints;
+        const chord=Math.hypot(p2[0]-p1[0],p2[1]-p1[1]);
+        const R=Math.abs(num);
+        if(R<chord/2-1e-10){termPrint('Rayon trop petit (min '+(chord/2).toFixed(1)+')','error');return;}
+        const mid=[(p1[0]+p2[0])/2,(p1[1]+p2[1])/2];
+        const dx=p2[0]-p1[0],dy=p2[1]-p1[1],len=Math.hypot(dx,dy);
+        const nx2=-dy/len,ny2=dx/len;
+        const h=Math.sqrt(Math.max(0,R*R-(chord/2)*(chord/2)));
+        const sign=num>0?1:-1;
+        const cx=mid[0]+sign*h*nx2, cy=mid[1]+sign*h*ny2;
+        let sa=Math.atan2(p1[1]-cy,p1[0]-cx), ea=Math.atan2(p2[1]-cy,p2[0]-cx);
+        while(ea<sa) ea+=Math.PI*2;
+        if(num>0&&(ea-sa)>Math.PI) ea-=Math.PI*2;
+        if(num<0&&(ea-sa)<Math.PI) ea+=Math.PI*2;
+        const arc={type:'arc',cx,cy,r:R,startAngle:sa,endAngle:ea};
+        pushUndo(); _arcFinish(arc); render(); return;
+      }
+    }
+    if(num===undefined||isNaN(num)) termPrint('ARC: C=Centre  E=Fin  A=Angle (en mode SCE)','warning');
+    return;
+  }
+
   // ---- POLYLINE / CABLE / SPLINE : C ou CLORE pour fermer ----
   if(S.drawing && ['polyline','cable','spline'].includes(S.tool) && (raw.toUpperCase()==='C'||raw.toUpperCase()==='CLORE'||raw.toUpperCase()==='CLOSE')){
     if(S.tool==='spline') closeSpline(); else closePolyline(S.tool); return;
@@ -10034,7 +10436,7 @@ function executeCommand(input) {
       const [nx, ny] = resolved;
 
       // For 2-point tools: finish the entity
-      if (['line','rect','circle','arc','wall','leader'].includes(S.tool)) {
+      if (['line','rect','circle','wall','leader'].includes(S.tool)) {
         finishEntity(S.tool, [...S.drawPoints, [nx, ny]]);
         termPrint('→ Point résolu: (' + nx.toFixed(1) + ', ' + ny.toFixed(1) + ')', 'info');
         if (S.tool === 'line') {
@@ -10043,6 +10445,11 @@ function executeCommand(input) {
         } else {
           S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
         }
+        render(); return;
+      }
+      // For arc: simulate a click with the resolved point
+      if (S.tool === 'arc') {
+        handleClick(nx, ny, {shiftKey:false}, nx, ny);
         render(); return;
       }
 
@@ -10067,7 +10474,9 @@ function executeCommand(input) {
         pushUndo();
         if (S.tool === 'copy') {
           applyCopy(S.selected, dx, dy);
-          termPrint(S.selected.length + ' copié(s)', 'success');
+          updateSaveIndicator('modified'); autoSave(); render();
+          termPrint(S.selected.length + ' copié(s) — autre destination ou [Entrée/clic droit/ESC] pour terminer', 'success');
+          return;
         } else {
           applyMove(S.selected, dx, dy);
           termPrint(S.selected.length + ' déplacé(s)', 'success');
@@ -10248,6 +10657,7 @@ document.addEventListener('keydown',(ev)=>{
   if(ev.key==='Enter' && (S.copyPending || S.mirrorPending || S.rotatePending || S.movePending || S.scalePending)){
     ev.preventDefault();
     if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
+    S.prevSelected = [...S.selected];
     if(S.copyPending){
       S.copyPending=false;
       termPrint('COPIER: Point de base, puis destination','info');
@@ -10272,6 +10682,12 @@ document.addEventListener('keydown',(ev)=>{
       setTool('scale');
     }
     return;
+  }
+  // Enter: terminer la boucle de copie multiple
+  if(ev.key==='Enter' && S.tool==='copy' && S.drawing){
+    ev.preventDefault();
+    S.drawing=false; S.drawPoints=[]; S.awaitingInput=false;
+    termPrint('Copie terminée','success'); setTool('select'); render(); return;
   }
   // Escape global: annuler pending
   if(ev.key==='Escape' && S.gripSelected){
@@ -10301,6 +10717,10 @@ document.addEventListener('keydown',(ev)=>{
   }
   if(ev.key==='Escape' && S.copyPending){
     S.copyPending=false; termPrint('Copie annulée','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S.tool==='copy' && S.drawing){
+    S.drawing=false; S.drawPoints=[]; S.awaitingInput=false;
+    termPrint('Copie terminée','success'); setTool('select'); render(); return;
   }
   if(ev.key==='Escape' && S.mirrorPending){
     S.mirrorPending=false; termPrint('Miroir annulé','warning'); setTool('select'); return;
@@ -10797,8 +11217,9 @@ function exportDXF() {
       case 'hatch': {
         const hpts = getHatchPoints(e);
         if (!hpts || hpts.length < 3) break;
-        const patternName = e.pattern === 'cross' ? 'ANSI37' : 'ANSI31';
-        const ang = e.angle || 45;
+        const _hdx = _hatchDef(e.pattern);
+        const patternName = _hdx.dxfName || 'ANSI31';
+        const ang = e.angle ?? (_hdx.defaultAngle ?? 45);
         const sc  = (e.spacing || 10);
         w('0'); w('HATCH'); wEnt(layerName,col); w('100'); w('AcDbHatch');
         w('10'); w('0.0'); w('20'); w('0.0'); w('30'); w('0.0');
@@ -10820,7 +11241,7 @@ function exportDXF() {
         w('76'); w('1'); // predefined pattern
         w('52'); w(f(ang)); // pattern angle
         w('41'); w(f(sc));  // pattern scale
-        w('77'); w(e.pattern==='cross' ? '1' : '0'); // double flag
+        w('77'); w(_hdx.families.length > 1 ? '1' : '0'); // double flag
         w('78'); w('1'); // 1 pattern def line
         w('53'); w(f(ang));
         w('43'); w('0.0'); w('44'); w('0.0');
@@ -11837,7 +12258,10 @@ canvas.addEventListener('contextmenu', (ev) => {
     } else if (S.tool === 'line') {
       S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
       termPrint('Ligne terminée','info'); setTool('select');
-    } else if (['copy','move_obj'].includes(S.tool)) {
+    } else if (S.tool === 'copy') {
+      S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
+      termPrint('Copie terminée', 'success'); setTool('select');
+    } else if (S.tool === 'move_obj') {
       // rien : attend le 2ème clic
     } else if (S.drawPoints.length >= 1) {
       // rect, circle, arc, wall, etc. → terminer à la position courante
@@ -12087,6 +12511,37 @@ termPrint('Raccourcis: L R C V Tab Espace F3 F4 F8 F10','info');
 cmdInput.focus();
 
 // ═══════════════════════════════════════════════════════
+// PATTERNS DE HACHURES
+// ═══════════════════════════════════════════════════════
+
+// @@HATCH_BEGIN — Généré par build.py — ne pas éditer directement
+// Éditer les fichiers dans hatches/ puis relancer build.py
+const MINICAD_HATCHES = [
+  {"id": "BRIQUE", "label": "Brique", "category": "Maçonnerie", "defaultAngle": 45, "dxfName": "ANSI31", "families": [{"angleOffset": 0, "spacingFactor": 1.0}]},
+  {"id": "BRIQUE_CROISEE", "label": "Brique silico", "category": "Maçonnerie", "defaultAngle": 45, "dxfName": "ANSI37", "families": [{"angleOffset": 0, "spacingFactor": 1.0}, {"angleOffset": 90, "spacingFactor": 1.0}]},
+  {"id": "MACONNERIE", "label": "Maçonnerie", "category": "Maçonnerie", "defaultAngle": 0, "dxfName": "ANSI31", "families": [{"angleOffset": 0, "spacingFactor": 1.0}, {"angleOffset": 90, "spacingFactor": 3.5}]},
+  {"id": "BETON_ARME", "label": "Béton armé", "category": "Béton", "defaultAngle": 45, "dxfName": "ANSI37", "families": [{"angleOffset": 0, "spacingFactor": 1.0}, {"angleOffset": 90, "spacingFactor": 1.0}]},
+  {"id": "BETON", "label": "Béton", "category": "Béton", "defaultAngle": 45, "dxfName": "ANSI31", "families": [{"angleOffset": 0, "spacingFactor": 1.0}, {"angleOffset": 90, "spacingFactor": 1.0}, {"angleOffset": -45, "spacingFactor": 2.5}]},
+  {"id": "BOIS_MASSIF", "label": "Bois massif", "category": "Bois", "defaultAngle": 45, "dxfName": "ANSI31", "families": [{"angleOffset": 0, "spacingFactor": 1.0}]},
+  {"id": "BOIS", "label": "Bois dérivé", "category": "Bois", "defaultAngle": 0, "dxfName": "ANSI31", "families": [{"angleOffset": 0, "spacingFactor": 1.0}, {"angleOffset": 0, "spacingFactor": 4.0}]},
+  {"id": "PIERRE", "label": "Pierre nat.", "category": "Pierre / Sol", "defaultAngle": 30, "dxfName": "ANSI31", "families": [{"angleOffset": 0, "spacingFactor": 1.0}, {"angleOffset": 60, "spacingFactor": 1.0}]},
+  {"id": "TERRE", "label": "Terre", "category": "Pierre / Sol", "defaultAngle": 45, "dxfName": "ANSI31", "families": [{"angleOffset": 0, "spacingFactor": 1.0}, {"angleOffset": 45, "spacingFactor": 3.5}]},
+  {"id": "VERRE", "label": "Verre / Synth.", "category": "Divers", "defaultAngle": 0, "showAngle": false, "dxfName": "ANSI31", "families": [{"angleOffset": 0, "spacingFactor": 1.0}]},
+  {"id": "ISOLATION", "label": "Isolation", "category": "Divers", "defaultAngle": 0, "showAngle": false, "dxfName": "ANSI31", "families": [{"type": "zigzag", "angleOffset": 0, "spacingFactor": 1.0}]},
+  {"id": "GRID", "label": "Quadrillé", "category": "Divers", "defaultAngle": 0, "showAngle": false, "dxfName": "ANSI37", "families": [{"angleOffset": 0, "spacingFactor": 1.0}, {"angleOffset": 90, "spacingFactor": 1.0}]},
+  {"id": "ANSI31", "label": "Acier / lignes", "category": "Métal", "defaultAngle": 45, "dxfName": "ANSI31", "families": [{"angleOffset": 0, "spacingFactor": 1.0}]},
+  {"id": "ANSI37", "label": "Acier croisé", "category": "Métal", "defaultAngle": 45, "dxfName": "ANSI37", "families": [{"angleOffset": 0, "spacingFactor": 1.0}, {"angleOffset": 90, "spacingFactor": 1.0}]}
+];
+// @@HATCH_END
+
+function _hatchDef(pattern) {
+  // Compat legacy : 'lines' → ANSI31, 'cross' → ANSI37
+  const id = pattern === 'lines' ? 'ANSI31' : pattern === 'cross' ? 'ANSI37' : (pattern || 'ANSI31');
+  return (MINICAD_HATCHES || []).find(h => h.id === id)
+    || { id, families: [{ angleOffset: 0, spacingFactor: 1 }] };
+}
+
+// ═══════════════════════════════════════════════════════
 // BIBLIOTHÈQUE DE PIÈCES PARAMÉTRIQUES
 // ═══════════════════════════════════════════════════════
 
@@ -12096,7 +12551,7 @@ window.minicadAPI = {
     S.entities.push({type:'line',x1,y1,x2,y2,id:S.nextId++,layer:S.currentLayer});
   },
   polyline(pts, closed=false) {
-    S.entities.push({type:'polyline',points:pts.map(p=>[p[0],p[1]]),closed,id:S.nextId++,layer:S.currentLayer});
+    S.entities.push({type:'polyline',points:pts.map(p=>p.length>2?[p[0],p[1],p[2]]:[p[0],p[1]]),closed,id:S.nextId++,layer:S.currentLayer});
   },
   circle(cx,cy,r) {
     S.entities.push({type:'circle',cx,cy,r,id:S.nextId++,layer:S.currentLayer});
@@ -12113,175 +12568,1000 @@ const MINICAD_LIB = {
     {
       name: "\ud83c\udfd7\ufe0f Profil\u00e9s de charpente",
       families: [
-        { name: "IPE", draw: "drawProfileI", data: {
-        "80": {"h": 80, "b": 46, "tw": 3.8, "tf": 5.2, "r": 5},
-        "100": {"h": 100, "b": 55, "tw": 4.1, "tf": 5.7, "r": 7},
-        "120": {"h": 120, "b": 64, "tw": 4.4, "tf": 6.3, "r": 7},
-        "140": {"h": 140, "b": 73, "tw": 4.7, "tf": 6.9, "r": 7},
-        "160": {"h": 160, "b": 82, "tw": 5.0, "tf": 7.4, "r": 9},
-        "180": {"h": 180, "b": 91, "tw": 5.3, "tf": 8.0, "r": 9},
-        "200": {"h": 200, "b": 100, "tw": 5.6, "tf": 8.5, "r": 12},
-        "220": {"h": 220, "b": 110, "tw": 5.9, "tf": 9.2, "r": 12},
-        "240": {"h": 240, "b": 120, "tw": 6.2, "tf": 9.8, "r": 15},
-        "270": {"h": 270, "b": 135, "tw": 6.6, "tf": 10.2, "r": 15},
-        "300": {"h": 300, "b": 150, "tw": 7.1, "tf": 10.7, "r": 15},
-        "330": {"h": 330, "b": 160, "tw": 7.5, "tf": 11.5, "r": 18},
-        "360": {"h": 360, "b": 170, "tw": 8.0, "tf": 12.7, "r": 18},
-        "400": {"h": 400, "b": 180, "tw": 8.6, "tf": 13.5, "r": 21},
-        "450": {"h": 450, "b": 190, "tw": 9.4, "tf": 14.6, "r": 21},
-        "500": {"h": 500, "b": 200, "tw": 10.2, "tf": 16.0, "r": 21},
-        "550": {"h": 550, "b": 210, "tw": 11.1, "tf": 17.2, "r": 24},
-        "600": {"h": 600, "b": 220, "tw": 12.0, "tf": 19.0, "r": 24}
+        { name: "IPE", draw: "drawProfileI", standard: "SN EN 10365:2017", family: "IPE", data: {
+        "80": {"h": 80, "b": 46, "tw": 3.8, "tf": 5.2, "r": 5, "G": 6.0},
+        "100": {"h": 100, "b": 55, "tw": 4.1, "tf": 5.7, "r": 7, "G": 8.1},
+        "120": {"h": 120, "b": 64, "tw": 4.4, "tf": 6.3, "r": 7, "G": 10.4},
+        "140": {"h": 140, "b": 73, "tw": 4.7, "tf": 6.9, "r": 7, "G": 12.9},
+        "160": {"h": 160, "b": 82, "tw": 5.0, "tf": 7.4, "r": 9, "G": 15.8},
+        "180": {"h": 180, "b": 91, "tw": 5.3, "tf": 8.0, "r": 9, "G": 18.8},
+        "200": {"h": 200, "b": 100, "tw": 5.6, "tf": 8.5, "r": 12, "G": 22.4},
+        "220": {"h": 220, "b": 110, "tw": 5.9, "tf": 9.2, "r": 12, "G": 26.2},
+        "240": {"h": 240, "b": 120, "tw": 6.2, "tf": 9.8, "r": 15, "G": 30.7},
+        "270": {"h": 270, "b": 135, "tw": 6.6, "tf": 10.2, "r": 15, "G": 36.1},
+        "300": {"h": 300, "b": 150, "tw": 7.1, "tf": 10.7, "r": 15, "G": 42.2},
+        "330": {"h": 330, "b": 160, "tw": 7.5, "tf": 11.5, "r": 18, "G": 49.1},
+        "360": {"h": 360, "b": 170, "tw": 8.0, "tf": 12.7, "r": 18, "G": 57.1},
+        "400": {"h": 400, "b": 180, "tw": 8.6, "tf": 13.5, "r": 21, "G": 66.3},
+        "450": {"h": 450, "b": 190, "tw": 9.4, "tf": 14.6, "r": 21, "G": 77.6},
+        "500": {"h": 500, "b": 200, "tw": 10.2, "tf": 16.0, "r": 21, "G": 90.7},
+        "550": {"h": 550, "b": 210, "tw": 11.1, "tf": 17.2, "r": 24, "G": 106.0},
+        "600": {"h": 600, "b": 220, "tw": 12.0, "tf": 19.0, "r": 24, "G": 122.0}
       } },
-        { name: "IPN", draw: "drawProfileIPN", data: {
-        "80": {"h": 80, "b": 42, "tw": 3.9, "tf": 5.9, "r1": 5.0, "r2": 2.5},
-        "100": {"h": 100, "b": 50, "tw": 4.5, "tf": 6.8, "r1": 6.0, "r2": 3.0},
-        "120": {"h": 120, "b": 58, "tw": 5.1, "tf": 7.7, "r1": 6.5, "r2": 3.3},
-        "140": {"h": 140, "b": 66, "tw": 5.7, "tf": 8.6, "r1": 7.0, "r2": 3.5},
-        "160": {"h": 160, "b": 74, "tw": 6.3, "tf": 9.5, "r1": 8.0, "r2": 4.0},
-        "180": {"h": 180, "b": 82, "tw": 6.9, "tf": 10.4, "r1": 8.5, "r2": 4.3},
-        "200": {"h": 200, "b": 90, "tw": 7.5, "tf": 11.3, "r1": 9.0, "r2": 4.5},
-        "220": {"h": 220, "b": 98, "tw": 8.1, "tf": 12.2, "r1": 9.5, "r2": 4.8},
-        "240": {"h": 240, "b": 106, "tw": 8.7, "tf": 13.1, "r1": 10.0, "r2": 5.0},
-        "260": {"h": 260, "b": 113, "tw": 9.4, "tf": 14.1, "r1": 10.5, "r2": 5.3},
-        "280": {"h": 280, "b": 119, "tw": 10.1, "tf": 15.2, "r1": 11.0, "r2": 5.5},
-        "300": {"h": 300, "b": 125, "tw": 10.8, "tf": 16.2, "r1": 12.0, "r2": 6.0},
-        "320": {"h": 320, "b": 131, "tw": 11.5, "tf": 17.3, "r1": 12.5, "r2": 6.3},
-        "340": {"h": 340, "b": 137, "tw": 12.2, "tf": 18.3, "r1": 13.0, "r2": 6.5},
-        "360": {"h": 360, "b": 143, "tw": 13.0, "tf": 19.5, "r1": 14.0, "r2": 7.0},
-        "380": {"h": 380, "b": 149, "tw": 13.7, "tf": 20.5, "r1": 14.5, "r2": 7.3},
-        "400": {"h": 400, "b": 155, "tw": 14.6, "tf": 21.6, "r1": 15.0, "r2": 7.5},
-        "450": {"h": 450, "b": 162, "tw": 16.2, "tf": 24.3, "r1": 16.5, "r2": 8.3},
-        "500": {"h": 500, "b": 170, "tw": 18.0, "tf": 27.0, "r1": 18.0, "r2": 9.0},
-        "550": {"h": 550, "b": 178, "tw": 19.8, "tf": 29.7, "r1": 19.5, "r2": 9.8},
-        "600": {"h": 600, "b": 185, "tw": 21.6, "tf": 32.4, "r1": 21.0, "r2": 10.5}
+        { name: "IPN", draw: "drawProfileIPN", standard: "SN EN 10365:2017", family: "IPN", data: {
+        "80": {"h": 80, "b": 42, "tw": 3.9, "tf": 5.9, "r1": 5.0, "r2": 2.5, "G": 5.94},
+        "100": {"h": 100, "b": 50, "tw": 4.5, "tf": 6.8, "r1": 6.0, "r2": 3.0, "G": 8.34},
+        "120": {"h": 120, "b": 58, "tw": 5.1, "tf": 7.7, "r1": 6.5, "r2": 3.3, "G": 11.1},
+        "140": {"h": 140, "b": 66, "tw": 5.7, "tf": 8.6, "r1": 7.0, "r2": 3.5, "G": 14.3},
+        "160": {"h": 160, "b": 74, "tw": 6.3, "tf": 9.5, "r1": 8.0, "r2": 4.0, "G": 17.9},
+        "180": {"h": 180, "b": 82, "tw": 6.9, "tf": 10.4, "r1": 8.5, "r2": 4.3, "G": 21.9},
+        "200": {"h": 200, "b": 90, "tw": 7.5, "tf": 11.3, "r1": 9.0, "r2": 4.5, "G": 26.2},
+        "220": {"h": 220, "b": 98, "tw": 8.1, "tf": 12.2, "r1": 9.5, "r2": 4.8, "G": 31.1},
+        "240": {"h": 240, "b": 106, "tw": 8.7, "tf": 13.1, "r1": 10.0, "r2": 5.0, "G": 36.2},
+        "260": {"h": 260, "b": 113, "tw": 9.4, "tf": 14.1, "r1": 10.5, "r2": 5.3, "G": 41.9},
+        "280": {"h": 280, "b": 119, "tw": 10.1, "tf": 15.2, "r1": 11.0, "r2": 5.5, "G": 47.9},
+        "300": {"h": 300, "b": 125, "tw": 10.8, "tf": 16.2, "r1": 12.0, "r2": 6.0, "G": 54.2},
+        "320": {"h": 320, "b": 131, "tw": 11.5, "tf": 17.3, "r1": 12.5, "r2": 6.3, "G": 61.0},
+        "340": {"h": 340, "b": 137, "tw": 12.2, "tf": 18.3, "r1": 13.0, "r2": 6.5, "G": 68.0},
+        "360": {"h": 360, "b": 143, "tw": 13.0, "tf": 19.5, "r1": 14.0, "r2": 7.0, "G": 76.1},
+        "380": {"h": 380, "b": 149, "tw": 13.7, "tf": 20.5, "r1": 14.5, "r2": 7.3, "G": 84.0},
+        "400": {"h": 400, "b": 155, "tw": 14.6, "tf": 21.6, "r1": 15.0, "r2": 7.5, "G": 92.4},
+        "450": {"h": 450, "b": 162, "tw": 16.2, "tf": 24.3, "r1": 16.5, "r2": 8.3, "G": 115.0},
+        "500": {"h": 500, "b": 170, "tw": 18.0, "tf": 27.0, "r1": 18.0, "r2": 9.0, "G": 141.0},
+        "550": {"h": 550, "b": 178, "tw": 19.8, "tf": 29.7, "r1": 19.5, "r2": 9.8, "G": 166.0},
+        "600": {"h": 600, "b": 185, "tw": 21.6, "tf": 32.4, "r1": 21.0, "r2": 10.5, "G": 199.0}
       } },
-        { name: "HEA", draw: "drawProfileI", data: {
-        "100": {"h": 96, "b": 100, "tw": 5.0, "tf": 8.0, "r": 12},
-        "120": {"h": 114, "b": 120, "tw": 5.0, "tf": 8.0, "r": 12},
-        "140": {"h": 133, "b": 140, "tw": 5.5, "tf": 8.5, "r": 12},
-        "160": {"h": 152, "b": 160, "tw": 6.0, "tf": 9.0, "r": 15},
-        "180": {"h": 171, "b": 180, "tw": 6.0, "tf": 9.5, "r": 15},
-        "200": {"h": 190, "b": 200, "tw": 6.5, "tf": 10.0, "r": 18},
-        "220": {"h": 210, "b": 220, "tw": 7.0, "tf": 11.0, "r": 18},
-        "240": {"h": 230, "b": 240, "tw": 7.5, "tf": 12.0, "r": 21},
-        "260": {"h": 250, "b": 260, "tw": 7.5, "tf": 12.5, "r": 24},
-        "280": {"h": 270, "b": 280, "tw": 8.0, "tf": 13.0, "r": 24},
-        "300": {"h": 290, "b": 300, "tw": 8.5, "tf": 14.0, "r": 27},
-        "320": {"h": 310, "b": 300, "tw": 9.0, "tf": 15.5, "r": 27},
-        "340": {"h": 330, "b": 300, "tw": 9.5, "tf": 16.5, "r": 27},
-        "360": {"h": 350, "b": 300, "tw": 10.0, "tf": 17.5, "r": 27},
-        "400": {"h": 390, "b": 300, "tw": 11.0, "tf": 19.0, "r": 27},
-        "450": {"h": 440, "b": 300, "tw": 11.5, "tf": 21.0, "r": 27},
-        "500": {"h": 490, "b": 300, "tw": 12.0, "tf": 23.0, "r": 27},
-        "550": {"h": 540, "b": 300, "tw": 12.5, "tf": 24.0, "r": 27},
-        "600": {"h": 590, "b": 300, "tw": 13.0, "tf": 25.0, "r": 27},
-        "650": {"h": 640, "b": 300, "tw": 13.5, "tf": 26.0, "r": 27},
-        "700": {"h": 690, "b": 300, "tw": 14.0, "tf": 27.0, "r": 27},
-        "800": {"h": 790, "b": 300, "tw": 15.0, "tf": 29.0, "r": 27},
-        "900": {"h": 890, "b": 300, "tw": 16.0, "tf": 31.0, "r": 27},
-        "1000": {"h": 990, "b": 300, "tw": 17.0, "tf": 33.0, "r": 27}
+        { name: "HEA", draw: "drawProfileI", standard: "SN EN 10365:2017", family: "HEA", data: {
+        "100": {"h": 96, "b": 100, "tw": 5.0, "tf": 8.0, "r": 12, "G": 16.7},
+        "120": {"h": 114, "b": 120, "tw": 5.0, "tf": 8.0, "r": 12, "G": 19.9},
+        "140": {"h": 133, "b": 140, "tw": 5.5, "tf": 8.5, "r": 12, "G": 24.7},
+        "160": {"h": 152, "b": 160, "tw": 6.0, "tf": 9.0, "r": 15, "G": 30.4},
+        "180": {"h": 171, "b": 180, "tw": 6.0, "tf": 9.5, "r": 15, "G": 35.5},
+        "200": {"h": 190, "b": 200, "tw": 6.5, "tf": 10.0, "r": 18, "G": 42.3},
+        "220": {"h": 210, "b": 220, "tw": 7.0, "tf": 11.0, "r": 18, "G": 50.5},
+        "240": {"h": 230, "b": 240, "tw": 7.5, "tf": 12.0, "r": 21, "G": 60.3},
+        "260": {"h": 250, "b": 260, "tw": 7.5, "tf": 12.5, "r": 24, "G": 68.2},
+        "280": {"h": 270, "b": 280, "tw": 8.0, "tf": 13.0, "r": 24, "G": 76.4},
+        "300": {"h": 290, "b": 300, "tw": 8.5, "tf": 14.0, "r": 27, "G": 88.3},
+        "320": {"h": 310, "b": 300, "tw": 9.0, "tf": 15.5, "r": 27, "G": 97.6},
+        "340": {"h": 330, "b": 300, "tw": 9.5, "tf": 16.5, "r": 27, "G": 105.0},
+        "360": {"h": 350, "b": 300, "tw": 10.0, "tf": 17.5, "r": 27, "G": 112.0},
+        "400": {"h": 390, "b": 300, "tw": 11.0, "tf": 19.0, "r": 27, "G": 125.0},
+        "450": {"h": 440, "b": 300, "tw": 11.5, "tf": 21.0, "r": 27, "G": 140.0},
+        "500": {"h": 490, "b": 300, "tw": 12.0, "tf": 23.0, "r": 27, "G": 155.0},
+        "550": {"h": 540, "b": 300, "tw": 12.5, "tf": 24.0, "r": 27, "G": 166.0},
+        "600": {"h": 590, "b": 300, "tw": 13.0, "tf": 25.0, "r": 27, "G": 178.0},
+        "650": {"h": 640, "b": 300, "tw": 13.5, "tf": 26.0, "r": 27, "G": 190.0},
+        "700": {"h": 690, "b": 300, "tw": 14.0, "tf": 27.0, "r": 27, "G": 204.0},
+        "800": {"h": 790, "b": 300, "tw": 15.0, "tf": 29.0, "r": 27, "G": 224.0},
+        "900": {"h": 890, "b": 300, "tw": 16.0, "tf": 31.0, "r": 27, "G": 252.0},
+        "1000": {"h": 990, "b": 300, "tw": 17.0, "tf": 33.0, "r": 27, "G": 272.0}
       } },
-        { name: "HEB", draw: "drawProfileI", data: {
-        "100": {"h": 100, "b": 100, "tw": 6.0, "tf": 10.0, "r": 12},
-        "120": {"h": 120, "b": 120, "tw": 6.5, "tf": 11.0, "r": 12},
-        "140": {"h": 140, "b": 140, "tw": 7.0, "tf": 12.0, "r": 12},
-        "160": {"h": 160, "b": 160, "tw": 8.0, "tf": 13.0, "r": 15},
-        "180": {"h": 180, "b": 180, "tw": 8.5, "tf": 14.0, "r": 15},
-        "200": {"h": 200, "b": 200, "tw": 9.0, "tf": 15.0, "r": 18},
-        "220": {"h": 220, "b": 220, "tw": 9.5, "tf": 16.0, "r": 18},
-        "240": {"h": 240, "b": 240, "tw": 10.0, "tf": 17.0, "r": 21},
-        "260": {"h": 260, "b": 260, "tw": 10.0, "tf": 17.5, "r": 24},
-        "280": {"h": 280, "b": 280, "tw": 10.5, "tf": 18.0, "r": 24},
-        "300": {"h": 300, "b": 300, "tw": 11.0, "tf": 19.0, "r": 27},
-        "320": {"h": 320, "b": 300, "tw": 11.5, "tf": 20.5, "r": 27},
-        "340": {"h": 340, "b": 300, "tw": 12.0, "tf": 21.5, "r": 27},
-        "360": {"h": 360, "b": 300, "tw": 12.5, "tf": 22.5, "r": 27},
-        "400": {"h": 400, "b": 300, "tw": 13.5, "tf": 24.0, "r": 27},
-        "450": {"h": 450, "b": 300, "tw": 14.0, "tf": 26.0, "r": 27},
-        "500": {"h": 500, "b": 300, "tw": 14.5, "tf": 28.0, "r": 27},
-        "550": {"h": 550, "b": 300, "tw": 15.0, "tf": 29.0, "r": 27},
-        "600": {"h": 600, "b": 300, "tw": 15.5, "tf": 30.0, "r": 27},
-        "650": {"h": 650, "b": 300, "tw": 16.0, "tf": 31.5, "r": 27},
-        "700": {"h": 700, "b": 300, "tw": 17.0, "tf": 32.0, "r": 27},
-        "800": {"h": 800, "b": 300, "tw": 18.0, "tf": 35.0, "r": 27},
-        "900": {"h": 900, "b": 300, "tw": 19.0, "tf": 38.0, "r": 27},
-        "1000": {"h": 1000, "b": 300, "tw": 20.0, "tf": 40.0, "r": 27}
+        { name: "HEB", draw: "drawProfileI", standard: "SN EN 10365:2017", family: "HEB", data: {
+        "100": {"h": 100, "b": 100, "tw": 6.0, "tf": 10.0, "r": 12, "G": 20.4},
+        "120": {"h": 120, "b": 120, "tw": 6.5, "tf": 11.0, "r": 12, "G": 26.7},
+        "140": {"h": 140, "b": 140, "tw": 7.0, "tf": 12.0, "r": 12, "G": 33.7},
+        "160": {"h": 160, "b": 160, "tw": 8.0, "tf": 13.0, "r": 15, "G": 42.6},
+        "180": {"h": 180, "b": 180, "tw": 8.5, "tf": 14.0, "r": 15, "G": 51.2},
+        "200": {"h": 200, "b": 200, "tw": 9.0, "tf": 15.0, "r": 18, "G": 61.3},
+        "220": {"h": 220, "b": 220, "tw": 9.5, "tf": 16.0, "r": 18, "G": 71.5},
+        "240": {"h": 240, "b": 240, "tw": 10.0, "tf": 17.0, "r": 21, "G": 83.2},
+        "260": {"h": 260, "b": 260, "tw": 10.0, "tf": 17.5, "r": 24, "G": 93.0},
+        "280": {"h": 280, "b": 280, "tw": 10.5, "tf": 18.0, "r": 24, "G": 103.0},
+        "300": {"h": 300, "b": 300, "tw": 11.0, "tf": 19.0, "r": 27, "G": 117.0},
+        "320": {"h": 320, "b": 300, "tw": 11.5, "tf": 20.5, "r": 27, "G": 127.0},
+        "340": {"h": 340, "b": 300, "tw": 12.0, "tf": 21.5, "r": 27, "G": 134.0},
+        "360": {"h": 360, "b": 300, "tw": 12.5, "tf": 22.5, "r": 27, "G": 142.0},
+        "400": {"h": 400, "b": 300, "tw": 13.5, "tf": 24.0, "r": 27, "G": 155.0},
+        "450": {"h": 450, "b": 300, "tw": 14.0, "tf": 26.0, "r": 27, "G": 171.0},
+        "500": {"h": 500, "b": 300, "tw": 14.5, "tf": 28.0, "r": 27, "G": 187.0},
+        "550": {"h": 550, "b": 300, "tw": 15.0, "tf": 29.0, "r": 27, "G": 199.0},
+        "600": {"h": 600, "b": 300, "tw": 15.5, "tf": 30.0, "r": 27, "G": 212.0},
+        "650": {"h": 650, "b": 300, "tw": 16.0, "tf": 31.5, "r": 27, "G": 225.0},
+        "700": {"h": 700, "b": 300, "tw": 17.0, "tf": 32.0, "r": 27, "G": 241.0},
+        "800": {"h": 800, "b": 300, "tw": 18.0, "tf": 35.0, "r": 27, "G": 262.0},
+        "900": {"h": 900, "b": 300, "tw": 19.0, "tf": 38.0, "r": 27, "G": 291.0},
+        "1000": {"h": 1000, "b": 300, "tw": 20.0, "tf": 40.0, "r": 27, "G": 314.0}
       } },
-        { name: "HEM", draw: "drawProfileI", data: {
-        "100": {"h": 120, "b": 106, "tw": 12.0, "tf": 20.0, "r": 12},
-        "120": {"h": 140, "b": 126, "tw": 12.5, "tf": 21.0, "r": 12},
-        "140": {"h": 160, "b": 146, "tw": 13.0, "tf": 22.0, "r": 12},
-        "160": {"h": 180, "b": 166, "tw": 14.0, "tf": 23.0, "r": 15},
-        "180": {"h": 200, "b": 186, "tw": 14.5, "tf": 24.0, "r": 15},
-        "200": {"h": 220, "b": 206, "tw": 15.0, "tf": 25.0, "r": 18},
-        "220": {"h": 240, "b": 226, "tw": 15.5, "tf": 26.0, "r": 18},
-        "240": {"h": 270, "b": 248, "tw": 18.0, "tf": 32.0, "r": 21},
-        "260": {"h": 290, "b": 268, "tw": 18.0, "tf": 32.5, "r": 24},
-        "280": {"h": 310, "b": 288, "tw": 18.5, "tf": 33.0, "r": 24},
-        "300": {"h": 340, "b": 310, "tw": 21.0, "tf": 39.0, "r": 27},
-        "320": {"h": 359, "b": 309, "tw": 21.0, "tf": 40.0, "r": 27},
-        "340": {"h": 377, "b": 309, "tw": 21.0, "tf": 40.0, "r": 27},
-        "360": {"h": 395, "b": 308, "tw": 21.0, "tf": 40.0, "r": 27},
-        "400": {"h": 432, "b": 307, "tw": 21.0, "tf": 40.0, "r": 27},
-        "450": {"h": 478, "b": 307, "tw": 21.0, "tf": 40.0, "r": 27},
-        "500": {"h": 524, "b": 306, "tw": 21.0, "tf": 40.0, "r": 27},
-        "550": {"h": 572, "b": 306, "tw": 21.0, "tf": 40.0, "r": 27},
-        "600": {"h": 620, "b": 305, "tw": 21.0, "tf": 40.0, "r": 27},
-        "650": {"h": 668, "b": 305, "tw": 21.0, "tf": 40.0, "r": 27},
-        "700": {"h": 716, "b": 304, "tw": 21.0, "tf": 40.0, "r": 27},
-        "800": {"h": 814, "b": 303, "tw": 21.0, "tf": 40.0, "r": 27},
-        "900": {"h": 910, "b": 302, "tw": 21.0, "tf": 40.0, "r": 27},
-        "1000": {"h": 1008, "b": 302, "tw": 21.0, "tf": 40.0, "r": 27}
+        { name: "HEM", draw: "drawProfileI", standard: "SN EN 10365:2017", family: "HEM", data: {
+        "100": {"h": 120, "b": 106, "tw": 12.0, "tf": 20.0, "r": 12, "G": 41.8},
+        "120": {"h": 140, "b": 126, "tw": 12.5, "tf": 21.0, "r": 12, "G": 52.1},
+        "140": {"h": 160, "b": 146, "tw": 13.0, "tf": 22.0, "r": 12, "G": 63.2},
+        "160": {"h": 180, "b": 166, "tw": 14.0, "tf": 23.0, "r": 15, "G": 76.2},
+        "180": {"h": 200, "b": 186, "tw": 14.5, "tf": 24.0, "r": 15, "G": 88.3},
+        "200": {"h": 220, "b": 206, "tw": 15.0, "tf": 25.0, "r": 18, "G": 103.0},
+        "220": {"h": 240, "b": 226, "tw": 15.5, "tf": 26.0, "r": 18, "G": 117.0},
+        "240": {"h": 270, "b": 248, "tw": 18.0, "tf": 32.0, "r": 21, "G": 157.0},
+        "260": {"h": 290, "b": 268, "tw": 18.0, "tf": 32.5, "r": 24, "G": 172.0},
+        "280": {"h": 310, "b": 288, "tw": 18.5, "tf": 33.0, "r": 24, "G": 189.0},
+        "300": {"h": 340, "b": 310, "tw": 21.0, "tf": 39.0, "r": 27, "G": 238.0},
+        "320": {"h": 359, "b": 309, "tw": 21.0, "tf": 40.0, "r": 27, "G": 245.0},
+        "340": {"h": 377, "b": 309, "tw": 21.0, "tf": 40.0, "r": 27, "G": 248.0},
+        "360": {"h": 395, "b": 308, "tw": 21.0, "tf": 40.0, "r": 27, "G": 250.0},
+        "400": {"h": 432, "b": 307, "tw": 21.0, "tf": 40.0, "r": 27, "G": 256.0},
+        "450": {"h": 478, "b": 307, "tw": 21.0, "tf": 40.0, "r": 27, "G": 263.0},
+        "500": {"h": 524, "b": 306, "tw": 21.0, "tf": 40.0, "r": 27, "G": 270.0},
+        "550": {"h": 572, "b": 306, "tw": 21.0, "tf": 40.0, "r": 27, "G": 278.0},
+        "600": {"h": 620, "b": 305, "tw": 21.0, "tf": 40.0, "r": 27, "G": 285.0},
+        "650": {"h": 668, "b": 305, "tw": 21.0, "tf": 40.0, "r": 27, "G": 293.0},
+        "700": {"h": 716, "b": 304, "tw": 21.0, "tf": 40.0, "r": 27, "G": 301.0},
+        "800": {"h": 814, "b": 303, "tw": 21.0, "tf": 40.0, "r": 27, "G": 317.0},
+        "900": {"h": 910, "b": 302, "tw": 21.0, "tf": 40.0, "r": 27, "G": 333.0},
+        "1000": {"h": 1008, "b": 302, "tw": 21.0, "tf": 40.0, "r": 27, "G": 349.0}
       } },
-        { name: "UPE", draw: "drawProfileUPE", data: {
-        "80": {"h": 80, "b": 45, "tw": 4.5, "tf": 8.0, "r1": 8.5, "r2": 4.5},
-        "100": {"h": 100, "b": 50, "tw": 5.0, "tf": 8.5, "r1": 9.0, "r2": 4.5},
-        "120": {"h": 120, "b": 55, "tw": 5.0, "tf": 9.0, "r1": 9.0, "r2": 4.5},
-        "140": {"h": 140, "b": 60, "tw": 5.5, "tf": 9.5, "r1": 9.5, "r2": 4.8},
-        "160": {"h": 160, "b": 65, "tw": 6.0, "tf": 10.0, "r1": 10.0, "r2": 5.0},
-        "180": {"h": 180, "b": 70, "tw": 6.5, "tf": 10.5, "r1": 10.5, "r2": 5.3},
-        "200": {"h": 200, "b": 75, "tw": 7.0, "tf": 11.0, "r1": 11.0, "r2": 5.5},
-        "220": {"h": 220, "b": 80, "tw": 7.5, "tf": 11.5, "r1": 11.5, "r2": 5.8},
-        "240": {"h": 240, "b": 85, "tw": 8.0, "tf": 12.0, "r1": 12.0, "r2": 6.0},
-        "270": {"h": 270, "b": 90, "tw": 8.5, "tf": 12.5, "r1": 12.5, "r2": 6.3},
-        "300": {"h": 300, "b": 100, "tw": 9.0, "tf": 14.0, "r1": 14.0, "r2": 7.0},
-        "330": {"h": 330, "b": 100, "tw": 9.5, "tf": 14.5, "r1": 14.5, "r2": 7.3},
-        "360": {"h": 360, "b": 100, "tw": 10.0, "tf": 15.0, "r1": 15.0, "r2": 7.5},
-        "400": {"h": 400, "b": 100, "tw": 11.0, "tf": 16.0, "r1": 16.0, "r2": 8.0}
+        { name: "UPE", draw: "drawProfileUPE", standard: "SN EN 10365:2017", family: "UPE", data: {
+        "80": {"h": 80, "b": 45, "tw": 4.5, "tf": 8.0, "r1": 8.5, "r2": 4.5, "G": 8.92},
+        "100": {"h": 100, "b": 50, "tw": 5.0, "tf": 8.5, "r1": 9.0, "r2": 4.5, "G": 11.1},
+        "120": {"h": 120, "b": 55, "tw": 5.0, "tf": 9.0, "r1": 9.0, "r2": 4.5, "G": 13.4},
+        "140": {"h": 140, "b": 60, "tw": 5.5, "tf": 9.5, "r1": 9.5, "r2": 4.8, "G": 16.2},
+        "160": {"h": 160, "b": 65, "tw": 6.0, "tf": 10.0, "r1": 10.0, "r2": 5.0, "G": 19.4},
+        "180": {"h": 180, "b": 70, "tw": 6.5, "tf": 10.5, "r1": 10.5, "r2": 5.3, "G": 22.0},
+        "200": {"h": 200, "b": 75, "tw": 7.0, "tf": 11.0, "r1": 11.0, "r2": 5.5, "G": 25.4},
+        "220": {"h": 220, "b": 80, "tw": 7.5, "tf": 11.5, "r1": 11.5, "r2": 5.8, "G": 29.3},
+        "240": {"h": 240, "b": 85, "tw": 8.0, "tf": 12.0, "r1": 12.0, "r2": 6.0, "G": 33.3},
+        "270": {"h": 270, "b": 90, "tw": 8.5, "tf": 12.5, "r1": 12.5, "r2": 6.3, "G": 38.0},
+        "300": {"h": 300, "b": 100, "tw": 9.0, "tf": 14.0, "r1": 14.0, "r2": 7.0, "G": 46.0},
+        "330": {"h": 330, "b": 100, "tw": 9.5, "tf": 14.5, "r1": 14.5, "r2": 7.3, "G": 51.8},
+        "360": {"h": 360, "b": 100, "tw": 10.0, "tf": 15.0, "r1": 15.0, "r2": 7.5, "G": 57.7},
+        "400": {"h": 400, "b": 100, "tw": 11.0, "tf": 16.0, "r1": 16.0, "r2": 8.0, "G": 66.0}
       } },
-        { name: "UPN", draw: "drawProfileUPN", data: {
-        "50": {"h": 50, "b": 25, "tw": 3.0, "tf": 5.0, "r1": 3.5, "r2": 1.8},
-        "65": {"h": 65, "b": 30, "tw": 3.5, "tf": 5.5, "r1": 4.0, "r2": 2.0},
-        "80": {"h": 80, "b": 45, "tw": 4.0, "tf": 6.0, "r1": 4.5, "r2": 2.3},
-        "100": {"h": 100, "b": 50, "tw": 4.5, "tf": 6.5, "r1": 5.0, "r2": 2.5},
-        "120": {"h": 120, "b": 55, "tw": 5.0, "tf": 7.0, "r1": 5.5, "r2": 2.8},
-        "140": {"h": 140, "b": 60, "tw": 5.5, "tf": 7.5, "r1": 6.0, "r2": 3.0},
-        "160": {"h": 160, "b": 65, "tw": 6.0, "tf": 8.0, "r1": 6.5, "r2": 3.3},
-        "180": {"h": 180, "b": 70, "tw": 6.5, "tf": 8.5, "r1": 7.0, "r2": 3.5},
-        "200": {"h": 200, "b": 75, "tw": 7.0, "tf": 9.0, "r1": 7.5, "r2": 3.8},
-        "220": {"h": 220, "b": 80, "tw": 7.5, "tf": 9.5, "r1": 8.0, "r2": 4.0},
-        "240": {"h": 240, "b": 85, "tw": 8.0, "tf": 10.0, "r1": 8.5, "r2": 4.3},
-        "260": {"h": 260, "b": 90, "tw": 8.5, "tf": 10.5, "r1": 9.0, "r2": 4.5},
-        "280": {"h": 280, "b": 95, "tw": 9.0, "tf": 11.0, "r1": 9.5, "r2": 4.8},
-        "300": {"h": 300, "b": 100, "tw": 9.5, "tf": 12.0, "r1": 10.0, "r2": 5.0},
-        "320": {"h": 320, "b": 100, "tw": 10.0, "tf": 13.0, "r1": 11.0, "r2": 5.5},
-        "350": {"h": 350, "b": 100, "tw": 11.0, "tf": 14.0, "r1": 12.0, "r2": 6.0},
-        "380": {"h": 380, "b": 100, "tw": 12.0, "tf": 15.0, "r1": 13.0, "r2": 6.5},
-        "400": {"h": 400, "b": 100, "tw": 13.0, "tf": 16.0, "r1": 14.0, "r2": 7.0}
+        { name: "UPN", draw: "drawProfileUPN", standard: "SN EN 10365:2017", family: "UPN", data: {
+        "50": {"h": 50, "b": 25, "tw": 3.0, "tf": 5.0, "r1": 3.5, "r2": 1.8, "G": 3.86},
+        "65": {"h": 65, "b": 30, "tw": 3.5, "tf": 5.5, "r1": 4.0, "r2": 2.0, "G": 5.07},
+        "80": {"h": 80, "b": 45, "tw": 4.0, "tf": 6.0, "r1": 4.5, "r2": 2.3, "G": 8.64},
+        "100": {"h": 100, "b": 50, "tw": 4.5, "tf": 6.5, "r1": 5.0, "r2": 2.5, "G": 10.6},
+        "120": {"h": 120, "b": 55, "tw": 5.0, "tf": 7.0, "r1": 5.5, "r2": 2.8, "G": 13.4},
+        "140": {"h": 140, "b": 60, "tw": 5.5, "tf": 7.5, "r1": 6.0, "r2": 3.0, "G": 16.0},
+        "160": {"h": 160, "b": 65, "tw": 6.0, "tf": 8.0, "r1": 6.5, "r2": 3.3, "G": 18.8},
+        "180": {"h": 180, "b": 70, "tw": 6.5, "tf": 8.5, "r1": 7.0, "r2": 3.5, "G": 22.0},
+        "200": {"h": 200, "b": 75, "tw": 7.0, "tf": 9.0, "r1": 7.5, "r2": 3.8, "G": 25.3},
+        "220": {"h": 220, "b": 80, "tw": 7.5, "tf": 9.5, "r1": 8.0, "r2": 4.0, "G": 29.4},
+        "240": {"h": 240, "b": 85, "tw": 8.0, "tf": 10.0, "r1": 8.5, "r2": 4.3, "G": 33.2},
+        "260": {"h": 260, "b": 90, "tw": 8.5, "tf": 10.5, "r1": 9.0, "r2": 4.5, "G": 36.6},
+        "280": {"h": 280, "b": 95, "tw": 9.0, "tf": 11.0, "r1": 9.5, "r2": 4.8, "G": 40.5},
+        "300": {"h": 300, "b": 100, "tw": 9.5, "tf": 12.0, "r1": 10.0, "r2": 5.0, "G": 46.2},
+        "320": {"h": 320, "b": 100, "tw": 10.0, "tf": 13.0, "r1": 11.0, "r2": 5.5, "G": 52.6},
+        "350": {"h": 350, "b": 100, "tw": 11.0, "tf": 14.0, "r1": 12.0, "r2": 6.0, "G": 60.6},
+        "380": {"h": 380, "b": 100, "tw": 12.0, "tf": 15.0, "r1": 13.0, "r2": 6.5, "G": 66.3},
+        "400": {"h": 400, "b": 100, "tw": 13.0, "tf": 16.0, "r1": 14.0, "r2": 7.0, "G": 71.8}
       } }
       ]
     },
     {
-      name: " Marchands",
+      name: "\ud83d\udfeb Marchands",
       families: [
-
+        { name: "Acier rond", draw: "drawProfileROND", standard: "EN 10025-2:2004", family: "ROND", data: {
+        "6": {"d": 6, "m": 0.22},
+        "8": {"d": 8, "m": 0.39},
+        "10": {"d": 10, "m": 0.62},
+        "12": {"d": 12, "m": 0.89},
+        "14": {"d": 14, "m": 1.21},
+        "15": {"d": 15, "m": 1.39},
+        "16": {"d": 16, "m": 1.58},
+        "18": {"d": 18, "m": 2.0},
+        "20": {"d": 20, "m": 2.46},
+        "25": {"d": 25, "m": 3.85},
+        "30": {"d": 30, "m": 5.55},
+        "35": {"d": 35, "m": 7.55},
+        "40": {"d": 40, "m": 9.85},
+        "45": {"d": 45, "m": 12.49},
+        "50": {"d": 50, "m": 15.41},
+        "60": {"d": 60, "m": 22.2},
+        "70": {"d": 70, "m": 30.21},
+        "80": {"d": 80, "m": 39.46},
+        "90": {"d": 90, "m": 49.94},
+        "100": {"d": 100, "m": 61.65},
+        "110": {"d": 110, "m": 74.6},
+        "120": {"d": 120, "m": 88.78},
+        "140": {"d": 140, "m": 120.8},
+        "150": {"d": 150, "m": 138.7},
+        "160": {"d": 160, "m": 157.8},
+        "170": {"d": 170, "m": 178.2},
+        "180": {"d": 180, "m": 199.8},
+        "200": {"d": 200, "m": 246.6},
+        "220": {"d": 220, "m": 298.4},
+        "240": {"d": 240, "m": 355.1},
+        "250": {"d": 250, "m": 385.3},
+        "260": {"d": 260, "m": 416.8},
+        "280": {"d": 280, "m": 483.4},
+        "300": {"d": 300, "m": 554.9},
+        "320": {"d": 320, "m": 631.3},
+        "350": {"d": 350, "m": 755.3}
+      } },
+        { name: "Acier carr\u00e9", draw: "drawProfileCARRE", standard: "EN 10025-2:2004", family: "CARRE", data: {
+        "8": {"a": 8, "m": 0.5},
+        "10": {"a": 10, "m": 0.78},
+        "12": {"a": 12, "m": 1.13},
+        "14": {"a": 14, "m": 1.54},
+        "15": {"a": 15, "m": 1.76},
+        "16": {"a": 16, "m": 2.01},
+        "18": {"a": 18, "m": 2.54},
+        "20": {"a": 20, "m": 3.14},
+        "25": {"a": 25, "m": 4.9},
+        "30": {"a": 30, "m": 7.06},
+        "35": {"a": 35, "m": 9.61},
+        "40": {"a": 40, "m": 12.56},
+        "45": {"a": 45, "m": 15.9},
+        "50": {"a": 50, "m": 19.63},
+        "60": {"a": 60, "m": 28.26},
+        "70": {"a": 70, "m": 38.47},
+        "80": {"a": 80, "m": 50.24},
+        "90": {"a": 90, "m": 63.59},
+        "100": {"a": 100, "m": 78.5},
+        "110": {"a": 110, "m": 94.99},
+        "120": {"a": 120, "m": 113.0},
+        "140": {"a": 140, "m": 153.9},
+        "150": {"a": 150, "m": 176.6},
+        "160": {"a": 160, "m": 201.0},
+        "180": {"a": 180, "m": 254.3},
+        "200": {"a": 200, "m": 314.0}
+      } },
+        { name: "Acier plat", draw: "drawProfilePLAT", standard: "EN 10025-2:2004", family: "PLAT", data: {
+        "10x3": {"b": 10, "t": 3, "m": 0.24},
+        "10x4": {"b": 10, "t": 4, "m": 0.31},
+        "10x5": {"b": 10, "t": 5, "m": 0.39},
+        "12x3": {"b": 12, "t": 3, "m": 0.28},
+        "12x4": {"b": 12, "t": 4, "m": 0.38},
+        "12x5": {"b": 12, "t": 5, "m": 0.47},
+        "12x6": {"b": 12, "t": 6, "m": 0.57},
+        "15x3": {"b": 15, "t": 3, "m": 0.35},
+        "15x4": {"b": 15, "t": 4, "m": 0.47},
+        "15x5": {"b": 15, "t": 5, "m": 0.59},
+        "15x6": {"b": 15, "t": 6, "m": 0.71},
+        "15x8": {"b": 15, "t": 8, "m": 0.94},
+        "15x10": {"b": 15, "t": 10, "m": 1.18},
+        "20x3": {"b": 20, "t": 3, "m": 0.47},
+        "20x4": {"b": 20, "t": 4, "m": 0.63},
+        "20x5": {"b": 20, "t": 5, "m": 0.78},
+        "20x6": {"b": 20, "t": 6, "m": 0.94},
+        "20x8": {"b": 20, "t": 8, "m": 1.26},
+        "20x10": {"b": 20, "t": 10, "m": 1.57},
+        "20x12": {"b": 20, "t": 12, "m": 1.88},
+        "20x15": {"b": 20, "t": 15, "m": 2.35},
+        "25x3": {"b": 25, "t": 3, "m": 0.59},
+        "25x4": {"b": 25, "t": 4, "m": 0.78},
+        "25x5": {"b": 25, "t": 5, "m": 0.98},
+        "25x6": {"b": 25, "t": 6, "m": 1.18},
+        "25x8": {"b": 25, "t": 8, "m": 1.57},
+        "25x10": {"b": 25, "t": 10, "m": 1.96},
+        "25x12": {"b": 25, "t": 12, "m": 2.35},
+        "25x15": {"b": 25, "t": 15, "m": 2.94},
+        "30x3": {"b": 30, "t": 3, "m": 0.71},
+        "30x4": {"b": 30, "t": 4, "m": 0.94},
+        "30x5": {"b": 30, "t": 5, "m": 1.18},
+        "30x6": {"b": 30, "t": 6, "m": 1.41},
+        "30x8": {"b": 30, "t": 8, "m": 1.88},
+        "30x10": {"b": 30, "t": 10, "m": 2.35},
+        "30x12": {"b": 30, "t": 12, "m": 2.83},
+        "30x15": {"b": 30, "t": 15, "m": 3.53},
+        "30x20": {"b": 30, "t": 20, "m": 4.71},
+        "35x3": {"b": 35, "t": 3, "m": 0.82},
+        "35x4": {"b": 35, "t": 4, "m": 1.1},
+        "35x5": {"b": 35, "t": 5, "m": 1.37},
+        "35x6": {"b": 35, "t": 6, "m": 1.65},
+        "35x8": {"b": 35, "t": 8, "m": 2.2},
+        "35x10": {"b": 35, "t": 10, "m": 2.75},
+        "35x12": {"b": 35, "t": 12, "m": 3.3},
+        "35x15": {"b": 35, "t": 15, "m": 4.12},
+        "40x3": {"b": 40, "t": 3, "m": 0.94},
+        "40x4": {"b": 40, "t": 4, "m": 1.26},
+        "40x5": {"b": 40, "t": 5, "m": 1.57},
+        "40x6": {"b": 40, "t": 6, "m": 1.88},
+        "40x8": {"b": 40, "t": 8, "m": 2.51},
+        "40x10": {"b": 40, "t": 10, "m": 3.14},
+        "40x12": {"b": 40, "t": 12, "m": 3.77},
+        "40x15": {"b": 40, "t": 15, "m": 4.71},
+        "40x20": {"b": 40, "t": 20, "m": 6.28},
+        "40x25": {"b": 40, "t": 25, "m": 7.85},
+        "40x30": {"b": 40, "t": 30, "m": 9.42},
+        "45x4": {"b": 45, "t": 4, "m": 1.41},
+        "45x5": {"b": 45, "t": 5, "m": 1.77},
+        "45x6": {"b": 45, "t": 6, "m": 2.12},
+        "45x8": {"b": 45, "t": 8, "m": 2.83},
+        "45x10": {"b": 45, "t": 10, "m": 3.53},
+        "45x12": {"b": 45, "t": 12, "m": 4.24},
+        "45x15": {"b": 45, "t": 15, "m": 5.3},
+        "50x3": {"b": 50, "t": 3, "m": 1.18},
+        "50x4": {"b": 50, "t": 4, "m": 1.57},
+        "50x5": {"b": 50, "t": 5, "m": 1.96},
+        "50x6": {"b": 50, "t": 6, "m": 2.35},
+        "50x8": {"b": 50, "t": 8, "m": 3.14},
+        "50x10": {"b": 50, "t": 10, "m": 3.92},
+        "50x12": {"b": 50, "t": 12, "m": 4.71},
+        "50x15": {"b": 50, "t": 15, "m": 5.89},
+        "50x20": {"b": 50, "t": 20, "m": 7.85},
+        "50x25": {"b": 50, "t": 25, "m": 9.81},
+        "50x30": {"b": 50, "t": 30, "m": 11.77},
+        "50x40": {"b": 50, "t": 40, "m": 15.7},
+        "60x3": {"b": 60, "t": 3, "m": 1.41},
+        "60x4": {"b": 60, "t": 4, "m": 1.88},
+        "60x5": {"b": 60, "t": 5, "m": 2.35},
+        "60x6": {"b": 60, "t": 6, "m": 2.83},
+        "60x8": {"b": 60, "t": 8, "m": 3.77},
+        "60x10": {"b": 60, "t": 10, "m": 4.71},
+        "60x12": {"b": 60, "t": 12, "m": 5.65},
+        "60x15": {"b": 60, "t": 15, "m": 7.06},
+        "60x20": {"b": 60, "t": 20, "m": 9.42},
+        "60x25": {"b": 60, "t": 25, "m": 11.77},
+        "60x30": {"b": 60, "t": 30, "m": 14.13},
+        "60x40": {"b": 60, "t": 40, "m": 18.84},
+        "60x50": {"b": 60, "t": 50, "m": 23.55},
+        "70x3": {"b": 70, "t": 3, "m": 1.65},
+        "70x4": {"b": 70, "t": 4, "m": 2.2},
+        "70x5": {"b": 70, "t": 5, "m": 2.75},
+        "70x6": {"b": 70, "t": 6, "m": 3.3},
+        "70x8": {"b": 70, "t": 8, "m": 4.4},
+        "70x10": {"b": 70, "t": 10, "m": 5.5},
+        "70x12": {"b": 70, "t": 12, "m": 6.59},
+        "70x15": {"b": 70, "t": 15, "m": 8.24},
+        "70x20": {"b": 70, "t": 20, "m": 10.99},
+        "70x25": {"b": 70, "t": 25, "m": 13.74},
+        "70x30": {"b": 70, "t": 30, "m": 16.48},
+        "70x40": {"b": 70, "t": 40, "m": 21.98},
+        "70x50": {"b": 70, "t": 50, "m": 27.47},
+        "80x3": {"b": 80, "t": 3, "m": 1.88},
+        "80x4": {"b": 80, "t": 4, "m": 2.51},
+        "80x5": {"b": 80, "t": 5, "m": 3.14},
+        "80x6": {"b": 80, "t": 6, "m": 3.77},
+        "80x8": {"b": 80, "t": 8, "m": 5.02},
+        "80x10": {"b": 80, "t": 10, "m": 6.28},
+        "80x12": {"b": 80, "t": 12, "m": 7.54},
+        "80x15": {"b": 80, "t": 15, "m": 9.42},
+        "80x20": {"b": 80, "t": 20, "m": 12.56},
+        "80x25": {"b": 80, "t": 25, "m": 15.7},
+        "80x30": {"b": 80, "t": 30, "m": 18.84},
+        "80x40": {"b": 80, "t": 40, "m": 25.12},
+        "80x50": {"b": 80, "t": 50, "m": 31.4},
+        "80x60": {"b": 80, "t": 60, "m": 37.68},
+        "90x4": {"b": 90, "t": 4, "m": 2.83},
+        "90x5": {"b": 90, "t": 5, "m": 3.53},
+        "90x6": {"b": 90, "t": 6, "m": 4.24},
+        "90x8": {"b": 90, "t": 8, "m": 5.65},
+        "90x10": {"b": 90, "t": 10, "m": 7.06},
+        "90x12": {"b": 90, "t": 12, "m": 8.48},
+        "90x15": {"b": 90, "t": 15, "m": 10.6},
+        "90x20": {"b": 90, "t": 20, "m": 14.13},
+        "90x25": {"b": 90, "t": 25, "m": 17.66},
+        "90x30": {"b": 90, "t": 30, "m": 21.19},
+        "90x40": {"b": 90, "t": 40, "m": 28.26},
+        "100x4": {"b": 100, "t": 4, "m": 3.14},
+        "100x5": {"b": 100, "t": 5, "m": 3.92},
+        "100x6": {"b": 100, "t": 6, "m": 4.71},
+        "100x8": {"b": 100, "t": 8, "m": 6.28},
+        "100x10": {"b": 100, "t": 10, "m": 7.85},
+        "100x12": {"b": 100, "t": 12, "m": 9.42},
+        "100x15": {"b": 100, "t": 15, "m": 11.77},
+        "100x20": {"b": 100, "t": 20, "m": 15.7},
+        "100x25": {"b": 100, "t": 25, "m": 19.62},
+        "100x30": {"b": 100, "t": 30, "m": 23.55},
+        "100x40": {"b": 100, "t": 40, "m": 31.4},
+        "100x50": {"b": 100, "t": 50, "m": 39.25},
+        "100x60": {"b": 100, "t": 60, "m": 47.1},
+        "110x5": {"b": 110, "t": 5, "m": 4.32},
+        "110x6": {"b": 110, "t": 6, "m": 5.18},
+        "110x8": {"b": 110, "t": 8, "m": 6.91},
+        "110x10": {"b": 110, "t": 10, "m": 8.63},
+        "110x12": {"b": 110, "t": 12, "m": 10.36},
+        "110x15": {"b": 110, "t": 15, "m": 12.95},
+        "110x20": {"b": 110, "t": 20, "m": 17.27},
+        "110x25": {"b": 110, "t": 25, "m": 21.59},
+        "110x30": {"b": 110, "t": 30, "m": 25.9},
+        "120x5": {"b": 120, "t": 5, "m": 4.71},
+        "120x6": {"b": 120, "t": 6, "m": 5.65},
+        "120x8": {"b": 120, "t": 8, "m": 7.54},
+        "120x10": {"b": 120, "t": 10, "m": 9.42},
+        "120x12": {"b": 120, "t": 12, "m": 11.3},
+        "120x15": {"b": 120, "t": 15, "m": 14.13},
+        "120x20": {"b": 120, "t": 20, "m": 18.84},
+        "120x25": {"b": 120, "t": 25, "m": 23.55},
+        "120x30": {"b": 120, "t": 30, "m": 28.26},
+        "120x40": {"b": 120, "t": 40, "m": 37.68},
+        "120x50": {"b": 120, "t": 50, "m": 47.1},
+        "120x60": {"b": 120, "t": 60, "m": 56.52},
+        "130x5": {"b": 130, "t": 5, "m": 5.1},
+        "130x6": {"b": 130, "t": 6, "m": 6.12},
+        "130x8": {"b": 130, "t": 8, "m": 8.16},
+        "130x10": {"b": 130, "t": 10, "m": 10.21},
+        "130x12": {"b": 130, "t": 12, "m": 12.25},
+        "130x15": {"b": 130, "t": 15, "m": 15.31},
+        "130x20": {"b": 130, "t": 20, "m": 20.41},
+        "130x25": {"b": 130, "t": 25, "m": 25.51},
+        "130x30": {"b": 130, "t": 30, "m": 30.61},
+        "130x40": {"b": 130, "t": 40, "m": 40.82},
+        "140x5": {"b": 140, "t": 5, "m": 5.5},
+        "140x6": {"b": 140, "t": 6, "m": 6.59},
+        "140x8": {"b": 140, "t": 8, "m": 8.79},
+        "140x10": {"b": 140, "t": 10, "m": 10.99},
+        "140x12": {"b": 140, "t": 12, "m": 13.19},
+        "140x15": {"b": 140, "t": 15, "m": 16.48},
+        "140x20": {"b": 140, "t": 20, "m": 21.98},
+        "140x25": {"b": 140, "t": 25, "m": 27.47},
+        "140x30": {"b": 140, "t": 30, "m": 32.97},
+        "140x40": {"b": 140, "t": 40, "m": 43.96},
+        "140x50": {"b": 140, "t": 50, "m": 54.95},
+        "150x5": {"b": 150, "t": 5, "m": 5.89},
+        "150x6": {"b": 150, "t": 6, "m": 7.06},
+        "150x8": {"b": 150, "t": 8, "m": 9.42},
+        "150x10": {"b": 150, "t": 10, "m": 11.78},
+        "150x12": {"b": 150, "t": 12, "m": 14.13},
+        "150x15": {"b": 150, "t": 15, "m": 17.66},
+        "150x20": {"b": 150, "t": 20, "m": 23.55},
+        "150x25": {"b": 150, "t": 25, "m": 29.44},
+        "150x30": {"b": 150, "t": 30, "m": 35.33},
+        "150x40": {"b": 150, "t": 40, "m": 47.1},
+        "150x50": {"b": 150, "t": 50, "m": 58.88},
+        "150x60": {"b": 150, "t": 60, "m": 70.65}
+      } },
+        { name: "Acier large-plat", draw: "drawProfilePLAT", standard: "EN 10025-2:2004", family: "LARGEPLAT", data: {
+        "160x6": {"b": 160, "t": 6, "m": 7.68},
+        "160x8": {"b": 160, "t": 8, "m": 10.2},
+        "160x10": {"b": 160, "t": 10, "m": 12.8},
+        "160x12": {"b": 160, "t": 12, "m": 15.4},
+        "160x15": {"b": 160, "t": 15, "m": 19.2},
+        "160x20": {"b": 160, "t": 20, "m": 25.6},
+        "160x25": {"b": 160, "t": 25, "m": 32},
+        "160x30": {"b": 160, "t": 30, "m": 38.4},
+        "160x40": {"b": 160, "t": 40, "m": 51.2},
+        "160x50": {"b": 160, "t": 50, "m": 64},
+        "170x6": {"b": 170, "t": 6, "m": 8.16},
+        "170x8": {"b": 170, "t": 8, "m": 10.9},
+        "170x10": {"b": 170, "t": 10, "m": 13.6},
+        "170x12": {"b": 170, "t": 12, "m": 16.3},
+        "170x15": {"b": 170, "t": 15, "m": 20.4},
+        "170x20": {"b": 170, "t": 20, "m": 27.2},
+        "170x25": {"b": 170, "t": 25, "m": 34},
+        "180x6": {"b": 180, "t": 6, "m": 8.64},
+        "180x8": {"b": 180, "t": 8, "m": 11.5},
+        "180x10": {"b": 180, "t": 10, "m": 14.4},
+        "180x12": {"b": 180, "t": 12, "m": 17.3},
+        "180x15": {"b": 180, "t": 15, "m": 21.6},
+        "180x20": {"b": 180, "t": 20, "m": 28.8},
+        "180x25": {"b": 180, "t": 25, "m": 36},
+        "180x30": {"b": 180, "t": 30, "m": 43.2},
+        "180x40": {"b": 180, "t": 40, "m": 57.6},
+        "200x6": {"b": 200, "t": 6, "m": 9.6},
+        "200x8": {"b": 200, "t": 8, "m": 12.8},
+        "200x10": {"b": 200, "t": 10, "m": 16.0},
+        "200x12": {"b": 200, "t": 12, "m": 19.2},
+        "200x15": {"b": 200, "t": 15, "m": 24.0},
+        "200x20": {"b": 200, "t": 20, "m": 32.0},
+        "200x25": {"b": 200, "t": 25, "m": 40},
+        "200x30": {"b": 200, "t": 30, "m": 48.0},
+        "200x40": {"b": 200, "t": 40, "m": 64.0},
+        "200x50": {"b": 200, "t": 50, "m": 80},
+        "220x6": {"b": 220, "t": 6, "m": 10.6},
+        "220x8": {"b": 220, "t": 8, "m": 14.1},
+        "220x10": {"b": 220, "t": 10, "m": 17.6},
+        "220x12": {"b": 220, "t": 12, "m": 21.1},
+        "220x15": {"b": 220, "t": 15, "m": 26.4},
+        "220x20": {"b": 220, "t": 20, "m": 35.2},
+        "220x25": {"b": 220, "t": 25, "m": 44},
+        "220x30": {"b": 220, "t": 30, "m": 52.8},
+        "220x40": {"b": 220, "t": 40, "m": 70.4},
+        "240x10": {"b": 240, "t": 10, "m": 19.2},
+        "240x12": {"b": 240, "t": 12, "m": 22.6},
+        "240x15": {"b": 240, "t": 15, "m": 28.8},
+        "240x20": {"b": 240, "t": 20, "m": 38.4},
+        "250x6": {"b": 250, "t": 6, "m": 12.0},
+        "250x8": {"b": 250, "t": 8, "m": 16.0},
+        "250x10": {"b": 250, "t": 10, "m": 20.0},
+        "250x12": {"b": 250, "t": 12, "m": 24.0},
+        "250x15": {"b": 250, "t": 15, "m": 30.0},
+        "250x20": {"b": 250, "t": 20, "m": 40.0},
+        "250x25": {"b": 250, "t": 25, "m": 50},
+        "250x30": {"b": 250, "t": 30, "m": 60.0},
+        "250x40": {"b": 250, "t": 40, "m": 80.0},
+        "250x50": {"b": 250, "t": 50, "m": 100},
+        "260x10": {"b": 260, "t": 10, "m": 20.8},
+        "260x15": {"b": 260, "t": 15, "m": 31.2},
+        "260x20": {"b": 260, "t": 20, "m": 41.6},
+        "280x8": {"b": 280, "t": 8, "m": 17.9},
+        "280x10": {"b": 280, "t": 10, "m": 22.4},
+        "280x12": {"b": 280, "t": 12, "m": 26.9},
+        "280x15": {"b": 280, "t": 15, "m": 33.6},
+        "280x20": {"b": 280, "t": 20, "m": 44.8},
+        "280x25": {"b": 280, "t": 25, "m": 56},
+        "280x30": {"b": 280, "t": 30, "m": 67.2},
+        "300x6": {"b": 300, "t": 6, "m": 14.4},
+        "300x8": {"b": 300, "t": 8, "m": 19.2},
+        "300x10": {"b": 300, "t": 10, "m": 24.0},
+        "300x12": {"b": 300, "t": 12, "m": 28.8},
+        "300x15": {"b": 300, "t": 15, "m": 36.0},
+        "300x20": {"b": 300, "t": 20, "m": 48.0},
+        "300x25": {"b": 300, "t": 25, "m": 60},
+        "300x30": {"b": 300, "t": 30, "m": 72.0},
+        "300x40": {"b": 300, "t": 40, "m": 96.0},
+        "300x50": {"b": 300, "t": 50, "m": 120},
+        "350x6": {"b": 350, "t": 6, "m": 16.8},
+        "350x8": {"b": 350, "t": 8, "m": 22.4},
+        "350x10": {"b": 350, "t": 10, "m": 28.0},
+        "350x12": {"b": 350, "t": 12, "m": 33.6},
+        "350x15": {"b": 350, "t": 15, "m": 42.0},
+        "350x20": {"b": 350, "t": 20, "m": 56.0},
+        "350x25": {"b": 350, "t": 25, "m": 70},
+        "350x30": {"b": 350, "t": 30, "m": 84.0},
+        "350x40": {"b": 350, "t": 40, "m": 112.0},
+        "400x6": {"b": 400, "t": 6, "m": 19.2},
+        "400x8": {"b": 400, "t": 8, "m": 25.6},
+        "400x10": {"b": 400, "t": 10, "m": 32.0},
+        "400x12": {"b": 400, "t": 12, "m": 38.4},
+        "400x15": {"b": 400, "t": 15, "m": 48.0},
+        "400x20": {"b": 400, "t": 20, "m": 64.0},
+        "400x25": {"b": 400, "t": 25, "m": 80},
+        "400x30": {"b": 400, "t": 30, "m": 96.0},
+        "400x40": {"b": 400, "t": 40, "m": 128.0},
+        "400x50": {"b": 400, "t": 50, "m": 160},
+        "450x10": {"b": 450, "t": 10, "m": 36.0},
+        "450x12": {"b": 450, "t": 12, "m": 43.2},
+        "450x15": {"b": 450, "t": 15, "m": 54.0},
+        "450x20": {"b": 450, "t": 20, "m": 72.0},
+        "500x8": {"b": 500, "t": 8, "m": 32.0},
+        "500x10": {"b": 500, "t": 10, "m": 40.0},
+        "500x12": {"b": 500, "t": 12, "m": 48.0},
+        "500x15": {"b": 500, "t": 15, "m": 60.0},
+        "500x20": {"b": 500, "t": 20, "m": 80.0},
+        "500x25": {"b": 500, "t": 25, "m": 100},
+        "500x30": {"b": 500, "t": 30, "m": 120.0},
+        "500x40": {"b": 500, "t": 40, "m": 160.0},
+        "500x50": {"b": 500, "t": 50, "m": 200},
+        "600x10": {"b": 600, "t": 10, "m": 48.0},
+        "600x12": {"b": 600, "t": 12, "m": 57.6},
+        "600x15": {"b": 600, "t": 15, "m": 72.0},
+        "600x20": {"b": 600, "t": 20, "m": 96.0},
+        "600x25": {"b": 600, "t": 25, "m": 120},
+        "600x30": {"b": 600, "t": 30, "m": 144.0}
+      } },
+        { name: "Acier bandage", draw: "drawProfileBANDAGE", standard: "EN 10025-2:2004", family: "BANDAGE", data: {
+        "40": {"B": 40, "d": 10, "b": 36, "b1": 2.0, "m": 3.05},
+        "44": {"B": 44, "d": 10, "b": 40, "b1": 2.0, "m": 3.36},
+        "45": {"B": 45, "d": 12, "b": 40, "b1": 2.5, "m": 4.1},
+        "52": {"B": 52, "d": 10, "b": 48, "b1": 2.0, "m": 4.3}
+      } },
+        { name: "Acier corni\u00e8re \u00e9gale", draw: "drawProfileCORNIERE", standard: "EN 10025-2:2004", family: "CORNIERE_EGALE", data: {
+        "20x3": {"a": 20, "b": 20, "d": 3, "m": 0.88},
+        "20x4": {"a": 20, "b": 20, "d": 4, "m": 1.14},
+        "25x3": {"a": 25, "b": 25, "d": 3, "m": 1.12},
+        "25x4": {"a": 25, "b": 25, "d": 4, "m": 1.45},
+        "30x3": {"a": 30, "b": 30, "d": 3, "m": 1.36},
+        "30x4": {"a": 30, "b": 30, "d": 4, "m": 1.78},
+        "30x5": {"a": 30, "b": 30, "d": 5, "m": 2.18},
+        "35x4": {"a": 35, "b": 35, "d": 4, "m": 2.1},
+        "35x5": {"a": 35, "b": 35, "d": 5, "m": 2.57},
+        "35x6": {"a": 35, "b": 35, "d": 6, "m": 3.04},
+        "40x4": {"a": 40, "b": 40, "d": 4, "m": 2.42},
+        "40x5": {"a": 40, "b": 40, "d": 5, "m": 2.97},
+        "40x6": {"a": 40, "b": 40, "d": 6, "m": 3.52},
+        "45x5": {"a": 45, "b": 45, "d": 5, "m": 3.38},
+        "45x6": {"a": 45, "b": 45, "d": 6, "m": 3.93},
+        "50x5": {"a": 50, "b": 50, "d": 5, "m": 3.77},
+        "50x6": {"a": 50, "b": 50, "d": 6, "m": 4.47},
+        "50x8": {"a": 50, "b": 50, "d": 8, "m": 5.8},
+        "55x6": {"a": 55, "b": 55, "d": 6, "m": 4.95},
+        "60x6": {"a": 60, "b": 60, "d": 6, "m": 5.42},
+        "60x8": {"a": 60, "b": 60, "d": 8, "m": 7.09},
+        "60x10": {"a": 60, "b": 60, "d": 10, "m": 8.69},
+        "65x7": {"a": 65, "b": 65, "d": 7, "m": 6.83},
+        "70x7": {"a": 70, "b": 70, "d": 7, "m": 7.38},
+        "70x8": {"a": 70, "b": 70, "d": 8, "m": 8.25},
+        "75x8": {"a": 75, "b": 75, "d": 8, "m": 9.03},
+        "80x8": {"a": 80, "b": 80, "d": 8, "m": 9.66},
+        "80x10": {"a": 80, "b": 80, "d": 10, "m": 11.86},
+        "80x12": {"a": 80, "b": 80, "d": 12, "m": 14.05},
+        "90x9": {"a": 90, "b": 90, "d": 9, "m": 12.17},
+        "90x10": {"a": 90, "b": 90, "d": 10, "m": 13.45},
+        "100x8": {"a": 100, "b": 100, "d": 8, "m": 12.2},
+        "100x10": {"a": 100, "b": 100, "d": 10, "m": 15.07},
+        "100x12": {"a": 100, "b": 100, "d": 12, "m": 17.82},
+        "100x14": {"a": 100, "b": 100, "d": 14, "m": 20.57},
+        "110x10": {"a": 110, "b": 110, "d": 10, "m": 16.64},
+        "110x12": {"a": 110, "b": 110, "d": 12, "m": 19.7},
+        "120x10": {"a": 120, "b": 120, "d": 10, "m": 18.2},
+        "120x12": {"a": 120, "b": 120, "d": 12, "m": 21.6},
+        "120x15": {"a": 120, "b": 120, "d": 15, "m": 26.61},
+        "130x12": {"a": 130, "b": 130, "d": 12, "m": 23.6},
+        "130x14": {"a": 130, "b": 130, "d": 14, "m": 27.24},
+        "140x13": {"a": 140, "b": 140, "d": 13, "m": 27.48},
+        "140x15": {"a": 140, "b": 140, "d": 15, "m": 31.4},
+        "150x12": {"a": 150, "b": 150, "d": 12, "m": 27.3},
+        "150x14": {"a": 150, "b": 150, "d": 14, "m": 31.64},
+        "150x15": {"a": 150, "b": 150, "d": 15, "m": 33.76},
+        "150x16": {"a": 150, "b": 150, "d": 16, "m": 35.87},
+        "160x15": {"a": 160, "b": 160, "d": 15, "m": 36.19},
+        "180x16": {"a": 180, "b": 180, "d": 16, "m": 42.7},
+        "180x18": {"a": 180, "b": 180, "d": 18, "m": 48.53},
+        "200x16": {"a": 200, "b": 200, "d": 16, "m": 48.5},
+        "200x18": {"a": 200, "b": 200, "d": 18, "m": 54.31},
+        "200x20": {"a": 200, "b": 200, "d": 20, "m": 59.9}
+      } },
+        { name: "Acier corni\u00e8re in\u00e9gale", draw: "drawProfileCORNIERE", standard: "EN 10025-2:2004", family: "CORNIERE_INEGALE", data: {
+        "30x20x3": {"a": 30, "b": 20, "d": 3, "m": 1.11},
+        "30x20x4": {"a": 30, "b": 20, "d": 4, "m": 1.45},
+        "40x20x3": {"a": 40, "b": 20, "d": 3, "m": 1.35},
+        "40x20x4": {"a": 40, "b": 20, "d": 4, "m": 1.77},
+        "40x25x4": {"a": 40, "b": 25, "d": 4, "m": 1.93},
+        "45x30x4": {"a": 45, "b": 30, "d": 4, "m": 2.25},
+        "45x30x5": {"a": 45, "b": 30, "d": 5, "m": 2.77},
+        "50x30x4": {"a": 50, "b": 30, "d": 4, "m": 2.4},
+        "50x30x5": {"a": 50, "b": 30, "d": 5, "m": 2.97},
+        "50x40x5": {"a": 50, "b": 40, "d": 5, "m": 3.35},
+        "60x30x5": {"a": 60, "b": 30, "d": 5, "m": 3.37},
+        "60x30x6": {"a": 60, "b": 30, "d": 6, "m": 3.98},
+        "60x30x7": {"a": 60, "b": 30, "d": 7, "m": 4.59},
+        "60x40x5": {"a": 60, "b": 40, "d": 5, "m": 3.76},
+        "60x40x6": {"a": 60, "b": 40, "d": 6, "m": 4.46},
+        "60x40x7": {"a": 60, "b": 40, "d": 7, "m": 5.14},
+        "65x50x6": {"a": 65, "b": 50, "d": 6, "m": 5.29},
+        "70x50x6": {"a": 70, "b": 50, "d": 6, "m": 5.4},
+        "70x50x7": {"a": 70, "b": 50, "d": 7, "m": 6.25},
+        "75x50x6": {"a": 75, "b": 50, "d": 6, "m": 5.6},
+        "75x50x7": {"a": 75, "b": 50, "d": 7, "m": 6.5},
+        "80x40x6": {"a": 80, "b": 40, "d": 6, "m": 5.41},
+        "80x40x8": {"a": 80, "b": 40, "d": 8, "m": 7.07},
+        "80x60x8": {"a": 80, "b": 60, "d": 8, "m": 8.34},
+        "90x60x6": {"a": 90, "b": 60, "d": 6, "m": 6.82},
+        "90x60x8": {"a": 90, "b": 60, "d": 8, "m": 8.96},
+        "100x50x6": {"a": 100, "b": 50, "d": 6, "m": 6.85},
+        "100x50x8": {"a": 100, "b": 50, "d": 8, "m": 8.99},
+        "100x50x10": {"a": 100, "b": 50, "d": 10, "m": 11.1},
+        "100x65x7": {"a": 100, "b": 65, "d": 7, "m": 8.77},
+        "100x65x9": {"a": 100, "b": 65, "d": 9, "m": 11.1},
+        "100x65x11": {"a": 100, "b": 65, "d": 11, "m": 13.4},
+        "100x75x9": {"a": 100, "b": 75, "d": 9, "m": 11.8},
+        "120x80x8": {"a": 120, "b": 80, "d": 8, "m": 12.2},
+        "120x80x10": {"a": 120, "b": 80, "d": 10, "m": 15.0},
+        "120x80x12": {"a": 120, "b": 80, "d": 12, "m": 17.8},
+        "130x65x8": {"a": 130, "b": 65, "d": 8, "m": 11.9},
+        "130x65x10": {"a": 130, "b": 65, "d": 10, "m": 14.6},
+        "130x65x12": {"a": 130, "b": 65, "d": 12, "m": 17.3},
+        "130x90x12": {"a": 130, "b": 90, "d": 12, "m": 19.7},
+        "150x75x9": {"a": 150, "b": 75, "d": 9, "m": 15.3},
+        "150x75x11": {"a": 150, "b": 75, "d": 11, "m": 18.6},
+        "150x100x10": {"a": 150, "b": 100, "d": 10, "m": 19.0},
+        "150x100x12": {"a": 150, "b": 100, "d": 12, "m": 22.6},
+        "150x100x14": {"a": 150, "b": 100, "d": 14, "m": 26.1},
+        "160x80x10": {"a": 160, "b": 80, "d": 10, "m": 18.2},
+        "160x80x12": {"a": 160, "b": 80, "d": 12, "m": 21.6},
+        "160x80x14": {"a": 160, "b": 80, "d": 14, "m": 24.9},
+        "200x100x10": {"a": 200, "b": 100, "d": 10, "m": 23.0},
+        "200x100x12": {"a": 200, "b": 100, "d": 12, "m": 27.3},
+        "200x100x14": {"a": 200, "b": 100, "d": 14, "m": 31.6},
+        "200x100x16": {"a": 200, "b": 100, "d": 16, "m": 35.9}
+      } },
+        { name: "Acier \u00e9querre \u00e9gale", draw: "drawProfileEQUERRE", standard: "EN 10025-2:2004", family: "EQUERRE_EGALE", data: {
+        "15x3": {"a": 15, "b": 15, "d": 3, "r1": 0, "r2": 0, "m": 0.6},
+        "20x2": {"a": 20, "b": 20, "d": 2, "r1": 0, "r2": 0, "m": 0.59},
+        "20x3": {"a": 20, "b": 20, "d": 3, "r1": 0, "r2": 0, "m": 0.87},
+        "20x4": {"a": 20, "b": 20, "d": 4, "r1": 0, "r2": 0, "m": 1.12},
+        "25x2": {"a": 25, "b": 25, "d": 2, "r1": 0, "r2": 0, "m": 0.75},
+        "25x3": {"a": 25, "b": 25, "d": 3, "r1": 0, "r2": 0, "m": 1.11},
+        "25x4": {"a": 25, "b": 25, "d": 4, "r1": 0, "r2": 0, "m": 1.44},
+        "30x2": {"a": 30, "b": 30, "d": 2, "r1": 0, "r2": 0, "m": 0.91},
+        "30x3": {"a": 30, "b": 30, "d": 3, "r1": 0, "r2": 0, "m": 1.34},
+        "30x4": {"a": 30, "b": 30, "d": 4, "r1": 0, "r2": 0, "m": 1.76},
+        "30x5": {"a": 30, "b": 30, "d": 5, "r1": 0, "r2": 0, "m": 2.13},
+        "35x3": {"a": 35, "b": 35, "d": 3, "r1": 0, "r2": 0, "m": 1.57},
+        "35x4": {"a": 35, "b": 35, "d": 4, "r1": 0, "r2": 0, "m": 2.07},
+        "35x5": {"a": 35, "b": 35, "d": 5, "r1": 0, "r2": 0, "m": 2.52},
+        "40x3": {"a": 40, "b": 40, "d": 3, "r1": 0, "r2": 0, "m": 2.0},
+        "40x4": {"a": 40, "b": 40, "d": 4, "r1": 0, "r2": 0, "m": 2.39},
+        "40x5": {"a": 40, "b": 40, "d": 5, "r1": 0, "r2": 0, "m": 2.94},
+        "45x4": {"a": 45, "b": 45, "d": 4, "r1": 0, "r2": 0, "m": 2.71},
+        "45x5": {"a": 45, "b": 45, "d": 5, "r1": 0, "r2": 0, "m": 3.32},
+        "50x4": {"a": 50, "b": 50, "d": 4, "r1": 0, "r2": 0, "m": 3.01},
+        "50x5": {"a": 50, "b": 50, "d": 5, "r1": 0, "r2": 0, "m": 3.73},
+        "50x6": {"a": 50, "b": 50, "d": 6, "r1": 0, "r2": 0, "m": 4.4},
+        "60x5": {"a": 60, "b": 60, "d": 5, "r1": 0, "r2": 0, "m": 4.57},
+        "60x6": {"a": 60, "b": 60, "d": 6, "r1": 0, "r2": 0, "m": 5.35},
+        "80x5": {"a": 80, "b": 80, "d": 5, "r1": 0, "r2": 0, "m": 6.09}
+      } },
+        { name: "Acier \u00e9querre in\u00e9gale", draw: "drawProfileEQUERRE", standard: "EN 10025-2:2004", family: "EQUERRE_INEGALE", data: {
+        "20x10x2.5": {"a": 20, "b": 10, "d": 2.5, "r1": 0, "r2": 0, "m": 0.55},
+        "20x14x2.5": {"a": 20, "b": 14, "d": 2.5, "r1": 0, "r2": 0, "m": 0.62},
+        "25x10x3": {"a": 25, "b": 10, "d": 3.0, "r1": 0, "r2": 0, "m": 0.75},
+        "25x15x3": {"a": 25, "b": 15, "d": 3.0, "r1": 0, "r2": 0, "m": 0.88},
+        "25x20x3": {"a": 25, "b": 20, "d": 3.0, "r1": 0, "r2": 0, "m": 1.0},
+        "30x15x3.5": {"a": 30, "b": 15, "d": 3.5, "r1": 0, "r2": 0, "m": 1.15},
+        "30x20x3": {"a": 30, "b": 20, "d": 3.0, "r1": 0, "r2": 0, "m": 1.1},
+        "30x20x4": {"a": 30, "b": 20, "d": 4.0, "r1": 0, "r2": 0, "m": 1.45},
+        "35x20x4": {"a": 35, "b": 20, "d": 4.0, "r1": 0, "r2": 0, "m": 1.6},
+        "40x20x3": {"a": 40, "b": 20, "d": 3.0, "r1": 0, "r2": 0, "m": 1.35},
+        "40x20x4": {"a": 40, "b": 20, "d": 4.0, "r1": 0, "r2": 0, "m": 1.76},
+        "40x25x3": {"a": 40, "b": 25, "d": 3.0, "r1": 0, "r2": 0, "m": 1.45},
+        "40x25x4": {"a": 40, "b": 25, "d": 4.0, "r1": 0, "r2": 0, "m": 1.9},
+        "45x25x4": {"a": 45, "b": 25, "d": 4.0, "r1": 0, "r2": 0, "m": 2.1},
+        "45x30x4": {"a": 45, "b": 30, "d": 4.0, "r1": 0, "r2": 0, "m": 2.2},
+        "50x30x3": {"a": 50, "b": 30, "d": 3.0, "r1": 0, "r2": 0, "m": 1.8},
+        "50x30x4": {"a": 50, "b": 30, "d": 4.0, "r1": 0, "r2": 0, "m": 2.4},
+        "50x35x4": {"a": 50, "b": 35, "d": 4.0, "r1": 0, "r2": 0, "m": 2.55},
+        "60x30x3": {"a": 60, "b": 30, "d": 3.0, "r1": 0, "r2": 0, "m": 2.05},
+        "60x30x4": {"a": 60, "b": 30, "d": 4.0, "r1": 0, "r2": 0, "m": 2.7},
+        "60x40x5": {"a": 60, "b": 40, "d": 5.0, "r1": 0, "r2": 0, "m": 3.7},
+        "60x40x6": {"a": 60, "b": 40, "d": 6.0, "r1": 0, "r2": 0, "m": 4.4},
+        "70x35x4": {"a": 70, "b": 35, "d": 4.0, "r1": 0, "r2": 0, "m": 3.2},
+        "70x45x5": {"a": 70, "b": 45, "d": 5.0, "r1": 0, "r2": 0, "m": 4.32},
+        "80x30x4": {"a": 80, "b": 30, "d": 4.0, "r1": 0, "r2": 0, "m": 3.33},
+        "80x50x5": {"a": 80, "b": 50, "d": 5.0, "r1": 0, "r2": 0, "m": 5.0},
+        "90x30x4": {"a": 90, "b": 30, "d": 4.0, "r1": 0, "r2": 0, "m": 3.64},
+        "100x30x4": {"a": 100, "b": 30, "d": 4.0, "r1": 0, "r2": 0, "m": 3.95},
+        "110x30x4": {"a": 110, "b": 30, "d": 4.0, "r1": 0, "r2": 0, "m": 4.27}
+      } },
+        { name: "Acier \u00e0 T, \u00e0 base large (arrondi)", draw: "drawProfileT", standard: "EN 10025-2:2004", family: "TE_BASE_LARGE", data: {
+        "60x30x5.5": {"b": 60, "h": 30, "d": 5.5, "m": 3.64},
+        "70x35x6": {"b": 70, "h": 35, "d": 6.0, "m": 4.66},
+        "80x40x7": {"b": 80, "h": 40, "d": 7.0, "m": 6.21},
+        "100x50x8.5": {"b": 100, "h": 50, "d": 8.5, "m": 9.42},
+        "120x60x10": {"b": 120, "h": 60, "d": 10.0, "m": 13.35}
+      } },
+        { name: "Acier \u00e0 T, \u00e0 \u00e2me haute (arrondi)", draw: "drawProfileT", standard: "EN 10025-2:2004", family: "TE_AME_HAUTE", data: {
+        "30x30x4": {"b": 30, "h": 30, "d": 4.0, "m": 1.77},
+        "35x35x4.5": {"b": 35, "h": 35, "d": 4.5, "m": 2.33},
+        "40x40x5": {"b": 40, "h": 40, "d": 5.0, "m": 2.96},
+        "50x50x6": {"b": 50, "h": 50, "d": 6.0, "m": 4.44},
+        "60x60x7": {"b": 60, "h": 60, "d": 7.0, "m": 6.23},
+        "70x70x8": {"b": 70, "h": 70, "d": 8.0, "m": 8.32},
+        "80x80x9": {"b": 80, "h": 80, "d": 9.0, "m": 10.68},
+        "90x90x10": {"b": 90, "h": 90, "d": 10.0, "m": 13.42},
+        "100x100x11": {"b": 100, "h": 100, "d": 11.0, "m": 16.41},
+        "120x120x13": {"b": 120, "h": 120, "d": 13.0, "m": 23.24},
+        "140x140x15": {"b": 140, "h": 140, "d": 15.0, "m": 31.32}
+      } },
+        { name: "Acier \u00e0 T, ar\u00eates vives", draw: "drawProfileTVIF", standard: "EN 10025-2:2004", family: "TE_VIF", data: {
+        "25x3": {"b": 25, "h": 25, "d": 3, "m": 1.2},
+        "25x4": {"b": 25, "h": 25, "d": 4, "m": 1.5},
+        "30x3": {"b": 30, "h": 30, "d": 3, "m": 1.34},
+        "30x4": {"b": 30, "h": 30, "d": 4, "m": 1.76},
+        "40x4": {"b": 40, "h": 40, "d": 4, "m": 2.39},
+        "40x5": {"b": 40, "h": 40, "d": 5, "m": 2.94},
+        "45x6": {"b": 45, "h": 45, "d": 6, "m": 3.95},
+        "50x5": {"b": 50, "h": 50, "d": 5, "m": 3.73},
+        "50x6": {"b": 50, "h": 50, "d": 6, "m": 4.4},
+        "60x7": {"b": 60, "h": 60, "d": 7, "m": 6.2}
+      } },
+        { name: "Acier \u00e0 U", draw: "drawProfileU", standard: "EN 10025-2:2004", family: "U_MARCHAND", data: {
+        "20x10x3": {"h": 20, "b": 10.0, "d": 3.0, "t": 3.0, "m": 0.8},
+        "20x15x3": {"h": 20, "b": 15.0, "d": 3.0, "t": 3.5, "m": 1.15},
+        "25x10x3": {"h": 25, "b": 10.0, "d": 3.0, "t": 3.5, "m": 0.95},
+        "25x15x3": {"h": 25, "b": 15.0, "d": 3.0, "t": 3.5, "m": 1.25},
+        "25x15x4": {"h": 25, "b": 15.0, "d": 4.0, "t": 4.5, "m": 1.55},
+        "30x15x4": {"h": 30, "b": 15.0, "d": 4.0, "t": 4.5, "m": 1.74},
+        "30x20x4": {"h": 30, "b": 20.0, "d": 4.0, "t": 4.5, "m": 2.05},
+        "30x33x5": {"h": 30, "b": 33.0, "d": 5.0, "t": 7.0, "m": 4.27, "NP": 3},
+        "35x17.5x4": {"h": 35, "b": 17.5, "d": 4.0, "t": 5.0, "m": 2.15},
+        "40x20x5": {"h": 40, "b": 20.0, "d": 5.0, "t": 5.5, "m": 2.87},
+        "40x35x5": {"h": 40, "b": 35.0, "d": 5.0, "t": 7.0, "m": 4.87, "NP": 4},
+        "50x25x5": {"h": 50, "b": 25.0, "d": 5.0, "t": 6.0, "m": 3.86},
+        "50x38x5": {"h": 50, "b": 38.0, "d": 5.0, "t": 7.0, "m": 5.59, "NP": 5},
+        "60x30x6": {"h": 60, "b": 30.0, "d": 6.0, "t": 6.0, "m": 5.07},
+        "65x42x5.5": {"h": 65, "b": 42.0, "d": 5.5, "t": 7.5, "m": 7.09, "NP": 6.5},
+        "70x40x6": {"h": 70, "b": 40.0, "d": 6.0, "t": 6.0, "m": 6.5}
+      } },
+        { name: "Acier U \u00e0 coulisse", draw: "drawProfileUVIF", standard: "EN 10025-2:2004", family: "COULISSE", data: {
+        "14x14x2.0x2.0": {"b": 14, "h": 14, "d": 2.0, "t": 2.0, "m": 0.6},
+        "16x16x2.0x2.0": {"b": 16, "h": 16, "d": 2.0, "t": 2.0, "m": 0.7},
+        "20x20x2.0x1.8": {"b": 20, "h": 20, "d": 2.0, "t": 1.8, "m": 0.85},
+        "25x25x2.0x2.0": {"b": 25, "h": 25, "d": 2.0, "t": 2.0, "m": 1.2},
+        "30x14x3.0x3.0": {"b": 30, "h": 14, "d": 3.0, "t": 3.0, "m": 1.25},
+        "30x25x3.0x3.0": {"b": 30, "h": 25, "d": 3.0, "t": 3.0, "m": 1.75},
+        "30x30x2.5x2.5": {"b": 30, "h": 30, "d": 2.5, "t": 2.5, "m": 1.65},
+        "30x30x3.0x3.0": {"b": 30, "h": 30, "d": 3.0, "t": 3.0, "m": 1.9},
+        "35x35x3.0x3.0": {"b": 35, "h": 35, "d": 3.0, "t": 3.0, "m": 2.3},
+        "40x25x3.5x3.5": {"b": 40, "h": 25, "d": 3.5, "t": 3.5, "m": 2.25},
+        "40x40x3.0x3.0": {"b": 40, "h": 40, "d": 3.0, "t": 3.0, "m": 2.69},
+        "45x27x3.0x3.25": {"b": 45, "h": 27, "d": 3.0, "t": 3.25, "m": 2.2},
+        "45x45x3.75x3.5": {"b": 45, "h": 45, "d": 3.75, "t": 3.5, "m": 3.6},
+        "50x20x4.0x4.0": {"b": 50, "h": 20, "d": 4.0, "t": 4.0, "m": 2.6},
+        "50x30x4.0x4.0": {"b": 50, "h": 30, "d": 4.0, "t": 4.0, "m": 3.2},
+        "50x50x4.0x4.0": {"b": 50, "h": 50, "d": 4.0, "t": 4.0, "m": 4.46},
+        "60x20x3.0x3.0": {"b": 60, "h": 20, "d": 3.0, "t": 3.0, "m": 2.2},
+        "60x55x5.0x5.0": {"b": 60, "h": 55, "d": 5.0, "t": 5.0, "m": 6.3},
+        "70x25x4.0x4.0": {"b": 70, "h": 25, "d": 4.0, "t": 4.0, "m": 3.52},
+        "70x45x4.0x5.0": {"b": 70, "h": 45, "d": 4.0, "t": 5.0, "m": 5.6}
+      } },
+        { name: "Acier Z normal", draw: "drawProfileZ_NORMAL", standard: "EN 10025-2:2004", family: "Z_NORMAL", data: {
+        "NP3": {"np": 3, "h": 30, "b": 38, "d": 4.0, "t": 4.5, "m": 3.39},
+        "NP4": {"np": 4, "h": 40, "b": 40, "d": 4.5, "t": 5.0, "m": 4.26},
+        "NP5": {"np": 5, "h": 50, "b": 43, "d": 5.0, "t": 5.5, "m": 5.31},
+        "NP6": {"np": 6, "h": 60, "b": 45, "d": 5.0, "t": 6.0, "m": 6.21},
+        "NP8": {"np": 8, "h": 80, "b": 50, "d": 6.0, "t": 7.0, "m": 8.71},
+        "NP10": {"np": 10, "h": 100, "b": 55, "d": 6.5, "t": 8.0, "m": 11.4},
+        "NP12": {"np": 12, "h": 120, "b": 60, "d": 7.0, "t": 9.0, "m": 14.3},
+        "NP14": {"np": 14, "h": 140, "b": 65, "d": 8.0, "t": 10.0, "m": 18.0}
+      } },
+        { name: "Acier Z vif", draw: "drawProfileZ_VIF", standard: "EN 10025-2:2004", family: "Z_VIF", data: {
+        "30x16": {"h": 30, "b": 16, "b1": 20, "d": 3.0, "t": 3.0, "m": 1.4},
+        "40x17": {"h": 40, "b": 17, "b1": 22, "d": 4.5, "t": 4.5, "m": 2.45}
+      } }
+      ]
+    },
+    {
+      name: "\ud83d\udcd0 Profil\u00e9 molet\u00e9",
+      families: [
+        { name: "Acier \u00e9querre \u00e9gale molet\u00e9e \u00e0 froid", draw: "drawProfileEQUERREMOLETEE", standard: "EN 10162:2003", family: "EQUERRE_MOLETEE_EGALE", data: {
+        "20x20x2": {"a": 20, "b": 20, "d": 2, "m": 0.58},
+        "25x25x2": {"a": 25, "b": 25, "d": 2, "m": 0.73},
+        "25x25x3": {"a": 25, "b": 25, "d": 3, "m": 1.05},
+        "30x30x2": {"a": 30, "b": 30, "d": 2, "m": 0.89},
+        "30x30x3": {"a": 30, "b": 30, "d": 3, "m": 1.3},
+        "35x35x3": {"a": 35, "b": 35, "d": 3, "m": 1.53},
+        "40x40x2": {"a": 40, "b": 40, "d": 2, "m": 1.2},
+        "40x40x3": {"a": 40, "b": 40, "d": 3, "m": 1.77},
+        "40x40x4": {"a": 40, "b": 40, "d": 4, "m": 2.31},
+        "50x50x3": {"a": 50, "b": 50, "d": 3, "m": 2.24},
+        "50x50x4": {"a": 50, "b": 50, "d": 4, "m": 2.93},
+        "60x60x3": {"a": 60, "b": 60, "d": 3, "m": 2.71},
+        "60x60x4": {"a": 60, "b": 60, "d": 4, "m": 3.56},
+        "70x70x4": {"a": 70, "b": 70, "d": 4, "m": 4.19},
+        "80x80x5": {"a": 80, "b": 80, "d": 5, "m": 5.96},
+        "100x100x5": {"a": 100, "b": 100, "d": 5, "m": 7.53}
+      } },
+        { name: "Acier \u00e9querre in\u00e9gale molet\u00e9e \u00e0 froid", draw: "drawProfileEQUERREMOLETEE", standard: "EN 10162:2003", family: "EQUERRE_MOLETEE_INEGALE", data: {
+        "20x15x2": {"a": 20, "b": 15, "d": 2, "m": 0.5},
+        "30x20x2": {"a": 30, "b": 20, "d": 2, "m": 0.73},
+        "40x20x2": {"a": 40, "b": 20, "d": 2, "m": 0.86},
+        "40x25x2": {"a": 40, "b": 25, "d": 2, "m": 0.97},
+        "40x30x3": {"a": 40, "b": 30, "d": 3, "m": 1.53},
+        "50x30x3": {"a": 50, "b": 30, "d": 3, "m": 1.77},
+        "60x30x3": {"a": 60, "b": 30, "d": 3, "m": 2.0},
+        "80x30x3": {"a": 80, "b": 30, "d": 3, "m": 2.47},
+        "80x40x3": {"a": 80, "b": 40, "d": 3, "m": 2.67},
+        "100x30x3": {"a": 100, "b": 30, "d": 3, "m": 2.95},
+        "100x50x3": {"a": 100, "b": 50, "d": 3, "m": 3.42},
+        "100x50x5": {"a": 100, "b": 50, "d": 5, "m": 5.56},
+        "150x100x5": {"a": 150, "b": 100, "d": 5, "m": 9.75}
+      } },
+        { name: "Acier U molet\u00e9s \u00e0 froid", draw: "drawProfileUMOLETE", standard: "EN 10162:2003", family: "U_MOLETE", data: {
+        "10x18x2.0": {"b": 10, "h": 18, "d": 2.0, "m": 0.62},
+        "10x25x2.0": {"b": 10, "h": 25, "d": 2.0, "m": 0.83},
+        "12x18x1.5": {"b": 12, "h": 18, "d": 1.5, "m": 0.51},
+        "15x20x1.5": {"b": 15, "h": 20, "d": 1.5, "m": 0.58},
+        "20x20x2.0": {"b": 20, "h": 20, "d": 2.0, "m": 0.83},
+        "20x25x2.0": {"b": 20, "h": 25, "d": 2.0, "m": 0.98},
+        "20x35x2.0": {"b": 20, "h": 35, "d": 2.0, "m": 1.3},
+        "25x10x2.0": {"b": 25, "h": 10, "d": 2.0, "m": 0.59},
+        "25x20x2.0": {"b": 25, "h": 20, "d": 2.0, "m": 0.92},
+        "25x25x2.0": {"b": 25, "h": 25, "d": 2.0, "m": 1.06},
+        "25x30x2.0": {"b": 25, "h": 30, "d": 2.0, "m": 1.22},
+        "25x40x2.0": {"b": 25, "h": 40, "d": 2.0, "m": 1.53},
+        "30x10x2.0": {"b": 30, "h": 10, "d": 2.0, "m": 0.67},
+        "30x20x2.0": {"b": 30, "h": 20, "d": 2.0, "m": 0.98},
+        "30x25x2.0": {"b": 30, "h": 25, "d": 2.0, "m": 1.14},
+        "30x30x2.0": {"b": 30, "h": 30, "d": 2.0, "m": 1.3},
+        "30x30x3.0": {"b": 30, "h": 30, "d": 3.0, "m": 1.87},
+        "30x50x3.0": {"b": 30, "h": 50, "d": 3.0, "m": 2.81},
+        "35x10x2.0": {"b": 35, "h": 10, "d": 2.0, "m": 0.73},
+        "35x35x2.5": {"b": 35, "h": 35, "d": 2.5, "m": 1.86},
+        "40x20x2.0": {"b": 40, "h": 20, "d": 2.0, "m": 1.14},
+        "40x20x3.0": {"b": 40, "h": 20, "d": 3.0, "m": 1.64},
+        "40x20x4.0": {"b": 40, "h": 20, "d": 4.0, "m": 2.03},
+        "40x25x2.0": {"b": 40, "h": 25, "d": 2.0, "m": 1.28},
+        "40x26x3.0": {"b": 40, "h": 26, "d": 3.0, "m": 1.87},
+        "40x30x3.0": {"b": 40, "h": 30, "d": 3.0, "m": 2.11},
+        "40x40x2.5": {"b": 40, "h": 40, "d": 2.5, "m": 2.1},
+        "40x40x3.0": {"b": 40, "h": 40, "d": 3.0, "m": 2.59},
+        "40x40x4.0": {"b": 40, "h": 40, "d": 4.0, "m": 3.28},
+        "45x45x3.0": {"b": 45, "h": 45, "d": 3.0, "m": 2.97},
+        "46x25x2.0": {"b": 46, "h": 25, "d": 2.0, "m": 1.37},
+        "50x20x3.0": {"b": 50, "h": 20, "d": 3.0, "m": 1.87},
+        "50x25x3.0": {"b": 50, "h": 25, "d": 3.0, "m": 2.06},
+        "50x30x2.0": {"b": 50, "h": 30, "d": 2.0, "m": 1.61},
+        "50x30x3.0": {"b": 50, "h": 30, "d": 3.0, "m": 2.34},
+        "50x50x3.0": {"b": 50, "h": 50, "d": 3.0, "m": 3.23},
+        "50x50x4.0": {"b": 50, "h": 50, "d": 4.0, "m": 4.3},
+        "54x45x4.0": {"b": 54, "h": 45, "d": 4.0, "m": 4.03},
+        "60x30x2.0": {"b": 60, "h": 30, "d": 2.0, "m": 1.76},
+        "60x30x3.0": {"b": 60, "h": 30, "d": 3.0, "m": 2.58},
+        "60x30x4.0": {"b": 60, "h": 30, "d": 4.0, "m": 3.28},
+        "60x40x2.0": {"b": 60, "h": 40, "d": 2.0, "m": 2.09},
+        "60x40x3.0": {"b": 60, "h": 40, "d": 3.0, "m": 3.06},
+        "60x50x3.0": {"b": 60, "h": 50, "d": 3.0, "m": 3.46},
+        "60x60x4.0": {"b": 60, "h": 60, "d": 4.0, "m": 5.15},
+        "62x45x4.0": {"b": 62, "h": 45, "d": 4.0, "m": 4.36},
+        "65x50x2.0": {"b": 65, "h": 50, "d": 2.0, "m": 2.46},
+        "70x30x3.0": {"b": 70, "h": 30, "d": 3.0, "m": 2.79},
+        "70x40x3.0": {"b": 70, "h": 40, "d": 3.0, "m": 3.3},
+        "70x40x4.0": {"b": 70, "h": 40, "d": 4.0, "m": 4.21},
+        "70x45x4.0": {"b": 70, "h": 45, "d": 4.0, "m": 4.52},
+        "70x50x4.0": {"b": 70, "h": 50, "d": 4.0, "m": 4.93},
+        "70x50x5.0": {"b": 70, "h": 50, "d": 5.0, "m": 5.93},
+        "80x20x4.0": {"b": 80, "h": 20, "d": 4.0, "m": 3.28},
+        "80x40x3.0": {"b": 80, "h": 40, "d": 3.0, "m": 3.46},
+        "80x40x4.0": {"b": 80, "h": 40, "d": 4.0, "m": 4.52},
+        "80x50x5.0": {"b": 80, "h": 50, "d": 5.0, "m": 6.24},
+        "80x60x4.0": {"b": 80, "h": 60, "d": 4.0, "m": 5.87},
+        "90x35x3.0": {"b": 90, "h": 35, "d": 3.0, "m": 3.46},
+        "90x40x3.0": {"b": 90, "h": 40, "d": 3.0, "m": 3.77},
+        "90x45x4.0": {"b": 90, "h": 45, "d": 4.0, "m": 5.15},
+        "90x50x5.0": {"b": 90, "h": 50, "d": 5.0, "m": 6.78},
+        "100x30x2.0": {"b": 100, "h": 30, "d": 2.0, "m": 2.37},
+        "100x30x3.0": {"b": 100, "h": 30, "d": 3.0, "m": 3.54},
+        "100x30x4.0": {"b": 100, "h": 30, "d": 4.0, "m": 4.52},
+        "100x40x4.0": {"b": 100, "h": 40, "d": 4.0, "m": 5.15},
+        "100x50x3.0": {"b": 100, "h": 50, "d": 3.0, "m": 4.4},
+        "100x50x4.0": {"b": 100, "h": 50, "d": 4.0, "m": 5.77},
+        "100x50x5.0": {"b": 100, "h": 50, "d": 5.0, "m": 7.02},
+        "100x60x5.0": {"b": 100, "h": 60, "d": 5.0, "m": 7.99},
+        "100x60x6.0": {"b": 100, "h": 60, "d": 6.0, "m": 9.13},
+        "110x50x4.0": {"b": 110, "h": 50, "d": 4.0, "m": 6.08},
+        "120x40x4.0": {"b": 120, "h": 40, "d": 4.0, "m": 5.96},
+        "120x50x4.0": {"b": 120, "h": 50, "d": 4.0, "m": 6.4},
+        "120x50x5.0": {"b": 120, "h": 50, "d": 5.0, "m": 7.8},
+        "120x60x4.0": {"b": 120, "h": 60, "d": 4.0, "m": 7.02},
+        "120x60x5.0": {"b": 120, "h": 60, "d": 5.0, "m": 8.55},
+        "120x60x6.0": {"b": 120, "h": 60, "d": 6.0, "m": 10.2},
+        "125x60x5.0": {"b": 125, "h": 60, "d": 5.0, "m": 8.78},
+        "140x50x5.0": {"b": 140, "h": 50, "d": 5.0, "m": 8.55},
+        "140x60x4.0": {"b": 140, "h": 60, "d": 4.0, "m": 7.61},
+        "140x60x5.0": {"b": 140, "h": 60, "d": 5.0, "m": 9.56},
+        "140x60x6.0": {"b": 140, "h": 60, "d": 6.0, "m": 10.99},
+        "150x50x3.0": {"b": 150, "h": 50, "d": 3.0, "m": 5.57},
+        "150x50x5.0": {"b": 150, "h": 50, "d": 5.0, "m": 9.17},
+        "160x50x4.0": {"b": 160, "h": 50, "d": 4.0, "m": 7.67},
+        "160x65x6.0": {"b": 160, "h": 65, "d": 6.0, "m": 12.7},
+        "160x95x5.0": {"b": 160, "h": 95, "d": 5.0, "m": 13.0},
+        "180x65x5.0": {"b": 180, "h": 65, "d": 5.0, "m": 11.31},
+        "180x70x5.0": {"b": 180, "h": 70, "d": 5.0, "m": 11.87},
+        "180x70x7.0": {"b": 180, "h": 70, "d": 7.0, "m": 16.5},
+        "180x95x6.0": {"b": 180, "h": 95, "d": 6.0, "m": 16.3},
+        "200x80x4.0": {"b": 200, "h": 80, "d": 4.0, "m": 10.89},
+        "200x80x6.0": {"b": 200, "h": 80, "d": 6.0, "m": 15.68},
+        "250x80x6.0": {"b": 250, "h": 80, "d": 6.0, "m": 18.67},
+        "300x82.5x6.0": {"b": 300, "h": 82.5, "d": 6.0, "m": 20.59}
+      } }
       ]
     },
     {
       name: "\u2b55 Tubes",
       families: [
-
+        { name: "Tube gaz et eau - s\u00e9rie moyenne DIN2244", draw: "drawProfileTUBEROND", standard: "EN 10255-M / DIN 2440", family: "PIPE_GAS_WATER_M", data: {
+        "1/4   | \u00d813.5": {"DN": "1/4", "D": 13.5, "t": 2.35, "d": 8.8, "m": 0.65, "m_z": 0.69},
+        "3/8   | \u00d817.2": {"DN": "3/8", "D": 17.2, "t": 2.35, "d": 12.5, "m": 0.85, "m_z": 0.89},
+        "1/2   | \u00d821.3": {"DN": "1/2", "D": 21.3, "t": 2.65, "d": 16.0, "m": 1.22, "m_z": 1.27},
+        "3/4   | \u00d826.9": {"DN": "3/4", "D": 26.9, "t": 2.65, "d": 21.6, "m": 1.58, "m_z": 1.65},
+        "1     | \u00d833.7": {"DN": "1", "D": 33.7, "t": 3.25, "d": 27.2, "m": 2.44, "m_z": 2.55},
+        "1_1/4 | \u00d842.4": {"DN": "1 1/4", "D": 42.4, "t": 3.25, "d": 35.9, "m": 3.14, "m_z": 3.28},
+        "1_1/2 | \u00d848.3": {"DN": "1 1/2", "D": 48.3, "t": 3.25, "d": 41.8, "m": 3.61, "m_z": 3.77},
+        "2     | \u00d860.3": {"DN": "2", "D": 60.3, "t": 3.65, "d": 53.0, "m": 5.1, "m_z": 5.33},
+        "2_1/2 | \u00d876.1": {"DN": "2 1/2", "D": 76.1, "t": 3.65, "d": 68.8, "m": 6.51, "m_z": 6.8},
+        "3     | \u00d888.9": {"DN": "3", "D": 88.9, "t": 4.05, "d": 80.8, "m": 8.47, "m_z": 8.85},
+        "4     | \u00d8114.3": {"DN": "4", "D": 114.3, "t": 4.5, "d": 105.3, "m": 12.1, "m_z": 12.6}
+      } },
+        { name: "Tube gaz et eau - s\u00e9rie moyenne DIN2240", draw: "drawProfileTUBEROND", standard: "EN 10255-M / DIN 2440", family: "PIPE_GAS_WATER_M", data: {
+        "3/8   | \u00d817.2": {"DN": "3/8", "D": 17.2, "t": 2.35, "d": 12.5, "m": 0.85},
+        "1/2   | \u00d821.3": {"DN": "1/2", "D": 21.3, "t": 2.65, "d": 16.0, "m": 1.22},
+        "3/4   | \u00d826.9": {"DN": "3/4", "D": 26.9, "t": 2.65, "d": 21.6, "m": 1.58},
+        "1     | \u00d833.7": {"DN": "1", "D": 33.7, "t": 3.25, "d": 27.2, "m": 2.44},
+        "1_1/4 | \u00d842.4": {"DN": "1 1/4", "D": 42.4, "t": 3.25, "d": 35.9, "m": 3.14},
+        "1_1/2 | \u00d848.3": {"DN": "1 1/2", "D": 48.3, "t": 3.25, "d": 41.8, "m": 3.61},
+        "2     | \u00d860.3": {"DN": "2", "D": 60.3, "t": 3.65, "d": 53.0, "m": 5.1}
+      } },
+        { name: "Tube vapeur - s\u00e9rie lourde", draw: "drawProfileTUBEROND", standard: "EN 10255-H / DIN 2441", family: "PIPE_STEAM_H", data: {
+        "3/8   | \u00d817.2": {"DN": "3/8", "D": 17.2, "t": 2.9, "d": 11.4, "m": 1.02},
+        "1/2   | \u00d821.3": {"DN": "1/2", "D": 21.3, "t": 3.25, "d": 14.8, "m": 1.45},
+        "3/4   | \u00d826.9": {"DN": "3/4", "D": 26.9, "t": 3.25, "d": 20.4, "m": 1.9},
+        "1     | \u00d833.7": {"DN": "1", "D": 33.7, "t": 4.05, "d": 25.6, "m": 2.97},
+        "1_1/4 | \u00d842.4": {"DN": "1 1/4", "D": 42.4, "t": 4.05, "d": 34.3, "m": 3.84},
+        "1_1/2 | \u00d848.3": {"DN": "1 1/2", "D": 48.3, "t": 4.05, "d": 40.2, "m": 4.43},
+        "2     | \u00d860.3": {"DN": "2", "D": 60.3, "t": 4.5, "d": 51.3, "m": 6.17},
+        "2_1/2 | \u00d876.1": {"DN": "2 1/2", "D": 76.1, "t": 4.5, "d": 67.1, "m": 7.9},
+        "3     | \u00d888.9": {"DN": "3", "D": 88.9, "t": 4.85, "d": 79.2, "m": 10.1},
+        "4     | \u00d8114.3": {"DN": "4", "D": 114.3, "t": 5.4, "d": 103.5, "m": 14.4}
+      } },
+        { name: "Tube construction - s\u00e9rie l\u00e9g\u00e8re II", draw: "drawProfileTUBEROND", standard: "EN 10219 / DIN 2458 / 1615", family: "PIPE_GAS_WATER_LIGHT_SERIES_II", data: {
+        "3/4 | \u00d826.9x2.35": {"DN": "3/4", "D": 26.9, "t": 2.35, "d": 22.2, "m": 1.41},
+        "1 | \u00d833.7x2.65": {"DN": "1", "D": 33.7, "t": 2.65, "d": 28.4, "m": 2.01},
+        "1_1/4 | \u00d842.4x2.65": {"DN": "1 1/4", "D": 42.4, "t": 2.65, "d": 37.1, "m": 2.58},
+        "1_1/2 | \u00d848.3x2.90": {"DN": "1 1/2", "D": 48.3, "t": 2.9, "d": 42.5, "m": 3.25},
+        "2 | \u00d860.3x2.90": {"DN": "2", "D": 60.3, "t": 2.9, "d": 54.5, "m": 4.11}
+      } },
+        { name: "Tube de cl\u00f4ture - s\u00e9rie moyenne", draw: "drawProfileTUBEROND", standard: "EN 10255-M / DIN 2440", family: "GUARD_RAIL_TUBE", data: {
+        "3/8 | \u00d817.2": {"DN": "3/8", "D": 17.2, "t": 2.0, "d": 13.2, "m": 0.75},
+        "1/2 | \u00d821.3": {"DN": "1/2", "D": 21.3, "t": 2.0, "d": 17.3, "m": 0.95},
+        "3/4 | \u00d826.9": {"DN": "3/4", "D": 26.9, "t": 2.0, "d": 22.9, "m": 1.22},
+        "1 | \u00d833.7": {"DN": "1", "D": 33.7, "t": 2.0, "d": 29.7, "m": 1.55},
+        "1_1/4 | \u00d842.4": {"DN": "1 1/4", "D": 42.4, "t": 2.0, "d": 38.4, "m": 1.94},
+        "1_1/2 | \u00d848.3": {"DN": "1 1/2", "D": 48.3, "t": 2.0, "d": 44.3, "m": 2.27},
+        "2 | \u00d860.3": {"DN": "2", "D": 60.3, "t": 2.0, "d": 56.3, "m": 2.86}
+      } }
       ]
     },
     {
@@ -12298,156 +13578,226 @@ const MINICAD_LIB = {
     }
   ]
 };
-// Profilés en I — vue de face (section transversale)
-// Paramètres : h (hauteur), b (largeur aile), tw (ép. âme), tf (ép. aile), r (congé)
-// Point d'insertion : centroïde
-
 function drawProfileI(p, x, y) {
   var api = window.minicadAPI;
-  var hh = p.h / 2, bh = p.b / 2, twh = p.tw / 2, tf = p.tf, r = p.r;
-  var PI = Math.PI;
 
-  function arc(cx, cy, a0, a1) {
-    var pts = [];
-    for (var i = 0; i <= 6; i++) {
-      var a = a0 + (a1 - a0) * i / 6;
-      pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
-    }
-    return pts;
-  }
+  var hh  = p.h / 2;
+  var bh  = p.b / 2;
+  var twh = p.tw / 2;
+  var tf  = p.tf;
+  var r   = p.r;
 
-  var pts = [];
-  pts.push([x - bh, y - hh], [x + bh, y - hh], [x + bh, y - hh + tf]);
-  arc(x + twh + r, y - hh + tf + r, -PI / 2, -PI).forEach(p => pts.push(p));
-  arc(x + twh + r, y + hh - tf - r,  PI,  PI / 2).forEach(p => pts.push(p));
-  pts.push([x + bh, y + hh - tf], [x + bh, y + hh], [x - bh, y + hh], [x - bh, y + hh - tf]);
-  arc(x - twh - r, y + hh - tf - r,  PI / 2,  0).forEach(p => pts.push(p));
-  arc(x - twh - r, y - hh + tf + r,  0, -PI / 2).forEach(p => pts.push(p));
-  pts.push([x - bh, y - hh + tf], [x - bh, y - hh]);
+  // Bulge pour quart de cercle (90°) = tan(π/8)
+  // NÉGATIF car les arcs sont parcourus en sens horaire (CW)
+  var bg = -Math.tan(Math.PI / 8);
 
-  api.polyline(pts, true);
+  var yTop =  hh;
+  var yBot = -hh;
+  var yIT  =  hh - tf;
+  var yIB  = -hh + tf;
+
+  api.polyline([
+    // 1  Coin bas-gauche
+    [x - bh,       y + yBot],
+
+    // 2  Coin bas-droit
+    [x + bh,       y + yBot],
+
+    // 3  Chant aile inférieure droite
+    [x + bh,       y + yIB],
+
+    // 4  Segment horizontal sous aile + ARC BR (CW, concave)
+    [x + twh + r,  y + yIB,        bg],
+
+    // 5  Fin arc BR, début âme droite
+    [x + twh,      y + yIB + r],
+
+    // 6  Âme droite + ARC TR (CW, concave)
+    [x + twh,      y + yIT - r,    bg],
+
+    // 7  Fin arc TR
+    [x + twh + r,  y + yIT],
+
+    // 8  Segment horizontal sous aile supérieure
+    [x + bh,       y + yIT],
+
+    // 9  Chant aile supérieure droite
+    [x + bh,       y + yTop],
+
+    // 10 Coin haut-droit
+    [x - bh,       y + yTop],
+
+    // 11 Chant aile supérieure gauche
+    [x - bh,       y + yIT],
+
+    // 12 Segment horizontal sous aile sup + ARC TL (CW, concave)
+    [x - twh - r,  y + yIT,        bg],
+
+    // 13 Fin arc TL, début âme gauche
+    [x - twh,      y + yIT - r],
+
+    // 14 Âme gauche + ARC BL (CW, concave)
+    [x - twh,      y + yIB + r,    bg],
+
+    // 15 Fin arc BL
+    [x - twh - r,  y + yIB],
+
+    // 16 Segment horizontal sur aile inférieure
+    [x - bh,       y + yIB],
+
+    // 17 Fermeture
+    [x - bh,       y + yBot]
+
+  ], true);
 }
-
-// Profilés IPN — vue de face (section transversale, ailes inclinées à 14%)
-// Paramètres : h (hauteur), b (largeur aile), tw (ép. âme),
-//              tf (ép. aile mesurée à b/4), r1 (congé racine), r2 (congé de pied)
-// Point d'insertion : centroïde
 
 function drawProfileIPN(p, x, y) {
   var api = window.minicadAPI;
-  var m  = 0.14;                          // pente intérieure des ailes (14 %)
-  var hh = p.h / 2, bh = p.b / 2, twh = p.tw / 2;
-  var tf = p.tf, r1 = p.r1, r2 = p.r2;
+
+  var hh  = p.h / 2;
+  var bh  = p.b / 2;
+  var twh = p.tw / 2;
+  var tf  = p.tf;
+  var r1  = p.r1;
+  var r2  = p.r2;
+
+  var m  = 0.14;  // pente standard IPN 14%
   var s1 = Math.sqrt(1 + m * m);
 
-  // Face inférieure (intérieure) de l'aile sup. droite : v = C - m*u   (v vers le bas)
-  var C = -hh + tf + m * (p.b / 4);
+  // Constante de la face intérieure supérieure : y = m*x + c
+  var c = hh - tf - m * (twh + bh) / 2;
 
-  // Congé de pied r2 (haut-droit) : tangent au chant vertical (u=bh) et à la face inclinée
-  var uc2 = bh - r2;
-  var vc2 = C - m * uc2 - r2 * s1;
+  // Ordonnées des centres des arcs (quadrant supérieur droit)
+  var cy1 = c + m * twh + r1 * (m - s1);   // centre r1 (sous la face intérieure)
+  var cy2 = c + m * bh  + r2 * (s1 - m);   // centre r2 (au-dessus de la face intérieure)
 
-  // Congé de racine r1 (haut-droit) : tangent à l'âme (u=twh) et à la face inclinée
-  var uc1 = twh + r1;
-  var vc1 = C - m * uc1 + r1 * s1;
+  // Facteur géométrique commun
+  var k = 1 - m / s1;   // ≈ 0.8614
 
-  function arc(cx, cy, r, a0, a1) {
-    var out = [];
-    for (var i = 0; i <= 6; i++) {
-      var a = a0 + (a1 - a0) * i / 6;
-      out.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
-    }
-    return out;
-  }
+  // Points de tangence (quadrant supérieur droit)
+  var r1_ame   = [twh,              cy1];
+  var r1_face  = [twh + r1 * k,     cy1 + r1 / s1];
+  var r2_face  = [bh  - r2 * k,     cy2 - r2 / s1];
+  var r2_chant = [bh,               cy2];
 
-  // Quart supérieur droit, ordonné de l'extérieur (pointe) vers l'âme
-  var Q = [[bh, -hh]];                                                       // coin ext. de la pointe
-  arc(uc2, vc2, r2, 0, Math.atan2(1, m)).forEach(q => Q.push(q));            // congé de pied
-  arc(uc1, vc1, r1, Math.atan2(-1, -m), -Math.PI).forEach(q => Q.push(q));   // congé de racine -> (twh,vc1)
+  // Bulge pour arc de 82° (= π/2 - atan(m))
+  var angle_arc = Math.PI / 2 - Math.atan(m);
+  var bg = Math.tan(angle_arc / 4);   // ≈ 0.3746
 
-  var negV  = q => [ q[0], -q[1]];
-  var negU  = q => [-q[0],  q[1]];
-  var negUV = q => [-q[0], -q[1]];
-  var rev   = a => a.slice().reverse();
+  api.polyline([
+    // ── Aile inférieure ──
 
-  // Contour complet (sens horaire) par symétrie du quart
-  var L = [[-bh, -hh]];                        // pointe haut-gauche
-  Q.forEach(q => L.push(q));                   // arête sup. + quart haut-droit  -> (twh, vc1)
-  rev(Q.map(negV)).forEach(q => L.push(q));    // âme droite + quart bas-droit   -> (bh, hh)
-  Q.map(negUV).forEach(q => L.push(q));        // arête inf. + quart bas-gauche  -> (-twh,-vc1)
-  rev(Q.map(negU)).forEach(q => L.push(q));    // âme gauche + quart haut-gauche -> (-bh,-hh)
+    // 1  Coin bas-gauche
+    [x - bh, y - hh],
 
-  api.polyline(L.map(q => [x + q[0], y + q[1]]), true);
+    // 2  Coin bas-droit
+    [x + bh, y - hh],
+
+    // 3  Chant aile inférieure droite (montée jusqu'au congé r2)
+    [x + bh, y - cy2,               +bg],   // arc r2 bas-droit (CCW)
+
+    // 4  Arc r2 bas-droit → face intérieure inférieure
+    [x + bh - r2 * k, y - cy2 + r2 / s1],
+
+    // 5  Face intérieure aile inférieure droite (inclinée, vers l'âme)
+    [x + twh + r1 * k, y - cy1 - r1 / s1,  -bg],   // arc r1 bas-droit (CW)
+
+    // 6  Arc r1 bas-droit → âme
+    [x + twh, y - cy1],
+
+    // ── Âme ──
+
+    // 7  Âme droite (montée jusqu'au congé r1 haut)
+    [x + twh, y + cy1,              -bg],   // arc r1 haut-droit (CW)
+
+    // 8  Arc r1 haut-droit → face intérieure supérieure
+    [x + twh + r1 * k, y + cy1 + r1 / s1],
+
+    // ── Aile supérieure ──
+
+    // 9  Face intérieure aile supérieure droite (inclinée, vers le bord)
+    [x + bh - r2 * k, y + cy2 - r2 / s1,  +bg],   // arc r2 haut-droit (CCW)
+
+    // 10 Arc r2 haut-droit → chant
+    [x + bh, y + cy2],
+
+    // 11 Chant aile supérieure droite (montée)
+    [x + bh, y + hh],
+
+    // 12 Coin haut-gauche
+    [x - bh, y + hh],
+
+    // 13 Chant aile supérieure gauche (descente jusqu'au congé r2)
+    [x - bh, y + cy2,               +bg],   // arc r2 haut-gauche (CCW)
+
+    // 14 Arc r2 haut-gauche → face intérieure supérieure
+    [x - bh + r2 * k, y + cy2 - r2 / s1],
+
+    // 15 Face intérieure aile supérieure gauche (inclinée, vers l'âme)
+    [x - twh - r1 * k, y + cy1 + r1 / s1,  -bg],   // arc r1 haut-gauche (CW)
+
+    // 16 Arc r1 haut-gauche → âme
+    [x - twh, y + cy1],
+
+    // ── Âme gauche ──
+
+    // 17 Âme gauche (descente jusqu'au congé r1 bas)
+    [x - twh, y - cy1,              -bg],   // arc r1 bas-gauche (CW)
+
+    // 18 Arc r1 bas-gauche → face intérieure inférieure
+    [x - twh - r1 * k, y - cy1 - r1 / s1],
+
+    // 19 Face intérieure aile inférieure gauche (inclinée, vers le bord)
+    [x - bh + r2 * k, y - cy2 + r2 / s1,  +bg],   // arc r2 bas-gauche (CCW)
+
+    // 20 Arc r2 bas-gauche → chant
+    [x - bh, y - cy2],
+
+    // 21 Fermeture
+    [x - bh, y - hh]
+
+  ], true);
 }
 
 // Profilés en U à ailes parallèles (UPE) — vue de face (section transversale)
-// Paramètres : h, b, tw, tf, r1 (congé racine âme/aile), r2 (congé bout d'aile intérieur)
+// UNE SEULE polyligne fermée avec bulge pour les arcs
+// Paramètres : h, b, tw, tf, r1 (congé racine), r2 (congé bout d'aile intérieur)
 // Point d'insertion : centre de la boîte englobante
 // Âme à gauche, ailes vers la droite
 
 function drawProfileUPE(p, x, y) {
   var api = window.minicadAPI;
   var h = p.h, b = p.b, tw = p.tw, tf = p.tf, r1 = p.r1, r2 = p.r2;
-  var PI = Math.PI;
+  var BG = Math.tan(Math.PI / 8);     // bulge d'un quart de cercle (90°)
 
-  var xL = x - b / 2;   // face arrière (dos de l'âme)
-  var xR = x + b / 2;   // bouts d'ailes
-  var xW = xL + tw;      // face intérieure de l'âme
+  var xL = x - b / 2;                 // dos de l'âme (gauche)
+  var xR = x + b / 2;                 // bouts d'ailes (droite)
+  var xW = xL + tw;                   // face intérieure de l'âme
   var yB = y - h / 2;
   var yT = y + h / 2;
 
-  function arc(cx, cy, r, a0, a1) {
-    var pts = [];
-    for (var i = 0; i <= 6; i++) {
-      var a = a0 + (a1 - a0) * i / 6;
-      pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
-    }
-    return pts;
-  }
-
-  var pts = [];
-
-  // Coin bas-gauche (vif)
-  pts.push([xL, yB]);
-
-  // Face inférieure → coin vif bas-droit aile basse
-  pts.push([xR, yB]);
-
-  // Face droite aile basse → congé r2 coin intérieur haut (CCW : 0 → π/2)
-  // Segment implicite [xR,yB]→(xR,yB+tf-r2), puis arc
-  arc(xR - r2, yB + tf - r2, r2, 0, PI / 2).forEach(p => pts.push(p));
-  // arc : (xR, yB+tf-r2) → (xR-r2, yB+tf)
-
-  // Face intérieure aile basse → congé r1 racine bas (CW : -π/2 → -π)
-  // Segment implicite (xR-r2,yB+tf)→(xW+r1,yB+tf)
-  arc(xW + r1, yB + tf + r1, r1, -PI / 2, -PI).forEach(p => pts.push(p));
-  // arc : (xW+r1,yB+tf) → (xW,yB+tf+r1)
-
-  // Face intérieure âme → congé r1 racine haut (CW : π → π/2)
-  // Segment implicite (xW,yB+tf+r1)→(xW,yT-tf-r1)
-  arc(xW + r1, yT - tf - r1, r1, PI, PI / 2).forEach(p => pts.push(p));
-  // arc : (xW,yT-tf-r1) → (xW+r1,yT-tf)
-
-  // Face intérieure aile haute → congé r2 coin intérieur bas (CCW : -π/2 → 0)
-  // Segment implicite (xW+r1,yT-tf)→(xR-r2,yT-tf)
-  arc(xR - r2, yT - tf + r2, r2, -PI / 2, 0).forEach(p => pts.push(p));
-  // arc : (xR-r2,yT-tf) → (xR,yT-tf+r2)
-
-  // Face droite aile haute → coin vif haut-droit aile haute
-  // Segment implicite (xR,yT-tf+r2)→[xR,yT]
-  pts.push([xR, yT]);
-
-  // Face supérieure et fermeture
-  pts.push([xL, yT]);
-  pts.push([xL, yB]);
-
-  api.polyline(pts, true);
+  // bulge +BG = r2 orteil (CCW) ; -BG = r1 racine (CW)
+  api.polyline([
+    [xL, yB              ],           // coin bas-gauche (dos)
+    [xR, yB              ],           // face inférieure → coin bas-droit
+    [xR, yB + tf - r2, BG],           // → arrondi r2 (orteil bas)
+    [xR - r2, yB + tf    ],           // face int. aile basse
+    [xW + r1, yB + tf,-BG],           // → congé r1 (racine bas)
+    [xW, yB + tf + r1    ],           // face int. âme (montée)
+    [xW, yT - tf - r1,-BG],           // → congé r1 (racine haut)
+    [xW + r1, yT - tf    ],           // face int. aile haute
+    [xR - r2, yT - tf, BG],           // → arrondi r2 (orteil haut)
+    [xR, yT - tf + r2    ],           // face droite aile haute
+    [xR, yT              ],           // coin haut-droit
+    [xL, yT              ],           // face supérieure → coin haut-gauche
+    [xL, yB              ]            // dos (fermeture)
+  ], true);
 }
 
-// Profilés UPN — vue de face (section en U, faces intérieures d'ailes inclinées à 8%)
-// Paramètres : h (hauteur), b (largeur d'aile), tw (ép. âme/dos),
-//              tf (ép. d'aile mesurée à b/2 du dos), r1 (congé racine), r2 (congé d'orteil)
-// Point d'insertion : centroïde (calculé sur le contour ; le dos de l'âme est à gauche)
+// Profilés UPN — section en U à ailes inclinées (pente 8 %)
+// UNE SEULE polyligne fermée avec bulge pour les arcs
+// Paramètres : h, b, tw (épaisseur âme), tf (épaisseur aile moy. à b/2), r1 (racine), r2 (orteil)
+// Point d'insertion : centroïde (calculé par shoelace)
 
 function drawProfileUPN(p, x, y) {
   var api = window.minicadAPI;
@@ -12455,58 +13805,761 @@ function drawProfileUPN(p, x, y) {
   var hh = p.h / 2, b = p.b, tw = p.tw;
   var tf = p.tf, r1 = p.r1, r2 = p.r2;
   var s1 = Math.sqrt(1 + m * m);
+  var PI = Math.PI;
 
-  // Face intérieure de l'aile supérieure : v = m*u + c   (matière au-dessus)
-  var c = hh - tf - m * b / 2;
+  var c   = hh - tf - m * b / 2;
+  var uc2 = b - r2,  vc2 = m * uc2 + c + r2 * s1;
+  var uc1 = tw + r1, vc1 = m * uc1 + c - r1 * s1;
+  var aT  = Math.atan2(-1,  m);
+  var aR  = Math.atan2( 1, -m);
 
-  // Congé d'orteil r2 : coin CONVEXE -> centre DANS la matière (au-dessus de la face inclinée)
-  var uc2 = b - r2;
-  var vc2 = m * uc2 + c + r2 * s1;
+  // Bulge : tous les arcs du UPN ont |included angle| = |aT| ≈ 1.49 rad
+  var theta = Math.abs(aT);
+  var BG = Math.tan(theta / 4);           // ≈ 0.3927
 
-  // Congé de racine r1 : coin RENTRANT -> centre dans l'OUVERTURE du U (sous la face inclinée)
-  var uc1 = tw + r1;
-  var vc1 = m * uc1 + c - r1 * s1;        // <-- corrigé : était + r1*s1
+  // Extrémités d'arcs
+  function ae(cx, cy, r, a) { return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; }
+  var toeTopEnd    = ae(uc2,  vc2, r2, aT);
+  var rootTopStart = ae(uc1,  vc1, r1, aR);
+  var rootBotStart = ae(uc1, -vc1, r1, -aR);      // angles inversés
+  var toeBotEnd    = ae(uc2, -vc2, r2, -aT);
 
-  function arc(cx, cy, r, a0, a1) {
-    var out = [];
+  // ── Centroïde (polyline 6-segments, méthode éprouvée) ──
+  function arcPts(cx, cy, r, a0, a1) {
+    var pts = [];
     for (var i = 0; i <= 6; i++) {
       var a = a0 + (a1 - a0) * i / 6;
-      out.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+      pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
     }
-    return out;
+    return pts;
   }
-
-  var aT = Math.atan2(-1,  m);            // r2 : tangence sur la face inclinée (sous le centre)
-  var aR = Math.atan2( 1, -m);            // r1 : tangence sur la face inclinée (au-dessus du centre)
-
-  // Demi-contour droit : du coin extérieur supérieur jusqu'à la racine sur l'âme
-  var top = [[b, hh], [b, vc2]];                              // arête sup. + chant d'orteil
-  arc(uc2, vc2, r2, 0, aT).forEach(q => top.push(q));         // congé d'orteil -> face inclinée
-  arc(uc1, vc1, r1, aR, Math.PI).forEach(q => top.push(q));   // congé de racine -> (tw, vc1)
-
-  var negV = q => [q[0], -q[1]];
-  var rev  = a => a.slice().reverse();
-
-  // Contour complet (sens horaire) : dos + aile sup. + âme + aile inf.
-  var L = [[0, hh]];                            // dos, en haut
-  top.forEach(q => L.push(q));                  // aile sup. droite  -> (tw, vc1)
-  rev(top.map(negV)).forEach(q => L.push(q));   // âme + aile inf.   -> (b, -hh)
-  L.push([0, -hh]);                             // dos, en bas
-  L.push([0,  hh]);                             // <-- ferme le dos du U (répète le 1er point)
-
-  // Centroïde du contour (shoelace) pour caler le point d'insertion
+  var top = [[b, hh], [b, vc2]];
+  arcPts(uc2, vc2, r2, 0, aT).forEach(function(q) { top.push(q); });
+  arcPts(uc1, vc1, r1, aR, PI).forEach(function(q) { top.push(q); });
+  var negV = function(q) { return [q[0], -q[1]]; };
+  var rev  = function(a) { return a.slice().reverse(); };
+  var L = [[0, hh]];
+  top.forEach(function(q) { L.push(q); });
+  rev(top.map(negV)).forEach(function(q) { L.push(q); });
+  L.push([0, -hh], [0, hh]);
   var A = 0, Cu = 0, Cv = 0;
-  for (var i = 0; i < L.length; i++) {
-    var p0 = L[i], p1 = L[(i + 1) % L.length];
+  for (var i = 0; i < L.length - 1; i++) {
+    var p0 = L[i], p1 = L[i + 1];
+    var cr = p0[0] * p1[1] - p1[0] * p0[1];
+    A += cr; Cu += (p0[0] + p1[0]) * cr; Cv += (p0[1] + p1[1]) * cr;
+  }
+  A *= 0.5;
+  var gu = Cu / (6 * A), gv = Cv / (6 * A);
+
+  // ── Polyligne unique fermée avec bulge ──
+  // Note: moitié inférieure = miroir avec angles inversés → bulge signs inversés
+  var ox = x - gu, oy = y - gv;
+  api.polyline([
+    [0 + ox,                  hh + oy              ],  // dos haut
+    [b + ox,                  hh + oy              ],  // face sup. aile
+    [b + ox,                  vc2 + oy,        -BG ],  // → orteil haut (CW)
+    [toeTopEnd[0] + ox,       toeTopEnd[1] + oy    ],  // face inclinée haut
+    [rootTopStart[0] + ox,    rootTopStart[1] + oy, BG],// → racine haut (CCW)
+    [tw + ox,                 vc1 + oy             ],  // âme haut
+    [tw + ox,                -vc1 + oy,         BG ],  // → racine bas (CCW, inversé)
+    [rootBotStart[0] + ox,    rootBotStart[1] + oy    ],  // face inclinée bas
+    [toeBotEnd[0] + ox,       toeBotEnd[1] + oy, -BG],  // → orteil bas (CW, inversé)
+    [b + ox,                 -vc2 + oy             ],  // chant aile basse
+    [b + ox,                 -hh + oy              ],  // coin bas-droit
+    [0 + ox,                 -hh + oy              ],  // dos bas
+    [0 + ox,                  hh + oy              ]   // fermeture
+  ], true);
+}
+
+// Acier rond (Rundstahl) — vue de face (section transversale : un cercle)
+// Paramètre : d (diamètre)
+// Point d'insertion : centroïde (= centre du cercle)
+
+function drawProfileROND(p, x, y) {
+  var api = window.minicadAPI;
+  var r = p.d / 2;
+  var n = 64;                              // segments d'approximation du cercle
+
+  // Si l'API expose un cercle natif, le préférer :
+  if (api.circle) { api.circle(x, y, r); return; }
+
+  var pts = [];
+  for (var i = 0; i < n; i++) {
+    var a = 2 * Math.PI * i / n;
+    pts.push([x + r * Math.cos(a), y + r * Math.sin(a)]);
+  }
+  api.polyline(pts, true);
+}
+
+// Acier carré (Vierkantstahl) — vue de face (section transversale : un carré)
+// Paramètre : a (côté)
+// Point d'insertion : centroïde (= centre du carré)
+
+function drawProfileCARRE(p, x, y) {
+  var api = window.minicadAPI;
+  var h = p.a / 2;
+  api.polyline([
+    [x - h, y - h],
+    [x + h, y - h],
+    [x + h, y + h],
+    [x - h, y + h],
+    [x - h, y - h]
+  ], true);
+}
+
+// Acier plat (Flachstahl) — vue de face (section transversale : un rectangle)
+// Paramètres : b (largeur, horizontale), t (épaisseur, verticale)
+// Point d'insertion : centroïde (= centre du rectangle)
+
+function drawProfilePLAT(p, x, y) {
+  var api = window.minicadAPI;
+  var bh = p.b / 2, th = p.t / 2;
+  api.polyline([
+    [x - bh, y - th],
+    [x + bh, y - th],
+    [x + bh, y + th],
+    [x - bh, y + th],
+    [x - bh, y - th]   // on referme explicitement le contour
+  ], true);
+}
+
+// Bandage à champs arrondis (Abgerundete Radreifen) — section : rectangle à coins arrondis
+// Paramètres : B (largeur totale), d (épaisseur), b1 (rayon des coins)
+// Point d'insertion : centroïde (= centre)
+// UNE SEULE polyligne fermée : 4 droites + 4 arcs via bulge
+function drawProfileBANDAGE(p, x, y) {
+    var api = window.minicadAPI;
+    var Bh = p.B / 2;
+    var dh = p.d / 2;
+    var r = p.b1;
+
+    // Bulge pour un quart de cercle (90°) : tan(π/8) ≈ 0.4142
+    // Signe + = CCW mathématique = CW visuel après inversion Y canvas
+    var bg = Math.tan(Math.PI / 8);
+
+    // Polyligne unique fermée
+    // Le bulge est placé sur le point DE DÉPART de l'arc
+    api.polyline([
+        // 1. Bas chant droit → LIGNE vers haut chant droit
+        [x + Bh, y - dh + r],
+
+        // 2. Haut chant droit → ARC coin haut-droit
+        [x + Bh, y + dh - r, bg],
+
+        // 3. Fin arc HD → LIGNE face supérieure
+        [x + Bh - r, y + dh],
+
+        // 4. Fin face sup → ARC coin haut-gauche
+        [x - Bh + r, y + dh, bg],
+
+        // 5. Fin arc HG → LIGNE chant gauche
+        [x - Bh, y + dh - r],
+
+        // 6. Bas chant gauche → ARC coin bas-gauche
+        [x - Bh, y - dh + r, bg],
+
+        // 7. Fin arc BG → LIGNE face inférieure
+        [x - Bh + r, y - dh],
+
+        // 8. Fin face inf → ARC coin bas-droit
+        [x + Bh - r, y - dh, bg],
+
+        // 9. Retour explicite au point 1 (sans bulge = ligne droite de raccord si nécessaire, 
+        //    mais ici c'est la fin de l'arc précédent grâce au bulge du point 8)
+        [x + Bh, y - dh + r]
+    ], true);
+}
+
+// Cornière (Winkelstahl) — section en L, ailes ÉGALES ou INÉGALES, à arêtes arrondies
+// Paramètres : a (aile horizontale), b (aile verticale), d (épaisseur)
+//   - cornière égale : fournir b = a (ou omettre b)
+//   - rayons optionnels : r1 (congé de talon, intérieur), r2 (arrondi de bout d'aile)
+//     défauts : r1 = d, r2 = d/2
+// Point d'insertion : centroïde (calculé par shoelace sur contour local)
+// UNE SEULE polyligne fermée avec bulge pour les arcs natifs
+function drawProfileCORNIERE(p, x, y) {
+  var api = window.minicadAPI;
+  var a  = p.a;
+  var b  = (p.b  != null ? p.b  : p.a);
+  var d  = p.d;
+  var r1 = (p.r1 != null ? p.r1 : d);
+  var r2 = (p.r2 != null ? p.r2 : d / 2);
+  var PI = Math.PI;
+
+  // Bulge pour quart de cercle (90°) : tan(π/8)
+  var bg = Math.tan(PI / 8);
+
+  // ── Contour local pour calcul du centroïde (shoelace) ──
+  // On garde la version discrétisée uniquement pour le calcul géométrique du centre
+  var L = [];
+  L.push([0, 0]);
+  L.push([a, 0]);
+  L.push([a, d - r2]);
+  for (var i = 0; i <= 6; i++) {
+    var t = (PI / 2) * i / 6;
+    L.push([a - r2 + r2 * Math.cos(t), d - r2 + r2 * Math.sin(t)]);
+  }
+  L.push([d + r1, d]);
+  for (var i = 0; i <= 6; i++) {
+    var t = -PI / 2 + (-PI / 2) * i / 6;
+    L.push([d + r1 + r1 * Math.cos(t), d + r1 + r1 * Math.sin(t)]);
+  }
+  L.push([d, b - r2]);
+  for (var i = 0; i <= 6; i++) {
+    var t = (PI / 2) * i / 6;
+    L.push([d - r2 + r2 * Math.cos(t), b - r2 + r2 * Math.sin(t)]);
+  }
+  L.push([0, b]);
+  L.push([0, 0]);
+
+  // Centroïde (shoelace)
+  var A = 0, Cu = 0, Cv = 0;
+  for (var i = 0; i < L.length - 1; i++) {
+    var p0 = L[i], p1 = L[i + 1];
     var cr = p0[0] * p1[1] - p1[0] * p0[1];
     A  += cr;
     Cu += (p0[0] + p1[0]) * cr;
     Cv += (p0[1] + p1[1]) * cr;
   }
   A *= 0.5;
-  var gu = Cu / (6 * A), gv = Cv / (6 * A);     // gv ≈ 0 par symétrie
+  var gu = Cu / (6 * A), gv = Cv / (6 * A);
+
+  // ── Polyligne unique avec arcs natifs via bulge ──
+  var ox = x - gu, oy = y - gv;
+
+  api.polyline([
+    // Talon extérieur (angle vif) → LIGNE face inférieure aile horiz.
+    [ox, oy],
+
+    // Bout aile horiz. (bas) → LIGNE chant du bout
+    [a + ox, oy],
+
+    // Chant du bout → ARC convexe bout aile horiz. (CCW, +bg)
+    [a + ox, d - r2 + oy, bg],
+
+    // Fin arrondi bout horiz. → LIGNE face intérieure horiz.
+    [a - r2 + ox, d + oy],
+
+    // Face int. horiz. → ARC concave congé talon (CW, -bg)
+    [d + r1 + ox, d + oy, -bg],
+
+    // Fin congé talon → LIGNE face intérieure vert.
+    [d + ox, d + r1 + oy],
+
+    // Face int. vert. → ARC convexe bout aile vert. (CCW, +bg)
+    [d + ox, b - r2 + oy, bg],
+
+    // Fin arrondi bout vert. → LIGNE chant du bout aile vert.
+    [d - r2 + ox, b + oy],
+
+    // Chant aile vert. → LIGNE retour talon (fermeture)
+    [ox, b + oy],
+
+    // Retour explicite au talon
+    [ox, oy]
+  ], true);
+}
+
+// Équerre (Winkelstahl scharfkantig) — section en L à ARÊTES VIVES, égale ou inégale
+// Paramètres : a (aile horizontale), b (aile verticale ; = a si omis), d (épaisseur)
+// Point d'insertion : centroïde (talon décalé ; calcul par shoelace)
+
+function drawProfileEQUERRE(p, x, y) {
+  var api = window.minicadAPI;
+  var a = p.a;
+  var b = (p.b != null ? p.b : p.a);
+  var d = p.d;
+
+  // Contour local (CCW), talon vif à l'origine, ailes vers +x (a) et +y (b)
+  var L = [
+    [0, 0],
+    [a, 0],
+    [a, d],
+    [d, d],
+    [d, b],
+    [0, b],
+    [0, 0]            // fermeture explicite
+  ];
+
+  // Centroïde du contour (shoelace)
+  var A = 0, Cu = 0, Cv = 0;
+  for (var i = 0; i < L.length - 1; i++) {
+    var p0 = L[i], p1 = L[i + 1];
+    var cr = p0[0] * p1[1] - p1[0] * p0[1];
+    A  += cr;
+    Cu += (p0[0] + p1[0]) * cr;
+    Cv += (p0[1] + p1[1]) * cr;
+  }
+  A *= 0.5;
+  var gu = Cu / (6 * A), gv = Cv / (6 * A);
 
   api.polyline(L.map(q => [x + q[0] - gu, y + q[1] - gv]), true);
+}
+
+// Acier à T (T-Stahl rundkantig) — à âme haute (b=h) OU à base large (b>h)
+// UNE SEULE polyligne fermée avec bulge pour les arcs
+// Paramètres : b (largeur de bride), h (hauteur totale), d (épaisseur bride = âme)
+//   rayons optionnels : r1 (congé de raccordement), r2 (arrondis de bouts)
+//   défauts : r1 = d, r2 = d/2
+// Point d'insertion : centroïde (calcul par shoelace)
+
+function drawProfileT(p, x, y) {
+  var api = window.minicadAPI;
+  var b  = p.b, h = p.h, d = p.d;
+  var r1 = (p.r1 != null ? p.r1 : d);
+  var r2 = (p.r2 != null ? p.r2 : d / 2);
+  var bh = b / 2, wh = d / 2;          // demi-bride, demi-âme
+  var PI = Math.PI;
+  var BG = Math.tan(PI / 8);           // bulge d'un quart de cercle (90°)
+
+  // ── Centroïde (polyline 6-segments, méthode éprouvée) ──
+  function arc(cx, cy, r, a0, a1, out) {
+    for (var i = 0; i <= 6; i++) {
+      var t = a0 + (a1 - a0) * i / 6;
+      out.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]);
+    }
+  }
+  var L = [];
+  L.push([-bh, 0]);
+  L.push([ bh, 0]);
+  L.push([ bh, -d + r2]);
+  arc(bh - r2, -d + r2, r2, 0, -PI / 2, L);
+  L.push([ wh + r1, -d]);
+  arc(wh + r1, -d - r1, r1, PI / 2, PI, L);
+  L.push([ wh, -h + r2]);
+  arc(wh - r2, -h + r2, r2, 0, -PI / 2, L);
+  L.push([-wh + r2, -h]);
+  arc(-wh + r2, -h + r2, r2, -PI / 2, -PI, L);
+  L.push([-wh, -d - r1]);
+  arc(-(wh + r1), -d - r1, r1, 0, PI / 2, L);
+  L.push([-bh + r2, -d]);
+  arc(-bh + r2, -d + r2, r2, -PI / 2, -PI, L);
+  L.push([-bh, 0]);
+
+  var A = 0, Cu = 0, Cv = 0;
+  for (var i = 0; i < L.length - 1; i++) {
+    var p0 = L[i], p1 = L[i + 1];
+    var cr = p0[0] * p1[1] - p1[0] * p0[1];
+    A += cr; Cu += (p0[0] + p1[0]) * cr; Cv += (p0[1] + p1[1]) * cr;
+  }
+  A *= 0.5;
+  var gu = Cu / (6 * A), gv = Cv / (6 * A);
+
+  // ── Polyligne unique fermée avec bulge ──
+  // bulge < 0 : arrondi de bout (convexe, CW) ; bulge > 0 : congé de raccordement (concave, CCW)
+  var ox = x - gu, oy = y - gv;
+  api.polyline([
+    [-bh + ox,        0 + oy             ],   // coin haut-gauche bride
+    [ bh + ox,        0 + oy             ],   // face supérieure
+    [ bh + ox,       -d + r2 + oy,  -BG  ],   // → arrondi bas-droit bride
+    [ bh - r2 + ox,  -d + oy             ],   // sous-face bride (droite)
+    [ wh + r1 + ox,  -d + oy,        BG  ],   // → congé de raccordement droit
+    [ wh + ox,       -d - r1 + oy        ],   // flanc droit d'âme
+    [ wh + ox,       -h + r2 + oy,  -BG  ],   // → arrondi bas-droit d'âme
+    [ wh - r2 + ox,  -h + oy             ],   // bas d'âme (droite)
+    [-wh + r2 + ox,  -h + oy,       -BG  ],   // → arrondi bas-gauche d'âme
+    [-wh + ox,       -h + r2 + oy        ],   // flanc gauche d'âme
+    [-wh + ox,       -d - r1 + oy,   BG  ],   // → congé de raccordement gauche
+    [-(wh + r1) + ox,-d + oy             ],   // sous-face bride (gauche)
+    [-bh + r2 + ox,  -d + oy,       -BG  ],   // → arrondi bas-gauche bride
+    [-bh + ox,       -d + r2 + oy        ],   // bout bride gauche
+    [-bh + ox,        0 + oy             ]    // fermeture explicite
+  ], true);
+}
+
+// Acier à T vif (T-Stahl scharfkantig) — section en T à ARÊTES VIVES
+// Paramètres : b (largeur de bride), h (hauteur totale), d (épaisseur bride = âme)
+//   -> si b omis ou null, b = h
+// Point d'insertion : centroïde (calcul par shoelace)
+
+function drawProfileTVIF(p, x, y) {
+  var api = window.minicadAPI;
+  var b  = (p.b != null ? p.b : p.h);
+  var h  = p.h, d = p.d;
+  var bh = b / 2, wh = d / 2;
+
+  // Contour local : haut de bride à y=0, âme vers le bas
+  var L = [
+    [-bh,  0],
+    [ bh,  0],
+    [ bh, -d],
+    [ wh, -d],
+    [ wh, -h],
+    [-wh, -h],
+    [-wh, -d],
+    [-bh, -d],
+    [-bh,  0]         // fermeture explicite
+  ];
+
+  // Centroïde (shoelace)
+  var A = 0, Cu = 0, Cv = 0;
+  for (var i = 0; i < L.length - 1; i++) {
+    var p0 = L[i], p1 = L[i + 1];
+    var cr = p0[0] * p1[1] - p1[0] * p0[1];
+    A  += cr;
+    Cu += (p0[0] + p1[0]) * cr;
+    Cv += (p0[1] + p1[1]) * cr;
+  }
+  A *= 0.5;
+  var gu = Cu / (6 * A), gv = Cv / (6 * A);
+
+  api.polyline(L.map(q => [x + q[0] - gu, y + q[1] - gv]), true);
+}
+
+// Acier à U — section en U à ailes inclinées (pente 8 %)
+// UNE SEULE polyligne fermée avec bulge pour les arcs
+// Paramètres : h, b, d (âme), t (aile moy.), optionnels r1, r2, slope
+
+function drawProfileU(p, x, y) {
+  var api = window.minicadAPI;
+  var m  = (p.slope != null ? p.slope : 0.08);
+  var hh = p.h / 2, b = p.b, tw = p.d, tf = p.t;
+  var r1 = (p.r1 != null ? p.r1 : tw);
+  var r2 = (p.r2 != null ? p.r2 : tw / 2);
+  var s1 = Math.sqrt(1 + m * m), PI = Math.PI;
+
+  var c   = hh - tf - m * b / 2;
+  var uc2 = b - r2,  vc2 = m * uc2 + c + r2 * s1;
+  var uc1 = tw + r1, vc1 = m * uc1 + c - r1 * s1;
+  var aT  = Math.atan2(-1,  m);
+  var aR  = Math.atan2( 1, -m);
+
+  // Extrémités d'arcs
+  function ae(cx, cy, r, a) { return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; }
+  var toeTopEnd    = ae(uc2,  vc2, r2, aT);
+  var rootTopStart = ae(uc1,  vc1, r1, aR);
+  var rootBotEnd   = ae(uc1, -vc1, r1, -aR);
+  var toeBotStart  = ae(uc2, -vc2, r2, -aT);
+
+  // Bulge : |bulge| = tan(θ/4), θ = angle d'arc = |aT| pour tous les arcs
+  // Signe : +CCW (racine, concave), −CW (orteil, convexe)
+  var theta = Math.abs(aT);
+  var bg = Math.tan(theta / 4);
+
+  // ── Centroïde (polyline 6-segments, méthode éprouvée) ──
+  function arcPts(cx, cy, r, a0, a1) {
+    var pts = [];
+    for (var i = 0; i <= 6; i++) {
+      var a = a0 + (a1 - a0) * i / 6;
+      pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+    }
+    return pts;
+  }
+  var top = [[b, hh], [b, vc2]];
+  arcPts(uc2, vc2, r2, 0, aT).forEach(function(q) { top.push(q); });
+  arcPts(uc1, vc1, r1, aR, PI).forEach(function(q) { top.push(q); });
+  var negV = function(q) { return [q[0], -q[1]]; };
+  var rev  = function(a) { return a.slice().reverse(); };
+  var L = [[0, hh]];
+  top.forEach(function(q) { L.push(q); });
+  rev(top.map(negV)).forEach(function(q) { L.push(q); });
+  L.push([0, -hh], [0, hh]);
+  var A = 0, Cu = 0, Cv = 0;
+  for (var i = 0; i < L.length - 1; i++) {
+    var p0 = L[i], p1 = L[i + 1];
+    var cr = p0[0] * p1[1] - p1[0] * p0[1];
+    A += cr; Cu += (p0[0] + p1[0]) * cr; Cv += (p0[1] + p1[1]) * cr;
+  }
+  A *= 0.5;
+  var gu = Cu / (6 * A), gv = Cv / (6 * A);
+
+  // ── Polyligne unique fermée avec bulge ──
+  var ox = x - gu, oy = y - gv;
+  api.polyline([
+    [ox,                          hh + oy                      ],  // dos haut
+    [b + ox,                      hh + oy                      ],  // face sup. aile haute
+    [b + ox,                      vc2 + oy,               -bg  ],  // chant → orteil haut (CW)
+    [toeTopEnd[0] + ox,           toeTopEnd[1] + oy            ],  // face inclinée haute
+    [rootTopStart[0] + ox,        rootTopStart[1] + oy,    bg  ],  // → racine haut (CCW)
+    [tw + ox,                     vc1 + oy                     ],  // âme haut
+    [tw + ox,                    -vc1 + oy,                bg  ],  // âme bas → racine bas (CCW)
+    [rootBotEnd[0] + ox,          rootBotEnd[1] + oy           ],  // face inclinée basse
+    [toeBotStart[0] + ox,         toeBotStart[1] + oy,    -bg  ],  // → orteil bas (CW)
+    [b + ox,                     -vc2 + oy                     ],  // chant aile basse
+    [b + ox,                     -hh + oy                      ],  // coin bas-droit
+    [ox,                         -hh + oy                      ],  // dos bas
+    [ox,                          hh + oy                      ]   // dos (fermeture explicite)
+  ], true);
+}
+
+// Acier à coulisse (U-Stahl) — Section en U symétrique
+// Paramètres : b (largeur), h (hauteur), d (épaisseur âme/fond), t (épaisseur brides/côtés)
+// Point d'insertion : Centroïde de la section
+
+function drawProfileUVIF(p, x, y) {
+  var api = window.minicadAPI;
+  
+  var b = p.b;
+  var h = p.h;
+  var d = p.d; // Épaisseur du fond (âme)
+  var t = p.t; // Épaisseur des côtés (brides)
+
+  if (!b || !h || !d || !t) return;
+
+  var half_b = b / 2;
+
+  // Contour local (Ouvert vers le HAUT)
+  // Sens horaire starting from Bottom-Left Outer
+  var L = [
+    [-half_b, 0],             // 1. Bas Gauche Extérieur
+    [ half_b, 0],             // 2. Bas Droit Extérieur
+    [ half_b, h],             // 3. Haut Droit Extérieur
+    [ half_b - t, h],         // 4. Haut Droit Intérieur
+    [ half_b - t, d],         // 5. Angle Intérieur Droit (jonction côté/fond)
+    [-half_b + t, d],         // 6. Angle Intérieur Gauche
+    [-half_b + t, h],         // 7. Haut Gauche Intérieur
+    [-half_b, h],             // 8. Haut Gauche Extérieur
+    [-half_b, 0]              // Fermeture
+  ];
+
+  // Calcul du centroïde (Méthode Shoelace)
+  var A = 0, Cu = 0, Cv = 0;
+  for (var i = 0; i < L.length - 1; i++) {
+    var p0 = L[i], p1 = L[i + 1];
+    var cr = p0[0] * p1[1] - p1[0] * p0[1];
+    A  += cr;
+    Cu += (p0[0] + p1[0]) * cr;
+    Cv += (p0[1] + p1[1]) * cr;
+  }
+  A *= 0.5;
+  
+  if (Math.abs(A) < 1e-6) return;
+
+  var gu = Cu / (6 * A);
+  var gv = Cv / (6 * A);
+
+  // Dessin déplacé au centroïde
+  api.polyline(L.map(q => [x + q[0] - gu, y + q[1] - gv]), true);
+}
+
+// Acier à Z Normal (Z-Stahl Normalprofile)
+// Géométrie : 2 arrondis intérieurs uniquement (congés âme/bride)
+function drawProfileZ_NORMAL(p, x, y) {
+  var api = window.minicadAPI;
+  var h = p.h, b = p.b, d = p.d, t = p.t;
+  if (!h || !b || !d || !t) return;
+
+  var BG = Math.tan(Math.PI / 8); // bulge pour 90° (CCW)
+  var r = d * 0.6;                // rayon intérieur (racine)
+
+  var xL = x - b / 2;
+  var xR = x + b / 2;
+  var xWL = x - d / 2;
+  var xWR = x + d / 2;
+  var yB = y - h / 2;
+  var yT = y + h / 2;
+
+  api.polyline([
+    [xWL, yT],                      // Haut-Gauche (Extérieur âme)
+    [xR, yT],                       // Haut-Droit (Extérieur bride haute)
+    [xR, yT - t],                   // Bas-Droit (Bout bride haute)
+    [xWR + r, yT - t, BG],          // → Congé intérieur haut
+    [xWR, yT - t - r],              // Face int. âme (descente)
+    [xWR, yB],                      // Bas-Droit (Extérieur âme)
+    [xL, yB],                       // Bas-Gauche (Extérieur bride basse)
+    [xL, yB + t],                   // Haut-Gauche (Bout bride basse)
+    [xWL - r, yB + t, BG],          // → Congé intérieur bas
+    [xWL, yB + t + r],              // Face int. âme (montée)
+    [xWL, yT]                       // Fermeture
+  ], true);
+}
+
+// Acier à Z Vif (Z-Stahl scharfkantig)
+// Paramètres : h (hauteur), b (largeur bride), d (épaisseur âme), t (épaisseur bride)
+// Géométrie : Angles droits (vifs)
+// Point d'insertion : Centroïde
+
+function drawProfileZ_VIF(p, x, y) {
+  var api = window.minicadAPI;
+  var h = p.h, b = p.b, d = p.d, t = p.t;
+  
+  if (!h || !b || !d || !t) return;
+
+  var half_h = h / 2;
+  var half_b = b / 2;
+  var half_d = d / 2;
+
+  // Contour fermé (sens horaire) - Angles vifs
+  var L = [
+    [ half_b,      -half_h],       // 1. Extérieur coin haut droit
+    [ half_b,      -half_h + t],   // 2. Intérieur coin haut droit (sous bride)
+    [ half_d,      -half_h + t],   // 3. Jonction âme/bride haut (intérieur)
+    [ half_d,       half_h],       // 4. Bas âme droite
+    [-half_d,       half_h],       // 5. Bas âme gauche
+    [-half_b,       half_h],       // 6. Extérieur coin bas gauche
+    [-half_b,       half_h - t],   // 7. Intérieur coin bas gauche (dessus bride)
+    [-half_d,       half_h - t],   // 8. Jonction âme/bride bas (intérieur)
+    [-half_d,      -half_h],       // 9. Haut âme gauche
+    [ half_b,      -half_h]        // 10. Fermeture (via haut bride) -> Correction: [half_d, -half_h] puis [half_b, -half_h]
+  ];
+  
+  // Correction fermeture : Le point 9 est à [-half_d, -half_h].
+  // Le point 1 est à [half_b, -half_h].
+  // Il manque le segment supérieur de l'âme et de la bride.
+  // On ajoute un point intermédiaire [half_d, -half_h] pour respecter la géométrie ?
+  // Non, le polyline relie 9 à 1 directement. Cela traverse l'âme.
+  // Il faut ajouter [half_d, -half_h] avant de fermer.
+  
+  // Liste corrigée :
+  var L_correct = [
+    [ half_b,      -half_h],       // 1. Ext Haut Droit
+    [ half_b,      -half_h + t],   // 2. Int Haut Droit
+    [ half_d,      -half_h + t],   // 3. Jonction Haut
+    [ half_d,       half_h],       // 4. Bas Droit
+    [-half_d,       half_h],       // 5. Bas Gauche
+    [-half_b,       half_h],       // 6. Ext Bas Gauche
+    [-half_b,       half_h - t],   // 7. Int Bas Gauche
+    [-half_d,       half_h - t],   // 8. Jonction Bas
+    [-half_d,      -half_h],       // 9. Haut Gauche
+    [ half_d,      -half_h],       // 10. Haut Droite (début bride)
+    [ half_b,      -half_h]        // 11. Fermeture
+  ];
+
+  // Calcul du centroïde (Shoelace)
+  var A = 0, Cu = 0, Cv = 0;
+  for (var i = 0; i < L_correct.length - 1; i++) {
+    var p0 = L_correct[i], p1 = L_correct[i + 1];
+    var cr = p0[0] * p1[1] - p1[0] * p0[1];
+    A  += cr;
+    Cu += (p0[0] + p1[0]) * cr;
+    Cv += (p0[1] + p1[1]) * cr;
+  }
+  A *= 0.5;
+  if (Math.abs(A) < 1e-6) return;
+
+  var gu = Cu / (6 * A);
+  var gv = Cv / (6 * A);
+
+  api.polyline(L_correct.map(q => [x + q[0] - gu, y + q[1] - gv]), true);
+}
+
+function drawProfileEQUERREMOLETEE(p, x, y) {
+  var api = window.minicadAPI;
+  var a = p.a; 
+  var b = (p.b != null) ? p.b : a; // Si b n'est pas défini, équerre égale (b = a)
+  var d = p.d;
+  if (!a || !b || !d) return;
+
+  var r1 = d;
+  var r2 = 2 * d;
+  
+  // Limitation des rayons pour éviter les dépassements sur la plus petite aile
+  if (r2 > a / 2) r2 = a / 2;
+  if (r2 > b / 2) r2 = b / 2;
+  if (r1 > a - d) r1 = a - d;
+  if (r1 > b - d) r1 = b - d;
+
+  var BG = Math.tan(Math.PI / 8);
+
+  var L = [
+    [r2, 0],
+    [b, 0],                  // Bout de l'aile horizontale (largeur b)
+    [b, d],
+    [d + r1, d, -BG],        // Congé intérieur (concave)
+    [d, d + r1],
+    [d, a],                  // Bout de l'aile verticale (largeur a)
+    [0, a],
+    [0, r2, BG],             // Arrondi extérieur (convexe)
+    [r2, 0]
+  ];
+
+  var A = 0, Cu = 0, Cv = 0;
+  for (var i = 0; i < L.length - 1; i++) {
+    var p0 = L[i], p1 = L[i + 1];
+    var cr = p0[0] * p1[1] - p1[0] * p0[1];
+    A += cr; 
+    Cu += (p0[0] + p1[0]) * cr; 
+    Cv += (p0[1] + p1[1]) * cr;
+  }
+  A *= 0.5;
+  if (Math.abs(A) < 1e-6) return;
+  
+  var gu = Cu / (6 * A);
+  var gv = Cv / (6 * A);
+
+  api.polyline(L.map(q => {
+    var pt = [x + q[0] - gu, y + q[1] - gv];
+    if (q.length > 2) pt.push(q[2]);
+    return pt;
+  }), true);
+}
+
+// Profils à U moletés à froid (Cold-rolled U-Profile)
+// Paramètres : b (largeur aile), h (hauteur), d (épaisseur)
+// Point d'insertion : Centroïde de la section
+
+function drawProfileUMOLETE(p, x, y) {
+  var api = window.minicadAPI;
+  var b = p.b, h = p.h, d = p.d;
+  if (!b || !h || !d) return;
+
+  var r1 = d;
+  var r2 = 2 * d;
+  
+  if (r2 > b) r2 = b;
+  if (r2 > h / 2) r2 = h / 2;
+  if (r1 > b - d) r1 = b - d;
+  if (r1 > h / 2 - d) r1 = h / 2 - d;
+
+  var BG = Math.tan(Math.PI / 8);
+
+  var L = [
+    [0, r2, BG],
+    [r2, 0],
+    [b, 0],
+    [b, d],
+    [d + r1, d, -BG],
+    [d, d + r1],
+    [d, h - d - r1, -BG],
+    [d + r1, h - d],
+    [b, h - d],
+    [b, h],
+    [r2, h, BG],
+    [0, h - r2],
+    [0, r2]
+  ];
+
+  var A = 0, Cu = 0, Cv = 0;
+  for (var i = 0; i < L.length - 1; i++) {
+    var p0 = L[i], p1 = L[i + 1];
+    var cr = p0[0] * p1[1] - p1[0] * p0[1];
+    A += cr; 
+    Cu += (p0[0] + p1[0]) * cr; 
+    Cv += (p0[1] + p1[1]) * cr;
+  }
+  A *= 0.5;
+  if (Math.abs(A) < 1e-6) return;
+  
+  var gu = Cu / (6 * A);
+  var gv = Cv / (6 * A);
+
+  api.polyline(L.map(q => {
+    var pt = [x + q[0] - gu, y + q[1] - gv];
+    if (q.length > 2) pt.push(q[2]);
+    return pt;
+  }), true);
+}
+
+// Tube gaz et eau - série moyenne (Gas and water pipe - medium series)
+// Paramètres : D (Diamètre extérieur), t (Épaisseur de paroi)
+// Point d'insertion : Centre du tube (x, y)
+
+function drawProfileTUBEROND(p, x, y) {
+  var api = window.minicadAPI;
+  var D = p.D;
+  var t = p.t;
+  if (!D || !t) return;
+
+  var rExt = D / 2;
+  var rInt = rExt - t;
+  
+  // Cercle extérieur
+  api.circle(x, y, rExt);
+
+  // Cercle intérieur
+  if (rInt > 0) {
+    api.circle(x, y, rInt);
+  }
 }
 // @@LIB_END
 
@@ -12559,7 +14612,8 @@ function libInsertSize(fam, sz, el) {
   _libLastEl = el;
   closeMenus();
   const params = fam.data[sz];
-  S.libDef = { drawFn: fam.draw, params, label: fam.name + ' ' + sz };
+  S.libDef = { drawFn: fam.draw, params, label: fam.name + ' ' + sz,
+               famName: fam.name, sz, standard: fam.standard || '', G: params.G != null ? params.G : (params.m != null ? params.m : null) };
   S.libPending = true;
   setTool('select');
   termPrint('BIBLIOTHÈQUE — Cliquer le point d\'insertion pour ' + S.libDef.label, 'info');
@@ -12580,7 +14634,8 @@ function libInsertFromCmd(famName, sz) {
   const found = libFind(famName, sz);
   if (!found) return false;
   const { fam, params } = found;
-  S.libDef = { drawFn: fam.draw, params, label: fam.name + ' ' + sz };
+  S.libDef = { drawFn: fam.draw, params, label: fam.name + ' ' + sz,
+               famName: fam.name, sz, standard: fam.standard || '', G: params.G != null ? params.G : (params.m != null ? params.m : null) };
   S.libPending = true;
   setTool('select');
   termPrint('BIBLIOTHÈQUE — Cliquer le point d\'insertion pour ' + S.libDef.label, 'info');
@@ -12609,6 +14664,8 @@ async function initLibrary() {
           // Charger les données (fam.data est un nom de fichier dans index.json)
           if (typeof fam.data === 'string') {
             const d = await fetch('libraries/' + fam.data + '?t=' + Date.now()).then(r => r.json());
+            fam.standard = d.standard || '';
+            fam.family   = d.family   || '';
             fam.data = d.data;
           }
           // Charger le script de dessin
@@ -12633,7 +14690,450 @@ async function initLibrary() {
 
 initLibrary();
 
-// @@DEMO_BEGIN
+// @@DEMO_BEGIN — Généré par build.py --demo — ne pas éditer directement
+// Éditer demo/demo_sequence.js puis relancer build.py --demo
+// demo/demo_sequence.js — Séquence démo automatique MiniCAD
+// Injecté par build.py --demo entre @@DEMO_BEGIN / @@DEMO_END
+// Activé par ?demo dans l'URL (ex: minicad.html?demo)
+
+(function () {
+  const IS_DEMO = location.search.includes('demo') || location.hash.includes('demo');
+
+  // ── Bouton DÉMO toujours visible (même sans ?demo) ────────────────────
+  window.addEventListener('load', () => {
+    const btn = document.createElement('button');
+    btn.id = 'demo-launch-entry';
+    btn.textContent = IS_DEMO ? '▶  DÉMO' : '▶  DÉMO';
+    btn.style.cssText = [
+      'position:fixed', 'top:34px', 'right:14px',
+      'background:#ffd700', 'color:#0a0f1a',
+      'border:none', 'border-radius:4px', 'padding:6px 14px',
+      'font:700 12px "JetBrains Mono",monospace',
+      'cursor:pointer', 'z-index:9998',
+      'box-shadow:0 2px 8px rgba(0,0,0,0.45)',
+      'letter-spacing:.04em',
+      'transition:background .2s'
+    ].join(';');
+    btn.onmouseenter = () => { btn.style.background = '#ffe94d'; };
+    btn.onmouseleave = () => { btn.style.background = '#ffd700'; };
+    btn.onclick = () => {
+      if (!IS_DEMO) { location.href = location.pathname + '?demo'; }
+      else if (_demoRunning) { _demoRunning = false; location.href = location.pathname; }
+      else { S.entities = []; render(); startDemo(); }
+    };
+    document.body.appendChild(btn);
+    // remplacer par le bouton géré par la démo si on est en mode démo
+    if (IS_DEMO) window._demoBtnEntry = btn;
+  });
+
+  if (!IS_DEMO) return;
+
+  // ── Utilitaires ──────────────────────────────────────────────────────
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  function worldToCanvas(wx, wy) {
+    // Coordonnées canvas (pixels, pas screen)
+    const sx = (wx - S.panX) * S.zoom + canvas.width  / 2;
+    const sy = -(wy - S.panY) * S.zoom + canvas.height / 2;
+    return [sx, sy];
+  }
+
+  function worldToScreen(wx, wy) {
+    const rect = canvas.getBoundingClientRect();
+    const [sx, sy] = worldToCanvas(wx, wy);
+    return [
+      rect.left + sx * (rect.width  / canvas.width),
+      rect.top  + sy * (rect.height / canvas.height)
+    ];
+  }
+
+  function addEnt(e) {
+    e.id    = S.nextId++;
+    e.layer = S.currentLayer;
+    S.entities.push(e);
+    render();
+  }
+
+  // ── Curseur flottant (pour navigation toolbar) ────────────────────────
+  let dot;
+  function createDot() {
+    dot = document.createElement('div');
+    dot.id = 'demo-dot';
+    dot.style.cssText = [
+      'position:fixed', 'width:16px', 'height:16px', 'border-radius:50%',
+      'background:rgba(255,215,0,0.92)', 'border:2px solid rgba(0,0,0,0.5)',
+      'box-shadow:0 0 10px #ffd70099', 'pointer-events:none', 'z-index:9999',
+      'transform:translate(-50%,-50%)',
+      'display:none'
+    ].join(';');
+    document.body.appendChild(dot);
+  }
+
+  function dotPos(px, py) {
+    dot.style.left = px + 'px';
+    dot.style.top  = py + 'px';
+  }
+
+  async function dotMoveTo(px, py, ms) {
+    dot.style.display = 'block';
+    dot.style.transition = `left ${ms}ms cubic-bezier(.4,0,.2,1), top ${ms}ms cubic-bezier(.4,0,.2,1)`;
+    dotPos(px, py);
+    await sleep(ms + 80);
+  }
+
+  async function dotClick() {
+    dot.style.transition = 'transform .12s';
+    dot.style.transform = 'translate(-50%,-50%) scale(1.6)';
+    await sleep(140);
+    dot.style.transform = 'translate(-50%,-50%) scale(1)';
+    await sleep(320);
+  }
+
+  // ── Curseur canvas MiniCAD (vrais réticules) ──────────────────────────
+  // Anime S.mouseScreen avec easing et appelle render() à chaque frame
+  let _cursorAnim = null;
+
+  function easeInOut(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+
+  async function moveCursor(wx, wy, ms) {
+    if (_cursorAnim) { _cursorAnim.cancel = true; }
+    dot.style.display = 'none';   // cacher le dot pendant qu'on dessine
+    mouseOnCanvas = true;
+
+    const startX = S.mouseScreen ? S.mouseScreen[0] : canvas.width  / 2;
+    const startY = S.mouseScreen ? S.mouseScreen[1] : canvas.height / 2;
+    const [endX, endY] = worldToCanvas(wx, wy);
+
+    const anim = { cancel: false };
+    _cursorAnim = anim;
+    const t0 = performance.now();
+
+    await new Promise(resolve => {
+      function frame(now) {
+        if (anim.cancel) { resolve(); return; }
+        const t = Math.min(1, (now - t0) / ms);
+        const e = easeInOut(t);
+        S.mouseScreen = [
+          startX + (endX - startX) * e,
+          startY + (endY - startY) * e
+        ];
+        render();
+        if (t < 1) requestAnimationFrame(frame);
+        else { resolve(); }
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+
+  async function clickWorld(wx, wy, moveMs) {
+    await moveCursor(wx, wy, moveMs || 1600);
+    // Pulse visuel : cercle flash sur le canvas
+    const [cx, cy] = worldToCanvas(wx, wy);
+    const ctx = canvas.getContext('2d');
+    for (let r = 4; r <= 18; r += 7) {
+      render();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,215,0,0.7)';
+      ctx.lineWidth   = 2;
+      ctx.stroke();
+      await sleep(50);
+    }
+    await sleep(120);
+  }
+
+  // ── Sélection style de cote dans le panneau latéral ─────────────────
+  async function selectDimStyle(name) {
+    const sel = document.querySelector('#dimstyle-panel select');
+    if (!sel) { _dsSet(name); return; }
+
+    mouseOnCanvas = false;
+    S.mouseScreen = null;
+    render();
+
+    const rect = sel.getBoundingClientRect();
+    const px   = rect.left + rect.width  / 2;
+    const py   = rect.top  + rect.height / 2;
+
+    dot.style.display = 'block';
+    dot.style.transition = 'left 840ms cubic-bezier(.4,0,.2,1), top 840ms cubic-bezier(.4,0,.2,1)';
+    dotPos(px, py);
+    await sleep(960);
+
+    sel.style.outline = '2px solid #ffd700';
+    sel.style.boxShadow = '0 0 8px #ffd70088';
+    await dotClick();
+
+    _dsSet(name);          // applique le style + rafraîchit le select
+    sel.value = name;      // met le select à jour visuellement
+
+    await sleep(500);
+    sel.style.outline = '';
+    sel.style.boxShadow = '';
+    dot.style.display = 'none';
+    await sleep(400);
+  }
+
+  // ── Clic sur un bouton toolbar ────────────────────────────────────────
+  async function clickToolBtn(toolName) {
+    const btn = document.querySelector(`[data-tool="${toolName}"]`);
+    if (!btn) return;
+
+    mouseOnCanvas = false;
+    S.mouseScreen = null;
+    render();
+
+    const rect  = btn.getBoundingClientRect();
+    const px    = rect.left + rect.width  / 2;
+    const py    = rect.top  + rect.height / 2;
+
+    // Déplacer le dot vers le bouton
+    dot.style.display = 'block';
+    dot.style.transition = 'left 840ms cubic-bezier(.4,0,.2,1), top 840ms cubic-bezier(.4,0,.2,1)';
+    dotPos(px, py);
+    await sleep(960);
+
+    // Flash doré sur le bouton
+    const origOutline = btn.style.outline;
+    btn.style.outline = '2px solid #ffd700';
+    btn.style.boxShadow = '0 0 8px #ffd70088';
+    await dotClick();
+    await sleep(240);
+    btn.style.outline = origOutline || '';
+    btn.style.boxShadow = '';
+
+    dot.style.display = 'none';
+    await sleep(400);
+  }
+
+  // ── Bandeau d'explication ─────────────────────────────────────────────
+  let panel;
+  function createPanel() {
+    panel = document.createElement('div');
+    panel.id = 'demo-panel';
+    panel.style.cssText = [
+      'position:fixed', 'top:58px', 'left:50%', 'transform:translateX(-50%)',
+      'background:rgba(10,15,26,0.93)', 'color:#ffd700',
+      'padding:5px 22px', 'border-radius:20px',
+      'font:600 13px/1.6 "JetBrains Mono",monospace',
+      'z-index:9998', 'pointer-events:none',
+      'border:1px solid rgba(255,215,0,0.35)',
+      'transition:opacity .3s', 'opacity:0', 'white-space:nowrap'
+    ].join(';');
+    document.body.appendChild(panel);
+  }
+
+  async function explain(text, hold) {
+    panel.textContent = text;
+    panel.style.opacity = '1';
+    if (hold) { await sleep(hold); panel.style.opacity = '0'; await sleep(280); }
+  }
+
+  function demoBtnRunning(running) {
+    const btn = window._demoBtnEntry;
+    if (!btn) return;
+    btn.textContent  = running ? '✕  Sortir du mode démo' : '▶  DÉMO';
+    btn.style.background = running ? '#ffb300' : '#ffd700';
+    btn.style.cursor = 'pointer';
+  }
+
+  // ── IPE 160 simplifié ─────────────────────────────────────────────────
+  function ipeProfile(cx, cy) {
+    const h=160, b=82, tw=5.0, tf=7.4;
+    const hh=h/2, bh=b/2, th=tw/2;
+    addEnt({ type:'polyline', points:[
+      [cx-bh, cy-hh], [cx+bh, cy-hh], [cx+bh, cy-hh+tf],
+      [cx+th, cy-hh+tf], [cx+th, cy+hh-tf],
+      [cx+bh, cy+hh-tf], [cx+bh, cy+hh],
+      [cx-bh, cy+hh], [cx-bh, cy+hh-tf],
+      [cx-th, cy+hh-tf], [cx-th, cy-hh+tf],
+      [cx-bh, cy-hh+tf], [cx-bh, cy-hh]
+    ], closed: false });
+  }
+
+  // ── Séquence principale ───────────────────────────────────────────────
+  let _demoRunning = false;
+
+  async function startDemo() {
+    if (_demoRunning) return;
+    _demoRunning = true;
+    demoBtnRunning(true);
+
+    S.entities = []; S.selected = [];
+    S.panX = 0; S.panY = 0; S.zoom = 1.1;
+    mouseOnCanvas = false;
+    S.mouseScreen = null;
+    termPrint('━━ Démo MiniCAD ━━', 'info');
+    render();
+    await sleep(1000);
+
+    // ── 1. Lignes — LINE ──────────────────────────────────────────────
+    await explain('Lignes — LINE');
+    await clickToolBtn('line');
+    S.tool = 'line';
+
+    termPrint('LINE', 'info');
+    await clickWorld(-220, -130);
+    await clickWorld( 220, -130, 1400);
+    addEnt({ type:'line', x1:-220, y1:-130, x2: 220, y2:-130 });
+    await clickWorld( 220,  130, 1400);
+    addEnt({ type:'line', x1: 220, y1:-130, x2: 220, y2: 130 });
+    await clickWorld(-220,  130, 1400);
+    addEnt({ type:'line', x1: 220, y1: 130, x2:-220, y2: 130 });
+    await clickWorld(-220, -130, 1400);
+    addEnt({ type:'line', x1:-220, y1: 130, x2:-220, y2:-130 });
+    await sleep(600);
+
+    if (!_demoRunning) return;
+
+    // ── 2. Cercle — CIRCLE ────────────────────────────────────────────
+    await explain('Cercle — CIRCLE', 0);
+    await clickToolBtn('circle');
+    S.tool = 'circle';
+
+    termPrint('CIRCLE', 'info');
+    await clickWorld(0, 0, 1400);
+    await moveCursor(0, 65, 1200);
+    addEnt({ type:'circle', cx:0, cy:0, r:65 });
+    await sleep(700);
+
+    if (!_demoRunning) return;
+
+    // ── 3. Polyligne — POLYLINE ───────────────────────────────────────
+    await explain('Polyligne — POLYLINE', 0);
+    await clickToolBtn('polyline');
+    S.tool = 'polyline';
+
+    termPrint('PL', 'info');
+    const tri = [[-190,-120],[-90,-120],[-140,-30],[-190,-120]];
+    for (const [tx,ty] of tri.slice(0,-1)) await clickWorld(tx, ty, 1400);
+    addEnt({ type:'polyline', points:tri, closed:false });
+    await sleep(600);
+
+    if (!_demoRunning) return;
+
+    // ── 4. Arc — ARC ──────────────────────────────────────────────────
+    await explain('Arc — ARC', 0);
+    await clickToolBtn('arc');
+    S.tool = 'arc';
+
+    termPrint('ARC', 'info');
+    await moveCursor(110, 60, 1400);
+    addEnt({ type:'arc', cx:110, cy:0, r:60, startAngle: Math.PI/6, endAngle: 5*Math.PI/6 });
+    await sleep(700);
+
+    if (!_demoRunning) return;
+
+    // ── 5. Hachures — HATCH ───────────────────────────────────────────
+    await explain('Hachures — HATCH', 0);
+    await clickToolBtn('hatch');
+    S.tool = 'pick';
+
+    termPrint('H', 'info');
+    await moveCursor(-140, -90, 1400);
+    addEnt({ type:'hatch', points:[[-190,-120],[-90,-120],[-140,-30]], angle:45, spacing:14, pattern:'lines' });
+    await sleep(700);
+
+    if (!_demoRunning) return;
+
+    // ── 6. Raccord — FILLET ───────────────────────────────────────────
+    await explain('Raccord — FILLET (r=30)', 0);
+    await clickToolBtn('fillet');
+    S.tool = 'pick';
+
+    termPrint('F 30', 'info');
+    await clickWorld(-220, -50, 1400);   // clic sur la ligne verticale gauche
+    await clickWorld(-160, -130, 1400);  // clic sur la ligne horizontale basse
+
+    // Raccourcir les deux lignes aux points de tangence (r=30)
+    const bLine = S.entities.find(e => e.type==='line' && Math.abs(e.x1+220)<1 && Math.abs(e.y1+130)<1 && Math.abs(e.y2+130)<1);
+    if (bLine) bLine.x1 = -190;   // tangente sur ligne basse
+    const lLine = S.entities.find(e => e.type==='line' && Math.abs(e.x1+220)<1 && Math.abs(e.x2+220)<1 && Math.abs(e.y2+130)<1);
+    if (lLine) lLine.y2 = -100;   // tangente sur ligne gauche
+
+    addEnt({ type:'arc', cx:-190, cy:-100, r:30, startAngle:-Math.PI, endAngle:-Math.PI/2 });
+    await sleep(700);
+
+    if (!_demoRunning) return;
+
+    // ── 7. Cotation 1:10 — DIMLINEAR ─────────────────────────────────
+    await explain('Cotation 1:10 — DIMLINEAR', 0);
+    S.tool = 'pick';
+    await selectDimStyle('1:10');
+
+    termPrint('DIMLINEAR', 'info');
+    await clickWorld(-220, -130, 1400);
+    await clickWorld( 220, -130, 1400);
+    addEnt({ type:'dim_linear', x1:-220, y1:-130, x2:220, y2:-130, isHoriz:true, offset:-40, dimStyle:'1:10' });
+    await sleep(700);
+
+    if (!_demoRunning) return;
+
+    // ── 8. Offset cercle — OFFSET ─────────────────────────────────────
+    await explain('Décalage — OFFSET 20', 0);
+    await clickToolBtn('offset');
+    S.tool = 'pick';
+
+    termPrint('OFFSET 20', 'info');
+    await moveCursor(0, 65, 1400);
+    addEnt({ type:'circle', cx:0, cy:0, r:85 });
+    await sleep(700);
+
+    if (!_demoRunning) return;
+
+    // ── 9. Profilé IPE 160 ────────────────────────────────────────────
+    await explain('Bibliothèque — IPE 160', 0);
+    mouseOnCanvas = false;
+    S.mouseScreen = null;
+    render();
+
+    termPrint('ipe 160', 'info');
+    await sleep(700);
+    dot.style.display = 'none';
+    await moveCursor(140, 0, 1400);
+    ipeProfile(140, 0);
+    await sleep(800);
+
+    if (!_demoRunning) return;
+
+    // ── 10. Texte — TEXT ─────────────────────────────────────────────
+    await explain('Annotation — TEXT', 0);
+    await clickToolBtn('text_place');
+    S.tool = 'text_place';
+
+    termPrint('TEXT', 'info');
+    await clickWorld(-205, 118, 1400);
+    addEnt({ type:'text', x:-205, y:118, content:'MiniCAD v0.09', size:14 });
+    await sleep(800);
+
+    if (!_demoRunning) return;
+
+    // ── Fin ───────────────────────────────────────────────────────────
+    mouseOnCanvas = false;
+    S.mouseScreen = null;
+    S.tool = 'select';
+    dot.style.display = 'none';
+    render();
+
+    await explain('✓  Dessin technique 2D — un seul fichier HTML', 3600);
+    termPrint('━━ Fin démo — rechargement… ━━', 'success');
+
+    await sleep(2000);
+    _demoRunning = false;
+    demoBtnRunning(false);
+    startDemo();
+  }
+
+  // ── Démarrage après init MiniCAD ──────────────────────────────────────
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      createDot();
+      createPanel();
+      startDemo();
+    }, 900);
+  });
+
+})();
 // @@DEMO_END
 
 </script>

@@ -1,4 +1,5 @@
-# MiniCAD
+![MiniCAD](logo/minicad-osnap-evide-logo.svg)
+
 
 > ⚠️ **PROGRAMME EN DÉVELOPPEMENT — UTILISATION À VOS RISQUES**
 >
@@ -320,6 +321,20 @@ minicad/
 ## Version
 
 **v0.09** — Voir [suivi/CHANGELOG.md](suivi/CHANGELOG.md) pour l'historique complet.
+
+---
+
+## Soutenir le projet
+
+[![Liberapay](https://img.shields.io/badge/Liberapay-soutenir-f6c915?logo=liberapay&logoColor=black)](https://liberapay.com/MiniCAD/)
+
+**[liberapay.com/MiniCAD](https://liberapay.com/MiniCAD/)**
+
+---
+
+## Contact
+
+**[hello@minicad.org](mailto:hello@minicad.org)**
 
 ---
 

@@ -2,7 +2,7 @@
 // Paramètres : D (Diamètre extérieur), t (Épaisseur de paroi)
 // Point d'insertion : Centre du tube (x, y)
 
-function drawProfilePIPE_GAS_WATER_M(p, x, y) {
+function drawProfileTUBEROND(p, x, y) {
   var api = window.minicadAPI;
   var D = p.D;
   var t = p.t;

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MiniCAD v0.09</title>
+<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAADX0lEQVRYhe2XTWhUVxiGn3PunZkkM6kmaBInHTOa+NNAFRf1p2o1ENpEumiJ0EVXpSgB3aRm1S5a6DK4saHSElApFKURAlK1f1GHTlEihQTFamZEa2JyZxKCNQlx5t45XdhcHefOmMB1uvFdne97zz3ve79zvns5gqdQFd74DpJ2UNuAKkDgDjLAfYH6RUh5eDw2eH2eEADhcLhkVi7pAfWhS4KFkFaCzmR86AiABuCtrDteJHEATUCrv6I6MTNlXBXL6ze0CMW5Iok/jUdCV41aoKKmC1j/PxjQyQifBPXmQp8I+P14vd68vM/nI+D3L8ZEqw4sKzRj/doGPjm4n6a3tvNKeQCAu/dG6Dtznu5vjyGE4MD+j3j/3RZWhmoB+OfhNBciUQ5/9Q03h+OFln9VVK3eoPKxLc1N9HR34fF4HPnY7TtIKVkdXunIp1IpPj7Yyc+/XconofIaqA2uIHL+9GJLmoOH0zPsfPs9xoyEowHNX1H9hRPTcWAfO7ZutuM/rlzlu5O9DPw5SLguRHkg29jo2Dg9J77nQiSKruuEaoMA+Lxe0qZJJHrF0WDeCvx65hSvNz5ujlux2+ze04ZlZQB4bd0aLp7tffIaSrGrtc3eb13TuHjuNGvqVwHw160Yu1rbHCsgHW0BoeAKexy9PGCLA9y4OczI6JgdJycmsw6baVn0X/rdjhvqVyGls5RjtqyslKVLl9ix0/4ZiaQ9vj9uOPAT9ljXtJwtK2igtKQkK56be5QzJ22aBXnTsrJiXdcXbqCYeGngpYGco/mGX9K+PAVHPrdze+/ewFOt022Yz05330CdDyqlgi277VwyNsLOckl3bru7bwBg1JKwpcmO7/T9RL372vkNpNMmnZ99acepa9dzDHzdc4Levh8BSExM8Cwi0ctZa0zPzDoayPkZ7a2UbAtoHPo7bee2BiQdNTofxFLPeZ9FQzlWYKNf8mnwCRX0uHU9yIXO40uD3Y6Ds4ofJrO/45Om4t4DixeAjK5gVEBoPjM8pxiec7/dnKESUqDOFknNASIqkaoLcP10LUhecFQmYtfiQEfRxVHHjPhQvwYwM2UMlFVWTwlo5r/74osWX1aaaU8mk1ZWf9U0bGpUGfOQQjQDtS6ayYAyQESF4KgRH+qfJ/4FnbEd/FDgNcoAAAAASUVORK5CYII=">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=Oswald:wght@300;400;500&family=Share+Tech&display=swap');
 
@@ -52,7 +53,7 @@
   }
 
   .menubar {
-    height: 28px;
+    height: 56px;
     background: var(--bg-panel);
     border-bottom: 1px solid #ffffff10;
     display: flex;
@@ -75,11 +76,11 @@
 
   .menu-items { display: flex; gap: 2px; margin-left: 12px; }
   .menu-item {
-    font-size: 11px; padding: 2px 8px; border-radius: 3px; cursor: pointer;
-    color: var(--text-dim); font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px; padding: 4px 12px; border-radius: 3px; cursor: pointer;
+    color: #d8e6f4; font-family: 'IBM Plex Sans', sans-serif;
   }
-  .menu-item:hover { background: #ffffff0a; color: var(--text); }
-  .menu-item.open { background: #ffffff0f; color: var(--text); }
+  .menu-item:hover { background: #ffffff0a; color: #ffffff; }
+  .menu-item.open { background: #ffffff0f; color: #ffffff; }
 
   .menu-dropdown { position: relative; }
   .menu-dropdown-list {
@@ -920,7 +921,7 @@
 
 <!-- MENU BAR -->
 <div class="menubar">
-  <div class="topbar-logo">MiniCAD <span>v0.09</span></div>
+  <div class="topbar-logo"><svg width="176" height="44" viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" aria-label="MiniCAD" style="display:block"><g transform="translate(6,10) scale(0.8)"><rect x="0" y="0" width="100" height="100" rx="20" fill="#16222E"/><path d="M24,70 L24,40 Q24,24 37,24 Q50,24 50,40 L50,70 M50,40 Q50,24 63,24 Q76,24 76,40 L76,70" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="butt" stroke-linejoin="round"/><rect x="16" y="62" width="16" height="16" fill="none" stroke="#FF5436" stroke-width="3"/></g><text x="104" y="63" style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',monospace;font-size:44px;font-weight:500;letter-spacing:0.5px"><tspan fill="#c8d6e5">mini</tspan><tspan fill="#FF5436">cad</tspan></text></svg></div>
   <div class="menu-items">
     <div class="menu-dropdown" id="menu-fichier">
       <div class="menu-item" id="menu-fichier-btn" onclick="toggleMenuDropdown('menu-fichier',event)">Fichier</div>
@@ -2603,6 +2604,7 @@ const CMD = {
     S.stretchRect = null; S.stretchStep = 0;
     setTool('stretch');
     termPrint('ÉTIRER: 1er coin de la fenêtre croisante', 'info');
+    setTimeout(smartFocus, 0);
   }},
   SCALE: { alias: ['SC','ECHELLE'], desc: 'Mise à l\'échelle des objets sélectionnés', exec() {
     if (!S.selected.length) {
@@ -6794,7 +6796,7 @@ canvas.addEventListener('mouseup', (ev) => {
     isRubberBand = true;
     rbStart = { sx, sy, wx, wy };
     rbEnd   = { sx, sy, wx, wy };
-    render(); return;
+    render(); setTimeout(smartFocus, 0); return;
   }
 
   // STRETCH — fin de fenêtre croisante
@@ -7501,6 +7503,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       S.drawPoints = [[wx, wy]];
       S.stretchStep = 2;
       termPrint('ÉTIRER: Cliquer la destination', 'info');
+      setTimeout(smartFocus, 0);
     } else if (S.stretchStep === 2) {
       const [cx, cy] = applyConstraint(S.drawPoints[0][0], S.drawPoints[0][1], wx, wy);
       const dx = cx - S.drawPoints[0][0], dy = cy - S.drawPoints[0][1];
@@ -13426,18 +13429,55 @@ const MINICAD_LIB = {
     {
       name: "\u2b55 Tubes",
       families: [
-        { name: "Tube gaz et eau - s\u00e9rie moyenne", draw: "drawProfileTUBEROND", standard: "EN 10255-M / DIN 2440", family: "PIPE_GAS_WATER_M", data: {
-        "1/4": {"DN": "1/4", "D": 13.5, "t": 2.35, "d": 8.8, "m": 0.65, "m_z": 0.69},
-        "3/8": {"DN": "3/8", "D": 17.2, "t": 2.35, "d": 12.5, "m": 0.85, "m_z": 0.89},
-        "1/2": {"DN": "1/2", "D": 21.3, "t": 2.65, "d": 16.0, "m": 1.22, "m_z": 1.27},
-        "3/4": {"DN": "3/4", "D": 26.9, "t": 2.65, "d": 21.6, "m": 1.58, "m_z": 1.65},
-        "1": {"DN": "1", "D": 33.7, "t": 3.25, "d": 27.2, "m": 2.44, "m_z": 2.55},
-        "1_1/4": {"DN": "1 1/4", "D": 42.4, "t": 3.25, "d": 35.9, "m": 3.14, "m_z": 3.28},
-        "1_1/2": {"DN": "1 1/2", "D": 48.3, "t": 3.25, "d": 41.8, "m": 3.61, "m_z": 3.77},
-        "2": {"DN": "2", "D": 60.3, "t": 3.65, "d": 53.0, "m": 5.1, "m_z": 5.33},
-        "2_1/2": {"DN": "2 1/2", "D": 76.1, "t": 3.65, "d": 68.8, "m": 6.51, "m_z": 6.8},
-        "3": {"DN": "3", "D": 88.9, "t": 4.05, "d": 80.8, "m": 8.47, "m_z": 8.85},
-        "4": {"DN": "4", "D": 114.3, "t": 4.5, "d": 105.3, "m": 12.1, "m_z": 12.6}
+        { name: "Tube gaz et eau - s\u00e9rie moyenne DIN2244", draw: "drawProfileTUBEROND", standard: "DIN 2440 / EN 10255-M / DIN 2444 / EN 10240 A1", family: "GAS_WATER_PIPE_MEDIUM", data: {
+        "1/4 | \u00d813.5x2.35": {"DN": "1/4", "D": 13.5, "t": 2.35, "d": 8.8, "m": 0.65},
+        "3/8 | \u00d817.2x2.35": {"DN": "3/8", "D": 17.2, "t": 2.35, "d": 12.5, "m": 0.85},
+        "1/2 | \u00d821.3x2.65": {"DN": "1/2", "D": 21.3, "t": 2.65, "d": 16.0, "m": 1.22},
+        "3/4 | \u00d826.9x2.65": {"DN": "3/4", "D": 26.9, "t": 2.65, "d": 21.6, "m": 1.58},
+        "1 | \u00d833.7x3.25": {"DN": "1", "D": 33.7, "t": 3.25, "d": 27.2, "m": 2.44},
+        "1_1/4 | \u00d842.4x3.25": {"DN": "1 1/4", "D": 42.4, "t": 3.25, "d": 35.9, "m": 3.14},
+        "1_1/2 | \u00d848.3x3.25": {"DN": "1 1/2", "D": 48.3, "t": 3.25, "d": 41.8, "m": 3.61},
+        "2 | \u00d860.3x3.65": {"DN": "2", "D": 60.3, "t": 3.65, "d": 53.0, "m": 5.1},
+        "2_1/2 | \u00d876.1x3.65": {"DN": "2 1/2", "D": 76.1, "t": 3.65, "d": 68.8, "m": 6.51},
+        "3 | \u00d888.9x4.05": {"DN": "3", "D": 88.9, "t": 4.05, "d": 80.8, "m": 8.47},
+        "4 | \u00d8114.3x4.50": {"DN": "4", "D": 114.3, "t": 4.5, "d": 105.3, "m": 12.1}
+      } },
+        { name: "Tube gaz et eau - s\u00e9rie moyenne DIN2240", draw: "drawProfileTUBEROND", standard: "DIN 2440 / EN 10255-M", family: "5.02Gas- und Wasserleitungsrohre", data: {
+        "3/8 | \u00d817.2x2.35": {"DN": "3/8", "D": 17.2, "t": 2.35, "d": 12.5, "m": 0.85},
+        "1/2 | \u00d821.3x2.65": {"DN": "1/2", "D": 21.3, "t": 2.65, "d": 16.0, "m": 1.22},
+        "3/4 | \u00d826.9x2.65": {"DN": "3/4", "D": 26.9, "t": 2.65, "d": 21.6, "m": 1.58},
+        "1 | \u00d833.7x3.25": {"DN": "1", "D": 33.7, "t": 3.25, "d": 27.2, "m": 2.44},
+        "1_1/4 | \u00d842.4x3.25": {"DN": "1 1/4", "D": 42.4, "t": 3.25, "d": 35.9, "m": 3.14},
+        "1_1/2 | \u00d848.3x3.25": {"DN": "1 1/2", "D": 48.3, "t": 3.25, "d": 41.8, "m": 3.61},
+        "2 | \u00d860.3x3.65": {"DN": "2", "D": 60.3, "t": 3.65, "d": 53.0, "m": 5.1}
+      } },
+        { name: "Tube vapeur - s\u00e9rie lourde", draw: "drawProfileTUBEROND", standard: "EN 10255-H / DIN 2441", family: "TUBE_VAPEUR_SERIE_LOURDE", data: {
+        "3/8 | \u00d817.2x2.90": {"DN": "3/8", "D": 17.2, "t": 2.9, "d": 11.4, "m": 1.02},
+        "3 | \u00d888.9x4.85": {"DN": "3", "D": 88.9, "t": 4.85, "d": 79.2, "m": 10.1},
+        "4 | \u00d8114.3x5.40": {"DN": "4", "D": 114.3, "t": 5.4, "d": 103.5, "m": 14.4},
+        "1/2 | \u00d821.3x3.25": {"DN": "1/2", "D": 21.3, "t": 3.25, "d": 14.8, "m": 1.45},
+        "3/4 | \u00d826.9x3.25": {"DN": "3/4", "D": 26.9, "t": 3.25, "d": 20.4, "m": 1.9},
+        "1 | \u00d833.7x4.05": {"DS": "1", "D": 33.7, "t": 4.05, "d": 25.6, "m": 2.97},
+        "1_1/4 | \u00d842.4x4.05": {"DN": "1 1/4", "D": 42.4, "t": 4.05, "d": 34.3, "m": 3.84},
+        "1_1/2 | \u00d848.3x4.05": {"DN": "1 1/2", "D": 48.3, "t": 4.05, "d": 40.2, "m": 4.43},
+        "2 | \u00d860.3x4.50": {"DN": "2", "D": 60.3, "t": 4.5, "d": 51.3, "m": 6.17},
+        "2_1/2 | \u00d876.1x4.50": {"DN": "2 1/2", "D": 76.1, "t": 4.5, "d": 67.1, "m": 7.9}
+      } },
+        { name: "Tube gaz et eau - construction - s\u00e9rie l\u00e9g\u00e8re II", draw: "drawProfileTUBEROND", standard: "EN 10219 / DIN 2458 / 1615", family: "PIPE_GAS_WATER_L_II", data: {
+        "3/4 | \u00d826.9": {"DN": "3/4", "D": 26.9, "t": 2.35, "d": 22.2, "m": 1.41},
+        "1 | \u00d833.7": {"DN": "1", "D": 33.7, "t": 2.65, "d": 28.4, "m": 2.01},
+        "1_1/4 | \u00d842.4": {"DN": "1 1/4", "D": 42.4, "t": 2.65, "d": 37.1, "m": 2.58},
+        "1_1/2 | \u00d848.3": {"DN": "1 1/2", "D": 48.3, "t": 2.9, "d": 42.5, "m": 3.25},
+        "2 | \u00d860.3": {"DN": "2", "D": 60.3, "t": 2.9, "d": 54.5, "m": 4.11}
+      } },
+        { name: "Tube de cl\u00f4ture - s\u00e9rie moyenne", draw: "drawProfileTUBEROND", standard: "EN 10255-M / DIN 2440", family: "GUARD_RAIL_TUBE", data: {
+        "3/8 | \u00d817.2": {"DN": "3/8", "D": 17.2, "t": 2.0, "d": 13.2, "m": 0.75},
+        "1/2 | \u00d821.3": {"DN": "1/2", "D": 21.3, "t": 2.0, "d": 17.3, "m": 0.95},
+        "3/4 | \u00d826.9": {"DN": "3/4", "D": 26.9, "t": 2.0, "d": 22.9, "m": 1.22},
+        "1 | \u00d833.7": {"DN": "1", "D": 33.7, "t": 2.0, "d": 29.7, "m": 1.55},
+        "1_1/4 | \u00d842.4": {"DN": "1 1/4", "D": 42.4, "t": 2.0, "d": 38.4, "m": 1.94},
+        "1_1/2 | \u00d848.3": {"DN": "1 1/2", "D": 48.3, "t": 2.0, "d": 44.3, "m": 2.27},
+        "2 | \u00d860.3": {"DN": "2", "D": 60.3, "t": 2.0, "d": 56.3, "m": 2.86}
       } }
       ]
     },
