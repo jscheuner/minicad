@@ -2584,7 +2584,7 @@ const CMD = {
       S.copyPending = true;
       setTool('select');
       termPrint('COPIER: Sélectionner les objets à copier, puis Entrée', 'warning');
-      return;
+      setTimeout(smartFocus, 0); return;
     }
     S.prevSelected = [...S.selected];
     termPrint('COPIER: Point de base, puis destination', 'info'); setTool('copy');
@@ -2594,7 +2594,7 @@ const CMD = {
       S.movePending = true;
       setTool('select');
       termPrint('DÉPLACER: Sélectionner les objets à déplacer, puis Entrée', 'warning');
-      return;
+      setTimeout(smartFocus, 0); return;
     }
     S.prevSelected = [...S.selected];
     termPrint('DÉPLACER: Point de base, puis destination', 'info'); setTool('move_obj');
@@ -2609,7 +2609,7 @@ const CMD = {
       S.scalePending = true;
       setTool('select');
       termPrint('SCALE: Sélectionner les objets à mettre à l\'échelle, puis Entrée', 'warning');
-      return;
+      setTimeout(smartFocus, 0); return;
     }
     S.prevSelected = [...S.selected];
     S.scaleIds = [...S.selected]; S.scaleStep = 1; S.scaleBase = null;
@@ -2622,7 +2622,7 @@ const CMD = {
       S.rotatePending = true;
       setTool('select');
       termPrint('ROTATE: Sélectionner les objets à pivoter, puis Entrée', 'warning');
-      return;
+      setTimeout(smartFocus, 0); return;
     }
     S.prevSelected = [...S.selected];
     S.rotateIds = [...S.selected]; S.rotateStep = 1; S.rotateBase = null;
@@ -2650,7 +2650,7 @@ const CMD = {
       S.mirrorPending = true;
       setTool('select');
       termPrint('MIROIR: Sélectionner les objets, puis Entrée', 'warning');
-      return;
+      setTimeout(smartFocus, 0); return;
     }
     S.prevSelected = [...S.selected];
     termPrint('MIROIR: 1er point de l\'axe de symétrie', 'info'); setTool('mirror');
@@ -7047,6 +7047,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     if (hit) {
       if (ev.shiftKey) { const idx = S.selected.indexOf(hit.id); if (idx >= 0) S.selected.splice(idx, 1); else S.selected.push(hit.id); }
       else S.selected = [hit.id];
+      if (S.selected.length) S.prevSelected = [...S.selected];
     } else S.selected = [];
     updateProperties(); render(); return;
   }
@@ -8773,6 +8774,7 @@ function selectInRect(wx1, wy1, wx2, wy2, shiftKey) {
     .map(e => e.id);
   if (shiftKey) { newSel.forEach(id => { if (!S.selected.includes(id)) S.selected.push(id); }); }
   else S.selected = newSel;
+  if (S.selected.length) S.prevSelected = [...S.selected];
   const mode = isWindow ? 'fenêtre' : 'croisement';
   if (newSel.length) termPrint(newSel.length + ' objet(s) sélectionné(s) [' + mode + ']', 'info');
   else termPrint('Aucun objet dans la sélection', 'info');
