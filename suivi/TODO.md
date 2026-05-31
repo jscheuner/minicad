@@ -6,9 +6,9 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## 🔴 Priorité haute (prochaine session)
 
-- [ ] **4.3 — Menu contextuel** clic-droit canvas (Couper/Copier/Coller/Propriétés)
+- [x] **4.3 — Menu contextuel** clic-droit canvas (Couper/Copier/Coller/Propriétés) ✅
 - [ ] **3.4 — Commande EXTEND** *(multi-limites fait, mode tout prolonger fait — vérifier cas limites)*
-- [ ] **5.2 — Commande AREA** (surface d'un polygone)
+- [x] **5.2 — Commande AREA** (surface d'un polygone) ✅
 
 ---
 
@@ -52,6 +52,8 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## ✅ Terminé (résumé)
 
+- ✅ **AREA** — surface entité (cercle/rect/polyligne) ou polygone cliqué [P] ; preview live S≈ ; Entrée/clic-droit pour calculer ; alias AIRE/SURFACE
+- ✅ **Menu contextuel** — clic-droit canvas : Couper/Copier/Coller (presse-papiers, Ctrl+X/C/V), Déplacer, Effacer, Propriétés, Tout sélectionner, Zoom étendu ; mode COLLER avec preview fantôme
 - ✅ **ARC multi-mode** — 3P / SCE / SCA / SER, mots-clés DI, grips départ/fin, preview live
 - ✅ **Système démo** — `demo/demo_sequence.js`, `build.py --demo` → `minicad_demo.html`, bouton ▶ DÉMO
 - ✅ **DXF Export AC1015** — réécriture complète : CLASSES/BLOCKS/OBJECTS, AcDb*, DIMENSION 5 types, LEADER+MTEXT, HATCH, TUBE

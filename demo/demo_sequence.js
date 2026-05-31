@@ -11,7 +11,7 @@
     btn.id = 'demo-launch-entry';
     btn.textContent = IS_DEMO ? '▶  DÉMO' : '▶  DÉMO';
     btn.style.cssText = [
-      'position:fixed', 'top:34px', 'right:14px',
+      'position:fixed', 'top:48px', 'right:14px',
       'background:#ffd700', 'color:#0a0f1a',
       'border:none', 'border-radius:4px', 'padding:6px 14px',
       'font:700 12px "JetBrains Mono",monospace',
@@ -28,6 +28,20 @@
       else { S.entities = []; render(); startDemo(); }
     };
     document.body.appendChild(btn);
+
+    const lp = document.createElement('a');
+    lp.href = 'https://liberapay.com/MiniCAD/donate';
+    lp.target = '_blank';
+    lp.rel = 'noopener';
+    lp.title = 'Donate using Liberapay';
+    lp.style.cssText = 'position:fixed;top:84px;right:14px;z-index:9997;display:block;line-height:0';
+    const lpImg = document.createElement('img');
+    lpImg.alt = 'Donate using Liberapay';
+    lpImg.src = 'https://liberapay.com/assets/widgets/donate.svg';
+    lpImg.style.cssText = 'height:26px;display:block';
+    lp.appendChild(lpImg);
+    document.body.appendChild(lp);
+
     // remplacer par le bouton géré par la démo si on est en mode démo
     if (IS_DEMO) window._demoBtnEntry = btn;
   });

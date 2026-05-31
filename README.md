@@ -22,6 +22,8 @@ Interface: commandes texte, OSNAP, saisie dynamique, cotations, import/export DX
 **[minicad.org](https://minicad.org)** — accès direct dans le navigateur, sans installation.  
 Même fichier, même fonctionnalités — idéal pour tester ou utiliser depuis n'importe quel poste.
 
+**[Facebook — Minicad](https://www.facebook.com/people/Minicad/61590182956168/)** — suivre l'actualité du projet.
+
 ---
 
 ## Démarrage rapide

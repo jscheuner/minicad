@@ -47,7 +47,10 @@
         { "name": "Tube gaz et eau - série moyenne DIN2240", "draw": "drawProfileTUBEROND", "data": "acier_tube_gaz_eau_DIN2240.json", "script": "draws/tube_rond.js" },
         { "name": "Tube vapeur - série lourde", "draw": "drawProfileTUBEROND", "data": "acier_tube_vapeur_serie_lourde.json", "script": "draws/tube_rond.js" },
         { "name": "Tube gaz et eau - construction - série légère II", "draw": "drawProfileTUBEROND", "data": "acier_tube_gaz_eau_construction.json", "script": "draws/tube_rond.js" },
-        { "name": "Tube de clôture - série moyenne", "draw": "drawProfileTUBEROND", "data": "acier_tube_cloture.json", "script": "draws/tube_rond.js" }
+        { "name": "Tube de clôture - série moyenne", "draw": "drawProfileTUBEROND", "data": "acier_tube_cloture.json", "script": "draws/tube_rond.js" },
+        { "name": "Tube de clôture - soudé, galvanisé, bouts lisses", "draw": "drawProfileTUBEROND", "data": "acier_tube_cloture_galva.json", "script": "draws/tube_rond.js" },
+        { "name": "Tube bouilleur soudé à bouts lisses", "draw": "drawProfileTUBEROND", "data": "acier_tube_bouilleur_soude.json", "script": "draws/tube_rond.js" },
+        { "name": "Tube bouilleur sans soudure", "draw": "drawProfileTUBEROND", "data": "acier_tube_bouilleur_sans_soudure.json", "script": "draws/tube_rond.js" }
     ] },
     { "name": "🔩 Visserie",           "families": [] },
     { "name": "📐 Plats et cornières", "families": [] }

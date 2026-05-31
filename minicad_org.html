@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MiniCAD v0.09</title>
+<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAADX0lEQVRYhe2XTWhUVxiGn3PunZkkM6kmaBInHTOa+NNAFRf1p2o1ENpEumiJ0EVXpSgB3aRm1S5a6DK4saHSElApFKURAlK1f1GHTlEihQTFamZEa2JyZxKCNQlx5t45XdhcHefOmMB1uvFdne97zz3ve79zvns5gqdQFd74DpJ2UNuAKkDgDjLAfYH6RUh5eDw2eH2eEADhcLhkVi7pAfWhS4KFkFaCzmR86AiABuCtrDteJHEATUCrv6I6MTNlXBXL6ze0CMW5Iok/jUdCV41aoKKmC1j/PxjQyQifBPXmQp8I+P14vd68vM/nI+D3L8ZEqw4sKzRj/doGPjm4n6a3tvNKeQCAu/dG6Dtznu5vjyGE4MD+j3j/3RZWhmoB+OfhNBciUQ5/9Q03h+OFln9VVK3eoPKxLc1N9HR34fF4HPnY7TtIKVkdXunIp1IpPj7Yyc+/XconofIaqA2uIHL+9GJLmoOH0zPsfPs9xoyEowHNX1H9hRPTcWAfO7ZutuM/rlzlu5O9DPw5SLguRHkg29jo2Dg9J77nQiSKruuEaoMA+Lxe0qZJJHrF0WDeCvx65hSvNz5ujlux2+ze04ZlZQB4bd0aLp7tffIaSrGrtc3eb13TuHjuNGvqVwHw160Yu1rbHCsgHW0BoeAKexy9PGCLA9y4OczI6JgdJycmsw6baVn0X/rdjhvqVyGls5RjtqyslKVLl9ix0/4ZiaQ9vj9uOPAT9ljXtJwtK2igtKQkK56be5QzJ22aBXnTsrJiXdcXbqCYeGngpYGco/mGX9K+PAVHPrdze+/ewFOt022Yz05330CdDyqlgi277VwyNsLOckl3bru7bwBg1JKwpcmO7/T9RL372vkNpNMmnZ99acepa9dzDHzdc4Levh8BSExM8Cwi0ctZa0zPzDoayPkZ7a2UbAtoHPo7bee2BiQdNTofxFLPeZ9FQzlWYKNf8mnwCRX0uHU9yIXO40uD3Y6Ds4ofJrO/45Om4t4DixeAjK5gVEBoPjM8pxiec7/dnKESUqDOFknNASIqkaoLcP10LUhecFQmYtfiQEfRxVHHjPhQvwYwM2UMlFVWTwlo5r/74osWX1aaaU8mk1ZWf9U0bGpUGfOQQjQDtS6ayYAyQESF4KgRH+qfJ/4FnbEd/FDgNcoAAAAASUVORK5CYII=">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=Oswald:wght@300;400;500&family=Share+Tech&display=swap');
 
@@ -52,7 +53,7 @@
   }
 
   .menubar {
-    height: 28px;
+    height: 56px;
     background: var(--bg-panel);
     border-bottom: 1px solid #ffffff10;
     display: flex;
@@ -75,11 +76,11 @@
 
   .menu-items { display: flex; gap: 2px; margin-left: 12px; }
   .menu-item {
-    font-size: 11px; padding: 2px 8px; border-radius: 3px; cursor: pointer;
-    color: var(--text-dim); font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px; padding: 4px 12px; border-radius: 3px; cursor: pointer;
+    color: #d8e6f4; font-family: 'IBM Plex Sans', sans-serif;
   }
-  .menu-item:hover { background: #ffffff0a; color: var(--text); }
-  .menu-item.open { background: #ffffff0f; color: var(--text); }
+  .menu-item:hover { background: #ffffff0a; color: #ffffff; }
+  .menu-item.open { background: #ffffff0f; color: #ffffff; }
 
   .menu-dropdown { position: relative; }
   .menu-dropdown-list {
@@ -1004,7 +1005,7 @@
 
 <!-- MENU BAR -->
 <div class="menubar">
-  <div class="topbar-logo">MiniCAD <span>v0.09</span></div>
+  <div class="topbar-logo"><svg width="176" height="44" style="vertical-align:middle" viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" aria-label="MiniCAD" style="display:block"><g transform="translate(6,10) scale(0.8)"><rect x="0" y="0" width="100" height="100" rx="20" fill="#16222E"/><path d="M24,70 L24,40 Q24,24 37,24 Q50,24 50,40 L50,70 M50,40 Q50,24 63,24 Q76,24 76,40 L76,70" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="butt" stroke-linejoin="round"/><rect x="16" y="62" width="16" height="16" fill="none" stroke="#FF5436" stroke-width="3"/></g><text x="104" y="63" style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',monospace;font-size:44px;font-weight:500;letter-spacing:0.5px"><tspan fill="#c8d6e5">mini</tspan><tspan fill="#FF5436">cad</tspan></text></svg><span style="font-size:10px;font-weight:300;color:var(--text-dim);vertical-align:middle;margin-left:6px;letter-spacing:0">v0.09</span></div>
   <div class="menu-items">
     <div class="menu-dropdown" id="menu-fichier">
       <div class="menu-item" id="menu-fichier-btn" onclick="toggleMenuDropdown('menu-fichier',event)">Fichier</div>
@@ -1961,6 +1962,11 @@ const S = {
   aiStreaming: false,
   aiPendingEntities: null,   // entités en attente de placement à la souris
   aiPendingCenter: null,     // [cx,cy] centre de la bbox des entités en attente
+  // CLIPBOARD
+  clipboard: [],
+  // AREA
+  _areaPoints: [],
+  _areaMode: 'entity', // 'entity' | 'points'
   // TUBE TOOL
   tubeDiameter: 40,
   tubeBendRadius: 67,
@@ -2759,6 +2765,12 @@ const CMD = {
     termPrint('EXTEND: Cliquer les entités limites (plusieurs possibles), puis Entrée ou clic droit pour confirmer', 'info');
     setTimeout(smartFocus, 0);
   }},
+  AREA: { alias: ['AIRE','SURFACE'], desc: 'Calcule la surface d\'une entité ou d\'un polygone', exec() {
+    S._areaPoints = []; S._areaMode = 'entity';
+    setTool('area');
+    termPrint('AREA: Cliquer une entité fermée (cercle/rect/polyligne), ou [P] pour définir un polygone', 'info');
+    setTimeout(smartFocus, 0);
+  }},
   DIST: { alias: ['DI','DISTANCE'], desc: 'Mesure la distance entre deux points', exec() {
     S.distPt1 = null; setTool('dist');
     termPrint('DIST: Cliquer le 1er point', 'info');
@@ -3318,6 +3330,45 @@ function drawLibPreview() {
   ctx.restore();
 }
 
+function drawPastePreview() {
+  if (!S.clipboard.length || !mouseOnCanvas) return;
+  const [wx, wy] = S.mouseWorld;
+  // Compute bbox center of clipboard
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  S.clipboard.forEach(e => {
+    const bb = getEntityBBox(e);
+    if (!bb) return;
+    if (bb.minX < minX) minX = bb.minX; if (bb.maxX > maxX) maxX = bb.maxX;
+    if (bb.minY < minY) minY = bb.minY; if (bb.maxY > maxY) maxY = bb.maxY;
+  });
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  const dsx = (wx - cx) * S.zoom;
+  const dsy = -(wy - cy) * S.zoom;
+  ctx.save();
+  ctx.translate(dsx, dsy);
+  ctx.globalAlpha = 0.55;
+  ctx.setLineDash([5, 4]);
+  S.clipboard.forEach(e => {
+    const layer = S.layers[e.layer] || S.layers[S.currentLayer];
+    ctx.strokeStyle = layer?.color || '#00d4ff';
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.lineWidth = Math.max(1, getLayerLineWidthPx(layer?.lineWidth));
+    drawEntity(e);
+  });
+  ctx.setLineDash([]);
+  ctx.restore();
+  // Crosshair at insertion point
+  const [smx, smy] = w2s(wx, wy);
+  ctx.save();
+  ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 1;
+  const g = 8;
+  ctx.beginPath();
+  ctx.moveTo(smx - g, smy); ctx.lineTo(smx + g, smy);
+  ctx.moveTo(smx, smy - g); ctx.lineTo(smx, smy + g);
+  ctx.stroke();
+  ctx.restore();
+}
+
 // Couche dynamique : colle le statique + surbrillances + overlays curseur
 function _drawDynamicLayer() {
   ctx = mainCtx;
@@ -3371,6 +3422,31 @@ function _drawDynamicLayer() {
     ctx.fillText(Math.hypot(mx-x1,my-y1).toFixed(2),(sx1+smx)/2+4,(sy1+smy)/2-4);
     ctx.setLineDash([]); ctx.restore();
   }
+  if (S.tool === 'area' && S._areaMode === 'points' && S._areaPoints.length > 0 && mouseOnCanvas) {
+    const pts = S._areaPoints;
+    const [mx, my] = S.mouseWorld;
+    ctx.save(); ctx.strokeStyle = '#ffab40'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    const [s0x, s0y] = w2s(pts[0][0], pts[0][1]);
+    ctx.moveTo(s0x, s0y);
+    for (let i = 1; i < pts.length; i++) { const [sx, sy] = w2s(pts[i][0], pts[i][1]); ctx.lineTo(sx, sy); }
+    const [smx, smy] = w2s(mx, my);
+    ctx.lineTo(smx, smy);
+    if (pts.length >= 2) ctx.lineTo(s0x, s0y); // closing dashed line
+    ctx.stroke(); ctx.setLineDash([]);
+    // Vertex dots
+    ctx.fillStyle = '#ffab40';
+    pts.forEach(p => { const [spx, spy] = w2s(p[0], p[1]); ctx.fillRect(spx-3, spy-3, 6, 6); });
+    // Live area label
+    if (pts.length >= 2) {
+      const tmpPts = [...pts, [mx, my]];
+      const a = _shoelace(tmpPts);
+      ctx.fillStyle = '#ffab40'; ctx.font = '10px JetBrains Mono';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+      ctx.fillText('S≈' + a.toFixed(2), smx + 6, smy - 4);
+    }
+    ctx.restore();
+  }
   if (S.gripEdit) drawGripPreview();
   if (S.gripSelected) drawGripSelected();
   if (S.arrayPreview) drawArrayPreview();
@@ -3387,6 +3463,7 @@ function _drawDynamicLayer() {
   }
   if (S.aiPendingEntities && S.aiPendingCenter && mouseOnCanvas) drawAiPlacementPreview();
   if (S.libPending && S.libDef && mouseOnCanvas) drawLibPreview();
+  if (S.tool === 'paste' && S.clipboard.length && mouseOnCanvas) drawPastePreview();
   // Extension + OTRACK trails : "+" + lignes de tracking H/V/prolongement
   if (S.osnapModes?.extension && S.osnapAcquired?.length > 0 && mouseOnCanvas) {
     ctx.save();
@@ -6552,6 +6629,8 @@ function getCursorMode() {
   if (S.offsetAwaitDist) return 'draw';
   if (S.arrayPickAxis) return 'draw';
   if (S.libPending) return 'draw';
+  if (t === 'paste') return 'draw';
+  if (t === 'area') return S._areaMode === 'points' ? 'draw' : 'pick';
   if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.arrayPending) ? 'pick' : 'idle';
   if (t === 'stretch' && S.stretchStep === 0) return 'pick';
   if (t === 'trim' || t === 'extend') return 'pick';
@@ -7113,6 +7192,12 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     updateProperties(); render(); return;
   }
 
+  if (tool === 'paste') {
+    applyPaste(wx, wy);
+    setTool('select');
+    return;
+  }
+
   if (tool === 'select') {
     // Check grip hit first (only if entities are selected and not in copy-pending mode)
     if (S.selected.length > 0 && !S.copyPending) {
@@ -7534,6 +7619,31 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     S.distPt1 = null; setTool('select'); render(); return;
   }
 
+  if (tool === 'area') {
+    if (S._areaMode === 'points') {
+      S._areaPoints.push([wx, wy]);
+      const n = S._areaPoints.length;
+      if (n === 1) termPrint('AREA: Point 1 — continuer à cliquer, Entrée pour calculer', 'info');
+      else termPrint('AREA: Point ' + n + ' — continuer ou Entrée pour calculer (' + n + ' sommets)', 'info');
+      render(); return;
+    }
+    // Entity mode
+    const hit = hitTest(rawWx, rawWy);
+    if (hit) {
+      const area = computeEntityArea(hit);
+      if (area === null) {
+        termPrint('AREA: ' + hit.type + ' — surface non calculable (cliquer cercle, rect ou polyligne)', 'warning');
+      } else {
+        const perim = computeEntityPerimeter(hit);
+        _printAreaResult(area, perim, hit.type);
+        S.selected = [hit.id]; updateProperties();
+      }
+    } else {
+      termPrint('AREA: Aucune entité — cliquer une entité fermée ou [P] pour définir un polygone', 'warning');
+    }
+    render(); return;
+  }
+
   // Scale
   if (tool === 'scale') {
     if (S.scaleStep === 1) {
@@ -7684,6 +7794,106 @@ function applyCopy(ids, dx, dy) {
       offsetEntity(ne, dx, dy);
       S.entities.push(ne);
     });
+}
+
+// ===== CLIPBOARD CUT / COPY / PASTE =====
+function clipboardCopy() {
+  if (!S.selected.length) { termPrint('Aucun objet sélectionné', 'warning'); return; }
+  S.clipboard = S.selected.map(id => {
+    const e = S.entities.find(e => e.id === id);
+    return e ? JSON.parse(JSON.stringify(e)) : null;
+  }).filter(Boolean);
+  termPrint(S.clipboard.length + ' objet(s) copié(s) dans le presse-papiers  (Ctrl+V pour coller)', 'success');
+}
+
+function clipboardCut() {
+  if (!S.selected.length) { termPrint('Aucun objet sélectionné', 'warning'); return; }
+  clipboardCopy();
+  pushUndo();
+  const cut = [...S.selected];
+  S.entities = S.entities.filter(e => !cut.includes(e.id));
+  S.selected = [];
+  updateProperties(); render(); autoSave();
+  termPrint(S.clipboard.length + ' objet(s) coupé(s)  (Ctrl+V pour coller)', 'success');
+}
+
+function clipboardPaste() {
+  if (!S.clipboard.length) { termPrint('Presse-papiers vide', 'warning'); return; }
+  setTool('paste');
+  termPrint('COLLER: Cliquer le point d\'insertion (Echap=annuler)', 'info');
+  setTimeout(smartFocus, 0);
+}
+
+function applyPaste(wx, wy) {
+  if (!S.clipboard.length) return;
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  S.clipboard.forEach(e => {
+    const bb = getEntityBBox(e);
+    if (!bb) return;
+    if (bb.minX < minX) minX = bb.minX; if (bb.maxX > maxX) maxX = bb.maxX;
+    if (bb.minY < minY) minY = bb.minY; if (bb.maxY > maxY) maxY = bb.maxY;
+  });
+  const cx = isFinite(minX) ? (minX + maxX) / 2 : 0;
+  const cy = isFinite(minY) ? (minY + maxY) / 2 : 0;
+  const dx = wx - cx, dy = wy - cy;
+  pushUndo();
+  const tubeIdMap = {};
+  const newIds = [];
+  S.clipboard.forEach(src => {
+    const ne = JSON.parse(JSON.stringify(src));
+    ne.id = S.nextId++;
+    if (src.type === 'tube') tubeIdMap[src.id] = ne.id;
+    offsetEntity(ne, dx, dy);
+    S.entities.push(ne);
+    newIds.push(ne.id);
+  });
+  // Fix linkedTubeId for pasted tubelbl
+  S.entities.filter(e => e.type === 'tubelbl' && newIds.includes(e.id))
+    .forEach(e => { if (tubeIdMap[e.linkedTubeId] !== undefined) e.linkedTubeId = tubeIdMap[e.linkedTubeId]; });
+  S.selected = newIds;
+  termPrint(newIds.length + ' objet(s) collé(s)', 'success');
+  updateProperties(); render(); autoSave();
+}
+
+// ===== AREA COMPUTATION =====
+function _shoelace(pts) {
+  let a = 0;
+  const n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % n];
+    a += x1 * y2 - x2 * y1;
+  }
+  return Math.abs(a) / 2;
+}
+
+function computeEntityArea(e) {
+  if (e.type === 'circle') return Math.PI * e.r * e.r;
+  if (e.type === 'rect')   return Math.abs(e.x2 - e.x1) * Math.abs(e.y2 - e.y1);
+  if (['polyline','cable','hatch'].includes(e.type) && e.points?.length >= 3)
+    return _shoelace(flattenPolyPoints(e.points));
+  return null;
+}
+
+function computeEntityPerimeter(e) {
+  if (e.type === 'circle') return 2 * Math.PI * e.r;
+  if (e.type === 'rect') return 2 * (Math.abs(e.x2 - e.x1) + Math.abs(e.y2 - e.y1));
+  if (['polyline','cable','hatch'].includes(e.type) && e.points?.length >= 2) {
+    const pts = flattenPolyPoints(e.points);
+    let p = 0;
+    for (let i = 0; i < pts.length - 1; i++)
+      p += Math.hypot(pts[i+1][0] - pts[i][0], pts[i+1][1] - pts[i][1]);
+    if (e.closed) p += Math.hypot(pts[0][0] - pts[pts.length-1][0], pts[0][1] - pts[pts.length-1][1]);
+    return p;
+  }
+  return null;
+}
+
+function _printAreaResult(area, perim, label) {
+  let msg = 'AREA';
+  if (label) msg += ' [' + label + ']';
+  msg += '  Surface=' + area.toFixed(3);
+  if (perim !== null) msg += '  Périmètre=' + perim.toFixed(3);
+  termPrint(msg, 'success');
 }
 
 // ===== DIVIDE =====
@@ -10140,6 +10350,18 @@ function executeCommand(input) {
     }
     // Entrée vide en mode JOIN → confirmer la fusion
     if(S.tool==='join'){ applyJoin(); return; }
+    // Entrée vide en mode AREA points → calculer
+    if(S.tool==='area' && S._areaMode==='points'){
+      if(S._areaPoints.length<3){termPrint('AREA: 3 points minimum','warning');return;}
+      const area=_shoelace(S._areaPoints);
+      let perim=0;
+      for(let i=0;i<S._areaPoints.length;i++){
+        const a=S._areaPoints[i],b=S._areaPoints[(i+1)%S._areaPoints.length];
+        perim+=Math.hypot(b[0]-a[0],b[1]-a[1]);
+      }
+      _printAreaResult(area,perim,'polygone');
+      S._areaPoints=[];setTool('select');render();return;
+    }
     // Entrée vide en mode TUBE → finaliser le tube
     if(S.tool==='tube' && S.drawing){ finishTube(); return; }
     if(S.copyPending){
@@ -10216,6 +10438,17 @@ function executeCommand(input) {
       }
     }
     if(num===undefined||isNaN(num)) termPrint('ARC: C=Centre  E=Fin  A=Angle (en mode SCE)','warning');
+    return;
+  }
+
+  // ---- AREA : P pour mode polygone ----
+  if (S.tool === 'area') {
+    const up = raw.toUpperCase();
+    if (up === 'P' || up === 'POINTS' || up === 'POLYGONE') {
+      S._areaMode = 'points'; S._areaPoints = [];
+      termPrint('AREA points: Cliquer les sommets du polygone — Entrée pour calculer, Echap=annuler', 'info');
+      render(); return;
+    }
     return;
   }
 
@@ -10618,6 +10851,12 @@ document.addEventListener('keydown',(ev)=>{
     termPrint('DÉPLACER — cliquez la destination', 'info');
     render(); return;
   }
+  // ESC prioritaire : fermer le menu contextuel canvas si ouvert
+  if(ev.key==='Escape'){
+    const cm=document.getElementById('canvas-context');
+    if(cm && cm.classList.contains('show')){ ev.preventDefault(); cm.classList.remove('show'); return; }
+  }
+
   // If typing in dynamic input fields, let them handle it
   if(document.activeElement===diDist||document.activeElement===diAngle) return;
   // Si focus dans un input/select/textarea autre que cmdInput → laisser le navigateur gérer
@@ -10782,6 +11021,12 @@ document.addEventListener('keydown',(ev)=>{
   if(ev.key==='Escape' && isRubberBand){
     isRubberBand=false; rbStart=null; rbEnd=null; render(); return;
   }
+  if(ev.key==='Escape' && S.tool==='paste'){
+    setTool('select'); termPrint('Coller annulé','warning'); render(); return;
+  }
+  if(ev.key==='Escape' && S.tool==='area'){
+    S._areaPoints=[]; setTool('select'); render(); return;
+  }
   if(ev.key==='Escape' && S.tool==='rotate'){
     S.rotateStep=0; S.rotateBase=null; S.rotateIds=[]; setTool('select'); render(); return;
   }
@@ -10833,9 +11078,12 @@ document.addEventListener('keydown',(ev)=>{
     S.selected=S.entities.filter(e=>S.layers[e.layer]?.visible).map(e=>e.id);
     updateProperties();render();
   }
+  if(ev.ctrlKey&&ev.key==='x'){ev.preventDefault();clipboardCut();}
+  if(ev.ctrlKey&&ev.key==='c'){ev.preventDefault();clipboardCopy();}
+  if(ev.ctrlKey&&ev.key==='v'){ev.preventDefault();clipboardPaste();}
   if(ev.key==='Delete')CMD.ERASE.exec();
   // Skip single-letter tool shortcuts during fillet/chamfer (those tools handle keys via cmdInput)
-  if(S.tool!=='fillet' && S.tool!=='chamfer' && S.tool!=='join') {
+  if(!ev.ctrlKey && !ev.metaKey && S.tool!=='fillet' && S.tool!=='chamfer' && S.tool!=='join') {
     if(ev.key==='v'||ev.key==='V')setTool('select');
     if(ev.key==='l'||ev.key==='L'){setTool('line');termPrint('LIGNE: 1er point (puis mesure ou clic)','info');}
     if(ev.key==='r'||ev.key==='R'){setTool('rect');termPrint('RECTANGLE: 1er coin','info');}
@@ -12276,6 +12524,23 @@ canvas.addEventListener('contextmenu', (ev) => {
     render(); return;
   }
 
+  // Paste → clic droit = annuler
+  if (S.tool === 'paste') { setTool('select'); termPrint('Coller annulé', 'warning'); render(); return; }
+
+  // AREA points → clic droit = calculer (si ≥3 pts) ou annuler
+  if (S.tool === 'area' && S._areaMode === 'points') {
+    if (S._areaPoints.length >= 3) {
+      const area = _shoelace(S._areaPoints);
+      let perim = 0;
+      for (let i = 0; i < S._areaPoints.length; i++) {
+        const a = S._areaPoints[i], b = S._areaPoints[(i+1) % S._areaPoints.length];
+        perim += Math.hypot(b[0]-a[0], b[1]-a[1]);
+      }
+      _printAreaResult(area, perim, 'polygone');
+    }
+    S._areaPoints = []; setTool('select'); render(); return;
+  }
+
   // Outils avec confirmation → clic droit = Entrée (comme AutoCAD)
   if (S.tool === 'join') { applyJoin(); return; }
   if (S.tool === 'trim' && S.trimStep === 1) {
@@ -12321,10 +12586,10 @@ canvas.addEventListener('contextmenu', (ev) => {
   // Outil actif mais pas encore commencé → retour à select
   if (S.tool !== 'select') { setTool('select'); render(); return; }
 
-  // Ctrl+clic droit → menu contextuel
+  // Ctrl+clic droit en mode idle → menu contextuel
   if (ev.ctrlKey) { showCanvasContext(ev); return; }
 
-  // Clic droit simple en mode idle → répéter la dernière commande
+  // Clic droit simple → répéter la dernière commande
   if (S.lastCmdRaw) {
     termPrint('Répéter: ' + S.lastCmdRaw.toUpperCase(), 'info');
     executeCommand(S.lastCmdRaw);
@@ -12363,11 +12628,18 @@ function showCanvasContext(ev) {
   menu.appendChild(item('Refaire', 'Ctrl+Y', () => CMD.REDO.exec(), !S.redoStack.length));
   menu.appendChild(sep());
 
-  // Actions sur sélection
+  // Presse-papiers
   const hasSel = S.selected.length > 0;
-  menu.appendChild(item('Copier', 'CO', () => executeCommand('COPY'), !hasSel));
+  const hasClip = S.clipboard.length > 0;
+  menu.appendChild(item('Couper', 'Ctrl+X', () => clipboardCut(), !hasSel));
+  menu.appendChild(item('Copier', 'Ctrl+C', () => clipboardCopy(), !hasSel));
+  menu.appendChild(item('Coller', 'Ctrl+V', () => clipboardPaste(), !hasClip));
+  menu.appendChild(sep());
+
+  // Actions objet
   menu.appendChild(item('Déplacer', 'M', () => executeCommand('MOVE'), !hasSel));
   menu.appendChild(item('Effacer', 'Suppr', () => CMD.ERASE.exec(), !hasSel));
+  menu.appendChild(item('Propriétés', '', () => flashPropsPanel(), !hasSel));
   menu.appendChild(sep());
 
   // Vue
@@ -12388,6 +12660,16 @@ function showCanvasContext(ev) {
     if (mr.right > window.innerWidth) menu.style.left = (x - mr.width) + 'px';
     if (mr.bottom > window.innerHeight) menu.style.top = (y - mr.height) + 'px';
   });
+}
+
+function flashPropsPanel() {
+  updateProperties();
+  const hdr = document.querySelector('.props-panel .panel-header');
+  if (!hdr) return;
+  hdr.style.transition = 'background 0.15s';
+  hdr.style.background = 'var(--accent)';
+  hdr.style.color = '#000';
+  setTimeout(() => { hdr.style.background = ''; hdr.style.color = ''; }, 600);
 }
 
 // ===== MENU DÉROULANT =====
@@ -13512,55 +13794,153 @@ const MINICAD_LIB = {
     {
       name: "\u2b55 Tubes",
       families: [
-        { name: "Tube gaz et eau - s\u00e9rie moyenne DIN2244", draw: "drawProfileTUBEROND", standard: "EN 10255-M / DIN 2440", family: "PIPE_GAS_WATER_M", data: {
-        "1/4   | \u00d813.5": {"DN": "1/4", "D": 13.5, "t": 2.35, "d": 8.8, "m": 0.65, "m_z": 0.69},
-        "3/8   | \u00d817.2": {"DN": "3/8", "D": 17.2, "t": 2.35, "d": 12.5, "m": 0.85, "m_z": 0.89},
-        "1/2   | \u00d821.3": {"DN": "1/2", "D": 21.3, "t": 2.65, "d": 16.0, "m": 1.22, "m_z": 1.27},
-        "3/4   | \u00d826.9": {"DN": "3/4", "D": 26.9, "t": 2.65, "d": 21.6, "m": 1.58, "m_z": 1.65},
-        "1     | \u00d833.7": {"DN": "1", "D": 33.7, "t": 3.25, "d": 27.2, "m": 2.44, "m_z": 2.55},
-        "1_1/4 | \u00d842.4": {"DN": "1 1/4", "D": 42.4, "t": 3.25, "d": 35.9, "m": 3.14, "m_z": 3.28},
-        "1_1/2 | \u00d848.3": {"DN": "1 1/2", "D": 48.3, "t": 3.25, "d": 41.8, "m": 3.61, "m_z": 3.77},
-        "2     | \u00d860.3": {"DN": "2", "D": 60.3, "t": 3.65, "d": 53.0, "m": 5.1, "m_z": 5.33},
-        "2_1/2 | \u00d876.1": {"DN": "2 1/2", "D": 76.1, "t": 3.65, "d": 68.8, "m": 6.51, "m_z": 6.8},
-        "3     | \u00d888.9": {"DN": "3", "D": 88.9, "t": 4.05, "d": 80.8, "m": 8.47, "m_z": 8.85},
-        "4     | \u00d8114.3": {"DN": "4", "D": 114.3, "t": 4.5, "d": 105.3, "m": 12.1, "m_z": 12.6}
+        { name: "Tube gaz et eau - s\u00e9rie moyenne DIN2244", draw: "drawProfileTUBEROND", standard: "DIN 2440 / EN 10255-M / DIN 2444 / EN 10240 A1", family: "GAS_WATER_PIPE_MEDIUM", data: {
+        "1/4 | \u00d813.5x2.35": {"DN": "1/4", "D": 13.5, "t": 2.35, "d": 8.8, "m": 0.65},
+        "3/8 | \u00d817.2x2.35": {"DN": "3/8", "D": 17.2, "t": 2.35, "d": 12.5, "m": 0.85},
+        "1/2 | \u00d821.3x2.65": {"DN": "1/2", "D": 21.3, "t": 2.65, "d": 16.0, "m": 1.22},
+        "3/4 | \u00d826.9x2.65": {"DN": "3/4", "D": 26.9, "t": 2.65, "d": 21.6, "m": 1.58},
+        "1 | \u00d833.7x3.25": {"DN": "1", "D": 33.7, "t": 3.25, "d": 27.2, "m": 2.44},
+        "1_1/4 | \u00d842.4x3.25": {"DN": "1 1/4", "D": 42.4, "t": 3.25, "d": 35.9, "m": 3.14},
+        "1_1/2 | \u00d848.3x3.25": {"DN": "1 1/2", "D": 48.3, "t": 3.25, "d": 41.8, "m": 3.61},
+        "2 | \u00d860.3x3.65": {"DN": "2", "D": 60.3, "t": 3.65, "d": 53.0, "m": 5.1},
+        "2_1/2 | \u00d876.1x3.65": {"DN": "2 1/2", "D": 76.1, "t": 3.65, "d": 68.8, "m": 6.51},
+        "3 | \u00d888.9x4.05": {"DN": "3", "D": 88.9, "t": 4.05, "d": 80.8, "m": 8.47},
+        "4 | \u00d8114.3x4.50": {"DN": "4", "D": 114.3, "t": 4.5, "d": 105.3, "m": 12.1}
       } },
-        { name: "Tube gaz et eau - s\u00e9rie moyenne DIN2240", draw: "drawProfileTUBEROND", standard: "EN 10255-M / DIN 2440", family: "PIPE_GAS_WATER_M", data: {
-        "3/8   | \u00d817.2": {"DN": "3/8", "D": 17.2, "t": 2.35, "d": 12.5, "m": 0.85},
-        "1/2   | \u00d821.3": {"DN": "1/2", "D": 21.3, "t": 2.65, "d": 16.0, "m": 1.22},
-        "3/4   | \u00d826.9": {"DN": "3/4", "D": 26.9, "t": 2.65, "d": 21.6, "m": 1.58},
-        "1     | \u00d833.7": {"DN": "1", "D": 33.7, "t": 3.25, "d": 27.2, "m": 2.44},
-        "1_1/4 | \u00d842.4": {"DN": "1 1/4", "D": 42.4, "t": 3.25, "d": 35.9, "m": 3.14},
-        "1_1/2 | \u00d848.3": {"DN": "1 1/2", "D": 48.3, "t": 3.25, "d": 41.8, "m": 3.61},
-        "2     | \u00d860.3": {"DN": "2", "D": 60.3, "t": 3.65, "d": 53.0, "m": 5.1}
+        { name: "Tube gaz et eau - s\u00e9rie moyenne DIN2240", draw: "drawProfileTUBEROND", standard: "DIN 2440 / EN 10255-M", family: "5.02Gas- und Wasserleitungsrohre", data: {
+        "3/8 | \u00d817.2x2.35": {"DN": "3/8", "D": 17.2, "t": 2.35, "d": 12.5, "m": 0.85},
+        "1/2 | \u00d821.3x2.65": {"DN": "1/2", "D": 21.3, "t": 2.65, "d": 16.0, "m": 1.22},
+        "3/4 | \u00d826.9x2.65": {"DN": "3/4", "D": 26.9, "t": 2.65, "d": 21.6, "m": 1.58},
+        "1 | \u00d833.7x3.25": {"DN": "1", "D": 33.7, "t": 3.25, "d": 27.2, "m": 2.44},
+        "1_1/4 | \u00d842.4x3.25": {"DN": "1 1/4", "D": 42.4, "t": 3.25, "d": 35.9, "m": 3.14},
+        "1_1/2 | \u00d848.3x3.25": {"DN": "1 1/2", "D": 48.3, "t": 3.25, "d": 41.8, "m": 3.61},
+        "2 | \u00d860.3x3.65": {"DN": "2", "D": 60.3, "t": 3.65, "d": 53.0, "m": 5.1}
       } },
-        { name: "Tube vapeur - s\u00e9rie lourde", draw: "drawProfileTUBEROND", standard: "EN 10255-H / DIN 2441", family: "PIPE_STEAM_H", data: {
-        "3/8   | \u00d817.2": {"DN": "3/8", "D": 17.2, "t": 2.9, "d": 11.4, "m": 1.02},
-        "1/2   | \u00d821.3": {"DN": "1/2", "D": 21.3, "t": 3.25, "d": 14.8, "m": 1.45},
-        "3/4   | \u00d826.9": {"DN": "3/4", "D": 26.9, "t": 3.25, "d": 20.4, "m": 1.9},
-        "1     | \u00d833.7": {"DN": "1", "D": 33.7, "t": 4.05, "d": 25.6, "m": 2.97},
-        "1_1/4 | \u00d842.4": {"DN": "1 1/4", "D": 42.4, "t": 4.05, "d": 34.3, "m": 3.84},
-        "1_1/2 | \u00d848.3": {"DN": "1 1/2", "D": 48.3, "t": 4.05, "d": 40.2, "m": 4.43},
-        "2     | \u00d860.3": {"DN": "2", "D": 60.3, "t": 4.5, "d": 51.3, "m": 6.17},
-        "2_1/2 | \u00d876.1": {"DN": "2 1/2", "D": 76.1, "t": 4.5, "d": 67.1, "m": 7.9},
-        "3     | \u00d888.9": {"DN": "3", "D": 88.9, "t": 4.85, "d": 79.2, "m": 10.1},
-        "4     | \u00d8114.3": {"DN": "4", "D": 114.3, "t": 5.4, "d": 103.5, "m": 14.4}
+        { name: "Tube vapeur - s\u00e9rie lourde", draw: "drawProfileTUBEROND", standard: "EN 10255-H / DIN 2441", family: "TUBE_VAPEUR_SERIE_LOURDE", data: {
+        "3/8 | \u00d817.2x2.90": {"DN": "3/8", "D": 17.2, "t": 2.9, "d": 11.4, "m": 1.02},
+        "3 | \u00d888.9x4.85": {"DN": "3", "D": 88.9, "t": 4.85, "d": 79.2, "m": 10.1},
+        "4 | \u00d8114.3x5.40": {"DN": "4", "D": 114.3, "t": 5.4, "d": 103.5, "m": 14.4},
+        "1/2 | \u00d821.3x3.25": {"DN": "1/2", "D": 21.3, "t": 3.25, "d": 14.8, "m": 1.45},
+        "3/4 | \u00d826.9x3.25": {"DN": "3/4", "D": 26.9, "t": 3.25, "d": 20.4, "m": 1.9},
+        "1 | \u00d833.7x4.05": {"DS": "1", "D": 33.7, "t": 4.05, "d": 25.6, "m": 2.97},
+        "1_1/4 | \u00d842.4x4.05": {"DN": "1 1/4", "D": 42.4, "t": 4.05, "d": 34.3, "m": 3.84},
+        "1_1/2 | \u00d848.3x4.05": {"DN": "1 1/2", "D": 48.3, "t": 4.05, "d": 40.2, "m": 4.43},
+        "2 | \u00d860.3x4.50": {"DN": "2", "D": 60.3, "t": 4.5, "d": 51.3, "m": 6.17},
+        "2_1/2 | \u00d876.1x4.50": {"DN": "2 1/2", "D": 76.1, "t": 4.5, "d": 67.1, "m": 7.9}
       } },
-        { name: "Tube construction - s\u00e9rie l\u00e9g\u00e8re II", draw: "drawProfileTUBEROND", standard: "EN 10219 / DIN 2458 / 1615", family: "PIPE_GAS_WATER_LIGHT_SERIES_II", data: {
+        { name: "Tube gaz et eau - construction - s\u00e9rie l\u00e9g\u00e8re II", draw: "drawProfileTUBEROND", standard: "EN 10219 / DIN 2458 / 1615", family: "TUBES_GAS_EAU_LIG_II", data: {
         "3/4 | \u00d826.9x2.35": {"DN": "3/4", "D": 26.9, "t": 2.35, "d": 22.2, "m": 1.41},
         "1 | \u00d833.7x2.65": {"DN": "1", "D": 33.7, "t": 2.65, "d": 28.4, "m": 2.01},
         "1_1/4 | \u00d842.4x2.65": {"DN": "1 1/4", "D": 42.4, "t": 2.65, "d": 37.1, "m": 2.58},
         "1_1/2 | \u00d848.3x2.90": {"DN": "1 1/2", "D": 48.3, "t": 2.9, "d": 42.5, "m": 3.25},
         "2 | \u00d860.3x2.90": {"DN": "2", "D": 60.3, "t": 2.9, "d": 54.5, "m": 4.11}
       } },
-        { name: "Tube de cl\u00f4ture - s\u00e9rie moyenne", draw: "drawProfileTUBEROND", standard: "EN 10255-M / DIN 2440", family: "GUARD_RAIL_TUBE", data: {
-        "3/8 | \u00d817.2": {"DN": "3/8", "D": 17.2, "t": 2.0, "d": 13.2, "m": 0.75},
-        "1/2 | \u00d821.3": {"DN": "1/2", "D": 21.3, "t": 2.0, "d": 17.3, "m": 0.95},
-        "3/4 | \u00d826.9": {"DN": "3/4", "D": 26.9, "t": 2.0, "d": 22.9, "m": 1.22},
-        "1 | \u00d833.7": {"DN": "1", "D": 33.7, "t": 2.0, "d": 29.7, "m": 1.55},
-        "1_1/4 | \u00d842.4": {"DN": "1 1/4", "D": 42.4, "t": 2.0, "d": 38.4, "m": 1.94},
-        "1_1/2 | \u00d848.3": {"DN": "1 1/2", "D": 48.3, "t": 2.0, "d": 44.3, "m": 2.27},
-        "2 | \u00d860.3": {"DN": "2", "D": 60.3, "t": 2.0, "d": 56.3, "m": 2.86}
+        { name: "Tube de cl\u00f4ture - s\u00e9rie moyenne", draw: "drawProfileTUBEROND", standard: null, family: "TUBE_CLOTURE", data: {
+        "3/8 | \u00d817.2x2.00": {"DN": "3/8", "D": 17.2, "t": 2.0, "d": 13.2, "m": 0.75},
+        "1/2 | \u00d821.3x1.75": {"DN": "1/2", "D": 21.3, "t": 1.75, "d": 17.8, "m": 0.84},
+        "1/2 | \u00d821.3x2.00": {"DN": "1/2", "D": 21.3, "t": 2.0, "d": 17.3, "m": 0.95},
+        "3/4 | \u00d826.9x1.75": {"DN": "3/4", "D": 26.9, "t": 1.75, "d": 23.4, "m": 1.08},
+        "3/4 | \u00d826.9x2.00": {"DN": "3/4", "D": 26.9, "t": 2.0, "d": 22.9, "m": 1.22},
+        "1 | \u00d833.7x2.00": {"DN": "1", "D": 33.7, "t": 2.0, "d": 29.7, "m": 1.55},
+        "1_1/4 | \u00d842.4x2.00": {"DN": "1 1/4", "D": 42.4, "t": 2.0, "d": 38.4, "m": 1.94},
+        "1_1/2 | \u00d848.3x2.00": {"DN": "1 1/2", "D": 48.3, "t": 2.0, "d": 44.3, "m": 2.27},
+        "2 | \u00d860.3x2.00": {"DN": "2", "D": 60.3, "t": 2.0, "d": 56.3, "m": 2.86}
+      } },
+        { name: "Tube de cl\u00f4ture - soud\u00e9, galvanis\u00e9, bouts lisses", draw: "drawProfileTUBEROND", standard: null, family: "TUBE_CLOTURE", data: {
+        "3/8 | \u00d817.2x2.00": {"DN": "3/8", "D": 17.2, "t": 2.0, "d": 13.2, "m": 0.75},
+        "3/4 | \u00d826.9x2.00": {"DN": "3/4", "D": 26.9, "t": 2.0, "d": 22.9, "m": 1.23},
+        "1 | \u00d833.7x2.00": {"DN": "1", "D": 33.7, "t": 2.0, "d": 29.7, "m": 1.56},
+        "1_1/4 | \u00d842.4x2.00": {"DN": "1 1/4", "D": 42.4, "t": 2.0, "d": 38.4, "m": 1.93},
+        "1_1/2 | \u00d848.3x2.00": {"DN": "1 1/2", "D": 48.3, "t": 2.0, "d": 44.3, "m": 2.22},
+        "2 | \u00d860.3x2.00": {"DN": "2", "D": 60.3, "t": 2.0, "d": 56.3, "m": 2.88}
+      } },
+        { name: "Tube bouilleur soud\u00e9 \u00e0 bouts lisses", draw: "drawProfileTUBEROND", standard: "DIN 2458, DIN 1626 resp. EN 10217-1", family: "BOILER_TUBES_WELDED", data: {
+        "\u00d831.8x2.30": {"D": 31.8, "t": 2.3, "d": 27.2, "m": 1.68},
+        "\u00d833.7x2.30": {"D": 33.7, "t": 2.3, "d": 29.1, "m": 1.78},
+        "\u00d838.0x2.30": {"D": 38.0, "t": 2.3, "d": 33.4, "m": 2.04},
+        "\u00d842.4x2.30": {"D": 42.4, "t": 2.3, "d": 37.8, "m": 2.29},
+        "\u00d844.5x2.30": {"D": 44.5, "t": 2.3, "d": 39.9, "m": 2.41},
+        "\u00d848.3x2.30": {"D": 48.3, "t": 2.3, "d": 43.7, "m": 2.63},
+        "\u00d851.0x2.60": {"D": 51.0, "t": 2.6, "d": 45.8, "m": 3.12},
+        "\u00d854.0x2.60": {"D": 54.0, "t": 2.6, "d": 48.8, "m": 3.3},
+        "\u00d857.0x2.60": {"D": 57.0, "t": 2.6, "d": 51.8, "m": 3.52},
+        "\u00d860.3x2.90": {"D": 60.3, "t": 2.9, "d": 54.5, "m": 4.14},
+        "\u00d863.5x2.90": {"D": 63.5, "t": 2.9, "d": 57.7, "m": 4.36},
+        "\u00d870.0x2.90": {"D": 70.0, "t": 2.9, "d": 64.2, "m": 4.83},
+        "\u00d876.1x2.90": {"D": 76.1, "t": 2.9, "d": 70.3, "m": 5.28},
+        "\u00d882.5x3.20": {"D": 82.5, "t": 3.2, "d": 76.1, "m": 6.31},
+        "\u00d888.9x3.20": {"D": 88.9, "t": 3.2, "d": 82.5, "m": 6.81},
+        "\u00d895.0x3.20": {"D": 95.0, "t": 3.2, "d": 88.6, "m": 7.25},
+        "\u00d8101.6x3.60": {"D": 101.6, "t": 3.6, "d": 94.4, "m": 8.76},
+        "\u00d8108.0x3.60": {"D": 108.0, "t": 3.6, "d": 100.8, "m": 9.33},
+        "\u00d8114.3x3.60": {"D": 114.3, "t": 3.6, "d": 107.1, "m": 9.9},
+        "\u00d8121.0x4.00": {"D": 121.0, "t": 4.0, "d": 113.0, "m": 11.5},
+        "\u00d8127.0x4.00": {"D": 127.0, "t": 4.0, "d": 119.0, "m": 12.2},
+        "\u00d8133.0x4.00": {"D": 133.0, "t": 4.0, "d": 125.0, "m": 12.8},
+        "\u00d8139.7x4.00": {"D": 139.7, "t": 4.0, "d": 131.7, "m": 13.5},
+        "\u00d8152.4x4.00": {"D": 152.4, "t": 4.0, "d": 144.4, "m": 14.64},
+        "\u00d8159.0x4.00": {"D": 159.0, "t": 4.0, "d": 151.0, "m": 15.3},
+        "\u00d8159.0x4.50": {"D": 159.0, "t": 4.5, "d": 150.0, "m": 17.1},
+        "\u00d8168.3x4.00": {"D": 168.3, "t": 4.0, "d": 160.3, "m": 16.3},
+        "\u00d8168.3x4.50": {"D": 168.3, "t": 4.5, "d": 159.3, "m": 18.2},
+        "\u00d8177.8x4.50": {"D": 177.8, "t": 4.5, "d": 168.3, "m": 19.2},
+        "\u00d8193.7x4.50": {"D": 193.7, "t": 4.5, "d": 184.7, "m": 20.9},
+        "\u00d8219.1x4.50": {"D": 219.1, "t": 4.5, "d": 210.1, "m": 23.7},
+        "\u00d8244.5x5.00": {"D": 244.5, "t": 5.0, "d": 234.5, "m": 29.5},
+        "\u00d8273.0x5.00": {"D": 273.0, "t": 5.0, "d": 263.0, "m": 33.0},
+        "\u00d8323.9x5.60": {"D": 323.9, "t": 5.6, "d": 312.7, "m": 44.0},
+        "\u00d8355.6x5.60": {"D": 355.6, "t": 5.6, "d": 344.4, "m": 48.2},
+        "\u00d8406.4x6.30": {"D": 406.4, "t": 6.3, "d": 393.8, "m": 62.4},
+        "\u00d8508.0x6.30": {"D": 508.0, "t": 6.3, "d": 495.4, "m": 78.2},
+        "\u00d8610.0x6.30": {"D": 610.0, "t": 6.3, "d": 597.4, "m": 94.1},
+        "\u00d8711.0x7.10": {"D": 711.0, "t": 7.1, "d": 696.8, "m": 124.005}
+      } },
+        { name: "Tube bouilleur sans soudure", draw: "drawProfileTUBEROND", standard: "DIN 2448, DIN 1629 resp. EN 10216-1", family: "BOILER_TUBES_SEAMLESS", data: {
+        "\u00d810.2x1.60": {"D": 10.2, "t": 1.6, "d": 7.0, "m": 0.34},
+        "\u00d813.5x1.80": {"D": 13.5, "t": 1.8, "d": 9.3, "m": 0.52},
+        "\u00d817.2x1.80": {"D": 17.2, "t": 1.8, "d": 13.6, "m": 0.69},
+        "\u00d820.0x2.00": {"D": 20.0, "t": 2.0, "d": 16.0, "m": 0.89},
+        "\u00d826.9x2.30": {"D": 26.9, "t": 2.3, "d": 22.3, "m": 1.41},
+        "\u00d830.0x2.60": {"D": 30.0, "t": 2.6, "d": 24.8, "m": 1.77},
+        "\u00d831.8x2.60": {"D": 31.8, "t": 2.6, "d": 26.6, "m": 1.88},
+        "\u00d833.7x2.60": {"D": 33.7, "t": 2.6, "d": 28.5, "m": 2.01},
+        "\u00d838.0x2.60": {"D": 38.0, "t": 2.6, "d": 32.8, "m": 2.29},
+        "\u00d842.4x2.60": {"D": 42.4, "t": 2.6, "d": 37.2, "m": 2.57},
+        "\u00d844.5x2.60": {"D": 44.5, "t": 2.6, "d": 39.3, "m": 2.7},
+        "\u00d848.3x2.60": {"D": 48.3, "t": 2.6, "d": 43.1, "m": 2.95},
+        "\u00d851.0x2.60": {"D": 51.0, "t": 2.6, "d": 45.8, "m": 3.12},
+        "\u00d854.0x2.60": {"D": 54.0, "t": 2.6, "d": 48.8, "m": 3.3},
+        "\u00d857.0x2.90": {"D": 57.0, "t": 2.9, "d": 51.2, "m": 3.9},
+        "\u00d860.3x2.90": {"D": 60.3, "t": 2.9, "d": 54.5, "m": 4.14},
+        "\u00d863.5x2.90": {"D": 63.5, "t": 2.9, "d": 57.7, "m": 4.36},
+        "\u00d870.0x2.90": {"D": 70.0, "t": 2.9, "d": 64.2, "m": 4.83},
+        "\u00d876.1x2.90": {"D": 76.1, "t": 2.9, "d": 70.3, "m": 5.28},
+        "\u00d882.5x3.20": {"D": 82.5, "t": 3.2, "d": 76.1, "m": 6.31},
+        "\u00d888.9x3.20": {"D": 88.9, "t": 3.2, "d": 82.5, "m": 6.81},
+        "\u00d8101.6x3.60": {"D": 101.6, "t": 3.6, "d": 94.4, "m": 8.76},
+        "\u00d8108.0x3.60": {"D": 108.0, "t": 3.6, "d": 100.8, "m": 9.33},
+        "\u00d8114.3x3.60": {"D": 114.3, "t": 3.6, "d": 107.1, "m": 9.9},
+        "\u00d8127.0x4.00": {"D": 127.0, "t": 4.0, "d": 119.0, "m": 12.2},
+        "\u00d8133.0x4.00": {"D": 133.0, "t": 4.0, "d": 125.0, "m": 12.8},
+        "\u00d8139.7x4.00": {"D": 139.7, "t": 4.0, "d": 131.7, "m": 13.5},
+        "\u00d8152.4x4.50": {"D": 152.4, "t": 4.5, "d": 143.4, "m": 16.4},
+        "\u00d8159.0x4.50": {"D": 159.0, "t": 4.5, "d": 150.0, "m": 17.1},
+        "\u00d8165.1x4.50": {"D": 165.1, "t": 4.5, "d": 156.1, "m": 17.8},
+        "\u00d8168.3x4.50": {"D": 168.3, "t": 4.5, "d": 159.3, "m": 18.1},
+        "\u00d8177.8x5.00": {"D": 177.8, "t": 5.0, "d": 167.8, "m": 21.3},
+        "\u00d8193.7x5.60": {"D": 193.7, "t": 5.6, "d": 182.5, "m": 26.0},
+        "\u00d8219.1x6.30": {"D": 219.1, "t": 6.3, "d": 206.5, "m": 33.1},
+        "\u00d8244.5x6.30": {"D": 244.5, "t": 6.3, "d": 231.9, "m": 37.1},
+        "\u00d8267.0x6.30": {"D": 267.0, "t": 6.3, "d": 254.4, "m": 40.6},
+        "\u00d8273.0x6.30": {"D": 273.0, "t": 6.3, "d": 260.4, "m": 41.6},
+        "\u00d8298.5x7.10": {"D": 298.5, "t": 7.1, "d": 284.3, "m": 51.1},
+        "\u00d8323.9x7.10": {"D": 323.9, "t": 7.1, "d": 309.7, "m": 55.6},
+        "\u00d8355.6x8.00": {"D": 355.6, "t": 8.0, "d": 339.6, "m": 68.3},
+        "\u00d8368.0x8.00": {"D": 368.0, "t": 8.0, "d": 352.0, "m": 70.8},
+        "\u00d8406.4x8.80": {"D": 406.4, "t": 8.8, "d": 388.8, "m": 85.9},
+        "\u00d8419.0x10.00": {"D": 419.0, "t": 10.0, "d": 399.0, "m": 101.0},
+        "\u00d8457.0x10.00": {"D": 457.0, "t": 10.0, "d": 437.0, "m": 110.0},
+        "\u00d8508.0x11.00": {"D": 508.0, "t": 11.0, "d": 486.0, "m": 135.05}
       } }
       ]
     },
@@ -14705,7 +15085,7 @@ initLibrary();
     btn.id = 'demo-launch-entry';
     btn.textContent = IS_DEMO ? '▶  DÉMO' : '▶  DÉMO';
     btn.style.cssText = [
-      'position:fixed', 'top:34px', 'right:14px',
+      'position:fixed', 'top:48px', 'right:14px',
       'background:#ffd700', 'color:#0a0f1a',
       'border:none', 'border-radius:4px', 'padding:6px 14px',
       'font:700 12px "JetBrains Mono",monospace',
@@ -14722,6 +15102,20 @@ initLibrary();
       else { S.entities = []; render(); startDemo(); }
     };
     document.body.appendChild(btn);
+
+    const lp = document.createElement('a');
+    lp.href = 'https://liberapay.com/MiniCAD/donate';
+    lp.target = '_blank';
+    lp.rel = 'noopener';
+    lp.title = 'Donate using Liberapay';
+    lp.style.cssText = 'position:fixed;top:84px;right:14px;z-index:9997;display:block;line-height:0';
+    const lpImg = document.createElement('img');
+    lpImg.alt = 'Donate using Liberapay';
+    lpImg.src = 'https://liberapay.com/assets/widgets/donate.svg';
+    lpImg.style.cssText = 'height:26px;display:block';
+    lp.appendChild(lpImg);
+    document.body.appendChild(lp);
+
     // remplacer par le bouton géré par la démo si on est en mode démo
     if (IS_DEMO) window._demoBtnEntry = btn;
   });
