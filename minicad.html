@@ -7531,7 +7531,9 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       pushUndo();
       if (tool==='copy') {
         applyCopy(S.selected,dx,dy);
-        termPrint(S.selected.length+' copié(s)','success');
+        updateSaveIndicator('modified'); autoSave(); render();
+        termPrint(S.selected.length+' copié(s) — autre destination ou [Entrée/clic droit/ESC] pour terminer','success');
+        return; // reste en mode copy, drawPoints[0] conservé
       } else {
         applyMove(S.selected,dx,dy);
         termPrint(S.selected.length+' déplacé(s)','success');
@@ -14402,7 +14404,7 @@ function drawProfileUMOLETE(p, x, y) {
 // Paramètres : D (Diamètre extérieur), t (Épaisseur de paroi)
 // Point d'insertion : Centre du tube (x, y)
 
-function drawProfilePIPE_GAS_WATER_M(p, x, y) {
+function drawProfileTUBEROND(p, x, y) {
   var api = window.minicadAPI;
   var D = p.D;
   var t = p.t;
