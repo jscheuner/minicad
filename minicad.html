@@ -9360,14 +9360,34 @@ function _propChange(id, field, val, isText) {
   const e = S.entities.find(en => en.id === id);
   if (!e) return;
   pushUndo();
-  if (isText) {
-    e[field] = val;
-  } else {
-    const n = parseFloat(val);
-    if (isNaN(n)) return;
-    e[field] = n;
-  }
-  render();
+  if (isText) { e[field] = val; } else { const n = parseFloat(val); if (isNaN(n)) return; e[field] = n; }
+  render(); autoSave();
+}
+
+function _propChangeLongueurMulti(val) {
+  const newLen = parseFloat(val);
+  if (isNaN(newLen) || newLen <= 0) return;
+  const ents = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && (e.type==='line'||e.type==='wall'));
+  if (!ents.length) return;
+  pushUndo();
+  ents.forEach(e => {
+    const angle = Math.atan2(e.y2 - e.y1, e.x2 - e.x1);
+    e.x2 = e.x1 + newLen * Math.cos(angle);
+    e.y2 = e.y1 + newLen * Math.sin(angle);
+  });
+  render(); autoSave(); updateProperties();
+}
+
+function _propChangeLongueur(id, val) {
+  const e = S.entities.find(en => en.id === id);
+  if (!e) return;
+  const newLen = parseFloat(val);
+  if (isNaN(newLen) || newLen <= 0) return;
+  const angle = Math.atan2(e.y2 - e.y1, e.x2 - e.x1);
+  pushUndo();
+  e.x2 = e.x1 + newLen * Math.cos(angle);
+  e.y2 = e.y1 + newLen * Math.sin(angle);
+  render(); autoSave(); updateProperties();
 }
 
 function _propChangeLayer(id, layerIdx) {
@@ -9375,15 +9395,55 @@ function _propChangeLayer(id, layerIdx) {
   if (!e) return;
   pushUndo();
   e.layer = parseInt(layerIdx);
-  render();
-  updateProperties();
+  render(); autoSave(); updateProperties();
+}
+
+// Applique un changement de champ à TOUTES les entités sélectionnées
+function _propChangeMulti(field, val, isText) {
+  const ents = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+  if (!ents.length) return;
+  pushUndo();
+  ents.forEach(e => {
+    if (!(field in e)) return;
+    if (isText) { e[field] = val; } else { const n = parseFloat(val); if (!isNaN(n)) e[field] = n; }
+  });
+  render(); autoSave(); updateProperties();
+}
+
+function _propChangeLayerMulti(layerIdx) {
+  const ents = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+  if (!ents.length) return;
+  pushUndo();
+  ents.forEach(e => { e.layer = parseInt(layerIdx); });
+  render(); autoSave(); updateProperties();
+}
+
+function _propChangeDimStyleMulti(val) {
+  const ents = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+  if (!ents.length) return;
+  pushUndo();
+  ents.forEach(e => { if ('dimStyle' in e) e.dimStyle = val; });
+  render(); autoSave(); updateProperties();
 }
 
 function updateProperties() {
   const c = document.getElementById('props-content');
-  if (!S.selected.length) { c.innerHTML='<div style="padding:8px 10px;color:var(--text-dim);font-size:11px;">Aucune sélection</div>'; return; }
-  if (S.selected.length > 1) { c.innerHTML='<div style="padding:8px 10px;font-size:11px;">'+S.selected.length+' objets</div>'; return; }
-  const e = S.entities.find(en => en.id === S.selected[0]); if (!e) return;
+  if (!S.selected.length) {
+    c.innerHTML = '<div style="padding:8px 10px;color:var(--text-dim);font-size:11px;">Aucune sélection</div>';
+    return;
+  }
+  const ents = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+  if (!ents.length) return;
+
+  if (ents.length === 1) {
+    _updatePropertiesSingle(ents[0]);
+  } else {
+    _updatePropertiesMulti(ents);
+  }
+}
+
+function _updatePropertiesSingle(e) {
+  const c = document.getElementById('props-content');
   const id = e.id;
   const inp = (field, val, isText) => {
     const esc = String(val).replace(/"/g,'&quot;');
@@ -9404,7 +9464,7 @@ function updateProperties() {
     h += row('Y1', inp('y1', e.y1.toFixed(2)));
     h += row('X2', inp('x2', e.x2.toFixed(2)));
     h += row('Y2', inp('y2', e.y2.toFixed(2)));
-    if (e.type==='line'||e.type==='wall') h += row('Longueur','<span class="prop-value">'+Math.hypot(e.x2-e.x1,e.y2-e.y1).toFixed(2)+'</span>');
+    if (e.type==='line'||e.type==='wall') h += row('Longueur','<input type="number" class="prop-input" step="any" value="'+Math.hypot(e.x2-e.x1,e.y2-e.y1).toFixed(2)+'" onchange="_propChangeLongueur('+id+',this.value)" />');
   }
   if (e.cx !== undefined) {
     h += row('CX', inp('cx', e.cx.toFixed(2)));
@@ -9437,6 +9497,101 @@ function updateProperties() {
     if (e.profileStandard) h += row('Norme', '<span class="prop-value">'+e.profileStandard+'</span>');
     if (e.profileG != null) h += row('Poids/m', '<span class="prop-value">'+e.profileG+' kg/m</span>');
   }
+  c.innerHTML = h;
+}
+
+function _updatePropertiesMulti(ents) {
+  const c = document.getElementById('props-content');
+
+  // Valeur commune : valeur si identique pour tous, null si différentes, undefined si champ absent partout
+  const common = (field) => {
+    const vals = ents.map(e => e[field]).filter(v => v !== undefined);
+    if (!vals.length) return undefined;
+    return vals.every(v => v === vals[0]) ? vals[0] : null;
+  };
+  // Vrai si AU MOINS UNE entité a ce champ
+  const hasField = (field) => ents.some(e => e[field] !== undefined);
+
+  const row = (label, content) => '<div class="prop-row"><span class="prop-label">'+label+'</span>'+content+'</div>';
+
+  // Input multi : valeur commune affichée, ou placeholder "*Valeurs différentes*"
+  const inp = (field, val, isText) => {
+    const differs = val === null;
+    const esc = differs ? '' : String(val).replace(/"/g,'&quot;');
+    const ph  = differs ? ' placeholder="*Valeurs différentes*"' : '';
+    const t   = isText ? 'text' : 'number';
+    const step = isText ? '' : ' step="any"';
+    return '<input type="'+t+'" class="prop-input"'+
+           (differs?' style="color:var(--text-dim);font-style:italic"':'')+
+           ' value="'+esc+'"'+step+ph+
+           ' onchange="_propChangeMulti(\''+field+'\',this.value,'+(isText?'true':'false')+')" />';
+  };
+
+  // Résumé
+  const typeCounts = {};
+  ents.forEach(e => { typeCounts[e.type] = (typeCounts[e.type]||0)+1; });
+  const typeSummary = Object.entries(typeCounts).map(([t,n])=>n>1?n+'× '+t:t).join(', ');
+  const allSameType = Object.keys(typeCounts).length === 1;
+  const type = allSameType ? ents[0].type : null;
+
+  let h = row('Sélection', '<span class="prop-value">'+ents.length+' objets</span>');
+  h += row('Types', '<span class="prop-value" style="font-size:10px">'+typeSummary+'</span>');
+
+  // Calque (toujours affiché)
+  const layerVal = common('layer');
+  const layerSel = '<select class="prop-select" onchange="_propChangeLayerMulti(this.value)">'+
+    (layerVal === null ? '<option value="" disabled selected>*Valeurs différentes*</option>' : '')+
+    S.layers.map((l,i)=>'<option value="'+i+'"'+(layerVal===i?' selected':'')+'>'+l.name+'</option>').join('')+
+    '</select>';
+  h += row('Calque', layerSel);
+
+  if (allSameType) {
+    // Coordonnées X1/Y1/X2/Y2
+    if (hasField('x1')) {
+      h += row('X1', inp('x1', common('x1') !== null ? common('x1').toFixed(2) : null));
+      h += row('Y1', inp('y1', common('y1') !== null ? common('y1').toFixed(2) : null));
+      h += row('X2', inp('x2', common('x2') !== null ? common('x2').toFixed(2) : null));
+      h += row('Y2', inp('y2', common('y2') !== null ? common('y2').toFixed(2) : null));
+      if (type === 'line' || type === 'wall') {
+        const lens = ents.map(e => Math.hypot(e.x2-e.x1, e.y2-e.y1));
+        const allSameLen = lens.every(l => Math.abs(l - lens[0]) < 1e-9);
+        const lenVal = allSameLen ? lens[0].toFixed(2) : null;
+        const lenEsc = lenVal !== null ? lenVal : '';
+        const lenPh  = lenVal === null ? ' placeholder="*Valeurs différentes*"' : '';
+        const lenStyle = lenVal === null ? ' style="color:var(--text-dim);font-style:italic"' : '';
+        h += row('Longueur', '<input type="number" class="prop-input" step="any" value="'+lenEsc+'"'+lenPh+lenStyle+' onchange="_propChangeLongueurMulti(this.value)" />');
+      }
+    }
+    // CX/CY/R
+    if (hasField('cx')) {
+      h += row('CX', inp('cx', common('cx') !== null ? common('cx').toFixed(2) : null));
+      h += row('CY', inp('cy', common('cy') !== null ? common('cy').toFixed(2) : null));
+      h += row('Rayon', inp('r',  common('r')  !== null ? common('r').toFixed(2)  : null));
+    }
+    // X/Y (point, texte…)
+    if (hasField('x') && !hasField('x1')) {
+      h += row('X', inp('x', common('x') !== null ? common('x').toFixed(2) : null));
+      h += row('Y', inp('y', common('y') !== null ? common('y').toFixed(2) : null));
+    }
+    // Épaisseur
+    if (hasField('thickness')) h += row('Épaisseur', inp('thickness', common('thickness')));
+    // Texte
+    if (hasField('content')) h += row('Texte', inp('content', common('content'), true));
+    if (hasField('size'))    h += row('Taille', inp('size', common('size')));
+    // Nb points (lecture seule)
+    if (hasField('points')) h += row('Points', '<span class="prop-value">'+
+      (common('points') !== null ? ents[0].points.length : '*Valeurs différentes*')+'</span>');
+    // Style de cote
+    if (['dim_linear','dim_aligned','dim_angular','dim_radius','dim_diameter','leader'].includes(type)) {
+      const ds = common('dimStyle');
+      const dsSel = '<select class="prop-select" onchange="_propChangeDimStyleMulti(this.value)">'+
+        (ds === null ? '<option value="" disabled selected>*Valeurs différentes*</option>' : '')+
+        S.dimStyles.map(s=>'<option value="'+s.name+'"'+(ds===s.name?' selected':'')+'>'+s.name+'</option>').join('')+
+        '</select>';
+      h += row('Style cote', dsSel);
+    }
+  }
+
   c.innerHTML = h;
 }
 
