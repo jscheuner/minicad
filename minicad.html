@@ -234,6 +234,42 @@
     display: none;
   }
   .tb-context.show { display: block; }
+
+  .tube-def-popup {
+    position: fixed; z-index: 310;
+    left: 50%; top: 50%; transform: translate(-50%, -50%);
+    background: var(--bg-panel);
+    border: 1px solid #ffffff25;
+    border-radius: 8px;
+    padding: 20px 24px;
+    box-shadow: 0 8px 32px #00000099;
+    display: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+    width: 260px;
+  }
+  .tube-def-popup.show { display: block; }
+  .tube-def-popup .tdp-title {
+    font-size: 11px; color: var(--text-dim); letter-spacing: 0.5px;
+    text-transform: uppercase; margin-bottom: 14px;
+  }
+  .tube-def-popup .tdp-row { display: grid; grid-template-columns: 90px 1fr 28px; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .tube-def-popup .tdp-row:last-of-type { margin-bottom: 16px; }
+  .tube-def-popup .tdp-lbl { color: var(--text-dim); white-space: nowrap; }
+  .tube-def-popup input[type=number] {
+    width: 100%; background: #0d1929; border: 1px solid #ffffff22;
+    border-radius: 4px; color: var(--text); font-family: inherit;
+    font-size: 13px; padding: 5px 8px; text-align: right; box-sizing: border-box;
+  }
+  .tube-def-popup input[type=number]:focus { outline: none; border-color: var(--accent); }
+  .tube-def-popup .tdp-unit { color: var(--text-dim); min-width: 20px; }
+  .tube-def-popup .tdp-ok {
+    width: 100%; padding: 7px 0; background: var(--accent); color: #000;
+    border: none; border-radius: 4px; font-family: inherit; font-size: 12px;
+    font-weight: 600; cursor: pointer; letter-spacing: 0.3px;
+  }
+  .tube-def-popup .tdp-ok:hover { opacity: 0.85; }
   .tb-ctx-item {
     display: flex; align-items: center; gap: 8px;
     padding: 5px 12px;
@@ -1230,6 +1266,14 @@
           <line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="3,2"/>
         </svg>
       </button>
+      <button class="tool-btn" id="tube-def-btn" title="Définir Ø et RM du tube" onclick="toggleTubeDefPopup(event)">
+        <svg viewBox="0 0 24 24" fill="none">
+          <line x1="3" y1="6" x2="21" y2="6" stroke-width="1.5"/>
+          <line x1="3" y1="18" x2="21" y2="18" stroke-width="1.5"/>
+          <line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="3,2" stroke-width="1"/>
+          <text x="8" y="12.5" font-size="5.5" fill="currentColor" stroke="none" font-family="monospace" dominant-baseline="middle">Ø RM</text>
+        </svg>
+      </button>
       <div style="display:flex;gap:1px;margin:0 2px" id="tube-ref-btns">
         <button class="tool-btn tube-ref-btn active" id="tubref-axe" title="Tracé sur axe (TUBREF AXE)" onclick="executeCommand('TUBREF AXE')" style="font-size:9px;padding:0 4px;height:22px">AXE</button>
         <button class="tool-btn tube-ref-btn" id="tubref-ext" title="Tracé paroi extérieure (TUBREF EXT)" onclick="executeCommand('TUBREF EXT')" style="font-size:9px;padding:0 4px;height:22px">EXT</button>
@@ -1384,6 +1428,12 @@
 
 <!-- CONTEXT MENU for canvas -->
 <div class="tb-context" id="canvas-context"></div>
+<div class="tube-def-popup" id="tube-def-popup">
+  <div class="tdp-title">Paramètres du tube</div>
+  <div class="tdp-row"><span class="tdp-lbl">Ø diamètre</span><input type="number" id="tdp-diam" min="1" step="0.5" onkeydown="if(event.key==='Enter')applyTubeDef();if(event.key==='Escape')document.getElementById('tube-def-popup').classList.remove('show')"><span class="tdp-unit">mm</span></div>
+  <div class="tdp-row"><span class="tdp-lbl">RM rayon moy.</span><input type="number" id="tdp-rm" min="1" step="0.5" onkeydown="if(event.key==='Enter')applyTubeDef();if(event.key==='Escape')document.getElementById('tube-def-popup').classList.remove('show')"><span class="tdp-unit">mm</span></div>
+  <button class="tdp-ok" onclick="applyTubeDef()">Appliquer ↵</button>
+</div>
 
 <!-- MAIN -->
 <div class="main-area">
@@ -1779,6 +1829,10 @@ const S = {
   },
   osnapAcquired: [], // [{ax,ay,dx,dy}] — extension acquired points
   currentOsnap: null, // { x, y, type, entity }
+  // DEFERRED TANGENT (tangente entre 2 cercles)
+  _tanFromCircle: null,   // {cx,cy,r} — cercle 1 en attente
+  _tanFromCircleId: null, // id de l'entité cercle 1
+  _tanResolvedP1: null,   // [x,y] — point de tangence calculé sur cercle 1
   // GRIP EDITING
   gripEdit: null,     // { entId, gripIdx, origX, origY, apply } — mode déplacement actif
   gripSelected: null, // { entId, gripIdx, origX, origY, apply } — grip armé, attend Espace
@@ -1925,8 +1979,52 @@ function getExtTrackDirs(acq) {
   return dirs;
 }
 
+// Calcule toutes les tangentes communes entre 2 cercles
+// Retourne tableau de {p1:[x,y], p2:[x,y]} (points de tangence sur c1 et c2)
+function _circleCircleTangents(c1, c2) {
+  const { cx: cx1, cy: cy1, r: r1 } = c1;
+  const { cx: cx2, cy: cy2, r: r2 } = c2;
+  const d = Math.hypot(cx2 - cx1, cy2 - cy1);
+  if (d < 1e-9) return [];
+  const theta = Math.atan2(cy2 - cy1, cx2 - cx1);
+  const out = [];
+
+  // Tangentes externes : n tel que V·n = r1-r2
+  const extRatio = (r1 - r2) / d;
+  if (Math.abs(extRatio) <= 1 + 1e-9) {
+    const beta = Math.acos(Math.max(-1, Math.min(1, extRatio)));
+    for (const sign of [1, -1]) {
+      const alpha = theta + sign * beta;
+      const nx = Math.cos(alpha), ny = Math.sin(alpha);
+      out.push({ p1: [cx1 + r1 * nx, cy1 + r1 * ny], p2: [cx2 + r2 * nx, cy2 + r2 * ny] });
+    }
+  }
+  // Tangentes internes : n tel que V·n = r1+r2  (seulement si les cercles ne se superposent pas)
+  const intRatio = (r1 + r2) / d;
+  if (intRatio <= 1 + 1e-9) {
+    const beta = Math.acos(Math.max(-1, Math.min(1, intRatio)));
+    for (const sign of [1, -1]) {
+      const alpha = theta + sign * beta;
+      const nx = Math.cos(alpha), ny = Math.sin(alpha);
+      out.push({ p1: [cx1 + r1 * nx, cy1 + r1 * ny], p2: [cx2 - r2 * nx, cy2 - r2 * ny] });
+    }
+  }
+  return out;
+}
+
+// Retourne la meilleure tangente commune dont p2 est le plus près du curseur
+function _bestTangent(c1, c2, mx, my) {
+  const ts = _circleCircleTangents(c1, c2);
+  if (!ts.length) return null;
+  return ts.reduce((best, t) => {
+    const d = Math.hypot(t.p2[0] - mx, t.p2[1] - my);
+    return d < best.d ? { t, d } : best;
+  }, { t: null, d: Infinity }).t;
+}
+
 function findOsnap(wx, wy) {
   if (!S.osnapEnabled) return null;
+  if (S._tanFromCircle) S._tanResolvedP1 = null; // réinitialise à chaque frame
   const tol = 15 / S.zoom;
   let best = null;
   let bestDist = tol;
@@ -2171,15 +2269,26 @@ function findOsnap(wx, wy) {
     }
 
     // TANGENT
-    if (S.osnapModes.tangent && S.drawing && S.drawPoints.length > 0 && (e.type === 'circle' || e.type === 'arc')) {
-      const base = S.drawPoints[S.drawPoints.length - 1];
-      const dx = base[0] - e.cx, dy = base[1] - e.cy;
-      const dist = Math.hypot(dx, dy);
-      if (dist > e.r) {
-        const a = Math.acos(e.r / dist);
-        const base_angle = Math.atan2(dy, dx);
-        check(e.cx + e.r * Math.cos(base_angle + a), e.cy + e.r * Math.sin(base_angle + a), 'tangent', e);
-        check(e.cx + e.r * Math.cos(base_angle - a), e.cy + e.r * Math.sin(base_angle - a), 'tangent', e);
+    if (S.osnapModes.tangent && (e.type === 'circle' || e.type === 'arc')) {
+      if (!S.drawing) {
+        // 1er point : snap au point du cercle le plus proche du curseur (tangente différée)
+        const angle = Math.atan2(wy - e.cy, wx - e.cx);
+        check(e.cx + e.r * Math.cos(angle), e.cy + e.r * Math.sin(angle), 'tangent', e);
+      } else if (S._tanFromCircle && e.id !== S._tanFromCircleId) {
+        // 2e point avec tangente différée : calcul cercle-à-cercle
+        const t = _bestTangent(S._tanFromCircle, { cx: e.cx, cy: e.cy, r: e.r }, wx, wy);
+        if (t) { S._tanResolvedP1 = t.p1; check(t.p2[0], t.p2[1], 'tangent', e); }
+      } else if (!S._tanFromCircle && S.drawPoints.length > 0) {
+        // Tangente normale depuis un point fixe
+        const base = S.drawPoints[S.drawPoints.length - 1];
+        const dx = base[0] - e.cx, dy = base[1] - e.cy;
+        const dist = Math.hypot(dx, dy);
+        if (dist > e.r) {
+          const a = Math.acos(e.r / dist);
+          const base_angle = Math.atan2(dy, dx);
+          check(e.cx + e.r * Math.cos(base_angle + a), e.cy + e.r * Math.sin(base_angle + a), 'tangent', e);
+          check(e.cx + e.r * Math.cos(base_angle - a), e.cy + e.r * Math.sin(base_angle - a), 'tangent', e);
+        }
       }
     }
   }
@@ -3246,6 +3355,30 @@ function drawLibPreview() {
   ctx.restore();
 }
 
+function drawTanDeferredMarker() {
+  const { cx, cy, r } = S._tanFromCircle;
+  const [scx, scy] = w2s(cx, cy);
+  const sr = r * S.zoom;
+  const col = getComputedStyle(document.documentElement).getPropertyValue('--osnap-tangent').trim() || '#ff6e40';
+  ctx.save();
+  ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+  // Cercle en surbrillance
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.arc(scx, scy, sr, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+  // Point de tangence résolu sur cercle 1 (si calculé)
+  if (S._tanResolvedP1) {
+    const [spx, spy] = w2s(S._tanResolvedP1[0], S._tanResolvedP1[1]);
+    // Losange TAN
+    const g = 6;
+    ctx.beginPath();
+    ctx.moveTo(spx, spy - g); ctx.lineTo(spx + g, spy);
+    ctx.lineTo(spx, spy + g); ctx.lineTo(spx - g, spy);
+    ctx.closePath(); ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawPastePreview() {
   if (!S.clipboard.length || !mouseOnCanvas) return;
   const [wx, wy] = S.mouseWorld;
@@ -3380,6 +3513,7 @@ function _drawDynamicLayer() {
   if (S.aiPendingEntities && S.aiPendingCenter && mouseOnCanvas) drawAiPlacementPreview();
   if (S.libPending && S.libDef && mouseOnCanvas) drawLibPreview();
   if (S.tool === 'paste' && S.clipboard.length && mouseOnCanvas) drawPastePreview();
+  if (S._tanFromCircle && S.drawing) drawTanDeferredMarker();
   // Extension + OTRACK trails : "+" + lignes de tracking H/V/prolongement
   if (S.osnapModes?.extension && S.osnapAcquired?.length > 0 && mouseOnCanvas) {
     ctx.save();
@@ -3692,17 +3826,38 @@ function getTubeTableData(e) {
 
 // Dimensions de base en unités monde (scale=1). La taille en pixels = dim*zoom → taille
 // fixe dans le dessin, identique au comportement des cotes et textes.
-const _TBL_CELL  = 26;   // hauteur d'une ligne (unités monde)
-const _TBL_COL1  = 95;   // largeur colonne longueur
-const _TBL_GAP   = 14;   // espace entre les deux colonnes
-const _TBL_COL2  = 70;   // largeur colonne angle
-const _TBL_PAD   = 8;    // marge interne
-const _TBL_SEP   = 6;    // hauteur séparateur
+const _TBL_CELL  = 52;   // hauteur d'une ligne (unités monde)
+const _TBL_COL1  = 190;  // largeur colonne longueur
+const _TBL_GAP   = 28;   // espace entre les deux colonnes
+const _TBL_COL2  = 140;  // largeur colonne angle
+const _TBL_PAD   = 16;   // marge interne
+const _TBL_SEP   = 12;   // hauteur séparateur
 
 function _tubeTableDims(nRows, sc) {
   const W = (_TBL_COL1 + _TBL_GAP + _TBL_COL2 + _TBL_PAD * 2) * sc;
   const H = (_TBL_CELL * (nRows + 3) + _TBL_PAD * 2 + _TBL_SEP * 2) * sc;
   return { W, H };
+}
+
+function toggleTubeDefPopup(ev) {
+  ev.stopPropagation();
+  const popup = document.getElementById('tube-def-popup');
+  if (popup.classList.contains('show')) { popup.classList.remove('show'); return; }
+  document.getElementById('tdp-diam').value = (S.tubeDiameter  || 40).toFixed(1);
+  document.getElementById('tdp-rm').value   = (S.tubeBendRadius || 67).toFixed(1);
+  popup.classList.add('show');
+  setTimeout(() => document.getElementById('tdp-diam').select(), 0);
+}
+
+function applyTubeDef() {
+  const d  = parseFloat(document.getElementById('tdp-diam').value);
+  const rm = parseFloat(document.getElementById('tdp-rm').value);
+  if (!isNaN(d)  && d  > 0) { S.tubeDiameter   = d;  }
+  if (!isNaN(rm) && rm > 0) { S.tubeBendRadius = rm; }
+  termPrint('TUBE  Ø' + S.tubeDiameter + '  RM' + S.tubeBendRadius + ' mm', 'success');
+  document.getElementById('tube-def-popup').classList.remove('show');
+  document.getElementById('tube-def-btn').title = 'Ø' + S.tubeDiameter + '  RM' + S.tubeBendRadius;
+  setTimeout(smartFocus, 0);
 }
 
 function drawTubeLabel(e) {
@@ -3745,7 +3900,7 @@ function drawTubeLabel(e) {
   // En-tête D / R
   ctx.fillStyle = '#00d4ff';
   ctx.textAlign = 'left';
-  ctx.fillText('D ' + data.d.toFixed(1) + '   R ' + (data.r > 0 ? data.r : '-'), sx + padPx, ry);
+  ctx.fillText('D ' + data.d.toFixed(1) + '   RM ' + (data.r > 0 ? data.r : '-'), sx + padPx, ry);
   ry += cellPx;
 
   // Séparateur haut
@@ -3847,7 +4002,7 @@ function openTubeEditDialog(ent) {
     </div>
     <div style="display:flex;gap:12px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
       <label style="display:flex;align-items:center;gap:5px;color:var(--text-dim)">Ø&nbsp;<input id="te-d" value="${data.d.toFixed(1)}" style="${inp}">&nbsp;mm</label>
-      <label style="display:flex;align-items:center;gap:5px;color:var(--text-dim)">R&nbsp;<input id="te-r" value="${(data.r || S.tubeBendRadius || 67).toFixed(1)}" style="${inp}">&nbsp;mm</label>
+      <label style="display:flex;align-items:center;gap:5px;color:var(--text-dim)">RM&nbsp;<input id="te-r" value="${(data.r || S.tubeBendRadius || 67).toFixed(1)}" style="${inp}">&nbsp;mm</label>
       <div style="display:flex;gap:3px;margin-left:auto">
         <button id="te-ref-axe" style="${btnBase}background:${activeRef==='axe'?'var(--accent)':'#2a2a3e'};color:${activeRef==='axe'?'#000':'var(--text)'}">AXE</button>
         <button id="te-ref-ext" style="${btnBase}background:${activeRef==='ext'?'var(--accent)':'#2a2a3e'};color:${activeRef==='ext'?'#000':'var(--text)'}">EXT</button>
@@ -5205,10 +5360,12 @@ function drawPreview() {
 
   if (['line','wall','dim_linear','dim_aligned','leader'].includes(tool) && pts.length === 1) {
     let tx=mx, ty=my;
-    if (tool !== 'dim_aligned') [tx,ty] = applyConstraint(pts[0][0],pts[0][1],mx,my);
+    // Mode tangente différée : P1 résolu dynamiquement sur cercle 1
+    const p1 = (tool === 'line' && S._tanFromCircle && S._tanResolvedP1) ? S._tanResolvedP1 : pts[0];
+    if (tool !== 'dim_aligned') [tx,ty] = applyConstraint(p1[0],p1[1],mx,my);
     // Draw polar tracking guide line (dashed green) through the whole canvas
-    if (S.polar && !S.ortho && tool !== 'dim_aligned') drawPolarGuides(pts[0][0],pts[0][1],tx,ty);
-    const [x1,y1]=w2s(pts[0][0],pts[0][1]), [x2,y2]=w2s(tx,ty);
+    if (S.polar && !S.ortho && tool !== 'dim_aligned') drawPolarGuides(p1[0],p1[1],tx,ty);
+    const [x1,y1]=w2s(p1[0],p1[1]), [x2,y2]=w2s(tx,ty);
     ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
     ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
   } else if (tool==='rect' && pts.length===1) {
@@ -6525,6 +6682,7 @@ function confirmDynamicInput() {
 }
 
 function cancelDrawing() {
+  S._tanFromCircle = null; S._tanFromCircleId = null; S._tanResolvedP1 = null;
   if (S.drawing) {
     if (['polyline','cable'].includes(S.tool)) finishPolyline(S.tool);
     else if (S.tool === 'spline') finishSpline();
@@ -7168,12 +7326,33 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
   // Drawing tools (2-point) — WITHOUT dimensions
   if (['line','rect','circle','wall','leader','xline','ray','ray_rev'].includes(tool)) {
     if (!S.drawing) {
+      // Tangente différée : 1er clic sur un cercle avec snap TAN
+      if (tool === 'line' && S.currentOsnap?.type === 'tangent' && S.currentOsnap.entity) {
+        const e = S.currentOsnap.entity;
+        S._tanFromCircle   = { cx: e.cx, cy: e.cy, r: e.r };
+        S._tanFromCircleId = e.id;
+        S._tanResolvedP1   = null;
+        S.drawing = true; S.drawPoints = [[wx, wy]]; S.awaitingInput = true;
+        termPrint('TAN: cercle 1 — cliquez le 2e cercle pour la tangente', 'info');
+        render(); return;
+      }
       S.drawing = true; S.drawPoints = [[wx, wy]]; S.awaitingInput = true;
       termPrint('Point 1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ')', 'info');
       if (tool === 'rect') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
       else if (tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
       else termPrint('Longueur (ex: 150) ou 100<45 ou cliquez le 2ème point', 'warning');
     } else {
+      // Tangente différée : 2e clic avec résolution cercle-à-cercle
+      if (tool === 'line' && S._tanFromCircle && S.currentOsnap?.type === 'tangent' && S._tanResolvedP1) {
+        const p1 = S._tanResolvedP1, p2 = [wx, wy];
+        pushUndo();
+        S.entities.push({ type:'line', id:S.nextId++, layer:S.currentLayer,
+                          x1:p1[0], y1:p1[1], x2:p2[0], y2:p2[1] });
+        termPrint('Tangente tracée — Point suivant (Echap pour terminer)', 'warning');
+        S._tanFromCircle = null; S._tanFromCircleId = null; S._tanResolvedP1 = null;
+        S.drawPoints = [[p2[0], p2[1]]];
+        updateSaveIndicator('modified'); autoSave(); render(); return;
+      }
       let tx = wx, ty = wy;
       if (S.drawPoints.length > 0) [tx, ty] = applyConstraint(S.drawPoints[0][0], S.drawPoints[0][1], wx, wy);
       // Mode diamètre : réduire le rayon de moitié
@@ -7934,13 +8113,17 @@ function lineCircleIntersect(ax1,ay1,ax2,ay2,cx,cy,r) {
   const dx=ax2-ax1,dy=ay2-ay1;
   const fx=ax1-cx,fy=ay1-cy;
   const a=dx*dx+dy*dy; if(a<1e-12) return [];
+  // Test robuste : distance perpendiculaire de C à la droite (pas de soustraction catastrophique)
+  // perpDist² = cross² / a ;  on accepte si perpDist ≤ r + petite tolérance
+  const cross=fx*dy-fy*dx;
+  const tol=0.5; // tolérance géométrique en unités monde
+  if(cross*cross > (r+tol)*(r+tol)*a) return []; // la ligne manque le cercle
   const b=2*(fx*dx+fy*dy), c2=fx*fx+fy*fy-r*r;
-  const disc=b*b-4*a*c2; if(disc<0) return [];
-  const sq=Math.sqrt(Math.max(0,disc));
+  const sq=Math.sqrt(Math.max(0,b*b-4*a*c2));
   const t1=(-b-sq)/(2*a), t2=(-b+sq)/(2*a);
   const res=[];
   if(t1>=-1e-9&&t1<=1+1e-9) res.push({t:t1,x:ax1+t1*dx,y:ay1+t1*dy});
-  if(disc>1e-10&&t2>=-1e-9&&t2<=1+1e-9) res.push({t:t2,x:ax1+t2*dx,y:ay1+t2*dy});
+  if(sq>1e-6&&t2>=-1e-9&&t2<=1+1e-9&&Math.abs(t2-t1)>1e-9) res.push({t:t2,x:ax1+t2*dx,y:ay1+t2*dy});
   return res;
 }
 
@@ -9027,6 +9210,37 @@ function findCircleEntity(wx, wy) {
     if (!S.layers[e.layer]?.visible) continue;
     if (e.type === 'circle' || e.type === 'arc') {
       if (Math.abs(Math.hypot(wx - e.cx, wy - e.cy) - e.r) < tol) return e;
+    }
+    if (e.type === 'tube') {
+      const hit = _findTubeBendArc(e, wx, wy, tol);
+      if (hit) return hit;
+    }
+  }
+  return null;
+}
+
+// Cherche l'arc de coude d'un tube le plus proche du point (wx,wy)
+// Retourne un objet {cx,cy,r} synthétique compatible avec DIMRADIUS/DIMDIAMETER
+function _findTubeBendArc(e, wx, wy, tol) {
+  const tr = e.tubeRadius || 20;
+  let cx = e.startX, cy = e.startY, theta = e.startAngle;
+  for (const seg of e.segments || []) {
+    if (seg.type === 'straight') {
+      cx += seg.length * Math.cos(theta);
+      cy += seg.length * Math.sin(theta);
+    } else if (seg.type === 'bend') {
+      const { angle: phi, bendRadius: R, side } = seg;
+      const bcx = cx - side * R * Math.sin(theta);
+      const bcy = cy + side * R * Math.cos(theta);
+      const dist = Math.hypot(wx - bcx, wy - bcy);
+      // Tester paroi ext (R+tr), axe (R) et paroi int (R-tr)
+      for (const r of [R + tr, R, R - tr]) {
+        if (r > 0 && Math.abs(dist - r) < tol) return { cx: bcx, cy: bcy, r };
+      }
+      const arcEnd = (theta - side * Math.PI / 2) + side * phi;
+      cx = bcx + R * Math.cos(arcEnd);
+      cy = bcy + R * Math.sin(arcEnd);
+      theta += side * phi;
     }
   }
   return null;
@@ -12371,6 +12585,8 @@ function showTBContext(ev) {
 document.addEventListener('click', (ev) => {
   document.getElementById('tb-context').classList.remove('show');
   document.getElementById('canvas-context').classList.remove('show');
+  if (!ev.target.closest('#tube-def-popup') && !ev.target.closest('#tube-def-btn'))
+    document.getElementById('tube-def-popup').classList.remove('show');
   if (!ev.target.closest('.menu-dropdown')) closeMenus();
 });
 

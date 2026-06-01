@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-MiniCAD — Script de build des bibliothèques (+ démo optionnelle)
-=================================================================
+MiniCAD — Script de build des bibliothèques (+ démo optionnelle + déploiement)
+===============================================================================
 Lit les fichiers dans libraries/ et injecte le bloc généré
 entre les marqueurs @@LIB_BEGIN / @@LIB_END dans minicad.html.
 
 Usage:
-    python build.py            # build normal (sans démo)
-    python build.py --demo     # build avec séquence démo injectée
+    python build.py                    # build normal (sans démo)
+    python build.py --demo             # build avec séquence démo injectée
+    python build.py --demo --deploy    # build + upload index.html sur le serveur
 
 Ajouter une famille :
   1. Créer libraries/<nom>.json  (copier ipe.json comme modèle)
@@ -20,6 +21,27 @@ import json
 import os
 import re
 import sys
+
+# ── Paramètres SFTP (lus depuis .env) ────────────────────────────────────────
+def _load_env():
+    env = {}
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+    if not os.path.exists(env_path):
+        return env
+    with open(env_path, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                k, _, v = line.partition('=')
+                env[k.strip()] = v.strip()
+    return env
+
+_env = _load_env()
+SFTP_HOST     = _env.get('SFTP_HOST', '')
+SFTP_PORT     = int(_env.get('SFTP_PORT', 22))
+SFTP_USER     = _env.get('SFTP_USER', '')
+SFTP_PASSWORD = _env.get('SFTP_PASSWORD', '')
+SFTP_REMOTE   = _env.get('SFTP_REMOTE', 'web/index.html')
 
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 HTML_FILE   = os.path.join(BASE_DIR, 'minicad.html')
@@ -269,8 +291,40 @@ def clear_demo_block(html):
     return html
 
 
+def deploy_sftp(local_file):
+    """Upload local_file sur le serveur SFTP en tant qu'index.html."""
+    try:
+        import paramiko
+    except ImportError:
+        sys.exit('Erreur : paramiko non installé — pip install paramiko')
+
+    if not SFTP_HOST or not SFTP_USER or not SFTP_PASSWORD:
+        sys.exit('Erreur : credentials SFTP manquants — créer un fichier .env (voir .env.example)')
+    print(f'  → Connexion SFTP {SFTP_USER}@{SFTP_HOST}:{SFTP_PORT} …')
+    transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
+    try:
+        transport.connect(username=SFTP_USER, password=SFTP_PASSWORD)
+        sftp = paramiko.SFTPClient.from_transport(transport)
+
+        # Supprimer l'index.html existant (ignorer si absent)
+        try:
+            sftp.remove(SFTP_REMOTE)
+            print(f'  ✓ index.html existant supprimé')
+        except FileNotFoundError:
+            pass
+
+        # Uploader le nouveau fichier
+        sftp.put(local_file, SFTP_REMOTE)
+        print(f'  ✓ {os.path.basename(local_file)} → {SFTP_REMOTE}  (déployé)')
+
+        sftp.close()
+    finally:
+        transport.close()
+
+
 def main():
-    with_demo = '--demo' in sys.argv
+    with_demo  = '--demo'   in sys.argv
+    with_deploy = '--deploy' in sys.argv
 
     # ── Vérifications ────────────────────────────────────
     if not os.path.exists(HTML_FILE):
@@ -315,6 +369,12 @@ def main():
         with open(ORG_OUT, 'w', encoding='utf-8') as f:
             f.write(html_org)
 
+    # ── Déploiement SFTP ─────────────────────────────────
+    if with_deploy:
+        if not with_demo:
+            sys.exit('Erreur : --deploy nécessite --demo (minicad_org.html doit exister).')
+        deploy_sftp(ORG_OUT)
+
     # ── Résumé ────────────────────────────────────────────
     n_cats  = len(index['categories'])
     n_fams  = sum(len(c.get('families', [])) for c in index['categories'])
@@ -329,6 +389,8 @@ def main():
     if with_demo:
         print(f'  ✓ démo injectée → minicad_demo.html')
         print(f'  ✓ GTM + cookies injectés → minicad_org.html')
+    if with_deploy:
+        print(f'  ✓ déployé sur {SFTP_HOST} → index.html')
 
 
 if __name__ == '__main__':
