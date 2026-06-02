@@ -414,6 +414,66 @@
   }
   .lm-close-btn:hover { opacity: 0.85; }
 
+  /* ===== CALCULATRICE ===== */
+  #calc-dialog {
+    position: fixed; top: 120px; right: 20px; z-index: 960;
+    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.8); font-family: 'IBM Plex Sans', sans-serif;
+    display: none; flex-direction: column; width: 240px; user-select: none;
+  }
+  .calc-hdr {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px; border-bottom: 1px solid #ffffff18; cursor: move;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
+    letter-spacing: 1px; color: var(--accent);
+  }
+  .calc-hdr-btns { display: flex; gap: 6px; align-items: center; }
+  .calc-mode-btn {
+    background: #0d1525; border: 1px solid #ffffff22; border-radius: 3px;
+    color: #ffffff66; font-size: 9px; font-weight: 700; letter-spacing: .5px;
+    padding: 2px 6px; cursor: pointer; font-family: 'JetBrains Mono', monospace;
+    transition: border-color .15s, color .15s;
+  }
+  .calc-mode-btn.active { border-color: var(--accent); color: var(--accent); }
+  .calc-display {
+    padding: 8px 10px 6px; background: #0d1525; border-bottom: 1px solid #ffffff12;
+  }
+  .calc-expr-line {
+    font-size: 10px; color: #ffffff44; font-family: 'JetBrains Mono', monospace;
+    min-height: 14px; text-align: right; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #calc-result {
+    font-size: 22px; color: var(--text); font-family: 'JetBrains Mono', monospace;
+    text-align: right; padding: 2px 0; cursor: pointer; border-radius: 3px;
+    transition: background .1s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #calc-result:hover { background: #ffffff0d; }
+  #calc-result.calc-error { color: #ff5252; font-size: 14px; }
+  .calc-deg-btn {
+    font-size: 9px; color: #ffab4066; font-family: 'JetBrains Mono', monospace;
+    cursor: pointer; padding: 0; background: none; border: none;
+    letter-spacing: .5px; align-self: flex-end;
+  }
+  .calc-deg-btn.active { color: #ffab40; }
+  .calc-btns { padding: 8px; display: grid; gap: 5px; }
+  .calc-btns.basic  { grid-template-columns: repeat(4, 1fr); }
+  .calc-btns.sci    { grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #ffffff12; margin: 0 8px; padding: 8px 0; }
+  .cb {
+    background: #0d1525; border: 1px solid #ffffff15; border-radius: 4px;
+    color: var(--text); font-size: 13px; font-family: 'JetBrains Mono', monospace;
+    padding: 7px 4px; cursor: pointer; text-align: center;
+    transition: background .1s, border-color .1s;
+  }
+  .cb:hover  { background: #ffffff18; border-color: #ffffff30; }
+  .cb:active { background: #ffffff28; }
+  .cb.op     { color: var(--accent); }
+  .cb.fn     { color: #a0c4ff; font-size: 11px; }
+  .cb.eq     { background: var(--accent); color: #000; font-weight: 700; border-color: var(--accent); }
+  .cb.eq:hover { opacity: .85; }
+  .cb.clr    { color: #ff5252; }
+  .cb.wide   { grid-column: span 2; }
+
   /* ===== ARRAY DIALOG ===== */
   #array-dialog, #polar-array-dialog {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
@@ -1342,6 +1402,14 @@
           <line x1="18" y1="9" x2="18" y2="12"/>
         </svg>
       </button>
+      <button class="tool-btn" id="calc-btn" title="Calculatrice (CALC)" onclick="toggleCalc()">
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="4" y="2" width="16" height="20" rx="2"/>
+          <rect x="7" y="5" width="10" height="4" rx="1"/>
+          <circle cx="8"  cy="14" r="1.2"/><circle cx="12" cy="14" r="1.2"/><circle cx="16" cy="14" r="1.2"/>
+          <circle cx="8"  cy="18" r="1.2"/><circle cx="12" cy="18" r="1.2"/><circle cx="16" cy="18" r="1.2"/>
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -1633,6 +1701,64 @@
   <div class="ar-footer">
     <button class="ar-btn cancel" onclick="closePolarArrayDialog()">Annuler</button>
     <button class="ar-btn ok" onclick="confirmPolarArray()">OK</button>
+  </div>
+</div>
+
+<!-- CALCULATRICE -->
+<div id="calc-dialog">
+  <div class="calc-hdr" id="calc-drag">
+    <span>CALCULATRICE</span>
+    <div class="calc-hdr-btns">
+      <button class="calc-mode-btn" id="calc-sci-btn" onclick="calcToggleSci()" title="Mode scientifique">SCI</button>
+      <button class="calc-deg-btn active" id="calc-deg-btn" onclick="calcToggleDeg()" title="Basculer degrés/radians">DEG</button>
+      <span onclick="toggleCalc()" style="cursor:pointer;opacity:.5;font-size:16px;line-height:1;color:var(--text)">✕</span>
+    </div>
+  </div>
+  <div class="calc-display">
+    <div class="calc-expr-line" id="calc-expr"></div>
+    <div style="display:flex;align-items:baseline;gap:4px">
+      <div id="calc-result" title="Cliquer pour copier">0</div>
+    </div>
+  </div>
+  <!-- Boutons scientifiques (masqués par défaut) -->
+  <div class="calc-btns sci" id="calc-sci-panel" style="display:none">
+    <button class="cb fn" onclick="calcFn('sin(')">sin</button>
+    <button class="cb fn" onclick="calcFn('cos(')">cos</button>
+    <button class="cb fn" onclick="calcFn('tan(')">tan</button>
+    <button class="cb fn op" onclick="calcFn('^')">xʸ</button>
+    <button class="cb fn" onclick="calcFn('asin(')">sin⁻¹</button>
+    <button class="cb fn" onclick="calcFn('acos(')">cos⁻¹</button>
+    <button class="cb fn" onclick="calcFn('atan(')">tan⁻¹</button>
+    <button class="cb fn" onclick="calcFn('sqrt(')">√</button>
+    <button class="cb fn" onclick="calcFn('log(')">log</button>
+    <button class="cb fn" onclick="calcFn('ln(')">ln</button>
+    <button class="cb fn" onclick="calcFn('π')">π</button>
+    <button class="cb fn" onclick="calcFn('e')">e</button>
+  </div>
+  <!-- Boutons de base -->
+  <div class="calc-btns basic">
+    <button class="cb clr" onclick="calcClear()">AC</button>
+    <button class="cb op"  onclick="calcBack()">⌫</button>
+    <button class="cb op"  onclick="calcFn('(')"> ( </button>
+    <button class="cb op"  onclick="calcFn(')')"> ) </button>
+    <button class="cb" onclick="calcFn('7')">7</button>
+    <button class="cb" onclick="calcFn('8')">8</button>
+    <button class="cb" onclick="calcFn('9')">9</button>
+    <button class="cb op" onclick="calcFn('÷')">÷</button>
+    <button class="cb" onclick="calcFn('4')">4</button>
+    <button class="cb" onclick="calcFn('5')">5</button>
+    <button class="cb" onclick="calcFn('6')">6</button>
+    <button class="cb op" onclick="calcFn('×')">×</button>
+    <button class="cb" onclick="calcFn('1')">1</button>
+    <button class="cb" onclick="calcFn('2')">2</button>
+    <button class="cb" onclick="calcFn('3')">3</button>
+    <button class="cb op" onclick="calcFn('-')">−</button>
+    <button class="cb op" onclick="calcFn('%')">%</button>
+    <button class="cb" onclick="calcFn('0')">0</button>
+    <button class="cb" onclick="calcFn('.')">.</button>
+    <button class="cb op" onclick="calcFn('+')">+</button>
+    <button class="cb eq wide" onclick="calcEquals()">=</button>
+    <button class="cb op" onclick="calcCopy()" title="Copier le résultat">⧉</button>
   </div>
 </div>
 
@@ -2930,6 +3056,7 @@ const CMD = {
     termPrint('AREA: Cliquer une entité fermée (cercle/rect/polyligne), ou [P] pour définir un polygone', 'info');
     setTimeout(smartFocus, 0);
   }},
+  CALC: { alias: ['CALCULATRICE','CALCULATOR'], desc: 'Ouvre/ferme la calculatrice', exec() { toggleCalc(); }},
   MESURER: { alias: ['ME','MEASURE','REGLE','RÈGLE'], desc: 'Mesure visuelle entre deux points (réutilisable)', exec() {
     S.measurePt1 = null; S.measureResult = null; setTool('measure');
     termPrint('MESURER: Cliquez le 1er point', 'info');
@@ -10465,6 +10592,161 @@ function openPolarArrayDialog() {
   setTimeout(() => document.getElementById('par-count').focus(), 50);
 }
 
+// ===== CALCULATRICE =====
+(function() {
+  let expr = '';
+  let degMode = true;
+
+  function toRad(x) { return degMode ? x * Math.PI / 180 : x; }
+  function toDeg(x) { return degMode ? x * 180 / Math.PI : x; }
+
+  function calcEval(raw) {
+    if (!raw.trim()) return '';
+    let e = raw
+      .replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').replace(/,/g, '.')
+      .replace(/\^/g, '**')
+      .replace(/π/g, '(' + Math.PI + ')')
+      .replace(/\be\b/g, '(' + Math.E + ')');
+    // Trig avec conversion degrés si activé
+    if (degMode) {
+      e = e
+        .replace(/\basin\s*\(/g,  '(_asin(')
+        .replace(/\bacos\s*\(/g,  '(_acos(')
+        .replace(/\batan\s*\(/g,  '(_atan(')
+        .replace(/\bsin\s*\(/g,   '(_sin(')
+        .replace(/\bcos\s*\(/g,   '(_cos(')
+        .replace(/\btan\s*\(/g,   '(_tan(');
+    } else {
+      e = e
+        .replace(/\basin\s*\(/g, 'Math.asin(')
+        .replace(/\bacos\s*\(/g, 'Math.acos(')
+        .replace(/\batan\s*\(/g, 'Math.atan(')
+        .replace(/\bsin\s*\(/g,  'Math.sin(')
+        .replace(/\bcos\s*\(/g,  'Math.cos(')
+        .replace(/\btan\s*\(/g,  'Math.tan(');
+    }
+    e = e
+      .replace(/\bsqrt\s*\(/g, 'Math.sqrt(')
+      .replace(/√\s*\(/g,      'Math.sqrt(')
+      .replace(/\blog\s*\(/g,  'Math.log10(')
+      .replace(/\bln\s*\(/g,   'Math.log(')
+      .replace(/\babs\s*\(/g,  'Math.abs(')
+      .replace(/%/g, '/100');
+    try {
+      const deg2rad = x => x * Math.PI / 180;
+      const rad2deg = x => x * 180 / Math.PI;
+      const _sin = x => Math.sin(deg2rad(x));
+      const _cos = x => Math.cos(deg2rad(x));
+      const _tan = x => Math.tan(deg2rad(x));
+      const _asin = x => rad2deg(Math.asin(x));
+      const _acos = x => rad2deg(Math.acos(x));
+      const _atan = x => rad2deg(Math.atan(x));
+      const r = Function('"use strict";' +
+        'const _sin='+_sin+',_cos='+_cos+',_tan='+_tan+
+        ',_asin='+_asin+',_acos='+_acos+',_atan='+_atan+
+        ';return (' + e + ')')();
+      if (!isFinite(r) || isNaN(r)) return null;
+      // Formatage : jusqu'à 10 chiffres significatifs, pas de zéros inutiles
+      const abs = Math.abs(r);
+      if (abs === 0) return '0';
+      if (abs >= 1e10 || (abs < 1e-6 && abs > 0)) return r.toExponential(6).replace(/\.?0+e/, 'e');
+      return parseFloat(r.toPrecision(10)).toString();
+    } catch(e) { return null; }
+  }
+
+  function update() {
+    const exprEl = document.getElementById('calc-expr');
+    const resEl  = document.getElementById('calc-result');
+    if (!exprEl || !resEl) return;
+    exprEl.textContent = expr;
+    if (!expr) { resEl.textContent = '0'; resEl.className = ''; return; }
+    const r = calcEval(expr);
+    if (r === null) { resEl.textContent = 'Erreur'; resEl.className = 'calc-error'; }
+    else { resEl.textContent = r; resEl.className = ''; }
+  }
+
+  window.toggleCalc = function() {
+    const dlg = document.getElementById('calc-dialog');
+    const btn = document.getElementById('calc-btn');
+    const vis = dlg.style.display === 'flex';
+    dlg.style.display = vis ? 'none' : 'flex';
+    if (btn) btn.classList.toggle('active', !vis);
+  };
+
+  window.calcFn = function(ch) { expr += ch; update(); };
+
+  window.calcBack = function() { expr = expr.slice(0, -1); update(); };
+
+  window.calcClear = function() { expr = ''; update(); };
+
+  window.calcEquals = function() {
+    const r = calcEval(expr);
+    if (r !== null) { expr = r; update(); }
+  };
+
+  window.calcCopy = function() {
+    const r = document.getElementById('calc-result').textContent;
+    if (r && r !== 'Erreur') navigator.clipboard?.writeText(r).catch(()=>{});
+    termPrint('Copié : ' + r, 'info');
+  };
+
+  window.calcToggleSci = function() {
+    const panel = document.getElementById('calc-sci-panel');
+    const btn   = document.getElementById('calc-sci-btn');
+    const open  = panel.style.display === 'none';
+    panel.style.display = open ? 'grid' : 'none';
+    btn.classList.toggle('active', open);
+    document.getElementById('calc-dialog').style.width = open ? '260px' : '240px';
+  };
+
+  window.calcToggleDeg = function() {
+    degMode = !degMode;
+    document.getElementById('calc-deg-btn').textContent = degMode ? 'DEG' : 'RAD';
+    document.getElementById('calc-deg-btn').classList.toggle('active', degMode);
+    update();
+  };
+
+  // Clic sur le résultat → copier
+  document.addEventListener('DOMContentLoaded', () => {
+    const r = document.getElementById('calc-result');
+    if (r) r.onclick = () => window.calcCopy();
+
+    // Drag
+    const dlg = document.getElementById('calc-dialog');
+    const hdr = document.getElementById('calc-drag');
+    if (dlg && hdr) {
+      let ox = 0, oy = 0, drag = false;
+      hdr.addEventListener('mousedown', ev => {
+        if (ev.button !== 0) return;
+        drag = true;
+        const rc = dlg.getBoundingClientRect();
+        ox = ev.clientX - rc.left; oy = ev.clientY - rc.top;
+        ev.preventDefault();
+      });
+      document.addEventListener('mousemove', ev => {
+        if (!drag) return;
+        dlg.style.left = (ev.clientX - ox) + 'px';
+        dlg.style.top  = (ev.clientY - oy) + 'px';
+        dlg.style.right = 'auto';
+      });
+      document.addEventListener('mouseup', () => { drag = false; });
+    }
+
+    // Clavier dans le dialog
+    const calcDlg = document.getElementById('calc-dialog');
+    if (calcDlg) calcDlg.addEventListener('keydown', ev => {
+      if (calcDlg.style.display !== 'flex') return;
+      ev.stopPropagation();
+      if (ev.key === 'Enter' || ev.key === '=') { window.calcEquals(); return; }
+      if (ev.key === 'Escape') { window.toggleCalc(); return; }
+      if (ev.key === 'Backspace') { window.calcBack(); return; }
+      if (ev.key === 'Delete') { window.calcClear(); return; }
+      // Saisie directe des chiffres et opérateurs
+      if (/^[\d\.\+\-\*\/\(\)\^%]$/.test(ev.key)) { expr += ev.key; update(); }
+    });
+  });
+})();
+
 function closePolarArrayDialog() {
   document.getElementById('polar-array-dialog').style.display = 'none';
   S.polarArrayPreview = null;
@@ -15792,6 +16074,793 @@ const MINICAD_LIB = {
         "\u00d8394.0x50.00": {"D": 394.0, "t": 50.0, "d": 294.0, "m": 424.0},
         "\u00d8394.0x60.00": {"D": 394.0, "t": 60.0, "d": 274.0, "m": 494.0},
         "\u00d8394.0x70.00": {"D": 394.0, "t": 70.0, "d": 254.0, "m": 559.0}
+      } },
+        { name: "Tubes de pr\u00e9cision sans soudure, \u00e9tir\u00e9 \u00e0 froid", draw: "drawProfileTUBEROND", standard: "DIN 2391 / A resp. EN 10305-1", family: "TUBE_SANS_SOUDURE", data: {
+        "\u00d84.0x0.50": {"D": 4.0, "t": 0.5, "d": 3.0, "m": 0.04},
+        "\u00d84.0x1.00": {"D": 4.0, "t": 1.0, "d": 2.0, "m": 0.07},
+        "\u00d84.0x1.25": {"D": 4.0, "t": 1.25, "d": 1.5, "m": 0.09},
+        "\u00d85.0x0.50": {"D": 5.0, "t": 0.5, "d": 4.0, "m": 0.06},
+        "\u00d85.0x0.80": {"D": 5.0, "t": 0.8, "d": 3.4, "m": 0.08},
+        "\u00d85.0x1.00": {"D": 5.0, "t": 1.0, "d": 3.0, "m": 0.1},
+        "\u00d85.0x1.25": {"D": 5.0, "t": 1.25, "d": 2.5, "m": 0.12},
+        "\u00d85.0x1.50": {"D": 5.0, "t": 1.5, "d": 2.0, "m": 0.13},
+        "\u00d85.0x1.75": {"D": 5.0, "t": 1.75, "d": 1.5, "m": 0.14},
+        "\u00d86.0x0.50": {"D": 6.0, "t": 0.5, "d": 5.0, "m": 0.07},
+        "\u00d86.0x0.80": {"D": 6.0, "t": 0.8, "d": 4.4, "m": 0.1},
+        "\u00d86.0x1.00": {"D": 6.0, "t": 1.0, "d": 4.0, "m": 0.12},
+        "\u00d86.0x1.50": {"D": 6.0, "t": 1.5, "d": 3.0, "m": 0.17},
+        "\u00d86.0x2.00": {"D": 6.0, "t": 2.0, "d": 2.0, "m": 0.2},
+        "\u00d87.0x0.80": {"D": 7.0, "t": 0.8, "d": 5.4, "m": 0.12},
+        "\u00d87.0x1.00": {"D": 7.0, "t": 1.0, "d": 5.0, "m": 0.15},
+        "\u00d87.0x1.50": {"D": 7.0, "t": 1.5, "d": 4.0, "m": 0.2},
+        "\u00d87.0x2.00": {"D": 7.0, "t": 2.0, "d": 3.0, "m": 0.25},
+        "\u00d87.0x2.50": {"D": 7.0, "t": 2.5, "d": 2.0, "m": 0.28},
+        "\u00d88.0x0.50": {"D": 8.0, "t": 0.5, "d": 7.0, "m": 0.09},
+        "\u00d88.0x0.80": {"D": 8.0, "t": 0.8, "d": 6.4, "m": 0.14},
+        "\u00d88.0x1.00": {"D": 8.0, "t": 1.0, "d": 6.0, "m": 0.17},
+        "\u00d88.0x1.20": {"D": 8.0, "t": 1.2, "d": 5.6, "m": 0.2},
+        "\u00d88.0x1.50": {"D": 8.0, "t": 1.5, "d": 5.0, "m": 0.24},
+        "\u00d88.0x2.00": {"D": 8.0, "t": 2.0, "d": 4.0, "m": 0.3},
+        "\u00d88.0x2.50": {"D": 8.0, "t": 2.5, "d": 3.0, "m": 0.34},
+        "\u00d88.0x3.00": {"D": 8.0, "t": 3.0, "d": 2.0, "m": 0.37},
+        "\u00d89.0x0.50": {"D": 9.0, "t": 0.5, "d": 8.0, "m": 0.11},
+        "\u00d89.0x1.00": {"D": 9.0, "t": 1.0, "d": 7.0, "m": 0.2},
+        "\u00d89.0x1.20": {"D": 9.0, "t": 1.2, "d": 6.6, "m": 0.23},
+        "\u00d89.0x1.50": {"D": 9.0, "t": 1.5, "d": 6.0, "m": 0.28},
+        "\u00d89.0x2.00": {"D": 9.0, "t": 2.0, "d": 5.0, "m": 0.35},
+        "\u00d89.0x2.50": {"D": 9.0, "t": 2.5, "d": 4.0, "m": 0.4},
+        "\u00d810.0x0.50": {"D": 10.0, "t": 0.5, "d": 9.0, "m": 0.12},
+        "\u00d810.0x0.80": {"D": 10.0, "t": 0.8, "d": 8.4, "m": 0.18},
+        "\u00d810.0x1.00": {"D": 10.0, "t": 1.0, "d": 8.0, "m": 0.22},
+        "\u00d810.0x1.20": {"D": 10.0, "t": 1.2, "d": 7.6, "m": 0.26},
+        "\u00d810.0x1.50": {"D": 10.0, "t": 1.5, "d": 7.0, "m": 0.31},
+        "\u00d810.0x2.00": {"D": 10.0, "t": 2.0, "d": 6.0, "m": 0.4},
+        "\u00d810.0x2.50": {"D": 10.0, "t": 2.5, "d": 5.0, "m": 0.46},
+        "\u00d810.0x3.00": {"D": 10.0, "t": 3.0, "d": 4.0, "m": 0.52},
+        "\u00d810.0x3.50": {"D": 10.0, "t": 3.5, "d": 3.0, "m": 0.56},
+        "\u00d811.0x0.50": {"D": 11.0, "t": 0.5, "d": 10.0, "m": 0.13},
+        "\u00d811.0x1.00": {"D": 11.0, "t": 1.0, "d": 9.0, "m": 0.25},
+        "\u00d811.0x1.20": {"D": 11.0, "t": 1.2, "d": 8.6, "m": 0.29},
+        "\u00d811.0x1.50": {"D": 11.0, "t": 1.5, "d": 8.0, "m": 0.35},
+        "\u00d811.0x2.00": {"D": 11.0, "t": 2.0, "d": 7.0, "m": 0.44},
+        "\u00d811.0x2.50": {"D": 11.0, "t": 2.5, "d": 6.0, "m": 0.52},
+        "\u00d811.0x3.00": {"D": 11.0, "t": 3.0, "d": 5.0, "m": 0.59},
+        "\u00d812.0x1.00": {"D": 12.0, "t": 1.0, "d": 10.0, "m": 0.27},
+        "\u00d812.0x1.20": {"D": 12.0, "t": 1.2, "d": 9.6, "m": 0.32},
+        "\u00d812.0x1.50": {"D": 12.0, "t": 1.5, "d": 9.0, "m": 0.39},
+        "\u00d812.0x2.00": {"D": 12.0, "t": 2.0, "d": 8.0, "m": 0.49},
+        "\u00d812.0x2.50": {"D": 12.0, "t": 2.5, "d": 7.0, "m": 0.59},
+        "\u00d812.0x3.00": {"D": 12.0, "t": 3.0, "d": 6.0, "m": 0.67},
+        "\u00d812.0x3.50": {"D": 12.0, "t": 3.5, "d": 5.0, "m": 0.73},
+        "\u00d812.0x4.00": {"D": 12.0, "t": 4.0, "d": 4.0, "m": 0.79},
+        "\u00d813.0x1.00": {"D": 13.0, "t": 1.0, "d": 11.0, "m": 0.3},
+        "\u00d813.0x1.20": {"D": 13.0, "t": 1.2, "d": 10.6, "m": 0.35},
+        "\u00d813.0x1.50": {"D": 13.0, "t": 1.5, "d": 10.0, "m": 0.43},
+        "\u00d813.0x2.00": {"D": 13.0, "t": 2.0, "d": 9.0, "m": 0.54},
+        "\u00d813.0x2.50": {"D": 13.0, "t": 2.5, "d": 8.0, "m": 0.65},
+        "\u00d813.0x3.00": {"D": 13.0, "t": 3.0, "d": 7.0, "m": 0.74},
+        "\u00d813.0x3.50": {"D": 13.0, "t": 3.5, "d": 6.0, "m": 0.82},
+        "\u00d813.0x4.00": {"D": 13.0, "t": 4.0, "d": 5.0, "m": 0.89},
+        "\u00d814.0x1.00": {"D": 14.0, "t": 1.0, "d": 12.0, "m": 0.32},
+        "\u00d81.5x11.00": {"D": 1.5, "t": 11.0, "d": 0.46, "m": 1.0},
+        "\u00d81.5x1.75": {"D": 1.5, "t": 1.75, "d": 10.5, "m": 0.53},
+        "\u00d81.5x2.00": {"D": 1.5, "t": 2.0, "d": 10.0, "m": 0.59},
+        "\u00d81.5x2.50": {"D": 1.5, "t": 2.5, "d": 9.0, "m": 0.71},
+        "\u00d81.5x3.00": {"D": 1.5, "t": 3.0, "d": 8.0, "m": 0.81},
+        "\u00d81.5x3.50": {"D": 1.5, "t": 3.5, "d": 7.0, "m": 0.91},
+        "\u00d81.5x4.00": {"D": 1.5, "t": 4.0, "d": 6.0, "m": 0.99},
+        "\u00d81.5x4.50": {"D": 1.5, "t": 4.5, "d": 5.0, "m": 1.05},
+        "\u00d81.5x5.00": {"D": 1.5, "t": 5.0, "d": 4.0, "m": 1.11},
+        "\u00d814.5x2.00": {"D": 14.5, "t": 2.0, "d": 10.5, "m": 0.62},
+        "\u00d815.0x1.00": {"D": 15.0, "t": 1.0, "d": 13.0, "m": 0.35},
+        "\u00d815.0x1.20": {"D": 15.0, "t": 1.2, "d": 12.6, "m": 0.41},
+        "\u00d815.0x1.50": {"D": 15.0, "t": 1.5, "d": 12.0, "m": 0.5},
+        "\u00d815.0x2.00": {"D": 15.0, "t": 2.0, "d": 11.0, "m": 0.64},
+        "\u00d815.0x2.50": {"D": 15.0, "t": 2.5, "d": 10.0, "m": 0.77},
+        "\u00d815.0x3.00": {"D": 15.0, "t": 3.0, "d": 9.0, "m": 0.89},
+        "\u00d815.0x3.50": {"D": 15.0, "t": 3.5, "d": 8.0, "m": 0.99},
+        "\u00d815.0x4.00": {"D": 15.0, "t": 4.0, "d": 7.0, "m": 1.09},
+        "\u00d815.0x4.50": {"D": 15.0, "t": 4.5, "d": 6.0, "m": 1.17},
+        "\u00d815.0x5.00": {"D": 15.0, "t": 5.0, "d": 5.0, "m": 1.23},
+        "\u00d816.0x1.00": {"D": 16.0, "t": 1.0, "d": 14.0, "m": 0.37},
+        "\u00d816.0x1.50": {"D": 16.0, "t": 1.5, "d": 13.0, "m": 0.54},
+        "\u00d816.0x1.80": {"D": 16.0, "t": 1.8, "d": 12.4, "m": 0.63},
+        "\u00d816.0x2.00": {"D": 16.0, "t": 2.0, "d": 12.0, "m": 0.69},
+        "\u00d816.0x2.50": {"D": 16.0, "t": 2.5, "d": 11.0, "m": 0.83},
+        "\u00d816.0x3.00": {"D": 16.0, "t": 3.0, "d": 10.0, "m": 0.96},
+        "\u00d816.0x3.50": {"D": 16.0, "t": 3.5, "d": 9.0, "m": 1.08},
+        "\u00d816.0x4.00": {"D": 16.0, "t": 4.0, "d": 8.0, "m": 1.18},
+        "\u00d816.0x4.50": {"D": 16.0, "t": 4.5, "d": 7.0, "m": 1.28},
+        "\u00d816.0x5.00": {"D": 16.0, "t": 5.0, "d": 6.0, "m": 1.36},
+        "\u00d816.5x3.00": {"D": 16.5, "t": 3.0, "d": 10.5, "m": 1.0},
+        "\u00d817.0x1.00": {"D": 17.0, "t": 1.0, "d": 15.0, "m": 0.4},
+        "\u00d817.0x1.50": {"D": 17.0, "t": 1.5, "d": 14.0, "m": 0.57},
+        "\u00d817.0x2.00": {"D": 17.0, "t": 2.0, "d": 13.0, "m": 0.74},
+        "\u00d817.0x2.50": {"D": 17.0, "t": 2.5, "d": 12.0, "m": 0.89},
+        "\u00d817.0x3.00": {"D": 17.0, "t": 3.0, "d": 11.0, "m": 1.04},
+        "\u00d817.0x3.50": {"D": 17.0, "t": 3.5, "d": 10.0, "m": 1.17},
+        "\u00d817.0x4.00": {"D": 17.0, "t": 4.0, "d": 9.0, "m": 1.28},
+        "\u00d817.0x5.00": {"D": 17.0, "t": 5.0, "d": 7.0, "m": 1.48},
+        "\u00d818.0x1.00": {"D": 18.0, "t": 1.0, "d": 16.0, "m": 0.42},
+        "\u00d818.0x1.20": {"D": 18.0, "t": 1.2, "d": 15.6, "m": 0.5},
+        "\u00d818.0x1.50": {"D": 18.0, "t": 1.5, "d": 15.0, "m": 0.61},
+        "\u00d818.0x2.00": {"D": 18.0, "t": 2.0, "d": 14.0, "m": 0.79},
+        "\u00d818.0x2.50": {"D": 18.0, "t": 2.5, "d": 13.0, "m": 0.96},
+        "\u00d818.0x3.00": {"D": 18.0, "t": 3.0, "d": 12.0, "m": 1.11},
+        "\u00d818.0x3.50": {"D": 18.0, "t": 3.5, "d": 11.0, "m": 1.25},
+        "\u00d818.0x4.00": {"D": 18.0, "t": 4.0, "d": 10.0, "m": 1.38},
+        "\u00d818.0x4.50": {"D": 18.0, "t": 4.5, "d": 9.0, "m": 1.5},
+        "\u00d818.0x5.00": {"D": 18.0, "t": 5.0, "d": 8.0, "m": 1.6},
+        "\u00d818.0x6.00": {"D": 18.0, "t": 6.0, "d": 6.0, "m": 1.78},
+        "\u00d819.0x1.00": {"D": 19.0, "t": 1.0, "d": 17.0, "m": 0.44},
+        "\u00d819.0x1.50": {"D": 19.0, "t": 1.5, "d": 16.0, "m": 0.65},
+        "\u00d819.0x2.00": {"D": 19.0, "t": 2.0, "d": 15.0, "m": 0.84},
+        "\u00d819.0x2.50": {"D": 19.0, "t": 2.5, "d": 14.0, "m": 1.02},
+        "\u00d819.0x3.00": {"D": 19.0, "t": 3.0, "d": 13.0, "m": 1.18},
+        "\u00d819.0x3.50": {"D": 19.0, "t": 3.5, "d": 12.0, "m": 1.34},
+        "\u00d819.0x4.50": {"D": 19.0, "t": 4.5, "d": 10.0, "m": 1.61},
+        "\u00d820.0x1.00": {"D": 20.0, "t": 1.0, "d": 18.0, "m": 0.47},
+        "\u00d820.0x1.20": {"D": 20.0, "t": 1.2, "d": 17.6, "m": 0.56},
+        "\u00d820.0x1.50": {"D": 20.0, "t": 1.5, "d": 17.0, "m": 0.68},
+        "\u00d820.0x2.00": {"D": 20.0, "t": 2.0, "d": 16.0, "m": 0.89},
+        "\u00d820.0x2.50": {"D": 20.0, "t": 2.5, "d": 15.0, "m": 1.08},
+        "\u00d820.0x3.00": {"D": 20.0, "t": 3.0, "d": 14.0, "m": 1.26},
+        "\u00d820.0x3.50": {"D": 20.0, "t": 3.5, "d": 13.0, "m": 1.42},
+        "\u00d820.0x4.00": {"D": 20.0, "t": 4.0, "d": 12.0, "m": 1.58},
+        "\u00d820.0x4.50": {"D": 20.0, "t": 4.5, "d": 11.0, "m": 1.72},
+        "\u00d820.0x5.00": {"D": 20.0, "t": 5.0, "d": 10.0, "m": 1.85},
+        "\u00d820.0x5.50": {"D": 20.0, "t": 5.5, "d": 9.0, "m": 1.97},
+        "\u00d820.0x6.00": {"D": 20.0, "t": 6.0, "d": 8.0, "m": 2.07},
+        "\u00d820.0x6.50": {"D": 20.0, "t": 6.5, "d": 7.0, "m": 2.16},
+        "\u00d821.0x1.00": {"D": 21.0, "t": 1.0, "d": 19.0, "m": 0.49},
+        "\u00d821.0x1.50": {"D": 21.0, "t": 1.5, "d": 18.0, "m": 0.72},
+        "\u00d821.0x2.00": {"D": 21.0, "t": 2.0, "d": 17.0, "m": 0.94},
+        "\u00d821.0x2.50": {"D": 21.0, "t": 2.5, "d": 16.0, "m": 1.14},
+        "\u00d821.0x3.00": {"D": 21.0, "t": 3.0, "d": 15.0, "m": 1.33},
+        "\u00d821.0x3.50": {"D": 21.0, "t": 3.5, "d": 14.0, "m": 1.51},
+        "\u00d821.0x4.00": {"D": 21.0, "t": 4.0, "d": 13.0, "m": 1.68},
+        "\u00d821.0x4.50": {"D": 21.0, "t": 4.5, "d": 12.0, "m": 1.83},
+        "\u00d822.0x0.80": {"D": 22.0, "t": 0.8, "d": 20.4, "m": 0.42},
+        "\u00d822.0x1.00": {"D": 22.0, "t": 1.0, "d": 20.0, "m": 0.52},
+        "\u00d822.0x1.20": {"D": 22.0, "t": 1.2, "d": 19.6, "m": 0.62},
+        "\u00d822.0x1.50": {"D": 22.0, "t": 1.5, "d": 19.0, "m": 0.76},
+        "\u00d822.0x2.00": {"D": 22.0, "t": 2.0, "d": 18.0, "m": 0.99},
+        "\u00d822.0x2.50": {"D": 22.0, "t": 2.5, "d": 17.0, "m": 1.2},
+        "\u00d822.0x3.00": {"D": 22.0, "t": 3.0, "d": 16.0, "m": 1.41},
+        "\u00d822.0x3.50": {"D": 22.0, "t": 3.5, "d": 15.0, "m": 1.6},
+        "\u00d822.0x4.00": {"D": 22.0, "t": 4.0, "d": 14.0, "m": 1.78},
+        "\u00d822.0x4.50": {"D": 22.0, "t": 4.5, "d": 13.0, "m": 1.94},
+        "\u00d822.0x5.00": {"D": 22.0, "t": 5.0, "d": 12.0, "m": 2.1},
+        "\u00d822.0x5.50": {"D": 22.0, "t": 5.5, "d": 11.0, "m": 2.24},
+        "\u00d822.0x6.00": {"D": 22.0, "t": 6.0, "d": 10.0, "m": 2.37},
+        "\u00d822.0x6.50": {"D": 22.0, "t": 6.5, "d": 9.0, "m": 2.49},
+        "\u00d822.0x7.00": {"D": 22.0, "t": 7.0, "d": 8.0, "m": 2.59},
+        "\u00d823.0x1.00": {"D": 23.0, "t": 1.0, "d": 21.0, "m": 0.54},
+        "\u00d823.0x1.50": {"D": 23.0, "t": 1.5, "d": 20.0, "m": 0.8},
+        "\u00d823.0x2.00": {"D": 23.0, "t": 2.0, "d": 19.0, "m": 1.04},
+        "\u00d823.0x2.50": {"D": 23.0, "t": 2.5, "d": 18.0, "m": 1.26},
+        "\u00d823.0x3.00": {"D": 23.0, "t": 3.0, "d": 17.0, "m": 1.48},
+        "\u00d823.0x3.50": {"D": 23.0, "t": 3.5, "d": 16.0, "m": 1.68},
+        "\u00d823.0x4.00": {"D": 23.0, "t": 4.0, "d": 15.0, "m": 1.87},
+        "\u00d823.0x5.00": {"D": 23.0, "t": 5.0, "d": 13.0, "m": 2.22},
+        "\u00d824.0x1.00": {"D": 24.0, "t": 1.0, "d": 22.0, "m": 0.57},
+        "\u00d824.0x1.50": {"D": 24.0, "t": 1.5, "d": 21.0, "m": 0.83},
+        "\u00d824.0x2.00": {"D": 24.0, "t": 2.0, "d": 20.0, "m": 1.09},
+        "\u00d824.0x2.50": {"D": 24.0, "t": 2.5, "d": 19.0, "m": 1.33},
+        "\u00d824.0x3.00": {"D": 24.0, "t": 3.0, "d": 18.0, "m": 1.55},
+        "\u00d824.0x3.50": {"D": 24.0, "t": 3.5, "d": 17.0, "m": 1.77},
+        "\u00d824.0x4.00": {"D": 24.0, "t": 4.0, "d": 16.0, "m": 1.97},
+        "\u00d824.0x4.50": {"D": 24.0, "t": 4.5, "d": 15.0, "m": 2.16},
+        "\u00d824.0x5.00": {"D": 24.0, "t": 5.0, "d": 14.0, "m": 2.34},
+        "\u00d824.0x6.00": {"D": 24.0, "t": 6.0, "d": 12.0, "m": 2.66},
+        "\u00d824.0x7.00": {"D": 24.0, "t": 7.0, "d": 10.0, "m": 2.94},
+        "\u00d825.0x1.00": {"D": 25.0, "t": 1.0, "d": 23.0, "m": 0.59},
+        "\u00d825.0x1.20": {"D": 25.0, "t": 1.2, "d": 22.6, "m": 0.7},
+        "\u00d825.0x1.50": {"D": 25.0, "t": 1.5, "d": 22.0, "m": 0.87},
+        "\u00d825.0x2.00": {"D": 25.0, "t": 2.0, "d": 21.0, "m": 1.13},
+        "\u00d825.0x2.50": {"D": 25.0, "t": 2.5, "d": 20.0, "m": 1.39},
+        "\u00d825.0x3.00": {"D": 25.0, "t": 3.0, "d": 19.0, "m": 1.63},
+        "\u00d825.0x3.50": {"D": 25.0, "t": 3.5, "d": 18.0, "m": 1.86},
+        "\u00d825.0x4.00": {"D": 25.0, "t": 4.0, "d": 17.0, "m": 2.07},
+        "\u00d825.0x4.50": {"D": 25.0, "t": 4.5, "d": 16.0, "m": 2.28},
+        "\u00d825.0x5.00": {"D": 25.0, "t": 5.0, "d": 15.0, "m": 2.47},
+        "\u00d825.0x5.50": {"D": 25.0, "t": 5.5, "d": 14.0, "m": 2.65},
+        "\u00d825.0x6.00": {"D": 25.0, "t": 6.0, "d": 13.0, "m": 2.81},
+        "\u00d825.0x6.50": {"D": 25.0, "t": 6.5, "d": 12.0, "m": 2.97},
+        "\u00d825.0x7.00": {"D": 25.0, "t": 7.0, "d": 11.0, "m": 3.11},
+        "\u00d825.0x7.50": {"D": 25.0, "t": 7.5, "d": 10.0, "m": 3.24},
+        "\u00d825.0x8.00": {"D": 25.0, "t": 8.0, "d": 9.0, "m": 3.35},
+        "\u00d825.0x8.50": {"D": 25.0, "t": 8.5, "d": 8.0, "m": 3.46},
+        "\u00d825.4x2.00": {"D": 25.4, "t": 2.0, "d": 21.4, "m": 1.15},
+        "\u00d825.4x2.50": {"D": 25.4, "t": 2.5, "d": 20.4, "m": 1.41},
+        "\u00d826.0x1.00": {"D": 26.0, "t": 1.0, "d": 24.0, "m": 0.62},
+        "\u00d826.0x1.50": {"D": 26.0, "t": 1.5, "d": 23.0, "m": 0.91},
+        "\u00d826.0x2.00": {"D": 26.0, "t": 2.0, "d": 22.0, "m": 1.18},
+        "\u00d826.0x2.50": {"D": 26.0, "t": 2.5, "d": 21.0, "m": 1.45},
+        "\u00d826.0x3.00": {"D": 26.0, "t": 3.0, "d": 20.0, "m": 1.7},
+        "\u00d826.0x3.50": {"D": 26.0, "t": 3.5, "d": 19.0, "m": 1.94},
+        "\u00d826.0x4.00": {"D": 26.0, "t": 4.0, "d": 18.0, "m": 2.17},
+        "\u00d826.0x4.50": {"D": 26.0, "t": 4.5, "d": 17.0, "m": 2.39},
+        "\u00d826.0x5.00": {"D": 26.0, "t": 5.0, "d": 16.0, "m": 2.59},
+        "\u00d826.0x5.50": {"D": 26.0, "t": 5.5, "d": 15.0, "m": 2.78},
+        "\u00d826.0x6.00": {"D": 26.0, "t": 6.0, "d": 14.0, "m": 2.96},
+        "\u00d826.0x6.50": {"D": 26.0, "t": 6.5, "d": 13.0, "m": 3.13},
+        "\u00d826.0x7.00": {"D": 26.0, "t": 7.0, "d": 12.0, "m": 3.28},
+        "\u00d826.0x8.00": {"D": 26.0, "t": 8.0, "d": 10.0, "m": 3.55},
+        "\u00d827.0x1.00": {"D": 27.0, "t": 1.0, "d": 25.0, "m": 0.64},
+        "\u00d827.0x1.50": {"D": 27.0, "t": 1.5, "d": 24.0, "m": 0.94},
+        "\u00d827.0x2.00": {"D": 27.0, "t": 2.0, "d": 23.0, "m": 1.23},
+        "\u00d827.0x2.50": {"D": 27.0, "t": 2.5, "d": 22.0, "m": 1.51},
+        "\u00d827.0x3.00": {"D": 27.0, "t": 3.0, "d": 21.0, "m": 1.78},
+        "\u00d827.0x3.50": {"D": 27.0, "t": 3.5, "d": 20.0, "m": 2.03},
+        "\u00d827.0x4.00": {"D": 27.0, "t": 4.0, "d": 19.0, "m": 2.27},
+        "\u00d827.0x4.50": {"D": 27.0, "t": 4.5, "d": 18.0, "m": 2.5},
+        "\u00d827.0x5.00": {"D": 27.0, "t": 5.0, "d": 17.0, "m": 2.71},
+        "\u00d827.0x6.00": {"D": 27.0, "t": 6.0, "d": 15.0, "m": 3.11},
+        "\u00d828.0x1.00": {"D": 28.0, "t": 1.0, "d": 26.0, "m": 0.67},
+        "\u00d828.0x1.50": {"D": 28.0, "t": 1.5, "d": 25.0, "m": 0.98},
+        "\u00d828.0x2.00": {"D": 28.0, "t": 2.0, "d": 24.0, "m": 1.28},
+        "\u00d828.0x2.50": {"D": 28.0, "t": 2.5, "d": 23.0, "m": 1.57},
+        "\u00d828.0x3.00": {"D": 28.0, "t": 3.0, "d": 22.0, "m": 1.85},
+        "\u00d828.0x3.50": {"D": 28.0, "t": 3.5, "d": 21.0, "m": 2.12},
+        "\u00d828.0x4.00": {"D": 28.0, "t": 4.0, "d": 20.0, "m": 2.37},
+        "\u00d828.0x4.50": {"D": 28.0, "t": 4.5, "d": 19.0, "m": 2.61},
+        "\u00d828.0x5.00": {"D": 28.0, "t": 5.0, "d": 18.0, "m": 2.84},
+        "\u00d828.0x5.50": {"D": 28.0, "t": 5.5, "d": 17.0, "m": 3.05},
+        "\u00d828.0x6.00": {"D": 28.0, "t": 6.0, "d": 16.0, "m": 3.26},
+        "\u00d828.0x7.00": {"D": 28.0, "t": 7.0, "d": 14.0, "m": 3.63},
+        "\u00d829.0x1.00": {"D": 29.0, "t": 1.0, "d": 27.0, "m": 0.69},
+        "\u00d829.0x1.50": {"D": 29.0, "t": 1.5, "d": 26.0, "m": 1.02},
+        "\u00d829.0x2.00": {"D": 29.0, "t": 2.0, "d": 25.0, "m": 1.33},
+        "\u00d829.0x2.50": {"D": 29.0, "t": 2.5, "d": 24.0, "m": 1.63},
+        "\u00d829.0x3.00": {"D": 29.0, "t": 3.0, "d": 23.0, "m": 1.92},
+        "\u00d829.0x3.50": {"D": 29.0, "t": 3.5, "d": 22.0, "m": 2.2},
+        "\u00d829.0x4.00": {"D": 29.0, "t": 4.0, "d": 21.0, "m": 2.47},
+        "\u00d830.0x1.00": {"D": 30.0, "t": 1.0, "d": 28.0, "m": 0.72},
+        "\u00d830.0x1.50": {"D": 30.0, "t": 1.5, "d": 27.0, "m": 1.05},
+        "\u00d830.0x2.00": {"D": 30.0, "t": 2.0, "d": 26.0, "m": 1.38},
+        "\u00d830.0x2.50": {"D": 30.0, "t": 2.5, "d": 25.0, "m": 1.7},
+        "\u00d830.0x3.00": {"D": 30.0, "t": 3.0, "d": 24.0, "m": 2.0},
+        "\u00d830.0x3.50": {"D": 30.0, "t": 3.5, "d": 23.0, "m": 2.29},
+        "\u00d830.0x4.00": {"D": 30.0, "t": 4.0, "d": 22.0, "m": 2.57},
+        "\u00d830.0x4.50": {"D": 30.0, "t": 4.5, "d": 21.0, "m": 2.83},
+        "\u00d830.0x5.00": {"D": 30.0, "t": 5.0, "d": 20.0, "m": 3.08},
+        "\u00d830.0x5.50": {"D": 30.0, "t": 5.5, "d": 19.0, "m": 3.32},
+        "\u00d830.0x6.00": {"D": 30.0, "t": 6.0, "d": 18.0, "m": 3.55},
+        "\u00d830.0x6.50": {"D": 30.0, "t": 6.5, "d": 17.0, "m": 3.77},
+        "\u00d830.0x7.00": {"D": 30.0, "t": 7.0, "d": 16.0, "m": 3.97},
+        "\u00d830.0x7.50": {"D": 30.0, "t": 7.5, "d": 15.0, "m": 4.16},
+        "\u00d830.0x8.00": {"D": 30.0, "t": 8.0, "d": 14.0, "m": 4.34},
+        "\u00d830.0x9.00": {"D": 30.0, "t": 9.0, "d": 12.0, "m": 4.66},
+        "\u00d830.0x10.00": {"D": 30.0, "t": 10.0, "d": 10.0, "m": 4.93},
+        "\u00d831.0x1.00": {"D": 31.0, "t": 1.0, "d": 29.0, "m": 0.74},
+        "\u00d831.0x1.50": {"D": 31.0, "t": 1.5, "d": 28.0, "m": 1.09},
+        "\u00d831.0x2.00": {"D": 31.0, "t": 2.0, "d": 27.0, "m": 1.43},
+        "\u00d831.0x2.50": {"D": 31.0, "t": 2.5, "d": 26.0, "m": 1.76},
+        "\u00d831.0x3.00": {"D": 31.0, "t": 3.0, "d": 25.0, "m": 2.07},
+        "\u00d832.0x1.00": {"D": 32.0, "t": 1.0, "d": 30.0, "m": 0.77},
+        "\u00d832.0x1.50": {"D": 32.0, "t": 1.5, "d": 29.0, "m": 1.13},
+        "\u00d832.0x2.00": {"D": 32.0, "t": 2.0, "d": 28.0, "m": 1.48},
+        "\u00d832.0x2.50": {"D": 32.0, "t": 2.5, "d": 27.0, "m": 1.82},
+        "\u00d832.0x3.00": {"D": 32.0, "t": 3.0, "d": 26.0, "m": 2.15},
+        "\u00d832.0x3.50": {"D": 32.0, "t": 3.5, "d": 25.0, "m": 2.46},
+        "\u00d832.0x4.00": {"D": 32.0, "t": 4.0, "d": 24.0, "m": 2.76},
+        "\u00d832.0x4.50": {"D": 32.0, "t": 4.5, "d": 23.0, "m": 3.05},
+        "\u00d832.0x5.00": {"D": 32.0, "t": 5.0, "d": 22.0, "m": 3.33},
+        "\u00d832.0x5.50": {"D": 32.0, "t": 5.5, "d": 21.0, "m": 3.59},
+        "\u00d832.0x6.00": {"D": 32.0, "t": 6.0, "d": 20.0, "m": 3.85},
+        "\u00d832.0x7.00": {"D": 32.0, "t": 7.0, "d": 18.0, "m": 4.32},
+        "\u00d832.0x8.00": {"D": 32.0, "t": 8.0, "d": 16.0, "m": 4.74},
+        "\u00d832.0x10.00": {"D": 32.0, "t": 10.0, "d": 12.0, "m": 5.43},
+        "\u00d833.0x1.00": {"D": 33.0, "t": 1.0, "d": 31.0, "m": 0.79},
+        "\u00d833.0x1.50": {"D": 33.0, "t": 1.5, "d": 30.0, "m": 1.17},
+        "\u00d833.0x2.00": {"D": 33.0, "t": 2.0, "d": 29.0, "m": 1.53},
+        "\u00d833.0x2.50": {"D": 33.0, "t": 2.5, "d": 28.0, "m": 1.88},
+        "\u00d833.0x3.00": {"D": 33.0, "t": 3.0, "d": 27.0, "m": 2.22},
+        "\u00d833.0x3.50": {"D": 33.0, "t": 3.5, "d": 26.0, "m": 2.55},
+        "\u00d833.0x4.00": {"D": 33.0, "t": 4.0, "d": 25.0, "m": 2.86},
+        "\u00d833.0x4.50": {"D": 33.0, "t": 4.5, "d": 24.0, "m": 3.16},
+        "\u00d833.0x5.00": {"D": 33.0, "t": 5.0, "d": 23.0, "m": 3.45},
+        "\u00d833.0x6.50": {"D": 33.0, "t": 6.5, "d": 20.0, "m": 4.25},
+        "\u00d833.0x7.50": {"D": 33.0, "t": 7.5, "d": 18.0, "m": 4.72},
+        "\u00d834.0x1.00": {"D": 34.0, "t": 1.0, "d": 32.0, "m": 0.81},
+        "\u00d834.0x1.50": {"D": 34.0, "t": 1.5, "d": 31.0, "m": 1.2},
+        "\u00d834.0x2.00": {"D": 34.0, "t": 2.0, "d": 30.0, "m": 1.58},
+        "\u00d834.0x2.50": {"D": 34.0, "t": 2.5, "d": 29.0, "m": 1.94},
+        "\u00d834.0x3.00": {"D": 34.0, "t": 3.0, "d": 28.0, "m": 2.29},
+        "\u00d834.0x3.50": {"D": 34.0, "t": 3.5, "d": 27.0, "m": 2.63},
+        "\u00d834.0x4.00": {"D": 34.0, "t": 4.0, "d": 26.0, "m": 2.96},
+        "\u00d834.0x4.50": {"D": 34.0, "t": 4.5, "d": 25.0, "m": 3.27},
+        "\u00d834.0x5.00": {"D": 34.0, "t": 5.0, "d": 24.0, "m": 3.58},
+        "\u00d834.0x6.00": {"D": 34.0, "t": 6.0, "d": 22.0, "m": 4.14},
+        "\u00d834.0x6.50": {"D": 34.0, "t": 6.5, "d": 21.0, "m": 4.41},
+        "\u00d834.0x8.00": {"D": 34.0, "t": 8.0, "d": 18.0, "m": 5.13},
+        "\u00d835.0x1.00": {"D": 35.0, "t": 1.0, "d": 33.0, "m": 0.84},
+        "\u00d835.0x1.50": {"D": 35.0, "t": 1.5, "d": 32.0, "m": 1.24},
+        "\u00d835.0x2.00": {"D": 35.0, "t": 2.0, "d": 31.0, "m": 1.63},
+        "\u00d835.0x2.50": {"D": 35.0, "t": 2.5, "d": 30.0, "m": 2.0},
+        "\u00d835.0x3.00": {"D": 35.0, "t": 3.0, "d": 29.0, "m": 2.37},
+        "\u00d835.0x3.50": {"D": 35.0, "t": 3.5, "d": 28.0, "m": 2.72},
+        "\u00d835.0x4.00": {"D": 35.0, "t": 4.0, "d": 27.0, "m": 3.06},
+        "\u00d835.0x4.50": {"D": 35.0, "t": 4.5, "d": 26.0, "m": 3.39},
+        "\u00d835.0x5.00": {"D": 35.0, "t": 5.0, "d": 25.0, "m": 3.7},
+        "\u00d835.0x5.50": {"D": 35.0, "t": 5.5, "d": 24.0, "m": 4.0},
+        "\u00d835.0x6.00": {"D": 35.0, "t": 6.0, "d": 23.0, "m": 4.29},
+        "\u00d835.0x6.50": {"D": 35.0, "t": 6.5, "d": 22.0, "m": 4.57},
+        "\u00d835.0x7.00": {"D": 35.0, "t": 7.0, "d": 21.0, "m": 4.83},
+        "\u00d835.0x7.50": {"D": 35.0, "t": 7.5, "d": 20.0, "m": 5.09},
+        "\u00d835.0x10.00": {"D": 35.0, "t": 10.0, "d": 15.0, "m": 6.17},
+        "\u00d836.0x1.00": {"D": 36.0, "t": 1.0, "d": 34.0, "m": 0.86},
+        "\u00d836.0x1.50": {"D": 36.0, "t": 1.5, "d": 33.0, "m": 1.28},
+        "\u00d82.0x32.00": {"D": 2.0, "t": 32.0, "d": 1.68, "m": 3.0},
+        "\u00d82.0x2.50": {"D": 2.0, "t": 2.5, "d": 45.0, "m": 2.93},
+        "\u00d82.0x3.00": {"D": 2.0, "t": 3.0, "d": 30.0, "m": 2.44},
+        "\u00d82.0x3.50": {"D": 2.0, "t": 3.5, "d": 29.0, "m": 2.81},
+        "\u00d84.0x28.00": {"D": 4.0, "t": 28.0, "d": 3.16, "m": 4.0},
+        "\u00d84.0x5.00": {"D": 4.0, "t": 5.0, "d": 100.0, "m": 12.95},
+        "\u00d84.0x6.00": {"D": 4.0, "t": 6.0, "d": 98.0, "m": 15.39},
+        "\u00d84.0x7.00": {"D": 4.0, "t": 7.0, "d": 22.0, "m": 5.01},
+        "\u00d84.0x8.00": {"D": 4.0, "t": 8.0, "d": 94.0, "m": 20.12},
+        "\u00d84.0x10.00": {"D": 4.0, "t": 10.0, "d": 90.0, "m": 24.66},
+        "\u00d837.0x1.00": {"D": 37.0, "t": 1.0, "d": 35.0, "m": 0.89},
+        "\u00d837.0x1.50": {"D": 37.0, "t": 1.5, "d": 34.0, "m": 1.31},
+        "\u00d837.0x2.00": {"D": 37.0, "t": 2.0, "d": 33.0, "m": 1.73},
+        "\u00d837.0x2.50": {"D": 37.0, "t": 2.5, "d": 32.0, "m": 2.13},
+        "\u00d837.0x3.00": {"D": 37.0, "t": 3.0, "d": 31.0, "m": 2.52},
+        "\u00d837.0x5.00": {"D": 37.0, "t": 5.0, "d": 27.0, "m": 3.95},
+        "\u00d838.0x1.00": {"D": 38.0, "t": 1.0, "d": 36.0, "m": 0.91},
+        "\u00d838.0x1.50": {"D": 38.0, "t": 1.5, "d": 35.0, "m": 1.35},
+        "\u00d838.0x2.00": {"D": 38.0, "t": 2.0, "d": 34.0, "m": 1.78},
+        "\u00d838.0x2.50": {"D": 38.0, "t": 2.5, "d": 33.0, "m": 2.19},
+        "\u00d838.0x3.00": {"D": 38.0, "t": 3.0, "d": 32.0, "m": 2.59},
+        "\u00d838.0x3.50": {"D": 38.0, "t": 3.5, "d": 31.0, "m": 2.98},
+        "\u00d838.0x4.00": {"D": 38.0, "t": 4.0, "d": 30.0, "m": 3.35},
+        "\u00d838.0x4.50": {"D": 38.0, "t": 4.5, "d": 29.0, "m": 3.72},
+        "\u00d838.0x5.00": {"D": 38.0, "t": 5.0, "d": 28.0, "m": 4.07},
+        "\u00d838.0x5.50": {"D": 38.0, "t": 5.5, "d": 27.0, "m": 4.41},
+        "\u00d838.0x6.00": {"D": 38.0, "t": 6.0, "d": 26.0, "m": 4.74},
+        "\u00d838.0x6.50": {"D": 38.0, "t": 6.5, "d": 25.0, "m": 5.05},
+        "\u00d838.0x7.00": {"D": 38.0, "t": 7.0, "d": 24.0, "m": 5.35},
+        "\u00d838.0x8.00": {"D": 38.0, "t": 8.0, "d": 22.0, "m": 5.92},
+        "\u00d839.0x1.00": {"D": 39.0, "t": 1.0, "d": 37.0, "m": 0.94},
+        "\u00d839.0x2.00": {"D": 39.0, "t": 2.0, "d": 35.0, "m": 1.83},
+        "\u00d839.0x2.50": {"D": 39.0, "t": 2.5, "d": 34.0, "m": 2.25},
+        "\u00d839.0x3.00": {"D": 39.0, "t": 3.0, "d": 33.0, "m": 2.66},
+        "\u00d840.0x1.00": {"D": 40.0, "t": 1.0, "d": 38.0, "m": 0.96},
+        "\u00d840.0x1.50": {"D": 40.0, "t": 1.5, "d": 37.0, "m": 1.42},
+        "\u00d840.0x2.00": {"D": 40.0, "t": 2.0, "d": 36.0, "m": 1.87},
+        "\u00d840.0x2.50": {"D": 40.0, "t": 2.5, "d": 35.0, "m": 2.31},
+        "\u00d840.0x3.00": {"D": 40.0, "t": 3.0, "d": 34.0, "m": 2.74},
+        "\u00d840.0x3.50": {"D": 40.0, "t": 3.5, "d": 33.0, "m": 3.15},
+        "\u00d840.0x4.00": {"D": 40.0, "t": 4.0, "d": 32.0, "m": 3.55},
+        "\u00d840.0x4.50": {"D": 40.0, "t": 4.5, "d": 31.0, "m": 3.94},
+        "\u00d840.0x5.00": {"D": 40.0, "t": 5.0, "d": 30.0, "m": 4.32},
+        "\u00d840.0x5.50": {"D": 40.0, "t": 5.5, "d": 29.0, "m": 4.68},
+        "\u00d840.0x6.00": {"D": 40.0, "t": 6.0, "d": 28.0, "m": 5.03},
+        "\u00d840.0x6.50": {"D": 40.0, "t": 6.5, "d": 27.0, "m": 5.37},
+        "\u00d840.0x7.00": {"D": 40.0, "t": 7.0, "d": 26.0, "m": 5.7},
+        "\u00d840.0x7.50": {"D": 40.0, "t": 7.5, "d": 25.0, "m": 6.01},
+        "\u00d840.0x8.00": {"D": 40.0, "t": 8.0, "d": 24.0, "m": 6.31},
+        "\u00d840.0x9.00": {"D": 40.0, "t": 9.0, "d": 22.0, "m": 6.88},
+        "\u00d840.0x10.00": {"D": 40.0, "t": 10.0, "d": 20.0, "m": 7.4},
+        "\u00d841.0x1.00": {"D": 41.0, "t": 1.0, "d": 39.0, "m": 0.99},
+        "\u00d841.0x1.50": {"D": 41.0, "t": 1.5, "d": 38.0, "m": 1.46},
+        "\u00d841.0x2.00": {"D": 41.0, "t": 2.0, "d": 37.0, "m": 1.92},
+        "\u00d841.0x2.50": {"D": 41.0, "t": 2.5, "d": 36.0, "m": 2.37},
+        "\u00d841.0x3.00": {"D": 41.0, "t": 3.0, "d": 35.0, "m": 2.81},
+        "\u00d841.0x4.00": {"D": 41.0, "t": 4.0, "d": 33.0, "m": 3.65},
+        "\u00d842.0x1.50": {"D": 42.0, "t": 1.5, "d": 39.0, "m": 1.5},
+        "\u00d842.0x2.00": {"D": 42.0, "t": 2.0, "d": 38.0, "m": 1.97},
+        "\u00d842.0x2.50": {"D": 42.0, "t": 2.5, "d": 37.0, "m": 2.44},
+        "\u00d842.0x3.00": {"D": 42.0, "t": 3.0, "d": 36.0, "m": 2.89},
+        "\u00d842.0x3.50": {"D": 42.0, "t": 3.5, "d": 35.0, "m": 3.32},
+        "\u00d842.0x4.00": {"D": 42.0, "t": 4.0, "d": 34.0, "m": 3.75},
+        "\u00d842.0x5.00": {"D": 42.0, "t": 5.0, "d": 32.0, "m": 4.56},
+        "\u00d842.0x6.00": {"D": 42.0, "t": 6.0, "d": 30.0, "m": 5.33},
+        "\u00d842.0x7.00": {"D": 42.0, "t": 7.0, "d": 28.0, "m": 6.04},
+        "\u00d842.0x8.00": {"D": 42.0, "t": 8.0, "d": 26.0, "m": 6.71},
+        "\u00d842.0x8.50": {"D": 42.0, "t": 8.5, "d": 25.0, "m": 7.02},
+        "\u00d842.0x10.00": {"D": 42.0, "t": 10.0, "d": 22.0, "m": 7.89},
+        "\u00d842.0x11.00": {"D": 42.0, "t": 11.0, "d": 20.0, "m": 8.41},
+        "\u00d843.0x1.00": {"D": 43.0, "t": 1.0, "d": 41.0, "m": 1.04},
+        "\u00d843.0x1.50": {"D": 43.0, "t": 1.5, "d": 40.0, "m": 1.54},
+        "\u00d843.0x2.00": {"D": 43.0, "t": 2.0, "d": 39.0, "m": 2.02},
+        "\u00d843.0x2.50": {"D": 43.0, "t": 2.5, "d": 38.0, "m": 2.5},
+        "\u00d843.0x3.00": {"D": 43.0, "t": 3.0, "d": 37.0, "m": 2.96},
+        "\u00d843.0x4.00": {"D": 43.0, "t": 4.0, "d": 35.0, "m": 3.85},
+        "\u00d843.0x10.00": {"D": 43.0, "t": 10.0, "d": 23.0, "m": 8.14},
+        "\u00d844.0x1.00": {"D": 44.0, "t": 1.0, "d": 42.0, "m": 1.06},
+        "\u00d844.0x1.50": {"D": 44.0, "t": 1.5, "d": 41.0, "m": 1.57},
+        "\u00d844.0x2.00": {"D": 44.0, "t": 2.0, "d": 40.0, "m": 2.07},
+        "\u00d844.0x2.50": {"D": 44.0, "t": 2.5, "d": 39.0, "m": 2.56},
+        "\u00d844.0x3.00": {"D": 44.0, "t": 3.0, "d": 38.0, "m": 3.03},
+        "\u00d844.0x3.50": {"D": 44.0, "t": 3.5, "d": 37.0, "m": 3.5},
+        "\u00d844.0x4.00": {"D": 44.0, "t": 4.0, "d": 36.0, "m": 3.95},
+        "\u00d844.0x5.00": {"D": 44.0, "t": 5.0, "d": 34.0, "m": 4.81},
+        "\u00d844.0x6.00": {"D": 44.0, "t": 6.0, "d": 32.0, "m": 5.62},
+        "\u00d845.0x1.00": {"D": 45.0, "t": 1.0, "d": 43.0, "m": 1.09},
+        "\u00d845.0x1.50": {"D": 45.0, "t": 1.5, "d": 42.0, "m": 1.61},
+        "\u00d845.0x2.00": {"D": 45.0, "t": 2.0, "d": 41.0, "m": 2.12},
+        "\u00d845.0x2.50": {"D": 45.0, "t": 2.5, "d": 40.0, "m": 2.62},
+        "\u00d845.0x3.00": {"D": 45.0, "t": 3.0, "d": 39.0, "m": 3.11},
+        "\u00d845.0x3.50": {"D": 45.0, "t": 3.5, "d": 38.0, "m": 3.59},
+        "\u00d845.0x4.00": {"D": 45.0, "t": 4.0, "d": 37.0, "m": 4.04},
+        "\u00d845.0x4.50": {"D": 45.0, "t": 4.5, "d": 36.0, "m": 4.5},
+        "\u00d845.0x5.00": {"D": 45.0, "t": 5.0, "d": 35.0, "m": 4.93},
+        "\u00d845.0x6.00": {"D": 45.0, "t": 6.0, "d": 33.0, "m": 5.77},
+        "\u00d845.0x6.50": {"D": 45.0, "t": 6.5, "d": 32.0, "m": 6.17},
+        "\u00d845.0x7.00": {"D": 45.0, "t": 7.0, "d": 31.0, "m": 6.56},
+        "\u00d845.0x7.50": {"D": 45.0, "t": 7.5, "d": 30.0, "m": 6.94},
+        "\u00d845.0x8.00": {"D": 45.0, "t": 8.0, "d": 29.0, "m": 7.3},
+        "\u00d845.0x8.50": {"D": 45.0, "t": 8.5, "d": 28.0, "m": 7.65},
+        "\u00d845.0x10.00": {"D": 45.0, "t": 10.0, "d": 25.0, "m": 8.63},
+        "\u00d846.0x1.00": {"D": 46.0, "t": 1.0, "d": 44.0, "m": 1.11},
+        "\u00d846.0x1.50": {"D": 46.0, "t": 1.5, "d": 43.0, "m": 1.65},
+        "\u00d846.0x2.00": {"D": 46.0, "t": 2.0, "d": 42.0, "m": 2.17},
+        "\u00d846.0x2.50": {"D": 46.0, "t": 2.5, "d": 41.0, "m": 2.68},
+        "\u00d846.0x3.00": {"D": 46.0, "t": 3.0, "d": 40.0, "m": 3.18},
+        "\u00d846.0x4.00": {"D": 46.0, "t": 4.0, "d": 38.0, "m": 4.14},
+        "\u00d846.0x5.00": {"D": 46.0, "t": 5.0, "d": 36.0, "m": 5.06},
+        "\u00d847.0x1.00": {"D": 47.0, "t": 1.0, "d": 45.0, "m": 1.13},
+        "\u00d847.0x1.50": {"D": 47.0, "t": 1.5, "d": 44.0, "m": 1.68},
+        "\u00d847.0x2.00": {"D": 47.0, "t": 2.0, "d": 43.0, "m": 2.22},
+        "\u00d82.5x42.00": {"D": 2.5, "t": 42.0, "d": 2.74, "m": 5.0},
+        "\u00d82.5x3.50": {"D": 2.5, "t": 3.5, "d": 40.0, "m": 3.76},
+        "\u00d848.0x1.00": {"D": 48.0, "t": 1.0, "d": 46.0, "m": 1.16},
+        "\u00d848.0x1.50": {"D": 48.0, "t": 1.5, "d": 45.0, "m": 1.72},
+        "\u00d848.0x2.00": {"D": 48.0, "t": 2.0, "d": 44.0, "m": 2.27},
+        "\u00d848.0x2.50": {"D": 48.0, "t": 2.5, "d": 43.0, "m": 2.81},
+        "\u00d848.0x3.00": {"D": 48.0, "t": 3.0, "d": 42.0, "m": 3.33},
+        "\u00d848.0x3.50": {"D": 48.0, "t": 3.5, "d": 41.0, "m": 3.84},
+        "\u00d848.0x4.00": {"D": 48.0, "t": 4.0, "d": 40.0, "m": 4.34},
+        "\u00d848.0x5.00": {"D": 48.0, "t": 5.0, "d": 38.0, "m": 5.3},
+        "\u00d848.0x6.00": {"D": 48.0, "t": 6.0, "d": 36.0, "m": 6.22},
+        "\u00d848.0x7.00": {"D": 48.0, "t": 7.0, "d": 34.0, "m": 7.08},
+        "\u00d848.0x8.00": {"D": 48.0, "t": 8.0, "d": 32.0, "m": 7.89},
+        "\u00d850.0x1.00": {"D": 50.0, "t": 1.0, "d": 48.0, "m": 1.21},
+        "\u00d850.0x1.50": {"D": 50.0, "t": 1.5, "d": 47.0, "m": 1.79},
+        "\u00d82.0x46.00": {"D": 2.0, "t": 46.0, "d": 2.37, "m": 5.0},
+        "\u00d83.0x44.00": {"D": 3.0, "t": 44.0, "d": 3.48, "m": 5.0},
+        "\u00d83.0x3.50": {"D": 3.0, "t": 3.5, "d": 43.0, "m": 4.01},
+        "\u00d83.0x4.00": {"D": 3.0, "t": 4.0, "d": 42.0, "m": 4.54},
+        "\u00d83.0x4.50": {"D": 3.0, "t": 4.5, "d": 41.0, "m": 5.05},
+        "\u00d83.0x5.00": {"D": 3.0, "t": 5.0, "d": 40.0, "m": 5.55},
+        "\u00d850.0x6.00": {"D": 50.0, "t": 6.0, "d": 38.0, "m": 6.51},
+        "\u00d850.0x7.00": {"D": 50.0, "t": 7.0, "d": 36.0, "m": 7.42},
+        "\u00d850.0x7.50": {"D": 50.0, "t": 7.5, "d": 35.0, "m": 7.86},
+        "\u00d850.0x8.00": {"D": 50.0, "t": 8.0, "d": 34.0, "m": 8.29},
+        "\u00d850.0x9.00": {"D": 50.0, "t": 9.0, "d": 32.0, "m": 9.1},
+        "\u00d850.0x10.00": {"D": 50.0, "t": 10.0, "d": 30.0, "m": 9.87},
+        "\u00d812.5x25.00": {"D": 12.5, "t": 25.0, "d": 11.56, "m": 5.0},
+        "\u00d812.5x15.00": {"D": 12.5, "t": 15.0, "d": 35.0, "m": 18.5},
+        "\u00d851.0x1.50": {"D": 51.0, "t": 1.5, "d": 48.0, "m": 1.83},
+        "\u00d851.0x2.00": {"D": 51.0, "t": 2.0, "d": 47.0, "m": 2.42},
+        "\u00d851.0x3.00": {"D": 51.0, "t": 3.0, "d": 45.0, "m": 3.55},
+        "\u00d852.0x1.00": {"D": 52.0, "t": 1.0, "d": 50.0, "m": 1.26},
+        "\u00d852.0x1.50": {"D": 52.0, "t": 1.5, "d": 49.0, "m": 1.87},
+        "\u00d852.0x2.00": {"D": 52.0, "t": 2.0, "d": 48.0, "m": 2.47},
+        "\u00d852.0x2.50": {"D": 52.0, "t": 2.5, "d": 47.0, "m": 3.05},
+        "\u00d852.0x3.00": {"D": 52.0, "t": 3.0, "d": 46.0, "m": 3.63},
+        "\u00d852.0x3.50": {"D": 52.0, "t": 3.5, "d": 45.0, "m": 4.19},
+        "\u00d852.0x4.00": {"D": 52.0, "t": 4.0, "d": 44.0, "m": 4.74},
+        "\u00d852.0x4.50": {"D": 52.0, "t": 4.5, "d": 43.0, "m": 5.27},
+        "\u00d852.0x5.00": {"D": 52.0, "t": 5.0, "d": 42.0, "m": 5.8},
+        "\u00d852.0x6.00": {"D": 52.0, "t": 6.0, "d": 40.0, "m": 6.81},
+        "\u00d852.0x7.00": {"D": 52.0, "t": 7.0, "d": 38.0, "m": 7.77},
+        "\u00d852.0x10.00": {"D": 52.0, "t": 10.0, "d": 32.0, "m": 10.36},
+        "\u00d853.0x1.50": {"D": 53.0, "t": 1.5, "d": 50.0, "m": 1.91},
+        "\u00d853.0x3.00": {"D": 53.0, "t": 3.0, "d": 47.0, "m": 3.7},
+        "\u00d854.0x1.00": {"D": 54.0, "t": 1.0, "d": 52.0, "m": 1.31},
+        "\u00d854.0x1.50": {"D": 54.0, "t": 1.5, "d": 51.0, "m": 1.94},
+        "\u00d854.0x2.00": {"D": 54.0, "t": 2.0, "d": 50.0, "m": 2.57},
+        "\u00d854.0x2.50": {"D": 54.0, "t": 2.5, "d": 49.0, "m": 3.18},
+        "\u00d854.0x3.00": {"D": 54.0, "t": 3.0, "d": 48.0, "m": 3.77},
+        "\u00d854.0x3.50": {"D": 54.0, "t": 3.5, "d": 47.0, "m": 4.36},
+        "\u00d854.0x4.00": {"D": 54.0, "t": 4.0, "d": 46.0, "m": 4.93},
+        "\u00d854.0x4.50": {"D": 54.0, "t": 4.5, "d": 45.0, "m": 5.49},
+        "\u00d854.0x5.00": {"D": 54.0, "t": 5.0, "d": 44.0, "m": 6.04},
+        "\u00d854.0x5.50": {"D": 54.0, "t": 5.5, "d": 43.0, "m": 6.58},
+        "\u00d854.0x6.00": {"D": 54.0, "t": 6.0, "d": 42.0, "m": 7.1},
+        "\u00d854.0x7.00": {"D": 54.0, "t": 7.0, "d": 40.0, "m": 8.11},
+        "\u00d855.0x1.00": {"D": 55.0, "t": 1.0, "d": 53.0, "m": 1.33},
+        "\u00d855.0x1.50": {"D": 55.0, "t": 1.5, "d": 52.0, "m": 1.98},
+        "\u00d855.0x2.00": {"D": 55.0, "t": 2.0, "d": 51.0, "m": 2.61},
+        "\u00d855.0x2.50": {"D": 55.0, "t": 2.5, "d": 50.0, "m": 3.24},
+        "\u00d855.0x3.00": {"D": 55.0, "t": 3.0, "d": 49.0, "m": 3.85},
+        "\u00d855.0x3.50": {"D": 55.0, "t": 3.5, "d": 48.0, "m": 4.45},
+        "\u00d855.0x4.00": {"D": 55.0, "t": 4.0, "d": 47.0, "m": 5.03},
+        "\u00d855.0x4.50": {"D": 55.0, "t": 4.5, "d": 46.0, "m": 5.6},
+        "\u00d855.0x5.00": {"D": 55.0, "t": 5.0, "d": 45.0, "m": 6.17},
+        "\u00d855.0x6.00": {"D": 55.0, "t": 6.0, "d": 43.0, "m": 7.25},
+        "\u00d855.0x6.50": {"D": 55.0, "t": 6.5, "d": 42.0, "m": 7.78},
+        "\u00d855.0x7.50": {"D": 55.0, "t": 7.5, "d": 40.0, "m": 8.79},
+        "\u00d855.0x8.00": {"D": 55.0, "t": 8.0, "d": 39.0, "m": 9.27},
+        "\u00d855.0x10.00": {"D": 55.0, "t": 10.0, "d": 35.0, "m": 11.1},
+        "\u00d855.0x12.50": {"D": 55.0, "t": 12.5, "d": 30.0, "m": 13.1},
+        "\u00d855.0x15.00": {"D": 55.0, "t": 15.0, "d": 25.0, "m": 14.8},
+        "\u00d856.0x2.00": {"D": 56.0, "t": 2.0, "d": 52.0, "m": 2.66},
+        "\u00d856.0x3.00": {"D": 56.0, "t": 3.0, "d": 50.0, "m": 3.92},
+        "\u00d856.0x4.00": {"D": 56.0, "t": 4.0, "d": 48.0, "m": 5.13},
+        "\u00d856.0x6.00": {"D": 56.0, "t": 6.0, "d": 44.0, "m": 7.4},
+        "\u00d856.0x8.00": {"D": 56.0, "t": 8.0, "d": 40.0, "m": 9.47},
+        "\u00d857.0x2.50": {"D": 57.0, "t": 2.5, "d": 52.0, "m": 3.36},
+        "\u00d857.0x8.50": {"D": 57.0, "t": 8.5, "d": 40.0, "m": 10.17},
+        "\u00d858.0x1.00": {"D": 58.0, "t": 1.0, "d": 56.0, "m": 1.41},
+        "\u00d858.0x1.50": {"D": 58.0, "t": 1.5, "d": 55.0, "m": 2.1},
+        "\u00d858.0x2.00": {"D": 58.0, "t": 2.0, "d": 54.0, "m": 2.76},
+        "\u00d858.0x2.50": {"D": 58.0, "t": 2.5, "d": 53.0, "m": 3.42},
+        "\u00d858.0x3.00": {"D": 58.0, "t": 3.0, "d": 52.0, "m": 4.07},
+        "\u00d858.0x4.00": {"D": 58.0, "t": 4.0, "d": 50.0, "m": 5.33},
+        "\u00d858.0x5.00": {"D": 58.0, "t": 5.0, "d": 48.0, "m": 6.54},
+        "\u00d858.0x6.00": {"D": 58.0, "t": 6.0, "d": 46.0, "m": 7.69},
+        "\u00d858.0x7.00": {"D": 58.0, "t": 7.0, "d": 44.0, "m": 8.8},
+        "\u00d860.0x1.00": {"D": 60.0, "t": 1.0, "d": 58.0, "m": 1.46},
+        "\u00d860.0x1.50": {"D": 60.0, "t": 1.5, "d": 57.0, "m": 2.16},
+        "\u00d860.0x2.00": {"D": 60.0, "t": 2.0, "d": 56.0, "m": 2.86},
+        "\u00d860.0x2.50": {"D": 60.0, "t": 2.5, "d": 55.0, "m": 3.55},
+        "\u00d860.0x3.00": {"D": 60.0, "t": 3.0, "d": 54.0, "m": 4.22},
+        "\u00d860.0x3.50": {"D": 60.0, "t": 3.5, "d": 53.0, "m": 4.88},
+        "\u00d860.0x4.00": {"D": 60.0, "t": 4.0, "d": 52.0, "m": 5.52},
+        "\u00d860.0x4.50": {"D": 60.0, "t": 4.5, "d": 51.0, "m": 6.16},
+        "\u00d860.0x5.00": {"D": 60.0, "t": 5.0, "d": 50.0, "m": 6.78},
+        "\u00d860.0x6.00": {"D": 60.0, "t": 6.0, "d": 48.0, "m": 7.99},
+        "\u00d860.0x6.50": {"D": 60.0, "t": 6.5, "d": 47.0, "m": 8.58},
+        "\u00d860.0x7.00": {"D": 60.0, "t": 7.0, "d": 46.0, "m": 9.15},
+        "\u00d860.0x7.50": {"D": 60.0, "t": 7.5, "d": 45.0, "m": 9.71},
+        "\u00d860.0x8.00": {"D": 60.0, "t": 8.0, "d": 44.0, "m": 10.26},
+        "\u00d860.0x9.00": {"D": 60.0, "t": 9.0, "d": 42.0, "m": 11.32},
+        "\u00d860.0x10.00": {"D": 60.0, "t": 10.0, "d": 40.0, "m": 12.33},
+        "\u00d860.0x11.00": {"D": 60.0, "t": 11.0, "d": 38.0, "m": 13.29},
+        "\u00d860.0x12.50": {"D": 60.0, "t": 12.5, "d": 35.0, "m": 14.64},
+        "\u00d860.0x15.00": {"D": 60.0, "t": 15.0, "d": 30.0, "m": 16.65},
+        "\u00d862.0x1.00": {"D": 62.0, "t": 1.0, "d": 60.0, "m": 1.5},
+        "\u00d862.0x2.00": {"D": 62.0, "t": 2.0, "d": 58.0, "m": 2.96},
+        "\u00d862.0x3.00": {"D": 62.0, "t": 3.0, "d": 56.0, "m": 4.37},
+        "\u00d862.0x4.00": {"D": 62.0, "t": 4.0, "d": 54.0, "m": 5.72},
+        "\u00d862.0x5.00": {"D": 62.0, "t": 5.0, "d": 52.0, "m": 7.03},
+        "\u00d862.0x6.00": {"D": 62.0, "t": 6.0, "d": 50.0, "m": 8.29},
+        "\u00d862.0x7.00": {"D": 62.0, "t": 7.0, "d": 48.0, "m": 9.5},
+        "\u00d862.0x10.00": {"D": 62.0, "t": 10.0, "d": 42.0, "m": 12.82},
+        "\u00d863.0x1.50": {"D": 63.0, "t": 1.5, "d": 60.0, "m": 2.28},
+        "\u00d864.0x2.00": {"D": 64.0, "t": 2.0, "d": 60.0, "m": 3.06},
+        "\u00d865.0x1.00": {"D": 65.0, "t": 1.0, "d": 63.0, "m": 1.58},
+        "\u00d865.0x1.50": {"D": 65.0, "t": 1.5, "d": 62.0, "m": 2.35},
+        "\u00d865.0x2.00": {"D": 65.0, "t": 2.0, "d": 61.0, "m": 3.11},
+        "\u00d865.0x2.50": {"D": 65.0, "t": 2.5, "d": 60.0, "m": 3.85},
+        "\u00d865.0x3.00": {"D": 65.0, "t": 3.0, "d": 59.0, "m": 4.59},
+        "\u00d865.0x3.50": {"D": 65.0, "t": 3.5, "d": 58.0, "m": 5.31},
+        "\u00d865.0x4.00": {"D": 65.0, "t": 4.0, "d": 57.0, "m": 6.02},
+        "\u00d865.0x4.50": {"D": 65.0, "t": 4.5, "d": 56.0, "m": 6.71},
+        "\u00d865.0x5.00": {"D": 65.0, "t": 5.0, "d": 55.0, "m": 7.4},
+        "\u00d865.0x5.50": {"D": 65.0, "t": 5.5, "d": 54.0, "m": 8.07},
+        "\u00d865.0x6.00": {"D": 65.0, "t": 6.0, "d": 53.0, "m": 8.73},
+        "\u00d865.0x6.50": {"D": 65.0, "t": 6.5, "d": 52.0, "m": 9.38},
+        "\u00d865.0x7.00": {"D": 65.0, "t": 7.0, "d": 51.0, "m": 10.01},
+        "\u00d865.0x7.50": {"D": 65.0, "t": 7.5, "d": 50.0, "m": 10.64},
+        "\u00d865.0x8.00": {"D": 65.0, "t": 8.0, "d": 49.0, "m": 11.25},
+        "\u00d810.0x45.00": {"D": 10.0, "t": 45.0, "d": 13.56, "m": 7.0},
+        "\u00d812.5x40.00": {"D": 12.5, "t": 40.0, "d": 16.18, "m": 7.0},
+        "\u00d866.0x3.00": {"D": 66.0, "t": 3.0, "d": 60.0, "m": 4.66},
+        "\u00d866.0x5.00": {"D": 66.0, "t": 5.0, "d": 56.0, "m": 7.52},
+        "\u00d866.0x13.00": {"D": 66.0, "t": 13.0, "d": 40.0, "m": 16.99},
+        "\u00d867.0x3.50": {"D": 67.0, "t": 3.5, "d": 60.0, "m": 5.48},
+        "\u00d868.0x1.50": {"D": 68.0, "t": 1.5, "d": 65.0, "m": 2.46},
+        "\u00d868.0x2.00": {"D": 68.0, "t": 2.0, "d": 64.0, "m": 3.26},
+        "\u00d868.0x4.00": {"D": 68.0, "t": 4.0, "d": 60.0, "m": 6.31},
+        "\u00d869.0x4.50": {"D": 69.0, "t": 4.5, "d": 60.0, "m": 7.16},
+        "\u00d870.0x1.00": {"D": 70.0, "t": 1.0, "d": 68.0, "m": 1.7},
+        "\u00d870.0x1.50": {"D": 70.0, "t": 1.5, "d": 67.0, "m": 2.53},
+        "\u00d870.0x2.00": {"D": 70.0, "t": 2.0, "d": 66.0, "m": 3.35},
+        "\u00d870.0x2.50": {"D": 70.0, "t": 2.5, "d": 65.0, "m": 4.16},
+        "\u00d870.0x3.00": {"D": 70.0, "t": 3.0, "d": 64.0, "m": 4.96},
+        "\u00d870.0x3.50": {"D": 70.0, "t": 3.5, "d": 63.0, "m": 5.74},
+        "\u00d870.0x4.00": {"D": 70.0, "t": 4.0, "d": 62.0, "m": 6.51},
+        "\u00d870.0x4.50": {"D": 70.0, "t": 4.5, "d": 61.0, "m": 7.27},
+        "\u00d870.0x5.00": {"D": 70.0, "t": 5.0, "d": 60.0, "m": 8.02},
+        "\u00d870.0x6.00": {"D": 70.0, "t": 6.0, "d": 58.0, "m": 9.47},
+        "\u00d870.0x7.00": {"D": 70.0, "t": 7.0, "d": 56.0, "m": 10.88},
+        "\u00d870.0x7.50": {"D": 70.0, "t": 7.5, "d": 55.0, "m": 11.56},
+        "\u00d870.0x8.00": {"D": 70.0, "t": 8.0, "d": 54.0, "m": 12.23},
+        "\u00d870.0x10.00": {"D": 70.0, "t": 10.0, "d": 50.0, "m": 14.8},
+        "\u00d870.0x12.50": {"D": 70.0, "t": 12.5, "d": 45.0, "m": 17.73},
+        "\u00d870.0x15.00": {"D": 70.0, "t": 15.0, "d": 40.0, "m": 20.35},
+        "\u00d872.0x2.00": {"D": 72.0, "t": 2.0, "d": 68.0, "m": 3.45},
+        "\u00d872.0x7.00": {"D": 72.0, "t": 7.0, "d": 58.0, "m": 11.22},
+        "\u00d873.0x5.00": {"D": 73.0, "t": 5.0, "d": 63.0, "m": 8.39},
+        "\u00d874.0x2.00": {"D": 74.0, "t": 2.0, "d": 70.0, "m": 3.55},
+        "\u00d875.0x1.50": {"D": 75.0, "t": 1.5, "d": 72.0, "m": 2.72},
+        "\u00d875.0x2.00": {"D": 75.0, "t": 2.0, "d": 71.0, "m": 3.6},
+        "\u00d875.0x2.50": {"D": 75.0, "t": 2.5, "d": 70.0, "m": 4.47},
+        "\u00d875.0x3.00": {"D": 75.0, "t": 3.0, "d": 69.0, "m": 5.33},
+        "\u00d875.0x3.50": {"D": 75.0, "t": 3.5, "d": 68.0, "m": 6.17},
+        "\u00d875.0x4.00": {"D": 75.0, "t": 4.0, "d": 67.0, "m": 7.0},
+        "\u00d875.0x5.00": {"D": 75.0, "t": 5.0, "d": 65.0, "m": 8.63},
+        "\u00d875.0x6.00": {"D": 75.0, "t": 6.0, "d": 63.0, "m": 10.21},
+        "\u00d875.0x7.50": {"D": 75.0, "t": 7.5, "d": 60.0, "m": 12.49},
+        "\u00d875.0x8.00": {"D": 75.0, "t": 8.0, "d": 59.0, "m": 13.22},
+        "\u00d875.0x10.00": {"D": 75.0, "t": 10.0, "d": 55.0, "m": 16.03},
+        "\u00d875.0x12.50": {"D": 75.0, "t": 12.5, "d": 50.0, "m": 19.27},
+        "\u00d875.0x15.00": {"D": 75.0, "t": 15.0, "d": 45.0, "m": 22.2},
+        "\u00d876.0x3.00": {"D": 76.0, "t": 3.0, "d": 70.0, "m": 5.4},
+        "\u00d876.0x6.00": {"D": 76.0, "t": 6.0, "d": 64.0, "m": 10.36},
+        "\u00d878.0x2.50": {"D": 78.0, "t": 2.5, "d": 73.0, "m": 4.66},
+        "\u00d878.0x3.00": {"D": 78.0, "t": 3.0, "d": 72.0, "m": 5.55},
+        "\u00d878.0x4.00": {"D": 78.0, "t": 4.0, "d": 70.0, "m": 7.3},
+        "\u00d878.0x6.00": {"D": 78.0, "t": 6.0, "d": 66.0, "m": 10.65},
+        "\u00d880.0x1.00": {"D": 80.0, "t": 1.0, "d": 78.0, "m": 1.95},
+        "\u00d880.0x1.50": {"D": 80.0, "t": 1.5, "d": 77.0, "m": 2.9},
+        "\u00d880.0x2.00": {"D": 80.0, "t": 2.0, "d": 76.0, "m": 3.85},
+        "\u00d880.0x2.50": {"D": 80.0, "t": 2.5, "d": 75.0, "m": 4.78},
+        "\u00d880.0x3.00": {"D": 80.0, "t": 3.0, "d": 74.0, "m": 5.7},
+        "\u00d880.0x4.00": {"D": 80.0, "t": 4.0, "d": 72.0, "m": 7.5},
+        "\u00d880.0x5.00": {"D": 80.0, "t": 5.0, "d": 70.0, "m": 9.25},
+        "\u00d880.0x6.00": {"D": 80.0, "t": 6.0, "d": 68.0, "m": 10.95},
+        "\u00d880.0x7.50": {"D": 80.0, "t": 7.5, "d": 65.0, "m": 13.41},
+        "\u00d880.0x8.00": {"D": 80.0, "t": 8.0, "d": 64.0, "m": 14.21},
+        "\u00d880.0x10.00": {"D": 80.0, "t": 10.0, "d": 60.0, "m": 17.26},
+        "\u00d880.0x12.50": {"D": 80.0, "t": 12.5, "d": 55.0, "m": 20.81},
+        "\u00d880.0x15.00": {"D": 80.0, "t": 15.0, "d": 50.0, "m": 24.05},
+        "\u00d882.0x4.00": {"D": 82.0, "t": 4.0, "d": 74.0, "m": 7.69},
+        "\u00d882.0x5.00": {"D": 82.0, "t": 5.0, "d": 72.0, "m": 9.5},
+        "\u00d882.0x6.00": {"D": 82.0, "t": 6.0, "d": 70.0, "m": 11.25},
+        "\u00d882.0x7.00": {"D": 82.0, "t": 7.0, "d": 68.0, "m": 12.95},
+        "\u00d883.0x1.50": {"D": 83.0, "t": 1.5, "d": 80.0, "m": 3.02},
+        "\u00d883.0x4.00": {"D": 83.0, "t": 4.0, "d": 75.0, "m": 7.79},
+        "\u00d883.0x5.00": {"D": 83.0, "t": 5.0, "d": 73.0, "m": 9.62},
+        "\u00d884.0x6.00": {"D": 84.0, "t": 6.0, "d": 72.0, "m": 11.54},
+        "\u00d885.0x1.50": {"D": 85.0, "t": 1.5, "d": 82.0, "m": 3.09},
+        "\u00d885.0x2.00": {"D": 85.0, "t": 2.0, "d": 81.0, "m": 4.09},
+        "\u00d885.0x2.50": {"D": 85.0, "t": 2.5, "d": 80.0, "m": 5.09},
+        "\u00d885.0x3.00": {"D": 85.0, "t": 3.0, "d": 79.0, "m": 6.07},
+        "\u00d885.0x3.50": {"D": 85.0, "t": 3.5, "d": 78.0, "m": 7.04},
+        "\u00d885.0x4.00": {"D": 85.0, "t": 4.0, "d": 77.0, "m": 7.99},
+        "\u00d885.0x5.00": {"D": 85.0, "t": 5.0, "d": 75.0, "m": 9.87},
+        "\u00d885.0x6.00": {"D": 85.0, "t": 6.0, "d": 73.0, "m": 11.69},
+        "\u00d885.0x7.50": {"D": 85.0, "t": 7.5, "d": 70.0, "m": 14.33},
+        "\u00d885.0x8.00": {"D": 85.0, "t": 8.0, "d": 69.0, "m": 15.19},
+        "\u00d885.0x10.00": {"D": 85.0, "t": 10.0, "d": 65.0, "m": 18.5},
+        "\u00d885.0x12.50": {"D": 85.0, "t": 12.5, "d": 60.0, "m": 22.35},
+        "\u00d886.0x3.00": {"D": 86.0, "t": 3.0, "d": 80.0, "m": 6.14},
+        "\u00d887.0x3.50": {"D": 87.0, "t": 3.5, "d": 80.0, "m": 7.21},
+        "\u00d888.0x2.50": {"D": 88.0, "t": 2.5, "d": 83.0, "m": 5.27},
+        "\u00d888.0x6.00": {"D": 88.0, "t": 6.0, "d": 76.0, "m": 12.13},
+        "\u00d890.0x1.50": {"D": 90.0, "t": 1.5, "d": 87.0, "m": 3.27},
+        "\u00d890.0x2.00": {"D": 90.0, "t": 2.0, "d": 86.0, "m": 4.34},
+        "\u00d890.0x2.50": {"D": 90.0, "t": 2.5, "d": 85.0, "m": 5.4},
+        "\u00d890.0x3.00": {"D": 90.0, "t": 3.0, "d": 84.0, "m": 6.44},
+        "\u00d890.0x4.00": {"D": 90.0, "t": 4.0, "d": 82.0, "m": 8.48},
+        "\u00d890.0x5.00": {"D": 90.0, "t": 5.0, "d": 80.0, "m": 10.48},
+        "\u00d890.0x6.00": {"D": 90.0, "t": 6.0, "d": 78.0, "m": 12.43},
+        "\u00d890.0x7.50": {"D": 90.0, "t": 7.5, "d": 75.0, "m": 15.26},
+        "\u00d890.0x8.00": {"D": 90.0, "t": 8.0, "d": 74.0, "m": 16.18},
+        "\u00d890.0x10.00": {"D": 90.0, "t": 10.0, "d": 70.0, "m": 19.73},
+        "\u00d890.0x12.50": {"D": 90.0, "t": 12.5, "d": 65.0, "m": 23.89},
+        "\u00d890.0x15.00": {"D": 90.0, "t": 15.0, "d": 60.0, "m": 27.74},
+        "\u00d892.0x4.00": {"D": 92.0, "t": 4.0, "d": 84.0, "m": 8.68},
+        "\u00d892.0x7.00": {"D": 92.0, "t": 7.0, "d": 78.0, "m": 14.67},
+        "\u00d892.0x8.50": {"D": 92.0, "t": 8.5, "d": 75.0, "m": 17.5},
+        "\u00d895.0x1.50": {"D": 95.0, "t": 1.5, "d": 92.0, "m": 3.46},
+        "\u00d895.0x2.00": {"D": 95.0, "t": 2.0, "d": 91.0, "m": 4.59},
+        "\u00d895.0x2.50": {"D": 95.0, "t": 2.5, "d": 90.0, "m": 5.7},
+        "\u00d895.0x3.00": {"D": 95.0, "t": 3.0, "d": 89.0, "m": 6.81},
+        "\u00d895.0x4.00": {"D": 95.0, "t": 4.0, "d": 87.0, "m": 8.98},
+        "\u00d895.0x5.00": {"D": 95.0, "t": 5.0, "d": 85.0, "m": 11.1},
+        "\u00d895.0x7.50": {"D": 95.0, "t": 7.5, "d": 80.0, "m": 16.18},
+        "\u00d895.0x10.00": {"D": 95.0, "t": 10.0, "d": 75.0, "m": 20.96},
+        "\u00d895.0x12.50": {"D": 95.0, "t": 12.5, "d": 70.0, "m": 25.43},
+        "\u00d8100.0x1.50": {"D": 100.0, "t": 1.5, "d": 97.0, "m": 3.64},
+        "\u00d8100.0x2.00": {"D": 100.0, "t": 2.0, "d": 96.0, "m": 4.83},
+        "\u00d8100.0x2.50": {"D": 100.0, "t": 2.5, "d": 95.0, "m": 6.01},
+        "\u00d8100.0x3.00": {"D": 100.0, "t": 3.0, "d": 94.0, "m": 7.18},
+        "\u00d8100.0x4.00": {"D": 100.0, "t": 4.0, "d": 92.0, "m": 9.47},
+        "\u00d8100.0x5.00": {"D": 100.0, "t": 5.0, "d": 90.0, "m": 11.71},
+        "\u00d8100.0x6.00": {"D": 100.0, "t": 6.0, "d": 88.0, "m": 13.91},
+        "\u00d8100.0x7.50": {"D": 100.0, "t": 7.5, "d": 85.0, "m": 17.11},
+        "\u00d8100.0x10.00": {"D": 100.0, "t": 10.0, "d": 80.0, "m": 22.2},
+        "\u00d8100.0x12.50": {"D": 100.0, "t": 12.5, "d": 75.0, "m": 26.97},
+        "\u00d8100.0x15.00": {"D": 100.0, "t": 15.0, "d": 70.0, "m": 31.44},
+        "\u00d8105.0x2.50": {"D": 105.0, "t": 2.5, "d": 100.0, "m": 6.32},
+        "\u00d8105.0x5.00": {"D": 105.0, "t": 5.0, "d": 95.0, "m": 12.33},
+        "\u00d8105.0x7.50": {"D": 105.0, "t": 7.5, "d": 90.0, "m": 18.03},
+        "\u00d8105.0x10.00": {"D": 105.0, "t": 10.0, "d": 85.0, "m": 23.43},
+        "\u00d8105.0x12.50": {"D": 105.0, "t": 12.5, "d": 80.0, "m": 28.52},
+        "\u00d8110.0x2.00": {"D": 110.0, "t": 2.0, "d": 106.0, "m": 5.33},
+        "\u00d8110.0x2.50": {"D": 110.0, "t": 2.5, "d": 105.0, "m": 6.63},
+        "\u00d8110.0x3.00": {"D": 110.0, "t": 3.0, "d": 104.0, "m": 7.92},
+        "\u00d84.0x102.00": {"D": 4.0, "t": 102.0, "d": 10.46, "m": 5.0},
+        "\u00d84.0x7.50": {"D": 4.0, "t": 7.5, "d": 95.0, "m": 18.96},
+        "\u00d84.0x12.50": {"D": 4.0, "t": 12.5, "d": 85.0, "m": 30.06},
+        "\u00d84.0x15.00": {"D": 4.0, "t": 15.0, "d": 80.0, "m": 35.14},
+        "\u00d8115.0x2.50": {"D": 115.0, "t": 2.5, "d": 110.0, "m": 6.94},
+        "\u00d8115.0x5.00": {"D": 115.0, "t": 5.0, "d": 105.0, "m": 13.56},
+        "\u00d8115.0x7.50": {"D": 115.0, "t": 7.5, "d": 100.0, "m": 19.88},
+        "\u00d8115.0x10.00": {"D": 115.0, "t": 10.0, "d": 95.0, "m": 25.9},
+        "\u00d8115.0x12.50": {"D": 115.0, "t": 12.5, "d": 90.0, "m": 31.6},
+        "\u00d8120.0x2.00": {"D": 120.0, "t": 2.0, "d": 116.0, "m": 5.82},
+        "\u00d8120.0x2.50": {"D": 120.0, "t": 2.5, "d": 115.0, "m": 7.24},
+        "\u00d8120.0x3.00": {"D": 120.0, "t": 3.0, "d": 114.0, "m": 8.66},
+        "\u00d8120.0x4.00": {"D": 120.0, "t": 4.0, "d": 112.0, "m": 11.44},
+        "\u00d8120.0x5.00": {"D": 120.0, "t": 5.0, "d": 110.0, "m": 14.18},
+        "\u00d8120.0x6.00": {"D": 120.0, "t": 6.0, "d": 108.0, "m": 16.87},
+        "\u00d8120.0x7.50": {"D": 120.0, "t": 7.5, "d": 105.0, "m": 20.81},
+        "\u00d8120.0x8.00": {"D": 120.0, "t": 8.0, "d": 104.0, "m": 22.1},
+        "\u00d8120.0x10.00": {"D": 120.0, "t": 10.0, "d": 100.0, "m": 27.13},
+        "\u00d8120.0x15.00": {"D": 120.0, "t": 15.0, "d": 90.0, "m": 38.84},
+        "\u00d8125.0x2.50": {"D": 125.0, "t": 2.5, "d": 120.0, "m": 7.55},
+        "\u00d8125.0x5.00": {"D": 125.0, "t": 5.0, "d": 115.0, "m": 14.8},
+        "\u00d8125.0x7.50": {"D": 125.0, "t": 7.5, "d": 110.0, "m": 21.73},
+        "\u00d8125.0x10.00": {"D": 125.0, "t": 10.0, "d": 105.0, "m": 28.36},
+        "\u00d8125.0x12.50": {"D": 125.0, "t": 12.5, "d": 100.0, "m": 34.68},
+        "\u00d8126.0x3.00": {"D": 126.0, "t": 3.0, "d": 120.0, "m": 9.1},
+        "\u00d8130.0x2.50": {"D": 130.0, "t": 2.5, "d": 125.0, "m": 7.86},
+        "\u00d8130.0x3.00": {"D": 130.0, "t": 3.0, "d": 124.0, "m": 9.4},
+        "\u00d8130.0x4.00": {"D": 130.0, "t": 4.0, "d": 122.0, "m": 12.43},
+        "\u00d8130.0x5.00": {"D": 130.0, "t": 5.0, "d": 120.0, "m": 15.41},
+        "\u00d8130.0x6.00": {"D": 130.0, "t": 6.0, "d": 118.0, "m": 18.35},
+        "\u00d8130.0x7.50": {"D": 130.0, "t": 7.5, "d": 115.0, "m": 22.66},
+        "\u00d8130.0x10.00": {"D": 130.0, "t": 10.0, "d": 110.0, "m": 29.59},
+        "\u00d8130.0x12.50": {"D": 130.0, "t": 12.5, "d": 105.0, "m": 36.22},
+        "\u00d8130.0x15.00": {"D": 130.0, "t": 15.0, "d": 100.0, "m": 42.54},
+        "\u00d8135.0x2.50": {"D": 135.0, "t": 2.5, "d": 130.0, "m": 8.17},
+        "\u00d8135.0x5.00": {"D": 135.0, "t": 5.0, "d": 125.0, "m": 16.03},
+        "\u00d8135.0x7.50": {"D": 135.0, "t": 7.5, "d": 120.0, "m": 23.58},
+        "\u00d8135.0x10.00": {"D": 135.0, "t": 10.0, "d": 115.0, "m": 30.83},
+        "\u00d8140.0x2.50": {"D": 140.0, "t": 2.5, "d": 135.0, "m": 8.48},
+        "\u00d8140.0x4.00": {"D": 140.0, "t": 4.0, "d": 132.0, "m": 13.42},
+        "\u00d8140.0x5.00": {"D": 140.0, "t": 5.0, "d": 130.0, "m": 16.65},
+        "\u00d8140.0x7.50": {"D": 140.0, "t": 7.5, "d": 125.0, "m": 24.51},
+        "\u00d8140.0x10.00": {"D": 140.0, "t": 10.0, "d": 120.0, "m": 32.06},
+        "\u00d8140.0x12.50": {"D": 140.0, "t": 12.5, "d": 115.0, "m": 39.3},
+        "\u00d8140.0x15.00": {"D": 140.0, "t": 15.0, "d": 110.0, "m": 46.24},
+        "\u00d8145.0x2.50": {"D": 145.0, "t": 2.5, "d": 140.0, "m": 8.79},
+        "\u00d8145.0x5.00": {"D": 145.0, "t": 5.0, "d": 135.0, "m": 17.26},
+        "\u00d8145.0x10.00": {"D": 145.0, "t": 10.0, "d": 125.0, "m": 33.29},
+        "\u00d8150.0x2.50": {"D": 150.0, "t": 2.5, "d": 145.0, "m": 9.09},
+        "\u00d8150.0x3.00": {"D": 150.0, "t": 3.0, "d": 144.0, "m": 10.88},
+        "\u00d8150.0x4.00": {"D": 150.0, "t": 4.0, "d": 142.0, "m": 14.4},
+        "\u00d8150.0x5.00": {"D": 150.0, "t": 5.0, "d": 140.0, "m": 17.88},
+        "\u00d8150.0x7.50": {"D": 150.0, "t": 7.5, "d": 135.0, "m": 26.36},
+        "\u00d8150.0x8.00": {"D": 150.0, "t": 8.0, "d": 134.0, "m": 28.02},
+        "\u00d8150.0x10.00": {"D": 150.0, "t": 10.0, "d": 130.0, "m": 34.53},
+        "\u00d8150.0x12.50": {"D": 150.0, "t": 12.5, "d": 125.0, "m": 42.39},
+        "\u00d8155.0x2.50": {"D": 155.0, "t": 2.5, "d": 150.0, "m": 9.4},
+        "\u00d8155.0x5.00": {"D": 155.0, "t": 5.0, "d": 145.0, "m": 18.5},
+        "\u00d8155.0x7.50": {"D": 155.0, "t": 7.5, "d": 140.0, "m": 27.28},
+        "\u00d8155.0x10.00": {"D": 155.0, "t": 10.0, "d": 135.0, "m": 35.76},
+        "\u00d8160.0x2.50": {"D": 160.0, "t": 2.5, "d": 155.0, "m": 9.71},
+        "\u00d8160.0x3.00": {"D": 160.0, "t": 3.0, "d": 154.0, "m": 11.62},
+        "\u00d8160.0x5.00": {"D": 160.0, "t": 5.0, "d": 150.0, "m": 19.11},
+        "\u00d8160.0x7.50": {"D": 160.0, "t": 7.5, "d": 145.0, "m": 28.21},
+        "\u00d8160.0x10.00": {"D": 160.0, "t": 10.0, "d": 140.0, "m": 36.99},
+        "\u00d8165.0x2.50": {"D": 165.0, "t": 2.5, "d": 160.0, "m": 10.02},
+        "\u00d8170.0x3.00": {"D": 170.0, "t": 3.0, "d": 164.0, "m": 12.36},
+        "\u00d8170.0x5.00": {"D": 170.0, "t": 5.0, "d": 160.0, "m": 20.35},
+        "\u00d8170.0x7.50": {"D": 170.0, "t": 7.5, "d": 155.0, "m": 30.06},
+        "\u00d8170.0x10.00": {"D": 170.0, "t": 10.0, "d": 150.0, "m": 39.46},
+        "\u00d8170.0x15.00": {"D": 170.0, "t": 15.0, "d": 140.0, "m": 57.34},
+        "\u00d8175.0x2.50": {"D": 175.0, "t": 2.5, "d": 170.0, "m": 10.64},
+        "\u00d8175.0x5.00": {"D": 175.0, "t": 5.0, "d": 165.0, "m": 20.96},
+        "\u00d8180.0x2.50": {"D": 180.0, "t": 2.5, "d": 175.0, "m": 10.94},
+        "\u00d8180.0x5.00": {"D": 180.0, "t": 5.0, "d": 170.0, "m": 21.58},
+        "\u00d8180.0x7.50": {"D": 180.0, "t": 7.5, "d": 165.0, "m": 31.91},
+        "\u00d8180.0x10.00": {"D": 180.0, "t": 10.0, "d": 160.0, "m": 41.93},
+        "\u00d8180.0x12.50": {"D": 180.0, "t": 12.5, "d": 155.0, "m": 51.64},
+        "\u00d8180.0x15.00": {"D": 180.0, "t": 15.0, "d": 150.0, "m": 61.04},
+        "\u00d8190.0x5.00": {"D": 190.0, "t": 5.0, "d": 180.0, "m": 22.81},
+        "\u00d8190.0x7.50": {"D": 190.0, "t": 7.5, "d": 175.0, "m": 33.76},
+        "\u00d8190.0x10.00": {"D": 190.0, "t": 10.0, "d": 170.0, "m": 44.39},
+        "\u00d8195.0x5.00": {"D": 195.0, "t": 5.0, "d": 185.0, "m": 23.43},
+        "\u00d8200.0x5.00": {"D": 200.0, "t": 5.0, "d": 190.0, "m": 24.05},
+        "\u00d8200.0x7.00": {"D": 200.0, "t": 7.0, "d": 186.0, "m": 33.32},
+        "\u00d8200.0x10.00": {"D": 200.0, "t": 10.0, "d": 180.0, "m": 46.86},
+        "\u00d8210.0x5.00": {"D": 210.0, "t": 5.0, "d": 200.0, "m": 25.28},
+        "\u00d8220.0x5.00": {"D": 220.0, "t": 5.0, "d": 210.0, "m": 26.51},
+        "\u00d8220.0x10.00": {"D": 220.0, "t": 10.0, "d": 200.0, "m": 51.79},
+        "\u00d8225.0x5.00": {"D": 225.0, "t": 5.0, "d": 215.0, "m": 27.13},
+        "\u00d8250.0x10.00": {"D": 250.0, "t": 10.0, "d": 230.0, "m": 59.19},
+        "\u00d8250.0x15.00": {"D": 250.0, "t": 15.0, "d": 220.0, "m": 86.93},
+        "\u00d8254.0x6.50": {"D": 254.0, "t": 6.5, "d": 241.0, "m": 39.67},
+        "\u00d8260.0x5.00": {"D": 260.0, "t": 5.0, "d": 250.0, "m": 31.44}
       } }
       ]
     },
