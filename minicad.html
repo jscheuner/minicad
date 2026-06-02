@@ -458,6 +458,7 @@
   .calc-deg-btn.active { color: #ffab40; }
   .calc-btns { padding: 8px; display: grid; gap: 5px; }
   .calc-btns.basic  { grid-template-columns: repeat(4, 1fr); }
+  .calc-btns.paren  { grid-template-columns: 1fr 1fr; padding: 6px 8px 0; gap: 5px; display: grid; }
   .calc-btns.sci    { grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #ffffff12; margin: 0 8px; padding: 8px 0; }
   .cb {
     background: #0d1525; border: 1px solid #ffffff15; border-radius: 4px;
@@ -1732,6 +1733,11 @@
     <button class="cb fn" onclick="calcUnary('ln')">ln</button>
     <button class="cb fn" onclick="calcConst('pi')">π</button>
     <button class="cb fn" onclick="calcConst('e')">e</button>
+  </div>
+  <!-- Parenthèses -->
+  <div class="calc-btns paren">
+    <button class="cb op" onclick="calcOpenParen()"> ( </button>
+    <button class="cb op" onclick="calcCloseParen()"> ) </button>
   </div>
   <!-- Boutons de base -->
   <div class="calc-btns basic">
@@ -10596,6 +10602,7 @@ function openPolarArrayDialog() {
   let pendVal   = null;  // premier opérande
   let newEntry  = true;  // vrai = le prochain chiffre remplace l'affichage
   let degMode   = true;
+  let stack     = [];    // pile pour les parenthèses : [{pendOp, pendVal}, ...]
 
   // ── Formatage ────────────────────────────────────────────────────────────────
   function fmt(n) {
@@ -10618,8 +10625,9 @@ function openPolarArrayDialog() {
     rEl.className   = disp === 'Erreur' ? 'calc-error' : '';
     if (eEl) {
       const opSym = {'+':'+', '-':'−', '*':'×', '/':'÷', '^':'^'};
-      eEl.textContent = (pendOp && pendVal !== null)
-        ? fmt(pendVal) + ' ' + (opSym[pendOp] || pendOp) : '';
+      const parens = stack.length ? '('.repeat(stack.length) + '  ' : '';
+      eEl.textContent = parens + ((pendOp && pendVal !== null)
+        ? fmt(pendVal) + ' ' + (opSym[pendOp] || pendOp) : '');
     }
   }
 
@@ -10700,8 +10708,30 @@ function openPolarArrayDialog() {
     newEntry = true; update();
   };
 
+  window.calcOpenParen = function() {
+    // Sauvegarder le contexte courant et repartir à zéro
+    stack.push({ pendOp, pendVal });
+    pendOp = null; pendVal = null; newEntry = true;
+    update();
+  };
+
+  window.calcCloseParen = function() {
+    if (stack.length === 0) return;
+    // Exécuter l'opération en cours dans la parenthèse
+    if (pendOp !== null) {
+      const res = applyOp(pendOp, pendVal, getNum());
+      disp = fmt(res);
+    }
+    // Restaurer le contexte extérieur
+    const outer = stack.pop();
+    pendOp  = outer.pendOp;
+    pendVal = outer.pendVal;
+    newEntry = true;
+    update();
+  };
+
   window.calcClear = function() {
-    disp = '0'; pendOp = null; pendVal = null; newEntry = true; update();
+    disp = '0'; pendOp = null; pendVal = null; newEntry = true; stack = []; update();
   };
 
   window.calcBack = function() {
@@ -10791,6 +10821,8 @@ function openPolarArrayDialog() {
       if (ev.key === '*')  { window.calcBinOp('*'); return; }
       if (ev.key === '/')  { ev.preventDefault(); window.calcBinOp('/'); return; }
       if (ev.key === '^')  { window.calcBinOp('^'); return; }
+      if (ev.key === '(')  { window.calcOpenParen(); return; }
+      if (ev.key === ')')  { window.calcCloseParen(); return; }
     });
 
     update();
