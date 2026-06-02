@@ -1710,55 +1710,51 @@
     <span>CALCULATRICE</span>
     <div class="calc-hdr-btns">
       <button class="calc-mode-btn" id="calc-sci-btn" onclick="calcToggleSci()" title="Mode scientifique">SCI</button>
-      <button class="calc-deg-btn active" id="calc-deg-btn" onclick="calcToggleDeg()" title="Basculer degrés/radians">DEG</button>
+      <button class="calc-deg-btn active" id="calc-deg-btn" onclick="calcToggleDeg()" title="Degrés / Radians">DEG</button>
       <span onclick="toggleCalc()" style="cursor:pointer;opacity:.5;font-size:16px;line-height:1;color:var(--text)">✕</span>
     </div>
   </div>
   <div class="calc-display">
     <div class="calc-expr-line" id="calc-expr"></div>
-    <div style="display:flex;align-items:baseline;gap:4px">
-      <div id="calc-result" title="Cliquer pour copier">0</div>
-    </div>
+    <div id="calc-result" title="Cliquer pour copier">0</div>
   </div>
   <!-- Boutons scientifiques (masqués par défaut) -->
   <div class="calc-btns sci" id="calc-sci-panel" style="display:none">
-    <button class="cb fn" onclick="calcFn('sin(')">sin</button>
-    <button class="cb fn" onclick="calcFn('cos(')">cos</button>
-    <button class="cb fn" onclick="calcFn('tan(')">tan</button>
-    <button class="cb fn op" onclick="calcFn('^')">xʸ</button>
-    <button class="cb fn" onclick="calcFn('asin(')">sin⁻¹</button>
-    <button class="cb fn" onclick="calcFn('acos(')">cos⁻¹</button>
-    <button class="cb fn" onclick="calcFn('atan(')">tan⁻¹</button>
-    <button class="cb fn" onclick="calcFn('sqrt(')">√</button>
-    <button class="cb fn" onclick="calcFn('log(')">log</button>
-    <button class="cb fn" onclick="calcFn('ln(')">ln</button>
-    <button class="cb fn" onclick="calcFn('π')">π</button>
-    <button class="cb fn" onclick="calcFn('e')">e</button>
+    <button class="cb fn" onclick="calcUnary('sin')">sin</button>
+    <button class="cb fn" onclick="calcUnary('cos')">cos</button>
+    <button class="cb fn" onclick="calcUnary('tan')">tan</button>
+    <button class="cb fn op" onclick="calcBinOp('^')">xʸ</button>
+    <button class="cb fn" onclick="calcUnary('asin')">sin⁻¹</button>
+    <button class="cb fn" onclick="calcUnary('acos')">cos⁻¹</button>
+    <button class="cb fn" onclick="calcUnary('atan')">tan⁻¹</button>
+    <button class="cb fn" onclick="calcUnary('sqrt')">√</button>
+    <button class="cb fn" onclick="calcUnary('log')">log</button>
+    <button class="cb fn" onclick="calcUnary('ln')">ln</button>
+    <button class="cb fn" onclick="calcConst('pi')">π</button>
+    <button class="cb fn" onclick="calcConst('e')">e</button>
   </div>
   <!-- Boutons de base -->
   <div class="calc-btns basic">
     <button class="cb clr" onclick="calcClear()">AC</button>
     <button class="cb op"  onclick="calcBack()">⌫</button>
-    <button class="cb op"  onclick="calcFn('(')"> ( </button>
-    <button class="cb op"  onclick="calcFn(')')"> ) </button>
-    <button class="cb" onclick="calcFn('7')">7</button>
-    <button class="cb" onclick="calcFn('8')">8</button>
-    <button class="cb" onclick="calcFn('9')">9</button>
-    <button class="cb op" onclick="calcFn('÷')">÷</button>
-    <button class="cb" onclick="calcFn('4')">4</button>
-    <button class="cb" onclick="calcFn('5')">5</button>
-    <button class="cb" onclick="calcFn('6')">6</button>
-    <button class="cb op" onclick="calcFn('×')">×</button>
-    <button class="cb" onclick="calcFn('1')">1</button>
-    <button class="cb" onclick="calcFn('2')">2</button>
-    <button class="cb" onclick="calcFn('3')">3</button>
-    <button class="cb op" onclick="calcFn('-')">−</button>
-    <button class="cb op" onclick="calcFn('%')">%</button>
-    <button class="cb" onclick="calcFn('0')">0</button>
-    <button class="cb" onclick="calcFn('.')">.</button>
-    <button class="cb op" onclick="calcFn('+')">+</button>
-    <button class="cb eq wide" onclick="calcEquals()">=</button>
-    <button class="cb op" onclick="calcCopy()" title="Copier le résultat">⧉</button>
+    <button class="cb op"  onclick="calcUnary('pct')">%</button>
+    <button class="cb op"  onclick="calcBinOp('/')">÷</button>
+    <button class="cb" onclick="calcDigit('7')">7</button>
+    <button class="cb" onclick="calcDigit('8')">8</button>
+    <button class="cb" onclick="calcDigit('9')">9</button>
+    <button class="cb op" onclick="calcBinOp('*')">×</button>
+    <button class="cb" onclick="calcDigit('4')">4</button>
+    <button class="cb" onclick="calcDigit('5')">5</button>
+    <button class="cb" onclick="calcDigit('6')">6</button>
+    <button class="cb op" onclick="calcBinOp('-')">−</button>
+    <button class="cb" onclick="calcDigit('1')">1</button>
+    <button class="cb" onclick="calcDigit('2')">2</button>
+    <button class="cb" onclick="calcDigit('3')">3</button>
+    <button class="cb op" onclick="calcBinOp('+')">+</button>
+    <button class="cb op" onclick="calcUnary('neg')">+/−</button>
+    <button class="cb" onclick="calcDigit('0')">0</button>
+    <button class="cb" onclick="calcDigit('.')">.</button>
+    <button class="cb eq" onclick="calcEquals()">=</button>
   </div>
 </div>
 
@@ -10592,111 +10588,133 @@ function openPolarArrayDialog() {
   setTimeout(() => document.getElementById('par-count').focus(), 50);
 }
 
-// ===== CALCULATRICE =====
+// ===== CALCULATRICE — mode TI-30Xa (nombre d'abord, fonction ensuite) =====
 (function() {
-  let expr = '';
-  let degMode = true;
+  // ── État ────────────────────────────────────────────────────────────────────
+  let disp      = '0';   // valeur affichée
+  let pendOp    = null;  // opérateur en attente : '+' '-' '*' '/' '^'
+  let pendVal   = null;  // premier opérande
+  let newEntry  = true;  // vrai = le prochain chiffre remplace l'affichage
+  let degMode   = true;
 
-  function toRad(x) { return degMode ? x * Math.PI / 180 : x; }
-  function toDeg(x) { return degMode ? x * 180 / Math.PI : x; }
-
-  function calcEval(raw) {
-    if (!raw.trim()) return '';
-    let e = raw
-      .replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').replace(/,/g, '.')
-      .replace(/\^/g, '**')
-      .replace(/π/g, '(' + Math.PI + ')')
-      .replace(/\be\b/g, '(' + Math.E + ')');
-    // Trig avec conversion degrés si activé
-    if (degMode) {
-      e = e
-        .replace(/\basin\s*\(/g,  '(_asin(')
-        .replace(/\bacos\s*\(/g,  '(_acos(')
-        .replace(/\batan\s*\(/g,  '(_atan(')
-        .replace(/\bsin\s*\(/g,   '(_sin(')
-        .replace(/\bcos\s*\(/g,   '(_cos(')
-        .replace(/\btan\s*\(/g,   '(_tan(');
-    } else {
-      e = e
-        .replace(/\basin\s*\(/g, 'Math.asin(')
-        .replace(/\bacos\s*\(/g, 'Math.acos(')
-        .replace(/\batan\s*\(/g, 'Math.atan(')
-        .replace(/\bsin\s*\(/g,  'Math.sin(')
-        .replace(/\bcos\s*\(/g,  'Math.cos(')
-        .replace(/\btan\s*\(/g,  'Math.tan(');
-    }
-    e = e
-      .replace(/\bsqrt\s*\(/g, 'Math.sqrt(')
-      .replace(/√\s*\(/g,      'Math.sqrt(')
-      .replace(/\blog\s*\(/g,  'Math.log10(')
-      .replace(/\bln\s*\(/g,   'Math.log(')
-      .replace(/\babs\s*\(/g,  'Math.abs(')
-      .replace(/%/g, '/100');
-    try {
-      // Constantes inlinées pour que le scope de Function() soit autonome
-      const D2R = Math.PI / 180, R2D = 180 / Math.PI;
-      const helperDeg =
-        'const _sin=x=>Math.sin(x*' + D2R + '),' +
-        '_cos=x=>Math.cos(x*' + D2R + '),' +
-        '_tan=x=>Math.tan(x*' + D2R + '),' +
-        '_asin=x=>Math.asin(x)*' + R2D + ',' +
-        '_acos=x=>Math.acos(x)*' + R2D + ',' +
-        '_atan=x=>Math.atan(x)*' + R2D + ';';
-      const helperRad =
-        'const _sin=Math.sin,_cos=Math.cos,_tan=Math.tan,' +
-        '_asin=Math.asin,_acos=Math.acos,_atan=Math.atan;';
-      const r = Function('"use strict";' +
-        (degMode ? helperDeg : helperRad) +
-        'return (' + e + ')')();
-      if (!isFinite(r) || isNaN(r)) return null;
-      // Formatage : jusqu'à 10 chiffres significatifs, pas de zéros inutiles
-      const abs = Math.abs(r);
-      if (abs === 0) return '0';
-      if (abs >= 1e10 || (abs < 1e-6 && abs > 0)) return r.toExponential(6).replace(/\.?0+e/, 'e');
-      return parseFloat(r.toPrecision(10)).toString();
-    } catch(e) { return null; }
+  // ── Formatage ────────────────────────────────────────────────────────────────
+  function fmt(n) {
+    if (isNaN(n) || !isFinite(n)) return 'Erreur';
+    if (n === 0) return '0';
+    const abs = Math.abs(n);
+    if (abs >= 1e10 || (abs > 0 && abs < 1e-7))
+      return parseFloat(n.toPrecision(8)).toExponential();
+    return parseFloat(n.toPrecision(10)).toString();
   }
 
+  function getNum() { return parseFloat(disp) || 0; }
+
+  // ── Mise à jour de l'affichage ───────────────────────────────────────────────
   function update() {
-    const exprEl = document.getElementById('calc-expr');
-    const resEl  = document.getElementById('calc-result');
-    if (!exprEl || !resEl) return;
-    exprEl.textContent = expr;
-    if (!expr) { resEl.textContent = '0'; resEl.className = ''; return; }
-    const r = calcEval(expr);
-    if (r === null) { resEl.textContent = 'Erreur'; resEl.className = 'calc-error'; }
-    else { resEl.textContent = r; resEl.className = ''; }
+    const rEl = document.getElementById('calc-result');
+    const eEl = document.getElementById('calc-expr');
+    if (!rEl) return;
+    rEl.textContent = disp;
+    rEl.className   = disp === 'Erreur' ? 'calc-error' : '';
+    if (eEl) {
+      const opSym = {'+':'+', '-':'−', '*':'×', '/':'÷', '^':'^'};
+      eEl.textContent = (pendOp && pendVal !== null)
+        ? fmt(pendVal) + ' ' + (opSym[pendOp] || pendOp) : '';
+    }
   }
 
-  function calcFocus() {
-    const dlg = document.getElementById('calc-dialog');
-    if (dlg) dlg.focus();
+  // ── Opération binaire ─────────────────────────────────────────────────────────
+  function applyOp(op, a, b) {
+    switch(op) {
+      case '+': return a + b;
+      case '-': return a - b;
+      case '*': return a * b;
+      case '/': return b !== 0 ? a / b : NaN;
+      case '^': return Math.pow(a, b);
+    }
+    return b;
   }
 
-  window.toggleCalc = function() {
-    const dlg = document.getElementById('calc-dialog');
-    const btn = document.getElementById('calc-btn');
-    const vis = dlg.style.display === 'flex';
-    dlg.style.display = vis ? 'none' : 'flex';
-    if (btn) btn.classList.toggle('active', !vis);
-    if (!vis) setTimeout(calcFocus, 0); // focus dès l'ouverture
+  // ── API publique ──────────────────────────────────────────────────────────────
+
+  window.calcDigit = function(d) {
+    if (disp === 'Erreur') { disp = '0'; newEntry = true; }
+    if (newEntry) {
+      disp = (d === '.') ? '0.' : String(d);
+      newEntry = false;
+    } else {
+      if (d === '.' && disp.includes('.')) return;
+      disp = (disp === '0' && d !== '.') ? String(d) : disp + d;
+    }
+    update();
   };
 
-  window.calcFn = function(ch) { expr += ch; update(); };
-
-  window.calcBack = function() { expr = expr.slice(0, -1); update(); };
-
-  window.calcClear = function() { expr = ''; update(); };
+  window.calcBinOp = function(op) {
+    if (disp === 'Erreur') return;
+    if (pendOp !== null && !newEntry) {
+      const res = applyOp(pendOp, pendVal, getNum());
+      disp = fmt(res); if (disp === 'Erreur') { pendOp = null; pendVal = null; newEntry = true; update(); return; }
+      pendVal = parseFloat(disp);
+    } else {
+      pendVal = getNum();
+    }
+    pendOp  = op;
+    newEntry = true;
+    update();
+  };
 
   window.calcEquals = function() {
-    const r = calcEval(expr);
-    if (r !== null) { expr = r; update(); }
+    if (pendOp === null) return;
+    const res = applyOp(pendOp, pendVal, getNum());
+    disp = fmt(res);
+    pendOp = null; pendVal = null; newEntry = true;
+    update();
+  };
+
+  window.calcUnary = function(fn) {
+    if (disp === 'Erreur') return;
+    const x   = getNum();
+    const D2R = Math.PI / 180, R2D = 180 / Math.PI;
+    let r;
+    switch(fn) {
+      case 'sin':  r = Math.sin(degMode ? x * D2R : x); break;
+      case 'cos':  r = Math.cos(degMode ? x * D2R : x); break;
+      case 'tan':  r = Math.tan(degMode ? x * D2R : x); break;
+      case 'asin': r = degMode ? Math.asin(x) * R2D : Math.asin(x); break;
+      case 'acos': r = degMode ? Math.acos(x) * R2D : Math.acos(x); break;
+      case 'atan': r = degMode ? Math.atan(x) * R2D : Math.atan(x); break;
+      case 'sqrt': r = Math.sqrt(x); break;
+      case 'log':  r = Math.log10(x); break;
+      case 'ln':   r = Math.log(x); break;
+      case 'x2':   r = x * x; break;
+      case 'inv':  r = x !== 0 ? 1 / x : NaN; break;
+      case 'pct':  r = x / 100; break;
+      case 'neg':  r = -x; break;
+      default:     return;
+    }
+    disp = fmt(r); newEntry = true; update();
+  };
+
+  window.calcConst = function(name) {
+    disp = name === 'pi' ? fmt(Math.PI) : fmt(Math.E);
+    newEntry = true; update();
+  };
+
+  window.calcClear = function() {
+    disp = '0'; pendOp = null; pendVal = null; newEntry = true; update();
+  };
+
+  window.calcBack = function() {
+    if (newEntry || disp === 'Erreur') { disp = '0'; newEntry = true; update(); return; }
+    disp = disp.length <= 1 ? '0' : disp.slice(0, -1);
+    if (disp === '-') disp = '0';
+    update();
   };
 
   window.calcCopy = function() {
-    const r = document.getElementById('calc-result').textContent;
-    if (r && r !== 'Erreur') navigator.clipboard?.writeText(r).catch(()=>{});
-    termPrint('Copié : ' + r, 'info');
+    const t = document.getElementById('calc-result')?.textContent;
+    if (t && t !== 'Erreur') navigator.clipboard?.writeText(t).catch(() => {});
+    termPrint('Copié : ' + t, 'info');
   };
 
   window.calcToggleSci = function() {
@@ -10710,57 +10728,72 @@ function openPolarArrayDialog() {
 
   window.calcToggleDeg = function() {
     degMode = !degMode;
-    document.getElementById('calc-deg-btn').textContent = degMode ? 'DEG' : 'RAD';
-    document.getElementById('calc-deg-btn').classList.toggle('active', degMode);
-    update();
+    const b = document.getElementById('calc-deg-btn');
+    if (b) { b.textContent = degMode ? 'DEG' : 'RAD'; b.classList.toggle('active', degMode); }
   };
 
-  // Clic sur le résultat → copier
-  document.addEventListener('DOMContentLoaded', () => {
-    const r = document.getElementById('calc-result');
-    if (r) r.onclick = () => window.calcCopy();
+  // ── Focus ────────────────────────────────────────────────────────────────────
+  function calcFocus() { document.getElementById('calc-dialog')?.focus(); }
 
-    // Drag
+  window.toggleCalc = function() {
+    const dlg = document.getElementById('calc-dialog');
+    const btn = document.getElementById('calc-btn');
+    const vis = dlg.style.display === 'flex';
+    dlg.style.display = vis ? 'none' : 'flex';
+    if (btn) btn.classList.toggle('active', !vis);
+    if (!vis) setTimeout(calcFocus, 0);
+  };
+
+  // ── Init DOM ─────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
     const dlg = document.getElementById('calc-dialog');
     const hdr = document.getElementById('calc-drag');
-    if (dlg && hdr) {
-      let ox = 0, oy = 0, drag = false;
-      // Focus au clic sur le header (drag ou simple clic)
+    if (!dlg) return;
+
+    // Clic résultat → copier
+    document.getElementById('calc-result').onclick = () => window.calcCopy();
+
+    // Drag
+    if (hdr) {
+      let ox = 0, oy = 0, dragging = false;
       hdr.addEventListener('mousedown', ev => {
         calcFocus();
         if (ev.button !== 0) return;
-        drag = true;
+        dragging = true;
         const rc = dlg.getBoundingClientRect();
         ox = ev.clientX - rc.left; oy = ev.clientY - rc.top;
         ev.preventDefault();
       });
       document.addEventListener('mousemove', ev => {
-        if (!drag) return;
+        if (!dragging) return;
         dlg.style.left = (ev.clientX - ox) + 'px';
         dlg.style.top  = (ev.clientY - oy) + 'px';
         dlg.style.right = 'auto';
       });
-      document.addEventListener('mouseup', () => { drag = false; });
+      document.addEventListener('mouseup', () => { dragging = false; });
     }
 
-    // Clic sur le dialog → redonner le focus (boutons le perdent vers le body)
-    const calcDlg = document.getElementById('calc-dialog');
-    if (calcDlg) calcDlg.addEventListener('mousedown', ev => {
-      // Ne pas interférer avec les boutons, juste reprendre le focus sur le conteneur
-      setTimeout(calcFocus, 0);
-    });
+    // Clic n'importe où dans le dialog → refocus
+    dlg.addEventListener('mousedown', () => setTimeout(calcFocus, 0));
 
-    // Clavier dans le dialog
-    if (calcDlg) calcDlg.addEventListener('keydown', ev => {
-      if (calcDlg.style.display !== 'flex') return;
+    // Clavier
+    dlg.addEventListener('keydown', ev => {
+      if (dlg.style.display !== 'flex') return;
       ev.stopPropagation();
       if (ev.key === 'Enter' || ev.key === '=') { window.calcEquals(); return; }
       if (ev.key === 'Escape') { window.toggleCalc(); return; }
       if (ev.key === 'Backspace') { window.calcBack(); return; }
-      if (ev.key === 'Delete') { window.calcClear(); return; }
-      // Saisie directe des chiffres et opérateurs
-      if (/^[\d\.\+\-\*\/\(\)\^%]$/.test(ev.key)) { expr += ev.key; update(); }
+      if (ev.key === 'Delete')    { window.calcClear(); return; }
+      if (/^[0-9]$/.test(ev.key)) { window.calcDigit(ev.key); return; }
+      if (ev.key === '.')  { window.calcDigit('.'); return; }
+      if (ev.key === '+')  { window.calcBinOp('+'); return; }
+      if (ev.key === '-')  { window.calcBinOp('-'); return; }
+      if (ev.key === '*')  { window.calcBinOp('*'); return; }
+      if (ev.key === '/')  { ev.preventDefault(); window.calcBinOp('/'); return; }
+      if (ev.key === '^')  { window.calcBinOp('^'); return; }
     });
+
+    update();
   });
 })();
 
