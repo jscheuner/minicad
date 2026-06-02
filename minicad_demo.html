@@ -1208,8 +1208,14 @@
       <button class="tool-btn" data-tool="rect" title="Rectangle (R)" onclick="setTool('rect')">
         <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/></svg>
       </button>
+      <button class="tool-btn" data-tool="polygon" title="Polygone régulier (POL)" onclick="executeCommand('POLYGON')">
+        <svg viewBox="0 0 24 24"><polygon points="12,3 20.5,8.5 20.5,15.5 12,21 3.5,15.5 3.5,8.5"/></svg>
+      </button>
       <button class="tool-btn" data-tool="circle" title="Cercle (C)" onclick="setTool('circle')">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="ellipse" title="Ellipse (EL)" onclick="executeCommand('ELLIPSE')">
+        <svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="6"/></svg>
       </button>
       <button class="tool-btn" data-tool="arc" title="Arc (A)" onclick="setTool('arc')">
         <svg viewBox="0 0 24 24"><path d="M5 19 A 10 10 0 0 1 19 5"/></svg>
@@ -1859,6 +1865,18 @@ const S = {
   // DIVIDE
   divideEntId: null,
   divideStep: 0, // 0=inactif, 1=attente N
+  // ELLIPSE
+  _ellipStep: 0,      // 0=centre, 1=axe1, 2=axe2, 3=arcStart, 4=arcEnd
+  _ellipCenter: null, // [cx,cy]
+  _ellipRx: 0,        // demi-grand axe
+  _ellipAngle: 0,     // angle du grand axe (radians, monde)
+  _ellipMode: 'full', // 'full'|'arc'
+  _ellipStartAngle: 0,
+  // POLYGON
+  _polyStep: 0,     // 0=nb côtés, 1=centre, 2=rayon
+  _polyNSides: 6,   // nb côtés courant
+  _polyMode: 'I',   // 'I' inscrit | 'C' circonsrit
+  _polyCenter: null,
   // DIST
   distPt1: null,
   // DIMANGULAR
@@ -2121,6 +2139,9 @@ function findOsnap(wx, wy) {
       if (e.type === 'rect') {
         check((e.x1 + e.x2) / 2, (e.y1 + e.y2) / 2, 'center', e);
       }
+      if (e.type === 'polyline' && e.cx !== undefined && e.cy !== undefined) {
+        check(e.cx, e.cy, 'center', e);
+      }
     }
 
     // NEAREST (projection on segments)
@@ -2171,6 +2192,15 @@ function findOsnap(wx, wy) {
         if (e.type === 'arc' && !angleInArc(a, e.startAngle, e.endAngle)) continue;
         check(e.cx + e.r * Math.cos(a), e.cy + e.r * Math.sin(a), 'quadrant', e);
       }
+    }
+    if (S.osnapModes.quadrant && e.type === 'ellipse') {
+      const a = e.angle||0;
+      const cos=Math.cos(a), sin=Math.sin(a);
+      // 4 sommets des axes
+      check(e.cx + e.rx*cos,  e.cy + e.rx*sin,  'quadrant', e);
+      check(e.cx - e.rx*cos,  e.cy - e.rx*sin,  'quadrant', e);
+      check(e.cx - e.ry*sin,  e.cy + e.ry*cos,  'quadrant', e);
+      check(e.cx + e.ry*sin,  e.cy - e.ry*cos,  'quadrant', e);
     }
 
     // INTERSECTION (segment-segment + cercle)
@@ -2790,6 +2820,18 @@ const CMD = {
     termPrint('EXTEND: Cliquer les entités limites (plusieurs possibles), puis Entrée ou clic droit pour confirmer', 'info');
     setTimeout(smartFocus, 0);
   }},
+  ELLIPSE: { alias: ['EL','ELLIPSE'], desc: 'Ellipse ou arc elliptique (ELLIPSE)', exec() {
+    S._ellipStep = 0; S._ellipCenter = null; S._ellipMode = 'full';
+    setTool('ellipse');
+    termPrint('ELLIPSE [A]rc — Cliquer le centre :', 'info');
+    setTimeout(smartFocus, 0);
+  }},
+  POLYGON: { alias: ['POL','POLYGONE'], desc: 'Polygone régulier (POLYGON)', exec() {
+    S._polyStep = 0; S._polyCenter = null;
+    setTool('polygon');
+    termPrint('POLYGONE: Nombre de côtés <' + S._polyNSides + '> (Entrée = garder) :', 'info');
+    setTimeout(smartFocus, 0);
+  }},
   AREA: { alias: ['AIRE','SURFACE'], desc: 'Calcule la surface d\'une entité ou d\'un polygone', exec() {
     S._areaPoints = []; S._areaMode = 'entity';
     setTool('area');
@@ -3189,11 +3231,17 @@ function getEntityBBox(e) {
                minY:Math.min(...ys)-pad, maxY:Math.max(...ys)+pad };
     }
     case 'rect':
-      return { minX:Math.min(e.x1,e.x2), maxX:Math.max(e.x1,e.x2),
-               minY:Math.min(e.y1,e.y2), maxY:Math.max(e.y1,e.y2) };
+      return { minX:Math.min(e.x1,e.x2)-pad, maxX:Math.max(e.x1,e.x2)+pad,
+               minY:Math.min(e.y1,e.y2)-pad, maxY:Math.max(e.y1,e.y2)+pad };
     case 'circle': case 'arc': case 'dim_radius': case 'dim_diameter':
       return { minX:(e.cx||0)-(e.r||50)-pad, maxX:(e.cx||0)+(e.r||50)+pad,
                minY:(e.cy||0)-(e.r||50)-pad, maxY:(e.cy||0)+(e.r||50)+pad };
+    case 'ellipse': {
+      const a = e.angle||0, rx=e.rx||50, ry=e.ry||25;
+      const hw = Math.sqrt((rx*Math.cos(a))**2+(ry*Math.sin(a))**2);
+      const hh = Math.sqrt((rx*Math.sin(a))**2+(ry*Math.cos(a))**2);
+      return { minX:e.cx-hw-pad, maxX:e.cx+hw+pad, minY:e.cy-hh-pad, maxY:e.cy+hh+pad };
+    }
     case 'dim_angular': {
       const armR = Math.max(e.r||40,
         Math.hypot((e.x1||0)-e.vx,(e.y1||0)-e.vy),
@@ -3297,7 +3345,7 @@ function _drawStaticLayer() {
     ctx.strokeStyle = color; ctx.fillStyle = color;
     ctx.lineWidth = getLayerLineWidthPx(layer?.lineWidth);
     ctx.setLineDash(e.dash || getLayerLineDash(layer?.lineType || 'solid'));
-    drawEntity(e);
+    try { drawEntity(e); } catch(err) { console.warn('drawEntity #'+e.id+' '+e.type, err.message); }
     ctx.setLineDash([]);
   });
 
@@ -3513,6 +3561,8 @@ function _drawDynamicLayer() {
   if (S.aiPendingEntities && S.aiPendingCenter && mouseOnCanvas) drawAiPlacementPreview();
   if (S.libPending && S.libDef && mouseOnCanvas) drawLibPreview();
   if (S.tool === 'paste' && S.clipboard.length && mouseOnCanvas) drawPastePreview();
+  if (S.tool === 'polygon' && S._polyStep === 2 && mouseOnCanvas) drawPolygonPreview();
+  if (S.tool === 'ellipse' && S._ellipStep >= 1 && mouseOnCanvas) drawEllipsePreview();
   if (S._tanFromCircle && S.drawing) drawTanDeferredMarker();
   // Extension + OTRACK trails : "+" + lignes de tracking H/V/prolongement
   if (S.osnapModes?.extension && S.osnapAcquired?.length > 0 && mouseOnCanvas) {
@@ -3837,6 +3887,137 @@ function _tubeTableDims(nRows, sc) {
   const W = (_TBL_COL1 + _TBL_GAP + _TBL_COL2 + _TBL_PAD * 2) * sc;
   const H = (_TBL_CELL * (nRows + 3) + _TBL_PAD * 2 + _TBL_SEP * 2) * sc;
   return { W, H };
+}
+
+function _finishEllipse(ry, startAngle, endAngle) {
+  if (!S._ellipCenter) return;
+  if (ry === null || ry === undefined) {
+    // Calculer ry depuis la position souris actuelle (mode arc)
+    const [cx,cy]=S._ellipCenter, a=S._ellipAngle;
+    const [mx,my]=S.mouseWorld;
+    ry = Math.abs(-(mx-cx)*Math.sin(a)+(my-cy)*Math.cos(a));
+  }
+  if (ry < 1e-6) return;
+  const rx = S._ellipRx, angle = S._ellipAngle;
+  if (!(rx > 0)) return;
+  // Toujours rx ≥ ry (convention)
+  let finalRx=rx, finalRy=ry, finalAngle=angle;
+  if (ry > rx) { finalRx=ry; finalRy=rx; finalAngle=angle+Math.PI/2; }
+  if (!(finalRy > 0)) return;
+  const full = S._ellipMode !== 'arc';
+  const ent = {
+    type:'ellipse', id:S.nextId++, layer:S.currentLayer,
+    cx:S._ellipCenter[0], cy:S._ellipCenter[1],
+    rx:finalRx, ry:finalRy, angle:finalAngle,
+    startAngle: full ? 0 : (startAngle??0),
+    endAngle:   full ? Math.PI*2 : (endAngle??Math.PI*2)
+  };
+  pushUndo();
+  S.entities.push(ent);
+  termPrint('ELLIPSE #'+ent.id+' rx='+finalRx.toFixed(1)+' ry='+finalRy.toFixed(1)+(full?'':' arc'), 'success');
+  S._ellipCenter=null; S._ellipStep=0; S._ellipMode='full';
+  S.drawing=false; S.drawPoints=[]; S.awaitingInput=false;
+  setTool('select');
+  updateSaveIndicator('modified'); autoSave(); render();
+}
+
+function drawEllipsePreview() {
+  if (!S._ellipCenter || !mouseOnCanvas) return;
+  const [cx,cy] = S._ellipCenter;
+  let [mx,my] = S.mouseWorld;
+  const osnap = findOsnap(mx,my);
+  if (osnap) { mx=osnap.x; my=osnap.y; }
+  else { [mx,my]=snapToGrid(mx,my); if(S.ortho)[mx,my]=applyOrtho(cx,cy,mx,my); else if(S.polar)[mx,my]=applyPolar(cx,cy,mx,my); }
+
+  ctx.save();
+  ctx.strokeStyle='#ffffff66'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+
+  if (S._ellipStep === 1) {
+    // Rubber-band axe 1
+    const [sx,sy]=w2s(cx,cy), [smx,smy]=w2s(mx,my);
+    ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(smx,smy); ctx.stroke();
+
+  } else if (S._ellipStep === 2) {
+    const a = S._ellipAngle;
+    const dx=mx-cx, dy=my-cy;
+    const ry = Math.abs(-dx*Math.sin(a)+dy*Math.cos(a));
+    const rx = S._ellipRx;
+    if (ry > 0) {
+      const [scx,scy]=w2s(cx,cy);
+      ctx.beginPath();
+      ctx.ellipse(scx,scy, rx*S.zoom, ry*S.zoom, -a, 0, Math.PI*2);
+      ctx.stroke();
+      // Axes en pointillés légers
+      ctx.setLineDash([2,5]); ctx.strokeStyle='#ffffff33';
+      const [ax1,ay1]=w2s(cx+rx*Math.cos(a),cy+rx*Math.sin(a));
+      const [ax2,ay2]=w2s(cx-rx*Math.cos(a),cy-rx*Math.sin(a));
+      ctx.beginPath(); ctx.moveTo(ax1,ay1); ctx.lineTo(ax2,ay2); ctx.stroke();
+      const [bx1,by1]=w2s(cx-ry*Math.sin(a),cy+ry*Math.cos(a));
+      const [bx2,by2]=w2s(cx+ry*Math.sin(a),cy-ry*Math.cos(a));
+      ctx.beginPath(); ctx.moveTo(bx1,by1); ctx.lineTo(bx2,by2); ctx.stroke();
+    }
+  }
+  ctx.setLineDash([]); ctx.restore();
+}
+
+function _finishPolygon(r) {
+  if (r < 1e-6) return;
+  const n = S._polyNSides;
+  const [cx, cy] = S._polyCenter;
+  const R = S._polyMode === 'C' ? r / Math.cos(Math.PI / n) : r;
+  const pts = [];
+  const startAngle = -Math.PI / 2;
+  for (let i = 0; i < n; i++) {
+    const a = startAngle + (2 * Math.PI * i) / n;
+    pts.push([cx + R * Math.cos(a), cy + R * Math.sin(a)]);
+  }
+  pts.push([...pts[0]]); // fermer
+  pushUndo();
+  S.entities.push({ type:'polyline', id:S.nextId++, layer:S.currentLayer, points:pts, closed:true });
+  termPrint('POLYGONE ' + n + ' côtés — R' + (S._polyMode==='C'?'circ':'insc') + '=' + r.toFixed(1), 'success');
+  S._polyCenter = null; S._polyStep = 0;
+  S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
+  setTool('select');
+  updateSaveIndicator('modified'); autoSave(); render();
+}
+
+function drawPolygonPreview() {
+  if (!S._polyCenter || !mouseOnCanvas) return;
+  const [cx, cy] = S._polyCenter;
+  let [mx, my] = S.mouseWorld;
+  // OSNAP → ortho/polar
+  const osnap = findOsnap(mx, my);
+  if (osnap) { mx = osnap.x; my = osnap.y; }
+  else {
+    [mx, my] = snapToGrid(mx, my);
+    if (S.ortho) [mx, my] = applyOrtho(cx, cy, mx, my);
+    else if (S.polar) [mx, my] = applyPolar(cx, cy, mx, my);
+  }
+  const r = Math.hypot(mx - cx, my - cy);
+  if (r < 1e-6) return;
+  const n = S._polyNSides;
+  const R = S._polyMode === 'C' ? r / Math.cos(Math.PI / n) : r;
+  const startAngle = -Math.PI / 2;
+  ctx.save();
+  ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  for (let i = 0; i <= n; i++) {
+    const a = startAngle + (2 * Math.PI * i) / n;
+    const [sx, sy] = w2s(cx + R * Math.cos(a), cy + R * Math.sin(a));
+    i === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
+  }
+  ctx.stroke();
+  // Cercle de référence en pointillés légers
+  ctx.setLineDash([2, 5]);
+  ctx.strokeStyle = '#ffffff22';
+  const [scx, scy] = w2s(cx, cy);
+  ctx.beginPath(); ctx.arc(scx, scy, r * S.zoom, 0, Math.PI * 2); ctx.stroke();
+  // Ligne centre → curseur
+  ctx.setLineDash([]);
+  ctx.strokeStyle = '#ffffff44';
+  const [smx, smy] = w2s(mx, my);
+  ctx.beginPath(); ctx.moveTo(scx, scy); ctx.lineTo(smx, smy); ctx.stroke();
+  ctx.restore();
 }
 
 function toggleTubeDefPopup(ev) {
@@ -4609,6 +4790,19 @@ function drawEntity(e) {
       const [cx,cy] = w2s(e.cx,e.cy);
       ctx.beginPath(); ctx.arc(cx,cy,e.r*S.zoom,-e.endAngle,-e.startAngle); ctx.stroke(); break;
     }
+    case 'ellipse': {
+      if (!(e.rx > 0) || !(e.ry > 0)) break; // guard contre entité corrompue
+      const [cx,cy] = w2s(e.cx,e.cy);
+      const sa = e.startAngle ?? 0, ea = e.endAngle ?? Math.PI*2;
+      const full = Math.abs((ea-sa) - Math.PI*2) < 1e-9;
+      ctx.beginPath();
+      if (full) {
+        ctx.ellipse(cx, cy, e.rx*S.zoom, e.ry*S.zoom, -(e.angle||0), 0, Math.PI*2);
+      } else {
+        ctx.ellipse(cx, cy, e.rx*S.zoom, e.ry*S.zoom, -(e.angle||0), -ea, -sa);
+      }
+      ctx.stroke(); break;
+    }
     case 'polyline': case 'cable': {
       if (e.points.length < 2) return;
       if (e.type === 'cable') ctx.setLineDash([4,4]);
@@ -5072,6 +5266,23 @@ function getGripPoints(e) {
         gp(p[0], p[1], (ent, nx, ny) => { ent.points[i] = [nx, ny]; });
       });
       break;
+    case 'ellipse': {
+      const a = e.angle||0, cos=Math.cos(a), sin=Math.sin(a);
+      // Centre
+      gp(e.cx, e.cy, (ent,nx,ny) => { ent.cx=nx; ent.cy=ny; });
+      // Extrémité grand axe (+)
+      gp(e.cx+e.rx*cos, e.cy+e.rx*sin, (ent,nx,ny) => {
+        const dx=nx-ent.cx, dy=ny-ent.cy;
+        ent.rx=Math.hypot(dx,dy); ent.angle=Math.atan2(dy,dx);
+      });
+      // Extrémité petit axe (+)
+      gp(e.cx-e.ry*sin, e.cy+e.ry*cos, (ent,nx,ny) => {
+        const dx=nx-ent.cx, dy=ny-ent.cy;
+        const a2=ent.angle||0;
+        ent.ry=Math.abs(-dx*Math.sin(a2)+dy*Math.cos(a2));
+      });
+      break;
+    }
     case 'xline': case 'ray':
       gp(e.x, e.y, (ent, nx, ny) => { ent.x = nx; ent.y = ny; });
       break;
@@ -6335,7 +6546,7 @@ const diUnit2 = document.getElementById('di-unit2');
 
 // Returns the input mode for the current tool and drawing state
 function getDIMode() {
-  const drawingTools = ['line','xline','ray','ray_rev','rect','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube'];
+  const drawingTools = ['line','xline','ray','ray_rev','rect','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube','ellipse','polygon'];
   // First point: show X,Y
   if (!S.drawing && drawingTools.includes(S.tool)) return 'xy';
   if (S.tool === 'rect') return 'wh'; // Width × Height
@@ -6552,6 +6763,44 @@ function confirmDynamicInput() {
     // Sinon : laisser continuer le parsing normal (coordonnées/distance)
   }
 
+  // === ELLIPSE : mots-clés et valeurs (avant le parsing distance) ===
+  if (S.tool === 'ellipse') {
+    const up = diDist.value.trim().toUpperCase();
+    S.diLocked = false; diDist.blur(); diAngle.blur();
+    if (S._ellipStep === 2 && (up === 'A' || up === 'ARC')) {
+      S._ellipMode = 'arc'; diDist.value = ''; termPrint('Mode Arc — demi-axe 2 :', 'info');
+      render(); setTimeout(smartFocus,0); return;
+    }
+    const val = parseFloat(up);
+    if (S._ellipStep === 1 && !isNaN(val) && val > 0) {
+      const [cx,cy]=S._ellipCenter; const [mx,my]=S.mouseWorld;
+      S._ellipRx=val; S._ellipAngle=Math.atan2(my-cy,mx-cx); S._ellipStep=2;
+      S.drawPoints=[[cx,cy]]; termPrint('ELLIPSE: Demi-axe 2  |  [A]=Arc','info');
+      render(); setTimeout(smartFocus,0); return;
+    }
+    if (S._ellipStep === 2 && !isNaN(val) && val > 0) { _finishEllipse(val); return; }
+    if (S._ellipStep === 3 && !isNaN(val)) {
+      S._ellipStartAngle=val*Math.PI/180; S._ellipStep=4;
+      termPrint('ELLIPSE arc: Angle de fin :','info'); render(); setTimeout(smartFocus,0); return;
+    }
+    if (S._ellipStep === 4 && !isNaN(val)) {
+      let ea=val*Math.PI/180; while(ea<=S._ellipStartAngle) ea+=Math.PI*2;
+      _finishEllipse(null,S._ellipStartAngle,ea); return;
+    }
+    return;
+  }
+
+  // === POLYGON : mots-clés I / C (avant le parsing distance) ===
+  if (S.tool === 'polygon' && S._polyStep === 2 && S._polyCenter) {
+    const up = diDist.value.trim().toUpperCase();
+    if (up === 'I' || up === 'C') {
+      S._polyMode = up;
+      S.diLocked = false; diDist.value = ''; diDist.blur(); diAngle.blur();
+      termPrint('Mode ' + (up === 'I' ? 'Inscrit' : 'Circonsrit') + ' — rayon :', 'info');
+      render(); setTimeout(smartFocus, 0); return;
+    }
+  }
+
   // === GRIP EDIT via dynamic input ===
   if (S.gripEdit) {
     const d = parseFloat(diDist.value);
@@ -6635,6 +6884,14 @@ function confirmDynamicInput() {
     render(); setTimeout(smartFocus, 0); return;
   }
 
+  if (S.tool === 'polygon' && S._polyStep === 2 && S._polyCenter) {
+    S.diLocked = false; diDist.blur(); diAngle.blur();
+    const r = parseFloat(diDist.value);
+    if (isNaN(r) || r <= 0) { termPrint('Rayon invalide', 'error'); return; }
+    _finishPolygon(r);
+    render(); setTimeout(smartFocus, 0); return;
+  }
+
   // For polyline/cable/spline: add point
   if (['polyline','cable','spline'].includes(S.tool)) {
     S.drawPoints.push([nx, ny]);
@@ -6705,6 +6962,8 @@ function getCursorMode() {
   if (S.libPending) return 'draw';
   if (t === 'paste') return 'draw';
   if (t === 'area') return S._areaMode === 'points' ? 'draw' : 'pick';
+  if (t === 'polygon') return 'draw';
+  if (t === 'ellipse') return 'draw';
   if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.arrayPending) ? 'pick' : 'idle';
   if (t === 'stretch' && S.stretchStep === 0) return 'pick';
   if (t === 'trim' || t === 'extend') return 'pick';
@@ -7354,7 +7613,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
         updateSaveIndicator('modified'); autoSave(); render(); return;
       }
       let tx = wx, ty = wy;
-      if (S.drawPoints.length > 0) [tx, ty] = applyConstraint(S.drawPoints[0][0], S.drawPoints[0][1], wx, wy);
+      if (S.drawPoints.length > 0 && tool !== 'rect') [tx, ty] = applyConstraint(S.drawPoints[0][0], S.drawPoints[0][1], wx, wy);
       // Mode diamètre : réduire le rayon de moitié
       if (tool === 'circle' && S.circleDiamMode) {
         const base = S.drawPoints[0];
@@ -7735,6 +7994,62 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       }
     } else {
       termPrint('AREA: Aucune entité — cliquer une entité fermée ou [P] pour définir un polygone', 'warning');
+    }
+    render(); return;
+  }
+
+  if (tool === 'ellipse') {
+    if (S._ellipStep === 0) {
+      // Centre
+      S._ellipCenter = [wx, wy]; S._ellipStep = 1;
+      S.drawing = true; S.drawPoints = [[wx, wy]]; S.awaitingInput = true;
+      termPrint('ELLIPSE: Extrémité du 1er axe (clic ou longueur)', 'info');
+    } else if (S._ellipStep === 1) {
+      // Extrémité axe 1 — appliquer ortho/polar depuis le centre
+      const [cx,cy] = S._ellipCenter;
+      let [px,py] = [wx,wy];
+      if (S.ortho)      [px,py] = applyOrtho(cx,cy,rawWx,rawWy);
+      else if (S.polar) [px,py] = applyPolar(cx,cy,rawWx,rawWy);
+      S._ellipRx = Math.hypot(px-cx, py-cy);
+      S._ellipAngle = Math.atan2(py-cy, px-cx);
+      if (S._ellipRx < 1e-6) return;
+      S._ellipStep = 2;
+      S.drawPoints = [[cx,cy]];
+      termPrint('ELLIPSE: Demi-axe 2 (distance perp. ou clic)  |  [A]=Arc', 'info');
+    } else if (S._ellipStep === 2) {
+      const [cx,cy] = S._ellipCenter;
+      const a = S._ellipAngle;
+      // Perpendicular distance from click to major axis
+      const dx=wx-cx, dy=wy-cy;
+      const ry = Math.abs(-dx*Math.sin(a)+dy*Math.cos(a));
+      _finishEllipse(ry);
+    } else if (S._ellipStep === 3) {
+      // Arc start angle (via click)
+      const [cx,cy] = S._ellipCenter;
+      S._ellipStartAngle = Math.atan2(wy-cy, wx-cx) - (S._ellipAngle||0);
+      S._ellipStep = 4;
+      termPrint('ELLIPSE arc: Angle de fin (clic ou valeur °)', 'info');
+    } else if (S._ellipStep === 4) {
+      const [cx,cy] = S._ellipCenter;
+      let endAngle = Math.atan2(wy-cy, wx-cx) - (S._ellipAngle||0);
+      while (endAngle <= S._ellipStartAngle) endAngle += Math.PI*2;
+      _finishEllipse(null, S._ellipStartAngle, endAngle);
+    }
+    render(); return;
+  }
+
+  if (tool === 'polygon') {
+    if (S._polyStep === 1) {
+      S._polyCenter = [wx, wy];
+      S._polyStep = 2;
+      S.drawing = true; S.drawPoints = [[wx, wy]]; S.awaitingInput = true;
+      termPrint('POLYGONE ' + S._polyNSides + ' côtés [' + S._polyMode + '] — rayon (clic ou valeur)  |  I=Inscrit  C=Circonsrit', 'info');
+    } else if (S._polyStep === 2 && S._polyCenter) {
+      const [cx, cy] = S._polyCenter;
+      let [px, py] = [wx, wy];
+      if (S.ortho) [px, py] = applyOrtho(cx, cy, rawWx, rawWy);
+      else if (S.polar) [px, py] = applyPolar(cx, cy, rawWx, rawWy);
+      _finishPolygon(Math.hypot(px - cx, py - cy));
     }
     render(); return;
   }
@@ -8870,6 +9185,13 @@ function hitTest(wx,wy) {
     else if(e.type==='circle'){
       tryHit(e, Math.abs(Math.hypot(wx-e.cx,wy-e.cy)-e.r));
     }
+    else if(e.type==='ellipse'){
+      const dx=wx-e.cx, dy=wy-e.cy, a=e.angle||0;
+      const u= dx*Math.cos(a)+dy*Math.sin(a);
+      const v=-dx*Math.sin(a)+dy*Math.cos(a);
+      const ratio=Math.sqrt((u/e.rx)**2+(v/e.ry)**2);
+      if(ratio>0) tryHit(e, Math.abs(ratio-1)*Math.min(e.rx,e.ry)/ratio);
+    }
     else if(e.type==='arc'){
       const dr=Math.abs(Math.hypot(wx-e.cx,wy-e.cy)-e.r);
       if(dr<tol){
@@ -9248,7 +9570,7 @@ function _findTubeBendArc(e, wx, wy, tol) {
 
 // ===== TOOLS & UI =====
 const _toolCmdName = {
-  line:'LINE', rect:'RECT', circle:'CIRCLE', arc:'ARC',
+  line:'LINE', rect:'RECT', circle:'CIRCLE', arc:'ARC', polygon:'POLYGON', ellipse:'ELLIPSE',
   wall:'WALL', polyline:'PL', cable:'CABLE', leader:'LEADER',
   copy:'COPY', move_obj:'MOVE', mirror:'MIRROR', offset:'OFFSET', rotate:'ROTATE', scale:'SCALE', trim:'TRIM', stretch:'STRETCH',
   point:'POINT', divide_pick:'DIVIDE',
@@ -9344,7 +9666,7 @@ function zoomExtents() {
   S.entities.forEach(e=>{
     const pts=[];
     if(e.x1!==undefined){pts.push([e.x1,e.y1]);pts.push([e.x2,e.y2]);}
-    if(e.cx!==undefined){pts.push([e.cx-e.r,e.cy-e.r]);pts.push([e.cx+e.r,e.cy+e.r]);}
+    if(e.cx!==undefined && e.r!==undefined){pts.push([e.cx-e.r,e.cy-e.r]);pts.push([e.cx+e.r,e.cy+e.r]);}
     if(e.x!==undefined&&e.x1===undefined)pts.push([e.x,e.y]);
     if(e.points)e.points.forEach(p=>pts.push(p));
     pts.forEach(([x,y])=>{minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);});
@@ -9360,14 +9682,34 @@ function _propChange(id, field, val, isText) {
   const e = S.entities.find(en => en.id === id);
   if (!e) return;
   pushUndo();
-  if (isText) {
-    e[field] = val;
-  } else {
-    const n = parseFloat(val);
-    if (isNaN(n)) return;
-    e[field] = n;
-  }
-  render();
+  if (isText) { e[field] = val; } else { const n = parseFloat(val); if (isNaN(n)) return; e[field] = n; }
+  render(); autoSave();
+}
+
+function _propChangeLongueurMulti(val) {
+  const newLen = parseFloat(val);
+  if (isNaN(newLen) || newLen <= 0) return;
+  const ents = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && (e.type==='line'||e.type==='wall'));
+  if (!ents.length) return;
+  pushUndo();
+  ents.forEach(e => {
+    const angle = Math.atan2(e.y2 - e.y1, e.x2 - e.x1);
+    e.x2 = e.x1 + newLen * Math.cos(angle);
+    e.y2 = e.y1 + newLen * Math.sin(angle);
+  });
+  render(); autoSave(); updateProperties();
+}
+
+function _propChangeLongueur(id, val) {
+  const e = S.entities.find(en => en.id === id);
+  if (!e) return;
+  const newLen = parseFloat(val);
+  if (isNaN(newLen) || newLen <= 0) return;
+  const angle = Math.atan2(e.y2 - e.y1, e.x2 - e.x1);
+  pushUndo();
+  e.x2 = e.x1 + newLen * Math.cos(angle);
+  e.y2 = e.y1 + newLen * Math.sin(angle);
+  render(); autoSave(); updateProperties();
 }
 
 function _propChangeLayer(id, layerIdx) {
@@ -9375,15 +9717,55 @@ function _propChangeLayer(id, layerIdx) {
   if (!e) return;
   pushUndo();
   e.layer = parseInt(layerIdx);
-  render();
-  updateProperties();
+  render(); autoSave(); updateProperties();
+}
+
+// Applique un changement de champ à TOUTES les entités sélectionnées
+function _propChangeMulti(field, val, isText) {
+  const ents = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+  if (!ents.length) return;
+  pushUndo();
+  ents.forEach(e => {
+    if (!(field in e)) return;
+    if (isText) { e[field] = val; } else { const n = parseFloat(val); if (!isNaN(n)) e[field] = n; }
+  });
+  render(); autoSave(); updateProperties();
+}
+
+function _propChangeLayerMulti(layerIdx) {
+  const ents = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+  if (!ents.length) return;
+  pushUndo();
+  ents.forEach(e => { e.layer = parseInt(layerIdx); });
+  render(); autoSave(); updateProperties();
+}
+
+function _propChangeDimStyleMulti(val) {
+  const ents = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+  if (!ents.length) return;
+  pushUndo();
+  ents.forEach(e => { if ('dimStyle' in e) e.dimStyle = val; });
+  render(); autoSave(); updateProperties();
 }
 
 function updateProperties() {
   const c = document.getElementById('props-content');
-  if (!S.selected.length) { c.innerHTML='<div style="padding:8px 10px;color:var(--text-dim);font-size:11px;">Aucune sélection</div>'; return; }
-  if (S.selected.length > 1) { c.innerHTML='<div style="padding:8px 10px;font-size:11px;">'+S.selected.length+' objets</div>'; return; }
-  const e = S.entities.find(en => en.id === S.selected[0]); if (!e) return;
+  if (!S.selected.length) {
+    c.innerHTML = '<div style="padding:8px 10px;color:var(--text-dim);font-size:11px;">Aucune sélection</div>';
+    return;
+  }
+  const ents = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+  if (!ents.length) return;
+
+  if (ents.length === 1) {
+    _updatePropertiesSingle(ents[0]);
+  } else {
+    _updatePropertiesMulti(ents);
+  }
+}
+
+function _updatePropertiesSingle(e) {
+  const c = document.getElementById('props-content');
   const id = e.id;
   const inp = (field, val, isText) => {
     const esc = String(val).replace(/"/g,'&quot;');
@@ -9404,7 +9786,7 @@ function updateProperties() {
     h += row('Y1', inp('y1', e.y1.toFixed(2)));
     h += row('X2', inp('x2', e.x2.toFixed(2)));
     h += row('Y2', inp('y2', e.y2.toFixed(2)));
-    if (e.type==='line'||e.type==='wall') h += row('Longueur','<span class="prop-value">'+Math.hypot(e.x2-e.x1,e.y2-e.y1).toFixed(2)+'</span>');
+    if (e.type==='line'||e.type==='wall') h += row('Longueur','<input type="number" class="prop-input" step="any" value="'+Math.hypot(e.x2-e.x1,e.y2-e.y1).toFixed(2)+'" onchange="_propChangeLongueur('+id+',this.value)" />');
   }
   if (e.cx !== undefined) {
     h += row('CX', inp('cx', e.cx.toFixed(2)));
@@ -9432,11 +9814,113 @@ function updateProperties() {
       '</select>';
     h += row('Style cote', dsSel);
   }
+  if (e.type === 'ellipse') {
+    h += row('CX', inp('cx', e.cx.toFixed(2)));
+    h += row('CY', inp('cy', e.cy.toFixed(2)));
+    h += row('Rx', inp('rx', e.rx.toFixed(2)));
+    h += row('Ry', inp('ry', e.ry.toFixed(2)));
+    h += row('Angle', inp('angle', ((e.angle||0)*180/Math.PI).toFixed(2)));
+  }
   if (e.profileFamily) {
     h += row('Profil', '<span class="prop-value">'+e.profileFamily+(e.profileSize?' '+e.profileSize:'')+'</span>');
     if (e.profileStandard) h += row('Norme', '<span class="prop-value">'+e.profileStandard+'</span>');
     if (e.profileG != null) h += row('Poids/m', '<span class="prop-value">'+e.profileG+' kg/m</span>');
   }
+  c.innerHTML = h;
+}
+
+function _updatePropertiesMulti(ents) {
+  const c = document.getElementById('props-content');
+
+  // Valeur commune : valeur si identique pour tous, null si différentes, undefined si champ absent partout
+  const common = (field) => {
+    const vals = ents.map(e => e[field]).filter(v => v !== undefined);
+    if (!vals.length) return undefined;
+    return vals.every(v => v === vals[0]) ? vals[0] : null;
+  };
+  // Vrai si AU MOINS UNE entité a ce champ
+  const hasField = (field) => ents.some(e => e[field] !== undefined);
+
+  const row = (label, content) => '<div class="prop-row"><span class="prop-label">'+label+'</span>'+content+'</div>';
+
+  // Input multi : valeur commune affichée, ou placeholder "*Valeurs différentes*"
+  const inp = (field, val, isText) => {
+    const differs = val === null;
+    const esc = differs ? '' : String(val).replace(/"/g,'&quot;');
+    const ph  = differs ? ' placeholder="*Valeurs différentes*"' : '';
+    const t   = isText ? 'text' : 'number';
+    const step = isText ? '' : ' step="any"';
+    return '<input type="'+t+'" class="prop-input"'+
+           (differs?' style="color:var(--text-dim);font-style:italic"':'')+
+           ' value="'+esc+'"'+step+ph+
+           ' onchange="_propChangeMulti(\''+field+'\',this.value,'+(isText?'true':'false')+')" />';
+  };
+
+  // Résumé
+  const typeCounts = {};
+  ents.forEach(e => { typeCounts[e.type] = (typeCounts[e.type]||0)+1; });
+  const typeSummary = Object.entries(typeCounts).map(([t,n])=>n>1?n+'× '+t:t).join(', ');
+  const allSameType = Object.keys(typeCounts).length === 1;
+  const type = allSameType ? ents[0].type : null;
+
+  let h = row('Sélection', '<span class="prop-value">'+ents.length+' objets</span>');
+  h += row('Types', '<span class="prop-value" style="font-size:10px">'+typeSummary+'</span>');
+
+  // Calque (toujours affiché)
+  const layerVal = common('layer');
+  const layerSel = '<select class="prop-select" onchange="_propChangeLayerMulti(this.value)">'+
+    (layerVal === null ? '<option value="" disabled selected>*Valeurs différentes*</option>' : '')+
+    S.layers.map((l,i)=>'<option value="'+i+'"'+(layerVal===i?' selected':'')+'>'+l.name+'</option>').join('')+
+    '</select>';
+  h += row('Calque', layerSel);
+
+  if (allSameType) {
+    // Coordonnées X1/Y1/X2/Y2
+    if (hasField('x1')) {
+      h += row('X1', inp('x1', common('x1') !== null ? common('x1').toFixed(2) : null));
+      h += row('Y1', inp('y1', common('y1') !== null ? common('y1').toFixed(2) : null));
+      h += row('X2', inp('x2', common('x2') !== null ? common('x2').toFixed(2) : null));
+      h += row('Y2', inp('y2', common('y2') !== null ? common('y2').toFixed(2) : null));
+      if (type === 'line' || type === 'wall') {
+        const lens = ents.map(e => Math.hypot(e.x2-e.x1, e.y2-e.y1));
+        const allSameLen = lens.every(l => Math.abs(l - lens[0]) < 1e-9);
+        const lenVal = allSameLen ? lens[0].toFixed(2) : null;
+        const lenEsc = lenVal !== null ? lenVal : '';
+        const lenPh  = lenVal === null ? ' placeholder="*Valeurs différentes*"' : '';
+        const lenStyle = lenVal === null ? ' style="color:var(--text-dim);font-style:italic"' : '';
+        h += row('Longueur', '<input type="number" class="prop-input" step="any" value="'+lenEsc+'"'+lenPh+lenStyle+' onchange="_propChangeLongueurMulti(this.value)" />');
+      }
+    }
+    // CX/CY/R
+    if (hasField('cx')) {
+      h += row('CX', inp('cx', common('cx') !== null ? common('cx').toFixed(2) : null));
+      h += row('CY', inp('cy', common('cy') !== null ? common('cy').toFixed(2) : null));
+      h += row('Rayon', inp('r',  common('r')  !== null ? common('r').toFixed(2)  : null));
+    }
+    // X/Y (point, texte…)
+    if (hasField('x') && !hasField('x1')) {
+      h += row('X', inp('x', common('x') !== null ? common('x').toFixed(2) : null));
+      h += row('Y', inp('y', common('y') !== null ? common('y').toFixed(2) : null));
+    }
+    // Épaisseur
+    if (hasField('thickness')) h += row('Épaisseur', inp('thickness', common('thickness')));
+    // Texte
+    if (hasField('content')) h += row('Texte', inp('content', common('content'), true));
+    if (hasField('size'))    h += row('Taille', inp('size', common('size')));
+    // Nb points (lecture seule)
+    if (hasField('points')) h += row('Points', '<span class="prop-value">'+
+      (common('points') !== null ? ents[0].points.length : '*Valeurs différentes*')+'</span>');
+    // Style de cote
+    if (['dim_linear','dim_aligned','dim_angular','dim_radius','dim_diameter','leader'].includes(type)) {
+      const ds = common('dimStyle');
+      const dsSel = '<select class="prop-select" onchange="_propChangeDimStyleMulti(this.value)">'+
+        (ds === null ? '<option value="" disabled selected>*Valeurs différentes*</option>' : '')+
+        S.dimStyles.map(s=>'<option value="'+s.name+'"'+(ds===s.name?' selected':'')+'>'+s.name+'</option>').join('')+
+        '</select>';
+      h += row('Style cote', dsSel);
+    }
+  }
+
   c.innerHTML = h;
 }
 
@@ -10480,6 +10964,12 @@ function executeCommand(input) {
     }
     // Entrée vide en mode JOIN → confirmer la fusion
     if(S.tool==='join'){ applyJoin(); return; }
+    // Entrée vide en mode POLYGON étape 0 → garder nb côtés courant
+    if(S.tool==='polygon' && S._polyStep===0){
+      S._polyStep=1;
+      termPrint('POLYGONE ('+S._polyNSides+' côtés): Cliquer le centre','info');
+      return;
+    }
     // Entrée vide en mode AREA points → calculer
     if(S.tool==='area' && S._areaMode==='points'){
       if(S._areaPoints.length<3){termPrint('AREA: 3 points minimum','warning');return;}
@@ -10568,6 +11058,73 @@ function executeCommand(input) {
       }
     }
     if(num===undefined||isNaN(num)) termPrint('ARC: C=Centre  E=Fin  A=Angle (en mode SCE)','warning');
+    return;
+  }
+
+  // ---- ELLIPSE : mots-clés A, saisie demi-axes et angles ----
+  if (S.tool === 'ellipse') {
+    const up = raw.toUpperCase();
+    if (S._ellipStep === 0 && (up === 'A' || up === 'ARC')) {
+      S._ellipMode = 'arc';
+      termPrint('ELLIPSE Arc — Cliquer le centre :', 'info'); return;
+    }
+    if (S._ellipStep === 1) {
+      // Saisie longueur demi-axe 1 depuis terminal (angle suit la souris)
+      const d = parseFloat(raw);
+      if (!isNaN(d) && d > 0) {
+        const [cx,cy] = S._ellipCenter;
+        const [mx,my] = S.mouseWorld;
+        const angle = Math.atan2(my-cy, mx-cx);
+        S._ellipRx = d; S._ellipAngle = angle; S._ellipStep = 2;
+        S.drawPoints = [[cx,cy]];
+        termPrint('ELLIPSE: Demi-axe 2  |  [A]=Arc', 'info');
+      }
+      return;
+    }
+    if (S._ellipStep === 2) {
+      if (up === 'A' || up === 'ARC') { S._ellipMode = 'arc'; termPrint('Mode Arc — demi-axe 2 :', 'info'); return; }
+      const ry = parseFloat(raw);
+      if (!isNaN(ry) && ry > 0) { _finishEllipse(ry); return; }
+      return;
+    }
+    if (S._ellipStep === 3) {
+      const deg = parseFloat(raw);
+      if (!isNaN(deg)) { S._ellipStartAngle = deg * Math.PI/180; S._ellipStep = 4; termPrint('ELLIPSE arc: Angle de fin :', 'info'); } return;
+    }
+    if (S._ellipStep === 4) {
+      const deg = parseFloat(raw);
+      if (!isNaN(deg)) {
+        let ea = deg * Math.PI/180;
+        while (ea <= S._ellipStartAngle) ea += Math.PI*2;
+        _finishEllipse(null, S._ellipStartAngle, ea);
+      }
+      return;
+    }
+    return;
+  }
+
+  // ---- POLYGON : saisie nb côtés, mode I/C, rayon ----
+  if (S.tool === 'polygon') {
+    const up = raw.toUpperCase();
+    if (S._polyStep === 0) {
+      if (!raw) {
+        // Entrée vide → garder nb côtés courant
+        S._polyStep = 1;
+        termPrint('POLYGONE (' + S._polyNSides + ' côtés): Cliquer le centre', 'info');
+        return;
+      }
+      const n = parseInt(raw);
+      if (isNaN(n) || n < 3 || n > 1024) { termPrint('POLYGONE: entre 3 et 1024 côtés', 'warning'); return; }
+      S._polyNSides = n; S._polyStep = 1;
+      termPrint('POLYGONE (' + n + ' côtés): Cliquer le centre', 'info');
+      return;
+    }
+    if (S._polyStep === 2) {
+      if (up === 'I') { S._polyMode = 'I'; termPrint('Mode Inscrit — rayon :', 'info'); return; }
+      if (up === 'C') { S._polyMode = 'C'; termPrint('Mode Circonsrit — rayon :', 'info'); return; }
+      const r = parseFloat(raw);
+      if (!isNaN(r) && r > 0) { _finishPolygon(r); return; }
+    }
     return;
   }
 
@@ -10744,7 +11301,7 @@ function executeCommand(input) {
   }
 
   // ---- FIRST POINT INPUT: tool active but no drawing started yet ----
-  const drawingTools = ['line','xline','ray','ray_rev','rect','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube'];
+  const drawingTools = ['line','xline','ray','ray_rev','rect','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube','ellipse','polygon'];
   if (!S.drawing && drawingTools.includes(S.tool)) {
     // Try to parse as absolute coordinates for the 1st point
     const fpMatch = raw.match(/^#?\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
@@ -11156,6 +11713,13 @@ document.addEventListener('keydown',(ev)=>{
   }
   if(ev.key==='Escape' && S.tool==='area'){
     S._areaPoints=[]; setTool('select'); render(); return;
+  }
+  if(ev.key==='Escape' && S.tool==='polygon'){
+    S._polyCenter=null; S._polyStep=0; setTool('select'); render(); return;
+  }
+  if(ev.key==='Escape' && S.tool==='ellipse'){
+    S._ellipCenter=null; S._ellipStep=0; S._ellipMode='full';
+    setTool('select'); render(); return;
   }
   if(ev.key==='Escape' && S.tool==='rotate'){
     S.rotateStep=0; S.rotateBase=null; S.rotateIds=[]; setTool('select'); render(); return;
@@ -12049,7 +12613,7 @@ function loadFromLocalStorage() {
     const data = JSON.parse(saved);
     if (!data.entities || !data.entities.length) return;
     if (data.layers) { S.layers = data.layers; S.layers.forEach(l=>{if(!l.lineWidth)l.lineWidth=0.25;if(!l.lineType)l.lineType='solid';if(!l.printColor)l.printColor='#000000';}); }
-    S.entities = data.entities;
+    S.entities = data.entities.filter(e => e.type !== 'ellipse' || (e.rx > 0 && e.ry > 0));
     if (data.currentLayer !== undefined) S.currentLayer = data.currentLayer;
     if (data.nextId) S.nextId = data.nextId;
     if (data.gridSize) S.gridSize = data.gridSize;
@@ -12671,6 +13235,39 @@ canvas.addEventListener('contextmenu', (ev) => {
       _printAreaResult(area, perim, 'polygone');
     }
     S._areaPoints = []; setTool('select'); render(); return;
+  }
+
+  // ELLIPSE → clic droit = confirme à l'étape courante
+  if (S.tool === 'ellipse') {
+    if (S._ellipStep === 2 && S._ellipCenter) {
+      const [cx,cy]=S._ellipCenter, a=S._ellipAngle;
+      let [mx,my]=S.mouseWorld;
+      if(S.ortho)[mx,my]=applyOrtho(cx,cy,mx,my); else if(S.polar)[mx,my]=applyPolar(cx,cy,mx,my);
+      const ry=Math.abs(-(mx-cx)*Math.sin(a)+(my-cy)*Math.cos(a));
+      if(ry>0){_finishEllipse(ry);return;}
+    }
+    S._ellipCenter=null;S._ellipStep=0;S._ellipMode='full';setTool('select');render();return;
+  }
+
+  // POLYGON → clic droit = Entrée selon l'étape
+  if (S.tool === 'polygon') {
+    if (S._polyStep === 0) {
+      // Confirmer nb côtés courant → passer à l'étape centre
+      S._polyStep = 1;
+      termPrint('POLYGONE (' + S._polyNSides + ' côtés): Cliquer le centre', 'info');
+      render(); return;
+    }
+    if (S._polyStep === 2 && S._polyCenter) {
+      // Confirmer avec la position souris courante
+      const [cx, cy] = S._polyCenter;
+      let [mx, my] = S.mouseWorld;
+      if (S.ortho) [mx, my] = applyOrtho(cx, cy, mx, my);
+      else if (S.polar) [mx, my] = applyPolar(cx, cy, mx, my);
+      const r = Math.hypot(mx - cx, my - cy);
+      if (r > 0) { _finishPolygon(r); return; }
+    }
+    // Annuler si pas encore de rayon valide
+    S._polyCenter = null; S._polyStep = 0; setTool('select'); render(); return;
   }
 
   // Outils avec confirmation → clic droit = Entrée (comme AutoCAD)
