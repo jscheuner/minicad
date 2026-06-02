@@ -415,7 +415,7 @@
   .lm-close-btn:hover { opacity: 0.85; }
 
   /* ===== ARRAY DIALOG ===== */
-  #array-dialog {
+  #array-dialog, #polar-array-dialog {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
     background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
     z-index: 952; width: 320px; box-shadow: 0 12px 48px rgba(0,0,0,0.8);
@@ -1158,6 +1158,14 @@
           <rect x="2" y="17" width="5" height="5" rx="1"/><rect x="9.5" y="17" width="5" height="5" rx="1"/><rect x="17" y="17" width="5" height="5" rx="1"/>
         </svg>
       </button>
+      <button class="tool-btn" title="Réseau polaire (APO)" onclick="executeCommand('ARRAY_POLAR')">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="7" fill="none" stroke-dasharray="2,2" opacity="0.45"/>
+          <circle cx="12" cy="5" r="1.8"/><circle cx="18.1" cy="8.5" r="1.8"/><circle cx="18.1" cy="15.5" r="1.8"/>
+          <circle cx="12" cy="19" r="1.8"/><circle cx="5.9" cy="15.5" r="1.8"/><circle cx="5.9" cy="8.5" r="1.8"/>
+          <circle cx="12" cy="12" r="1.2" opacity="0.5"/>
+        </svg>
+      </button>
       <!-- Éclater bloc -->
       <button class="tool-btn" title="Éclater (X)" onclick="executeCommand('EXPLODE')">
         <svg viewBox="0 0 24 24">
@@ -1549,23 +1557,23 @@
   <div class="ar-body">
     <div class="ar-group">
       <div class="ar-label">Colonnes</div>
-      <input id="ar-cols" class="ar-input" type="number" value="3" min="1" max="100" oninput="arrayPreviewUpdate()">
+      <input id="ar-cols" class="ar-input" type="text" inputmode="decimal" value="3" oninput="arrayPreviewUpdate()">
     </div>
     <div class="ar-group">
       <div class="ar-label">Espacement X</div>
       <div class="ar-pick-row">
-        <input id="ar-dx" class="ar-input" type="number" value="100" oninput="arrayPreviewUpdate()">
+        <input id="ar-dx" class="ar-input" type="text" inputmode="decimal" value="100" oninput="arrayPreviewUpdate()">
         <button class="ar-pick-btn" title="Cliquer 2 points sur le dessin" onclick="arrayPickSpacing('x')">⊶</button>
       </div>
     </div>
     <div class="ar-group">
       <div class="ar-label">Lignes</div>
-      <input id="ar-rows" class="ar-input" type="number" value="3" min="1" max="100" oninput="arrayPreviewUpdate()">
+      <input id="ar-rows" class="ar-input" type="text" inputmode="decimal" value="3" oninput="arrayPreviewUpdate()">
     </div>
     <div class="ar-group">
       <div class="ar-label">Espacement Y</div>
       <div class="ar-pick-row">
-        <input id="ar-dy" class="ar-input" type="number" value="100" oninput="arrayPreviewUpdate()">
+        <input id="ar-dy" class="ar-input" type="text" inputmode="decimal" value="100" oninput="arrayPreviewUpdate()">
         <button class="ar-pick-btn" title="Cliquer 2 points sur le dessin" onclick="arrayPickSpacing('y')" style="transform:rotate(90deg)">⊶</button>
       </div>
     </div>
@@ -1574,6 +1582,45 @@
   <div class="ar-footer">
     <button class="ar-btn cancel" onclick="closeArrayDialog()">Annuler</button>
     <button class="ar-btn ok" onclick="confirmArray()">OK</button>
+  </div>
+</div>
+
+<div id="polar-array-dialog" style="display:none">
+  <div class="ar-header">
+    <span>RÉSEAU POLAIRE</span>
+    <span class="lm-close" onclick="closePolarArrayDialog()">×</span>
+  </div>
+  <div class="ar-body">
+    <div class="ar-group">
+      <div class="ar-label">Nb d'éléments</div>
+      <input id="par-count" class="ar-input" type="text" inputmode="decimal" value="6" oninput="polarArrayPreviewUpdate()">
+    </div>
+    <div class="ar-group">
+      <div class="ar-label">Angle total (°)</div>
+      <input id="par-angle" class="ar-input" type="text" inputmode="decimal" value="360" oninput="polarArrayPreviewUpdate()">
+    </div>
+    <div class="ar-group">
+      <div class="ar-label">Centre X</div>
+      <div class="ar-pick-row">
+        <input id="par-cx" class="ar-input" type="text" inputmode="decimal" value="0" oninput="polarArrayPreviewUpdate()">
+        <button class="ar-pick-btn" title="Cliquer le centre sur le dessin" onclick="polarArrayPickCenter()">⊕</button>
+      </div>
+    </div>
+    <div class="ar-group">
+      <div class="ar-label">Centre Y</div>
+      <input id="par-cy" class="ar-input" type="text" inputmode="decimal" value="0" oninput="polarArrayPreviewUpdate()">
+    </div>
+  </div>
+  <div style="padding:0 16px 10px">
+    <label style="display:flex;align-items:center;gap:7px;font-size:11px;color:#ffffff88;cursor:pointer;user-select:none">
+      <input id="par-rotate" type="checkbox" checked onchange="polarArrayPreviewUpdate()">
+      Faire pivoter les éléments
+    </label>
+  </div>
+  <div class="ar-info" id="par-info">— éléments : —</div>
+  <div class="ar-footer">
+    <button class="ar-btn cancel" onclick="closePolarArrayDialog()">Annuler</button>
+    <button class="ar-btn ok" onclick="confirmPolarArray()">OK</button>
   </div>
 </div>
 
@@ -1897,6 +1944,10 @@ const S = {
   arrayPending: false,
   arrayPickAxis: null,   // 'x' | 'y' | null — spacing pick in progress
   arrayPickPt1: null,    // first click world coords
+  polarArraySourceIds: [],
+  polarArrayPreview: null, // { count, totalAngle, cx, cy, rotate }
+  polarArrayPending: false,
+  polarArrayPickCenter: false,
   // Grip edit
   _gripJustConfirmed: false,
   // MIRROR delete-source confirmation
@@ -2136,11 +2187,17 @@ function findOsnap(wx, wy) {
       if (e.type === 'circle' || e.type === 'arc') {
         check(e.cx, e.cy, 'center', e);
       }
+      if (e.type === 'ellipse') {
+        check(e.cx, e.cy, 'center', e);
+      }
       if (e.type === 'rect') {
         check((e.x1 + e.x2) / 2, (e.y1 + e.y2) / 2, 'center', e);
       }
-      if (e.type === 'polyline' && e.cx !== undefined && e.cy !== undefined) {
-        check(e.cx, e.cy, 'center', e);
+      if ((e.type === 'polyline' || e.type === 'cable') && e.closed && e.points?.length >= 3) {
+        const n = e.points.length - 1; // dernier point == premier pour les polylignes fermées
+        let sx = 0, sy = 0;
+        for (let i = 0; i < n; i++) { sx += e.points[i][0]; sy += e.points[i][1]; }
+        check(sx / n, sy / n, 'center', e);
       }
     }
 
@@ -2613,6 +2670,23 @@ function drawOsnapMarker(snap) {
 //   "100<45"  → polaire (distance + angle)
 //   "@50,30"  → relatif explicite
 //   "50,30"   → RELATIF par défaut (Dynamic Input mode)
+// Évalue une expression mathématique simple en toute sécurité (+ - * / parenthèses).
+// Retourne le résultat numérique ou null si invalide / non sûr.
+function safeEvalMath(str) {
+  if (typeof str !== 'string') str = String(str);
+  str = str.trim().replace(/,/g, '.');  // virgule → point décimal
+  if (!str) return null;
+  // Seulement chiffres, opérateurs arithmétiques, parenthèses, espaces, point
+  if (!/^[\d\s\+\-\*\/\(\)\.]+$/.test(str)) return null;
+  // Doit contenir au moins un opérateur pour mériter l'évaluation
+  // (sinon on laisse parseFloat faire son travail)
+  try {
+    const result = Function('"use strict"; return (' + str + ')')();
+    if (typeof result !== 'number' || !isFinite(result)) return null;
+    return result;
+  } catch(e) { return null; }
+}
+
 //   "#50,30"  → absolu (préfixe #)
 //   "200"     → distance dans la direction de la souris (avec contrainte ortho/polaire)
 function parseDistanceInput(raw, basePoint, mouseWorld) {
@@ -2626,23 +2700,25 @@ function parseDistanceInput(raw, basePoint, mouseWorld) {
     return [basePoint[0] + dist * Math.cos(angle), basePoint[1] + dist * Math.sin(angle)];
   }
 
-  // Absolu explicite: #x,y
-  const absExplicit = raw.match(/^#\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
+  // Absolu explicite: #x,y  (avec expressions: #100+50,200*2)
+  const absExplicit = raw.match(/^#\s*(.+),\s*(.+)$/);
   if (absExplicit) {
-    return [parseFloat(absExplicit[1]), parseFloat(absExplicit[2])];
+    const ex = safeEvalMath(absExplicit[1]) ?? parseFloat(absExplicit[1]);
+    const ey = safeEvalMath(absExplicit[2]) ?? parseFloat(absExplicit[2]);
+    if (isFinite(ex) && isFinite(ey)) return [ex, ey];
   }
 
-  // Relatif: @50,30 ou 50,30 (relatif par défaut avec Dynamic Input)
-  const rel = raw.match(/^@?\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
+  // Relatif: @50,30 ou 50,30 ou 100+5,200/2
+  const rel = raw.match(/^@?\s*(.+),\s*(.+)$/);
   if (rel) {
-    return [basePoint[0] + parseFloat(rel[1]), basePoint[1] + parseFloat(rel[2])];
+    const ex = safeEvalMath(rel[1]) ?? parseFloat(rel[1]);
+    const ey = safeEvalMath(rel[2]) ?? parseFloat(rel[2]);
+    if (isFinite(ex) && isFinite(ey)) return [basePoint[0] + ex, basePoint[1] + ey];
   }
 
-  // Distance seule: 200 (direction de la souris, avec contrainte ortho/polaire)
-  const distMatch = raw.match(/^(-?\d+\.?\d*)$/);
-  if (distMatch && mouseWorld) {
-    const d = parseFloat(distMatch[1]);
-    // Apply ortho/polar constraint to determine the angle
+  // Distance seule ou expression: 200, 105.3+35, 2250/2
+  const d = safeEvalMath(raw) ?? parseFloat(raw);
+  if (isFinite(d) && mouseWorld) {
     let [tx, ty] = applyConstraint(basePoint[0], basePoint[1], mouseWorld[0], mouseWorld[1]);
     const angle = Math.atan2(ty - basePoint[1], tx - basePoint[0]);
     return [basePoint[0] + d * Math.cos(angle), basePoint[1] + d * Math.sin(angle)];
@@ -2972,6 +3048,16 @@ const CMD = {
     }
     S.arraySourceIds = [...S.selected];
     openArrayDialog();
+  }},
+  ARRAY_POLAR: { alias: ['APO','RESEAUPOLAIRE','RÉSEAUPOLAIRE','RESEAU_POLAIRE','RÉSEAU_POLAIRE'], desc: 'Réseau polaire (copies en cercle)', exec: () => {
+    if (!S.selected.length) {
+      S.polarArrayPending = true;
+      setTool('select');
+      termPrint('RÉSEAU POLAIRE: sélectionner les objets, puis Entrée', 'info');
+      return;
+    }
+    S.polarArraySourceIds = [...S.selected];
+    openPolarArrayDialog();
   }},
   POINT: { alias: ['PT'], desc: 'Placer un point (POINT [forme: cross|x|dot])', exec: (args) => {
     if (args[0]) {
@@ -3547,6 +3633,7 @@ function _drawDynamicLayer() {
   if (S.gripEdit) drawGripPreview();
   if (S.gripSelected) drawGripSelected();
   if (S.arrayPreview) drawArrayPreview();
+  if (S.polarArrayPreview) drawPolarArrayPreview();
   if (S.offsetDistPt1 && mouseOnCanvas) {
     const [x1,y1]=S.offsetDistPt1, [mx,my]=S.mouseWorld;
     const [sx1,sy1]=w2s(x1,y1), [smx,smy]=w2s(mx,my);
@@ -3681,6 +3768,46 @@ function drawArrayPreview() {
     }
   }
   ctx.setLineDash([]); ctx.restore();
+}
+
+function drawPolarArrayPreview() {
+  const p = S.polarArrayPreview;
+  if (!p) return;
+  const sources = S.polarArraySourceIds.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+  if (!sources.length) return;
+  const totalRad = p.totalAngle * Math.PI / 180;
+  // Centroid of selection
+  let sx = 0, sy = 0, nb = 0;
+  sources.forEach(e => { const bb = getEntityBBox(e); if (bb) { sx += (bb.minX+bb.maxX)/2; sy += (bb.minY+bb.maxY)/2; nb++; } });
+  const bx = nb ? sx/nb : p.cx, by = nb ? sy/nb : p.cy;
+
+  ctx.save();
+  ctx.globalAlpha = 0.45;
+  ctx.strokeStyle = '#00d4ff'; ctx.fillStyle = '#00d4ff';
+  ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+  for (let i = 1; i < p.count; i++) {
+    const theta = totalRad * i / p.count;
+    const cos = Math.cos(theta), sin = Math.sin(theta);
+    for (const src of sources) {
+      const ghost = JSON.parse(JSON.stringify(src));
+      if (p.rotate) {
+        rotateEntityInPlace(ghost, p.cx, p.cy, theta);
+      } else {
+        const dx = bx - p.cx, dy = by - p.cy;
+        offsetEntity(ghost, (p.cx + dx*cos - dy*sin) - bx, (p.cy + dx*sin + dy*cos) - by);
+      }
+      try { drawEntity(ghost); } catch(e) {}
+    }
+  }
+  // Orbit circle + centre cross
+  ctx.setLineDash([3, 3]); ctx.globalAlpha = 0.25;
+  const [scx, scy] = w2s(p.cx, p.cy);
+  const r = Math.hypot(bx - p.cx, by - p.cy) * S.zoom;
+  if (r > 3) { ctx.beginPath(); ctx.arc(scx, scy, r, 0, Math.PI*2); ctx.stroke(); }
+  ctx.setLineDash([]); ctx.globalAlpha = 0.75;
+  ctx.strokeStyle = '#ffab40'; const cs = 7;
+  ctx.beginPath(); ctx.moveTo(scx-cs,scy); ctx.lineTo(scx+cs,scy); ctx.moveTo(scx,scy-cs); ctx.lineTo(scx,scy+cs); ctx.stroke();
+  ctx.restore();
 }
 
 // Point d'entrée public — marque le statique comme périmé et planifie un rendu RAF
@@ -6820,13 +6947,15 @@ function confirmDynamicInput() {
   const base = S.drawPoints[S.drawPoints.length - 1];
   let nx, ny;
 
+  // Lecture robuste d'un champ numérique : évalue l'expression si présente
+  const readNum = v => safeEvalMath(v) ?? parseFloat(v);
+
   if (mode === 'wh') {
     // RECT: field1 = width, field2 = height
-    const w = parseFloat(diDist.value);
-    const h = parseFloat(diAngle.value);
+    const w = readNum(diDist.value);
+    const h = readNum(diAngle.value);
     if (isNaN(w) || w <= 0) { termPrint('Largeur invalide', 'error'); return; }
     if (isNaN(h) || h <= 0) { termPrint('Hauteur invalide', 'error'); return; }
-    // Determine direction based on mouse position relative to base
     const dirX = (S.mouseWorld[0] >= base[0]) ? 1 : -1;
     const dirY = (S.mouseWorld[1] >= base[1]) ? 1 : -1;
     nx = base[0] + w * dirX;
@@ -6843,11 +6972,9 @@ function confirmDynamicInput() {
       updateDynamicInput();
       return;
     }
-    // CIRCLE: field1 = radius (or diameter if circleDiamMode)
-    let rv = parseFloat(diDist.value);
+    let rv = readNum(diDist.value);
     if (isNaN(rv) || rv <= 0) { termPrint(S.circleDiamMode ? 'Diamètre invalide' : 'Rayon invalide', 'error'); return; }
     const r = S.circleDiamMode ? rv / 2 : rv;
-    // Point on circle at current mouse angle
     const angle = Math.atan2(S.mouseWorld[1] - base[1], S.mouseWorld[0] - base[0]);
     nx = base[0] + r * Math.cos(angle);
     ny = base[1] + r * Math.sin(angle);
@@ -6856,8 +6983,8 @@ function confirmDynamicInput() {
 
   } else {
     // POLAR: field1 = distance, field2 = angle
-    const d = parseFloat(diDist.value);
-    const a = parseFloat(diAngle.value);
+    const d = readNum(diDist.value);
+    const a = readNum(diAngle.value);
     if (isNaN(d) || d <= 0) { termPrint('Distance invalide', 'error'); return; }
     const aRad = (isNaN(a) ? 0 : a) * Math.PI / 180;
     nx = base[0] + d * Math.cos(aRad);
@@ -6959,12 +7086,13 @@ function getCursorMode() {
   const t = S.tool;
   if (S.offsetAwaitDist) return 'draw';
   if (S.arrayPickAxis) return 'draw';
+  if (S.polarArrayPickCenter) return 'draw';
   if (S.libPending) return 'draw';
   if (t === 'paste') return 'draw';
   if (t === 'area') return S._areaMode === 'points' ? 'draw' : 'pick';
   if (t === 'polygon') return 'draw';
   if (t === 'ellipse') return 'draw';
-  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.arrayPending) ? 'pick' : 'idle';
+  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.arrayPending || S.polarArrayPending) ? 'pick' : 'idle';
   if (t === 'stretch' && S.stretchStep === 0) return 'pick';
   if (t === 'trim' || t === 'extend') return 'pick';
   if (t === 'fillet' || t === 'chamfer' || t === 'join' || t === 'hatch') return 'pick';
@@ -7059,6 +7187,19 @@ canvas.addEventListener('mousemove', (ev) => {
 canvas.addEventListener('mouseenter', () => { mouseOnCanvas = true; render(); });
 canvas.addEventListener('mouseleave', () => { mouseOnCanvas = false; render(); });
 
+// Évaluation d'expressions mathématiques dans tous les champs .ar-input au blur
+document.addEventListener('focusout', function(ev) {
+  const el = ev.target;
+  if (!el.classList.contains('ar-input')) return;
+  const val = el.value.trim();
+  if (!val || !/[\+\-\*\/\(]/.test(val)) return; // pas d'opérateur → rien à faire
+  const result = safeEvalMath(val);
+  if (result === null) return;
+  const rounded = parseFloat(result.toFixed(8));
+  el.value = rounded;
+  el.dispatchEvent(new Event('input', { bubbles: true })); // met à jour le preview
+}, true);
+
 canvas.addEventListener('mousedown', (ev) => {
   if (ev.button === 2) { ev.preventDefault(); return; } // géré par contextmenu
 
@@ -7141,6 +7282,19 @@ canvas.addEventListener('mousedown', (ev) => {
       arrayPreviewUpdate();
       termPrint('Espacement saisi : ' + val.toFixed(2), 'info');
     }
+    render(); return;
+  }
+
+  // POLAR ARRAY — saisie centre par clic
+  if (ev.button === 0 && S.polarArrayPickCenter) {
+    const osnap = findOsnap(wx, wy);
+    const [px, py] = osnap ? [osnap.x, osnap.y] : snapToGrid(wx, wy);
+    document.getElementById('par-cx').value = parseFloat(px.toFixed(2));
+    document.getElementById('par-cy').value = parseFloat(py.toFixed(2));
+    S.polarArrayPickCenter = false;
+    document.getElementById('polar-array-dialog').style.display = 'flex';
+    polarArrayPreviewUpdate();
+    termPrint('Centre: (' + px.toFixed(1) + ', ' + py.toFixed(1) + ')', 'info');
     render(); return;
   }
 
@@ -9579,6 +9733,7 @@ function setTool(t) {
   if(t !== 'select' && t !== 'copy') S.copyPending=false;
   if(t !== 'select') S.explodePending=false;
   if(t !== 'select') S.arrayPending=false;
+  if(t !== 'select') S.polarArrayPending=false;
   if(t !== 'select' && t !== 'mirror') S.mirrorPending=false;
   if(t !== 'select' && t !== 'rotate') S.rotatePending=false;
   if(t !== 'select' && t !== 'move_obj') S.movePending=false;
@@ -10145,6 +10300,86 @@ function confirmArray() {
   closeArrayDialog();
   updateSaveIndicator('modified'); autoSave(); render(); updateUI();
   termPrint('Réseau ' + cols + '×' + rows + ' créé — ' + children.length + ' entités (bloc #' + block.id + ')', 'success');
+}
+
+function openPolarArrayDialog() {
+  // Initialiser le centre sur le centroïde de la sélection
+  const sources = S.polarArraySourceIds.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+  if (sources.length) {
+    let sx = 0, sy = 0, nb = 0;
+    sources.forEach(e => { const bb = getEntityBBox(e); if (bb) { sx += (bb.minX+bb.maxX)/2; sy += (bb.minY+bb.maxY)/2; nb++; } });
+    if (nb) { document.getElementById('par-cx').value = (sx/nb).toFixed(1); document.getElementById('par-cy').value = (sy/nb).toFixed(1); }
+  }
+  document.getElementById('polar-array-dialog').style.display = 'flex';
+  polarArrayPreviewUpdate();
+  setTimeout(() => document.getElementById('par-count').focus(), 50);
+}
+
+function closePolarArrayDialog() {
+  document.getElementById('polar-array-dialog').style.display = 'none';
+  S.polarArrayPreview = null;
+  S.polarArrayPickCenter = false;
+  scheduleRender();
+}
+
+function polarArrayPickCenter() {
+  document.getElementById('polar-array-dialog').style.display = 'none';
+  S.polarArrayPickCenter = true;
+  termPrint('RÉSEAU POLAIRE — cliquer le centre de rotation', 'info');
+  scheduleRender();
+}
+
+function polarArrayPreviewUpdate() {
+  const count = Math.max(2, parseInt(document.getElementById('par-count').value) || 2);
+  const totalAngle = parseFloat(document.getElementById('par-angle').value) || 360;
+  const cx = parseFloat(document.getElementById('par-cx').value) || 0;
+  const cy = parseFloat(document.getElementById('par-cy').value) || 0;
+  const rotate = document.getElementById('par-rotate').checked;
+  const total = count * S.polarArraySourceIds.length;
+  document.getElementById('par-info').textContent =
+    count + ' éléments  ×  ' + totalAngle + '°  —  ' + total + ' entité' + (total > 1 ? 's' : '');
+  S.polarArrayPreview = { count, totalAngle, cx, cy, rotate };
+  scheduleRender();
+}
+
+function confirmPolarArray() {
+  const count = Math.max(2, parseInt(document.getElementById('par-count').value) || 2);
+  const totalAngle = parseFloat(document.getElementById('par-angle').value) || 360;
+  const cx = parseFloat(document.getElementById('par-cx').value) || 0;
+  const cy = parseFloat(document.getElementById('par-cy').value) || 0;
+  const rotate = document.getElementById('par-rotate').checked;
+  const sources = S.polarArraySourceIds.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+  if (!sources.length) { closePolarArrayDialog(); return; }
+  const totalRad = totalAngle * Math.PI / 180;
+  // Centroid (pour mode sans rotation)
+  let sx = 0, sy = 0, nb = 0;
+  sources.forEach(e => { const bb = getEntityBBox(e); if (bb) { sx += (bb.minX+bb.maxX)/2; sy += (bb.minY+bb.maxY)/2; nb++; } });
+  const bx = nb ? sx/nb : cx, by = nb ? sy/nb : cy;
+  pushUndo();
+  const children = [];
+  for (let i = 0; i < count; i++) {
+    const theta = totalRad * i / count;
+    const cos = Math.cos(theta), sin = Math.sin(theta);
+    for (const src of sources) {
+      const copy = JSON.parse(JSON.stringify(src));
+      copy.id = S.nextId++;
+      if (rotate) {
+        rotateEntityInPlace(copy, cx, cy, theta);
+      } else {
+        const dx = bx - cx, dy = by - cy;
+        offsetEntity(copy, (cx + dx*cos - dy*sin) - bx, (cy + dx*sin + dy*cos) - by);
+      }
+      children.push(copy);
+    }
+  }
+  // Remplacer les originaux par un bloc
+  S.polarArraySourceIds.forEach(id => { const i = S.entities.findIndex(e => e.id === id); if (i !== -1) S.entities.splice(i, 1); });
+  const block = { type:'block', id:S.nextId++, layer:S.currentLayer, name:'PolarArray ' + count + '×' + totalAngle + '°', entities:children };
+  S.entities.push(block);
+  S.selected = [block.id];
+  closePolarArrayDialog();
+  updateSaveIndicator('modified'); autoSave(); render(); updateUI();
+  termPrint('Réseau polaire ' + count + ' éléments / ' + totalAngle + '° — ' + children.length + ' entités (bloc #' + block.id + ')', 'success');
 }
 
 function getLayerLineDash(t) {
@@ -11511,6 +11746,8 @@ document.addEventListener('keyup', (ev) => {
   if (dsm && dsm.style.display !== 'none') { closeDimStyleManager(); cmdInput.focus(); return; }
   const ad = document.getElementById('array-dialog');
   if (ad && ad.style.display !== 'none') { closeArrayDialog(); cmdInput.focus(); return; }
+  const pad = document.getElementById('polar-array-dialog');
+  if (pad && pad.style.display !== 'none') { closePolarArrayDialog(); cmdInput.focus(); return; }
   const tubeD = document.getElementById('tube-edit-dialog');
   if (tubeD) { tubeD.remove(); cmdInput.focus(); return; }
   const hatchD = document.getElementById('hatch-dialog');
@@ -11578,6 +11815,14 @@ document.addEventListener('keydown',(ev)=>{
     openArrayDialog();
     return;
   }
+  if(ev.key==='Enter' && S.polarArrayPending){
+    ev.preventDefault();
+    if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
+    S.polarArrayPending = false;
+    S.polarArraySourceIds = [...S.selected];
+    openPolarArrayDialog();
+    return;
+  }
 
   // Enter global: valider sélection copyPending / mirrorPending / rotatePending / movePending
   if(ev.key==='Enter' && (S.copyPending || S.mirrorPending || S.rotatePending || S.movePending || S.scalePending)){
@@ -11635,11 +11880,19 @@ document.addEventListener('keydown',(ev)=>{
     document.getElementById('array-dialog').style.display='flex';
     termPrint('Saisie espacement annulée','warning'); return;
   }
+  if(ev.key==='Escape' && S.polarArrayPickCenter){
+    S.polarArrayPickCenter=false;
+    document.getElementById('polar-array-dialog').style.display='flex';
+    termPrint('Saisie centre annulée','warning'); return;
+  }
   if(ev.key==='Escape' && S.libPending){
     S.libPending=false; S.libDef=null; termPrint('Insertion annulée','warning'); setTool('select'); return;
   }
   if(ev.key==='Escape' && S.arrayPending){
     S.arrayPending=false; termPrint('ARRAY annulé','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S.polarArrayPending){
+    S.polarArrayPending=false; termPrint('RÉSEAU POLAIRE annulé','warning'); setTool('select'); return;
   }
   if(ev.key==='Escape' && S.copyPending){
     S.copyPending=false; termPrint('Copie annulée','warning'); setTool('select'); return;
