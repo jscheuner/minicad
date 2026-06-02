@@ -12069,8 +12069,8 @@ document.addEventListener('keydown',(ev)=>{
   if(ev.key==='Escape' && S.tool==='dist'){
     S.distPt1=null; setTool('select'); render(); return;
   }
-  if(ev.key==='Escape' && S.tool==='measure'){
-    S.measurePt1=null; S.measureResult=null; setTool('select'); render(); return;
+  if(ev.key==='Escape' && (S.tool==='measure' || S.measureResult)){
+    S.measurePt1=null; S.measureResult=null; if(S.tool==='measure') setTool('select'); render(); return;
   }
   if(ev.key==='Enter' && S.tool==='extend' && S.extendStep===1){
     ev.preventDefault();
