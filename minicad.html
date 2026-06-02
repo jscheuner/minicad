@@ -10633,18 +10633,21 @@ function openPolarArrayDialog() {
       .replace(/\babs\s*\(/g,  'Math.abs(')
       .replace(/%/g, '/100');
     try {
-      const deg2rad = x => x * Math.PI / 180;
-      const rad2deg = x => x * 180 / Math.PI;
-      const _sin = x => Math.sin(deg2rad(x));
-      const _cos = x => Math.cos(deg2rad(x));
-      const _tan = x => Math.tan(deg2rad(x));
-      const _asin = x => rad2deg(Math.asin(x));
-      const _acos = x => rad2deg(Math.acos(x));
-      const _atan = x => rad2deg(Math.atan(x));
+      // Constantes inlinées pour que le scope de Function() soit autonome
+      const D2R = Math.PI / 180, R2D = 180 / Math.PI;
+      const helperDeg =
+        'const _sin=x=>Math.sin(x*' + D2R + '),' +
+        '_cos=x=>Math.cos(x*' + D2R + '),' +
+        '_tan=x=>Math.tan(x*' + D2R + '),' +
+        '_asin=x=>Math.asin(x)*' + R2D + ',' +
+        '_acos=x=>Math.acos(x)*' + R2D + ',' +
+        '_atan=x=>Math.atan(x)*' + R2D + ';';
+      const helperRad =
+        'const _sin=Math.sin,_cos=Math.cos,_tan=Math.tan,' +
+        '_asin=Math.asin,_acos=Math.acos,_atan=Math.atan;';
       const r = Function('"use strict";' +
-        'const _sin='+_sin+',_cos='+_cos+',_tan='+_tan+
-        ',_asin='+_asin+',_acos='+_acos+',_atan='+_atan+
-        ';return (' + e + ')')();
+        (degMode ? helperDeg : helperRad) +
+        'return (' + e + ')')();
       if (!isFinite(r) || isNaN(r)) return null;
       // Formatage : jusqu'à 10 chiffres significatifs, pas de zéros inutiles
       const abs = Math.abs(r);
