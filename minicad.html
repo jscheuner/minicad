@@ -3615,7 +3615,7 @@ function _drawDynamicLayer() {
   if (S.tool==='extend' && S.extendStep===2 && S.hoverEntityId && mouseOnCanvas) drawExtendPreview();
   if (S.tool==='rotate' && S.rotateStep===2 && mouseOnCanvas) drawRotatePreview();
   if (S.tool==='scale'  && S.scaleStep===2  && mouseOnCanvas) drawScalePreview();
-  if (S.tool==='measure') drawMeasureOverlay();
+  if (S.tool==='measure' || S.measureResult) drawMeasureOverlay();
   if (S.tool==='dist' && S.distPt1 && mouseOnCanvas) {
     const [x1,y1]=S.distPt1,[mx,my]=S.mouseWorld;
     const [sx1,sy1]=w2s(x1,y1),[smx,smy]=w2s(mx,my);
@@ -8240,6 +8240,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
   // Mesurer — mesure visuelle persistante
   if (tool === 'measure') {
     if (!S.measurePt1) {
+      S.measureResult = null; // efface la mesure précédente au 1er clic
       S.measurePt1 = [wx, wy];
       termPrint('MESURER: Cliquez le 2ème point', 'info');
     } else {
@@ -8247,9 +8248,9 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       const dist = Math.hypot(dx, dy);
       const angle = Math.atan2(dy, dx) * 180 / Math.PI;
       S.measureResult = { x1, y1, x2: wx, y2: wy };
-      S.measurePt1 = null; // prêt pour une nouvelle mesure
+      S.measurePt1 = null;
       termPrint('D=' + dist.toFixed(2) + '  ΔX=' + dx.toFixed(2) + '  ΔY=' + (-dy).toFixed(2) + '  A=' + angle.toFixed(1) + '°', 'success');
-      termPrint('MESURER: Cliquez un nouveau 1er point (Echap pour terminer)', 'info');
+      setTool('select'); // lastCmdRaw='MESURER' → clic droit répète directement
     }
     render(); return;
   }
@@ -9873,7 +9874,8 @@ const _toolCmdName = {
   line:'LINE', rect:'RECT', circle:'CIRCLE', arc:'ARC', polygon:'POLYGON', ellipse:'ELLIPSE',
   wall:'WALL', polyline:'PL', cable:'CABLE', leader:'LEADER',
   copy:'COPY', move_obj:'MOVE', mirror:'MIRROR', offset:'OFFSET', rotate:'ROTATE', scale:'SCALE', trim:'TRIM', stretch:'STRETCH',
-  point:'POINT', divide_pick:'DIVIDE',
+  point:'POINT', divide_pick:'DIVIDE', measure:'MESURER',
+  rectcenter:'RECTCENTER',
 };
 function setTool(t) {
   if(t !== 'select' && t !== 'copy') S.copyPending=false;
@@ -9892,7 +9894,8 @@ function setTool(t) {
   S.tool=t; S.drawing=false; S.drawPoints=[]; S.awaitingInput=false;
   if(t !== 'tube') S.tubePoints=[];
   if(t !== 'dim_angular') { S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null; S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null; }
-  if(t !== 'measure') { S.measurePt1=null; S.measureResult=null; }
+  if(t !== 'measure' && t !== 'select') { S.measurePt1=null; S.measureResult=null; }
+  if(t === 'measure') { S.measurePt1=null; } // résultat précédent gardé jusqu'au 1er clic
   S.diLocked=false; S.diField='dist';
   S.gripEdit=null; S.gripSelected=null; S.osnapAcquired=[];
   document.querySelectorAll('.tool-btn[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));
