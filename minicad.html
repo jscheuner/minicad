@@ -11930,6 +11930,10 @@ document.addEventListener('keydown',(ev)=>{
     const cm=document.getElementById('canvas-context');
     if(cm && cm.classList.contains('show')){ ev.preventDefault(); cm.classList.remove('show'); return; }
   }
+  // ESC prioritaire : effacer le résultat de mesure visible (avant tout filtre focus)
+  if(ev.key==='Escape' && S.measureResult){
+    S.measurePt1=null; S.measureResult=null; render(); return;
+  }
 
   // If typing in dynamic input fields, let them handle it
   if(document.activeElement===diDist||document.activeElement===diAngle) return;
