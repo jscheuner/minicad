@@ -1333,6 +1333,15 @@
       <button class="tool-btn" title="Cote diamètre" onclick="executeCommand('LOAD dim');executeCommand('DIMDIAMETER')">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><line x1="5" y1="16" x2="19" y2="8"/><text x="10" y="11" font-size="7" fill="currentColor" stroke="none">Ø</text></svg>
       </button>
+      <button class="tool-btn" data-tool="measure" title="Mesurer (ME)" onclick="setTool('measure')">
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="9" width="20" height="6" rx="1"/>
+          <line x1="6"  y1="9" x2="6"  y2="14"/>
+          <line x1="10" y1="9" x2="10" y2="12"/>
+          <line x1="14" y1="9" x2="14" y2="14"/>
+          <line x1="18" y1="9" x2="18" y2="12"/>
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -1929,6 +1938,9 @@ const S = {
   _polyCenter: null,
   // DIST
   distPt1: null,
+  // MESURER
+  measurePt1: null,
+  measureResult: null, // { x1,y1,x2,y2 } — dernière mesure affichée
   // DIMANGULAR
   _dimAngLine1: null,
   _dimAngClick1: null,
@@ -2918,6 +2930,10 @@ const CMD = {
     termPrint('AREA: Cliquer une entité fermée (cercle/rect/polyligne), ou [P] pour définir un polygone', 'info');
     setTimeout(smartFocus, 0);
   }},
+  MESURER: { alias: ['ME','MEASURE','REGLE','RÈGLE'], desc: 'Mesure visuelle entre deux points (réutilisable)', exec() {
+    S.measurePt1 = null; S.measureResult = null; setTool('measure');
+    termPrint('MESURER: Cliquez le 1er point', 'info');
+  }},
   DIST: { alias: ['DI','DISTANCE'], desc: 'Mesure la distance entre deux points', exec() {
     S.distPt1 = null; setTool('dist');
     termPrint('DIST: Cliquer le 1er point', 'info');
@@ -3599,6 +3615,7 @@ function _drawDynamicLayer() {
   if (S.tool==='extend' && S.extendStep===2 && S.hoverEntityId && mouseOnCanvas) drawExtendPreview();
   if (S.tool==='rotate' && S.rotateStep===2 && mouseOnCanvas) drawRotatePreview();
   if (S.tool==='scale'  && S.scaleStep===2  && mouseOnCanvas) drawScalePreview();
+  if (S.tool==='measure') drawMeasureOverlay();
   if (S.tool==='dist' && S.distPt1 && mouseOnCanvas) {
     const [x1,y1]=S.distPt1,[mx,my]=S.mouseWorld;
     const [sx1,sy1]=w2s(x1,y1),[smx,smy]=w2s(mx,my);
@@ -3812,6 +3829,78 @@ function drawPolarArrayPreview() {
   ctx.strokeStyle = '#ffab40'; const cs = 7;
   ctx.beginPath(); ctx.moveTo(scx-cs,scy); ctx.lineTo(scx+cs,scy); ctx.moveTo(scx,scy-cs); ctx.lineTo(scx,scy+cs); ctx.stroke();
   ctx.restore();
+}
+
+function _drawMeasureLine(wx1, wy1, wx2, wy2, alpha) {
+  const [sx1,sy1] = w2s(wx1,wy1), [sx2,sy2] = w2s(wx2,wy2);
+  const dx = wx2-wx1, dy = wy2-wy1;
+  const dist  = Math.hypot(dx, dy);
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+  const sdx = sx2-sx1, sdy = sy2-sy1, slen = Math.hypot(sdx,sdy);
+
+  ctx.save(); ctx.globalAlpha = alpha;
+
+  // Ligne principale
+  ctx.strokeStyle = '#ffab40'; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(sx2,sy2); ctx.stroke();
+
+  // Petites barres perpendiculaires aux extrémités
+  if (slen > 8) {
+    const nx = -sdy/slen*7, ny = sdx/slen*7;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(sx1-nx,sy1-ny); ctx.lineTo(sx1+nx,sy1+ny);
+    ctx.moveTo(sx2-nx,sy2-ny); ctx.lineTo(sx2+nx,sy2+ny);
+    ctx.stroke();
+  }
+
+  // Bulle d'info au milieu, décalée perpendiculairement
+  const mx = (sx1+sx2)/2, my = (sy1+sy2)/2;
+  const offX = slen > 4 ? -sdy/slen*22 : 0;
+  const offY = slen > 4 ?  sdx/slen*22 : -22;
+  const bx = mx + offX, by = my + offY;
+
+  const lines = [
+    'D = ' + dist.toFixed(2),
+    'ΔX = ' + dx.toFixed(2),
+    'ΔY = ' + (-dy).toFixed(2),
+    'A = ' + angle.toFixed(1) + '°'
+  ];
+  const pad = 6, lh = 14, fw = 10;
+  const maxW = Math.max(...lines.map(l => l.length)) * fw * 0.62 + pad*2;
+  const bh = lines.length * lh + pad;
+  const bLeft = bx - maxW/2, bTop = by - bh/2;
+
+  ctx.fillStyle = '#0d1525cc';
+  ctx.strokeStyle = '#ffab4088'; ctx.lineWidth = 1; ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(bLeft, bTop, maxW, bh, 4)
+                : ctx.rect(bLeft, bTop, maxW, bh);
+  ctx.fill(); ctx.stroke();
+
+  ctx.fillStyle = '#ffab40'; ctx.font = 'bold 11px JetBrains Mono';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  lines.forEach((l, i) => ctx.fillText(l, bLeft + pad, bTop + pad/2 + i * lh));
+
+  ctx.restore();
+}
+
+function drawMeasureOverlay() {
+  // Résultat précédent affiché en permanence
+  if (S.measureResult) {
+    const r = S.measureResult;
+    _drawMeasureLine(r.x1, r.y1, r.x2, r.y2, 0.65);
+  }
+  // Rubber-band en cours (1er point posé, souris en mouvement)
+  if (S.measurePt1 && mouseOnCanvas) {
+    const [mx,my] = S.mouseWorld;
+    _drawMeasureLine(S.measurePt1[0], S.measurePt1[1], mx, my, 1.0);
+    // Point d'ancrage
+    const [spx,spy] = w2s(S.measurePt1[0], S.measurePt1[1]);
+    ctx.save(); ctx.fillStyle = '#ffab40'; ctx.globalAlpha = 1;
+    ctx.beginPath(); ctx.arc(spx, spy, 4, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
 }
 
 // Point d'entrée public — marque le statique comme périmé et planifie un rendu RAF
@@ -7132,7 +7221,7 @@ function getCursorMode() {
   if (t === 'dim_angular' && !S._dimAngVtx) return 'pick';
   if ((t === 'dim_radius' || t === 'dim_diameter') && !S._dimCircle) return 'pick';
   if (t === 'divide_pick') return 'pick';
-  if (t === 'point') return 'draw';
+  if (t === 'point' || t === 'measure') return 'draw';
   return 'draw';
 }
 
@@ -8146,6 +8235,23 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       applyExtend(hit.id, allPrims, cx, cy);
       return;
     }
+  }
+
+  // Mesurer — mesure visuelle persistante
+  if (tool === 'measure') {
+    if (!S.measurePt1) {
+      S.measurePt1 = [wx, wy];
+      termPrint('MESURER: Cliquez le 2ème point', 'info');
+    } else {
+      const [x1,y1] = S.measurePt1, dx = wx-x1, dy = wy-y1;
+      const dist = Math.hypot(dx, dy);
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      S.measureResult = { x1, y1, x2: wx, y2: wy };
+      S.measurePt1 = null; // prêt pour une nouvelle mesure
+      termPrint('D=' + dist.toFixed(2) + '  ΔX=' + dx.toFixed(2) + '  ΔY=' + (-dy).toFixed(2) + '  A=' + angle.toFixed(1) + '°', 'success');
+      termPrint('MESURER: Cliquez un nouveau 1er point (Echap pour terminer)', 'info');
+    }
+    render(); return;
   }
 
   // Dist
@@ -9786,6 +9892,7 @@ function setTool(t) {
   S.tool=t; S.drawing=false; S.drawPoints=[]; S.awaitingInput=false;
   if(t !== 'tube') S.tubePoints=[];
   if(t !== 'dim_angular') { S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null; S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null; }
+  if(t !== 'measure') { S.measurePt1=null; S.measureResult=null; }
   S.diLocked=false; S.diField='dist';
   S.gripEdit=null; S.gripSelected=null; S.osnapAcquired=[];
   document.querySelectorAll('.tool-btn[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));
@@ -11958,6 +12065,9 @@ document.addEventListener('keydown',(ev)=>{
   }
   if(ev.key==='Escape' && S.tool==='dist'){
     S.distPt1=null; setTool('select'); render(); return;
+  }
+  if(ev.key==='Escape' && S.tool==='measure'){
+    S.measurePt1=null; S.measureResult=null; setTool('select'); render(); return;
   }
   if(ev.key==='Enter' && S.tool==='extend' && S.extendStep===1){
     ev.preventDefault();
