@@ -1216,6 +1216,9 @@
       <button class="tool-btn" data-tool="rect" title="Rectangle (R)" onclick="setTool('rect')">
         <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/></svg>
       </button>
+      <button class="tool-btn" data-tool="rectcenter" title="Rectangle par le centre (RC)" onclick="setTool('rectcenter')">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/><line x1="12" y1="9" x2="12" y2="15"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+      </button>
       <button class="tool-btn" data-tool="polygon" title="Polygone régulier (POL)" onclick="executeCommand('POLYGON')">
         <svg viewBox="0 0 24 24"><polygon points="12,3 20.5,8.5 20.5,15.5 12,21 3.5,15.5 3.5,8.5"/></svg>
       </button>
@@ -2779,6 +2782,7 @@ modules.annotation.commands = {
 const CMD = {
   LINE: { alias: ['L','LIGNE'], desc: 'Dessiner une ligne', exec: () => { setTool('line'); termPrint('LIGNE: Cliquez ou tapez X,Y pour le 1er point', 'info'); }},
   RECT: { alias: ['REC','RECTANGLE'], desc: 'Rectangle (taper L,H ex: 100,100)', exec: () => { setTool('rect'); termPrint('RECTANGLE: Cliquez ou tapez X,Y pour le 1er coin', 'info'); }},
+  RECTCENTER: { alias: ['RC','RECTCENTRE'], desc: 'Rectangle par le centre', exec: () => { setTool('rectcenter'); termPrint('RECTANGLE CENTRE: Cliquez ou tapez X,Y pour le centre', 'info'); }},
   CIRCLE: { alias: ['C','CERCLE'], desc: 'Cercle (taper rayon ex: 50)', exec: () => { setTool('circle'); termPrint('CERCLE: Cliquez ou tapez X,Y pour le centre', 'info'); }},
   ARC: { alias: ['A'], desc: 'Arc', exec: () => { S._arcMode='3p'; setTool('arc'); termPrint('ARC — P1 départ  |  C=Centre-Début-Fin  |  E=Début-Fin-Rayon', 'info'); }},
   POLYLINE: { alias: ['PL','POLYLIGNE'], desc: 'Polyligne', exec: () => { setTool('polyline'); termPrint('POLYLIGNE: Cliquez ou tapez X,Y, Echap pour finir', 'info'); }},
@@ -5721,6 +5725,17 @@ function drawPreview() {
   } else if (tool==='rect' && pts.length===1) {
     const [x1,y1]=w2s(pts[0][0],pts[0][1]), [x2,y2]=w2s(mx,my);
     ctx.beginPath(); ctx.rect(Math.min(x1,x2),Math.min(y1,y2),Math.abs(x2-x1),Math.abs(y2-y1)); ctx.stroke();
+  } else if (tool==='rectcenter' && pts.length===1) {
+    // Preview : rectangle centré sur pts[0], coin opposé à (mx,my)
+    const [cx,cy]=pts[0];
+    const dx=mx-cx, dy=my-cy;
+    const [sx1,sy1]=w2s(cx-dx,cy-dy), [sx2,sy2]=w2s(cx+dx,cy+dy);
+    ctx.beginPath(); ctx.rect(Math.min(sx1,sx2),Math.min(sy1,sy2),Math.abs(sx2-sx1),Math.abs(sy2-sy1)); ctx.stroke();
+    // Croix sur le centre
+    const [scx,scy]=w2s(cx,cy); const cs=6;
+    ctx.setLineDash([]); ctx.strokeStyle='#ffab4088';
+    ctx.beginPath(); ctx.moveTo(scx-cs,scy); ctx.lineTo(scx+cs,scy); ctx.moveTo(scx,scy-cs); ctx.lineTo(scx,scy+cs); ctx.stroke();
+    ctx.setLineDash([4,4]); ctx.strokeStyle='#ffffff66';
   } else if (tool==='circle' && pts.length===1) {
     const dist=Math.hypot(mx-pts[0][0],my-pts[0][1]);
     const r = S.circleDiamMode ? dist/2 : dist;
@@ -6685,10 +6700,10 @@ const diUnit2 = document.getElementById('di-unit2');
 
 // Returns the input mode for the current tool and drawing state
 function getDIMode() {
-  const drawingTools = ['line','xline','ray','ray_rev','rect','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube','ellipse','polygon'];
+  const drawingTools = ['line','xline','ray','ray_rev','rect','rectcenter','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube','ellipse','polygon'];
   // First point: show X,Y
   if (!S.drawing && drawingTools.includes(S.tool)) return 'xy';
-  if (S.tool === 'rect') return 'wh'; // Width × Height
+  if (S.tool === 'rect' || S.tool === 'rectcenter') return 'wh'; // Width × Height
   if (S.tool === 'circle') return 'radius'; // Radius only
   return 'polar'; // Distance + Angle (line, polyline, wall, etc.)
 }
@@ -6871,7 +6886,7 @@ function confirmDynamicInput() {
     S.awaitingInput = true;
     if (S.tool === 'tube') S.tubePoints = [[x, y]];
     termPrint('Point 1: (' + x.toFixed(1) + ', ' + y.toFixed(1) + ')', 'info');
-    if (S.tool === 'rect') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
+    if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
     else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
     else if (S.tool === 'dim_angular') termPrint('DIMANGULAR: cliquez la 1ère ligne', 'info');
     else if (S.tool === 'tube') termPrint('Longueur (ex: 500) ou 500<45 — Entrée pour terminer', 'warning');
@@ -6963,15 +6978,20 @@ function confirmDynamicInput() {
   const readNum = v => safeEvalMath(v) ?? parseFloat(v);
 
   if (mode === 'wh') {
-    // RECT: field1 = width, field2 = height
     const w = readNum(diDist.value);
     const h = readNum(diAngle.value);
     if (isNaN(w) || w <= 0) { termPrint('Largeur invalide', 'error'); return; }
     if (isNaN(h) || h <= 0) { termPrint('Hauteur invalide', 'error'); return; }
     const dirX = (S.mouseWorld[0] >= base[0]) ? 1 : -1;
     const dirY = (S.mouseWorld[1] >= base[1]) ? 1 : -1;
-    nx = base[0] + w * dirX;
-    ny = base[1] + h * dirY;
+    if (S.tool === 'rectcenter') {
+      // base = centre → coin à L/2, H/2
+      nx = base[0] + (w / 2) * dirX;
+      ny = base[1] + (h / 2) * dirY;
+    } else {
+      nx = base[0] + w * dirX;
+      ny = base[1] + h * dirY;
+    }
     termPrint('→ Largeur=' + w.toFixed(1) + '  Hauteur=' + h.toFixed(1), 'info');
 
   } else if (mode === 'radius') {
@@ -7008,7 +7028,7 @@ function confirmDynamicInput() {
   diDist.blur(); diAngle.blur();
 
   // For 2-point tools: finish
-  if (['line','rect','circle','wall','leader'].includes(S.tool)) {
+  if (['line','rect','rectcenter','circle','wall','leader'].includes(S.tool)) {
     finishEntity(S.tool, [...S.drawPoints, [nx, ny]]);
     if (S.tool === 'line') {
       S.drawPoints = [[nx, ny]]; // repart du dernier point
@@ -7751,7 +7771,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
   }
 
   // Drawing tools (2-point) — WITHOUT dimensions
-  if (['line','rect','circle','wall','leader','xline','ray','ray_rev'].includes(tool)) {
+  if (['line','rect','rectcenter','circle','wall','leader','xline','ray','ray_rev'].includes(tool)) {
     if (!S.drawing) {
       // Tangente différée : 1er clic sur un cercle avec snap TAN
       if (tool === 'line' && S.currentOsnap?.type === 'tangent' && S.currentOsnap.entity) {
@@ -7764,8 +7784,9 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
         render(); return;
       }
       S.drawing = true; S.drawPoints = [[wx, wy]]; S.awaitingInput = true;
-      termPrint('Point 1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ')', 'info');
-      if (tool === 'rect') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
+      if (tool === 'rectcenter') termPrint('Centre: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ') — Largeur,Hauteur ou cliquez un coin', 'warning');
+      else termPrint('Point 1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ')', 'info');
+      if (tool === 'rect' || tool === 'rectcenter') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
       else if (tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
       else termPrint('Longueur (ex: 150) ou 100<45 ou cliquez le 2ème point', 'warning');
     } else {
@@ -7781,7 +7802,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
         updateSaveIndicator('modified'); autoSave(); render(); return;
       }
       let tx = wx, ty = wy;
-      if (S.drawPoints.length > 0 && tool !== 'rect') [tx, ty] = applyConstraint(S.drawPoints[0][0], S.drawPoints[0][1], wx, wy);
+      if (S.drawPoints.length > 0 && tool !== 'rect' && tool !== 'rectcenter') [tx, ty] = applyConstraint(S.drawPoints[0][0], S.drawPoints[0][1], wx, wy);
       // Mode diamètre : réduire le rayon de moitié
       if (tool === 'circle' && S.circleDiamMode) {
         const base = S.drawPoints[0];
@@ -9249,6 +9270,11 @@ function finishEntity(tool, pts) {
     case 'ray':   { const len=Math.hypot(p2[0]-p1[0],p2[1]-p1[1]); if(len<1e-10)return; ent={type:'ray',  x:p1[0],y:p1[1],dx:(p2[0]-p1[0])/len,dy:(p2[1]-p1[1])/len}; break; }
     case 'ray_rev':{ const len=Math.hypot(p2[0]-p1[0],p2[1]-p1[1]); if(len<1e-10)return; ent={type:'ray',  x:p1[0],y:p1[1],dx:(p2[0]-p1[0])/len,dy:(p2[1]-p1[1])/len}; break; }
     case 'rect': ent={type:'rect',x1:p1[0],y1:p1[1],x2:p2[0],y2:p2[1]}; break;
+    case 'rectcenter': { // p1=centre, p2=coin → rect symétrique
+      const dx=p2[0]-p1[0], dy=p2[1]-p1[1];
+      ent={type:'rect',x1:p1[0]-dx,y1:p1[1]-dy,x2:p1[0]+dx,y2:p1[1]+dy};
+      break;
+    }
     case 'circle': ent={type:'circle',cx:p1[0],cy:p1[1],r:Math.hypot(p2[0]-p1[0],p2[1]-p1[1])}; break;
     case 'arc': {const r=Math.hypot(p2[0]-p1[0],p2[1]-p1[1]); const sa=Math.atan2(p2[1]-p1[1],p2[0]-p1[0]); ent={type:'arc',cx:p1[0],cy:p1[1],r,startAngle:0,endAngle:sa}; break;}
     case 'wall': ent={type:'wall',x1:p1[0],y1:p1[1],x2:p2[0],y2:p2[1],thickness:S._wallThickness||20}; break;
@@ -11550,7 +11576,7 @@ function executeCommand(input) {
   }
 
   // ---- FIRST POINT INPUT: tool active but no drawing started yet ----
-  const drawingTools = ['line','xline','ray','ray_rev','rect','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube','ellipse','polygon'];
+  const drawingTools = ['line','xline','ray','ray_rev','rect','rectcenter','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube','ellipse','polygon'];
   if (!S.drawing && drawingTools.includes(S.tool)) {
     // Try to parse as absolute coordinates for the 1st point
     const fpMatch = raw.match(/^#?\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
@@ -11563,7 +11589,7 @@ function executeCommand(input) {
       S.drawPoints = [[fx, fy]];
       S.awaitingInput = true;
       // Show next step prompt
-      if (S.tool === 'rect') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
+      if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
       else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
       else if (S.tool === 'dim_angular') termPrint('DIMANGULAR: cliquez la 1ère ligne', 'info');
       else termPrint('2ème point ou longueur (ex: 150, 100<45, 100,50)', 'warning');
@@ -11605,7 +11631,7 @@ function executeCommand(input) {
       const [nx, ny] = resolved;
 
       // For 2-point tools: finish the entity
-      if (['line','rect','circle','wall','leader'].includes(S.tool)) {
+      if (['line','rect','rectcenter','circle','wall','leader'].includes(S.tool)) {
         finishEntity(S.tool, [...S.drawPoints, [nx, ny]]);
         termPrint('→ Point résolu: (' + nx.toFixed(1) + ', ' + ny.toFixed(1) + ')', 'info');
         if (S.tool === 'line') {
