@@ -1705,7 +1705,7 @@
 </div>
 
 <!-- CALCULATRICE -->
-<div id="calc-dialog">
+<div id="calc-dialog" tabindex="-1" style="outline:none">
   <div class="calc-hdr" id="calc-drag">
     <span>CALCULATRICE</span>
     <div class="calc-hdr-btns">
@@ -10665,12 +10665,18 @@ function openPolarArrayDialog() {
     else { resEl.textContent = r; resEl.className = ''; }
   }
 
+  function calcFocus() {
+    const dlg = document.getElementById('calc-dialog');
+    if (dlg) dlg.focus();
+  }
+
   window.toggleCalc = function() {
     const dlg = document.getElementById('calc-dialog');
     const btn = document.getElementById('calc-btn');
     const vis = dlg.style.display === 'flex';
     dlg.style.display = vis ? 'none' : 'flex';
     if (btn) btn.classList.toggle('active', !vis);
+    if (!vis) setTimeout(calcFocus, 0); // focus dès l'ouverture
   };
 
   window.calcFn = function(ch) { expr += ch; update(); };
@@ -10716,7 +10722,9 @@ function openPolarArrayDialog() {
     const hdr = document.getElementById('calc-drag');
     if (dlg && hdr) {
       let ox = 0, oy = 0, drag = false;
+      // Focus au clic sur le header (drag ou simple clic)
       hdr.addEventListener('mousedown', ev => {
+        calcFocus();
         if (ev.button !== 0) return;
         drag = true;
         const rc = dlg.getBoundingClientRect();
@@ -10732,8 +10740,14 @@ function openPolarArrayDialog() {
       document.addEventListener('mouseup', () => { drag = false; });
     }
 
-    // Clavier dans le dialog
+    // Clic sur le dialog → redonner le focus (boutons le perdent vers le body)
     const calcDlg = document.getElementById('calc-dialog');
+    if (calcDlg) calcDlg.addEventListener('mousedown', ev => {
+      // Ne pas interférer avec les boutons, juste reprendre le focus sur le conteneur
+      setTimeout(calcFocus, 0);
+    });
+
+    // Clavier dans le dialog
     if (calcDlg) calcDlg.addEventListener('keydown', ev => {
       if (calcDlg.style.display !== 'flex') return;
       ev.stopPropagation();
@@ -16075,7 +16089,7 @@ const MINICAD_LIB = {
         "\u00d8394.0x60.00": {"D": 394.0, "t": 60.0, "d": 274.0, "m": 494.0},
         "\u00d8394.0x70.00": {"D": 394.0, "t": 70.0, "d": 254.0, "m": 559.0}
       } },
-        { name: "Tubes de pr\u00e9cision sans soudure, \u00e9tir\u00e9 \u00e0 froid", draw: "drawProfileTUBEROND", standard: "DIN 2391 / A resp. EN 10305-1", family: "TUBE_SANS_SOUDURE", data: {
+        { name: "Tubes de pr\u00e9cision sans soudure, \u00e9tir\u00e9 \u00e0 froid", draw: "drawProfileTUBEROND", standard: "DIN 2391 / A resp. EN 10305-1", family: "TUBE_SANS_SOUDURE_ETIRE_A_FROID", data: {
         "\u00d84.0x0.50": {"D": 4.0, "t": 0.5, "d": 3.0, "m": 0.04},
         "\u00d84.0x1.00": {"D": 4.0, "t": 1.0, "d": 2.0, "m": 0.07},
         "\u00d84.0x1.25": {"D": 4.0, "t": 1.25, "d": 1.5, "m": 0.09},
@@ -16861,6 +16875,90 @@ const MINICAD_LIB = {
         "\u00d8250.0x15.00": {"D": 250.0, "t": 15.0, "d": 220.0, "m": 86.93},
         "\u00d8254.0x6.50": {"D": 254.0, "t": 6.5, "d": 241.0, "m": 39.67},
         "\u00d8260.0x5.00": {"D": 260.0, "t": 5.0, "d": 250.0, "m": 31.44}
+      } },
+        { name: "Tubes en acier pour conduites hydrauliques, sans soudure", draw: "drawProfileTUBEROND", standard: "DIN 2391 / C resp. EN 10305-4", family: "TUBE_SANS_SOUDURE_POUR_CONDUITES_HYDRAULIQUES", data: {
+        "\u00d84.0x0.50": {"D": 4.0, "t": 0.5, "d": 3.0, "m": 0.04},
+        "\u00d84.0x1.00": {"D": 4.0, "t": 1.0, "d": 2.0, "m": 0.07},
+        "\u00d85.0x1.00": {"D": 5.0, "t": 1.0, "d": 3.0, "m": 0.1},
+        "\u00d86.0x1.00": {"D": 6.0, "t": 1.0, "d": 4.0, "m": 0.12},
+        "\u00d86.0x1.50": {"D": 6.0, "t": 1.5, "d": 3.0, "m": 0.02},
+        "\u00d86.0x2.00": {"D": 6.0, "t": 2.0, "d": 2.0, "m": 0.2},
+        "\u00d88.0x1.00": {"D": 8.0, "t": 1.0, "d": 6.0, "m": 0.17},
+        "\u00d88.0x1.50": {"D": 8.0, "t": 1.5, "d": 5.0, "m": 0.24},
+        "\u00d88.0x2.00": {"D": 8.0, "t": 2.0, "d": 4.0, "m": 0.3},
+        "\u00d810.0x1.00": {"D": 10.0, "t": 1.0, "d": 8.0, "m": 0.22},
+        "\u00d810.0x1.50": {"D": 10.0, "t": 1.5, "d": 7.0, "m": 0.31},
+        "\u00d810.0x2.00": {"D": 10.0, "t": 2.0, "d": 6.0, "m": 0.4},
+        "\u00d810.0x2.50": {"D": 10.0, "t": 2.5, "d": 5.0, "m": 0.46},
+        "\u00d812.0x1.00": {"D": 12.0, "t": 1.0, "d": 10.0, "m": 0.27},
+        "\u00d812.0x1.50": {"D": 12.0, "t": 1.5, "d": 9.0, "m": 0.39},
+        "\u00d812.0x2.00": {"D": 12.0, "t": 2.0, "d": 8.0, "m": 0.49},
+        "\u00d812.0x2.50": {"D": 12.0, "t": 2.5, "d": 7.0, "m": 0.59},
+        "\u00d814.0x1.00": {"D": 14.0, "t": 1.0, "d": 12.0, "m": 0.32},
+        "\u00d814.0x1.50": {"D": 14.0, "t": 1.5, "d": 11.0, "m": 0.46},
+        "\u00d814.0x2.00": {"D": 14.0, "t": 2.0, "d": 10.0, "m": 0.59},
+        "\u00d814.0x2.50": {"D": 14.0, "t": 2.5, "d": 9.0, "m": 0.71},
+        "\u00d814.0x3.50": {"D": 14.0, "t": 3.5, "d": 7.0, "m": 0.91},
+        "\u00d815.0x1.00": {"D": 15.0, "t": 1.0, "d": 13.0, "m": 0.35},
+        "\u00d815.0x1.50": {"D": 15.0, "t": 1.5, "d": 12.0, "m": 0.5},
+        "\u00d815.0x2.00": {"D": 15.0, "t": 2.0, "d": 11.0, "m": 0.64},
+        "\u00d815.0x2.50": {"D": 15.0, "t": 2.5, "d": 10.0, "m": 0.77},
+        "\u00d816.0x1.00": {"D": 16.0, "t": 1.0, "d": 14.0, "m": 0.37},
+        "\u00d816.0x1.50": {"D": 16.0, "t": 1.5, "d": 13.0, "m": 0.54},
+        "\u00d816.0x2.00": {"D": 16.0, "t": 2.0, "d": 12.0, "m": 0.69},
+        "\u00d816.0x2.50": {"D": 16.0, "t": 2.5, "d": 11.0, "m": 0.83},
+        "\u00d816.0x3.00": {"D": 16.0, "t": 3.0, "d": 10.0, "m": 0.96},
+        "\u00d818.0x1.00": {"D": 18.0, "t": 1.0, "d": 16.0, "m": 0.42},
+        "\u00d818.0x1.50": {"D": 18.0, "t": 1.5, "d": 15.0, "m": 0.61},
+        "\u00d818.0x2.00": {"D": 18.0, "t": 2.0, "d": 14.0, "m": 0.79},
+        "\u00d818.0x2.50": {"D": 18.0, "t": 2.5, "d": 13.0, "m": 0.96},
+        "\u00d818.0x3.00": {"D": 18.0, "t": 3.0, "d": 12.0, "m": 1.11},
+        "\u00d820.0x1.50": {"D": 20.0, "t": 1.5, "d": 17.0, "m": 0.68},
+        "\u00d820.0x2.00": {"D": 20.0, "t": 2.0, "d": 16.0, "m": 0.89},
+        "\u00d820.0x2.50": {"D": 20.0, "t": 2.5, "d": 15.0, "m": 1.08},
+        "\u00d820.0x3.00": {"D": 20.0, "t": 3.0, "d": 14.0, "m": 1.26},
+        "\u00d820.0x3.50": {"D": 20.0, "t": 3.5, "d": 13.0, "m": 1.42},
+        "\u00d820.0x4.00": {"D": 20.0, "t": 4.0, "d": 12.0, "m": 1.58},
+        "\u00d821.0x3.00": {"D": 21.0, "t": 3.0, "d": 15.0, "m": 1.33},
+        "\u00d822.0x1.50": {"D": 22.0, "t": 1.5, "d": 19.0, "m": 0.76},
+        "\u00d822.0x2.00": {"D": 22.0, "t": 2.0, "d": 18.0, "m": 0.99},
+        "\u00d822.0x2.50": {"D": 22.0, "t": 2.5, "d": 17.0, "m": 1.2},
+        "\u00d822.0x3.00": {"D": 22.0, "t": 3.0, "d": 16.0, "m": 1.41},
+        "\u00d825.0x1.50": {"D": 25.0, "t": 1.5, "d": 22.0, "m": 0.87},
+        "\u00d825.0x2.00": {"D": 25.0, "t": 2.0, "d": 21.0, "m": 1.13},
+        "\u00d825.0x2.50": {"D": 25.0, "t": 2.5, "d": 20.0, "m": 1.39},
+        "\u00d825.0x3.00": {"D": 25.0, "t": 3.0, "d": 19.0, "m": 1.63},
+        "\u00d825.0x4.00": {"D": 25.0, "t": 4.0, "d": 17.0, "m": 2.07},
+        "\u00d825.0x4.50": {"D": 25.0, "t": 4.5, "d": 16.0, "m": 2.28},
+        "\u00d825.0x5.00": {"D": 25.0, "t": 5.0, "d": 15.0, "m": 2.47},
+        "\u00d826.0x3.00": {"D": 26.0, "t": 3.0, "d": 20.0, "m": 1.7},
+        "\u00d828.0x1.50": {"D": 28.0, "t": 1.5, "d": 25.0, "m": 0.98},
+        "\u00d828.0x2.00": {"D": 28.0, "t": 2.0, "d": 24.0, "m": 1.28},
+        "\u00d828.0x2.50": {"D": 28.0, "t": 2.5, "d": 23.0, "m": 1.57},
+        "\u00d828.0x3.00": {"D": 28.0, "t": 3.0, "d": 22.0, "m": 1.85},
+        "\u00d828.0x4.00": {"D": 28.0, "t": 4.0, "d": 20.0, "m": 2.37},
+        "\u00d830.0x2.00": {"D": 30.0, "t": 2.0, "d": 26.0, "m": 1.38},
+        "\u00d830.0x2.50": {"D": 30.0, "t": 2.5, "d": 25.0, "m": 1.7},
+        "\u00d830.0x3.00": {"D": 30.0, "t": 3.0, "d": 24.0, "m": 2.0},
+        "\u00d830.0x4.00": {"D": 30.0, "t": 4.0, "d": 22.0, "m": 2.57},
+        "\u00d830.0x5.00": {"D": 30.0, "t": 5.0, "d": 20.0, "m": 3.08},
+        "\u00d833.0x4.00": {"D": 33.0, "t": 4.0, "d": 25.0, "m": 2.86},
+        "\u00d835.0x2.00": {"D": 35.0, "t": 2.0, "d": 31.0, "m": 1.63},
+        "\u00d835.0x2.50": {"D": 35.0, "t": 2.5, "d": 30.0, "m": 2.0},
+        "\u00d835.0x3.00": {"D": 35.0, "t": 3.0, "d": 29.0, "m": 2.37},
+        "\u00d838.0x2.50": {"D": 38.0, "t": 2.5, "d": 33.0, "m": 2.19},
+        "\u00d838.0x3.00": {"D": 38.0, "t": 3.0, "d": 32.0, "m": 2.59},
+        "\u00d838.0x4.00": {"D": 38.0, "t": 4.0, "d": 30.0, "m": 3.35},
+        "\u00d838.0x5.00": {"D": 38.0, "t": 5.0, "d": 28.0, "m": 4.07},
+        "\u00d838.0x7.00": {"D": 38.0, "t": 7.0, "d": 24.0, "m": 5.35},
+        "\u00d842.0x2.00": {"D": 42.0, "t": 2.0, "d": 38.0, "m": 1.97},
+        "\u00d842.0x3.00": {"D": 42.0, "t": 3.0, "d": 36.0, "m": 2.89},
+        "\u00d842.0x4.00": {"D": 42.0, "t": 4.0, "d": 34.0, "m": 3.75},
+        "\u00d848.0x5.00": {"D": 48.0, "t": 5.0, "d": 38.0, "m": 5.3},
+        "\u00d850.0x6.00": {"D": 50.0, "t": 6.0, "d": 38.0, "m": 6.51},
+        "\u00d850.0x9.00": {"D": 50.0, "t": 9.0, "d": 32.0, "m": 9.1},
+        "\u00d860.0x6.00": {"D": 60.0, "t": 6.0, "d": 48.0, "m": 7.99},
+        "\u00d860.0x9.00": {"D": 60.0, "t": 9.0, "d": 42.0, "m": 11.32}
       } }
       ]
     },
