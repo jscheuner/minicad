@@ -1021,7 +1021,7 @@
   <div class="topbar-logo"><svg width="176" height="44" style="vertical-align:middle" viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" aria-label="MiniCAD" style="display:block"><g transform="translate(6,10) scale(0.8)"><rect x="0" y="0" width="100" height="100" rx="20" fill="#16222E"/><path d="M24,70 L24,40 Q24,24 37,24 Q50,24 50,40 L50,70 M50,40 Q50,24 63,24 Q76,24 76,40 L76,70" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="butt" stroke-linejoin="round"/><rect x="16" y="62" width="16" height="16" fill="none" stroke="#FF5436" stroke-width="3"/></g><text x="104" y="63" style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',monospace;font-size:44px;font-weight:500;letter-spacing:0.5px"><tspan fill="#c8d6e5">mini</tspan><tspan fill="#FF5436">cad</tspan></text></svg><span style="font-size:10px;font-weight:300;color:var(--text-dim);vertical-align:middle;margin-left:6px;letter-spacing:0">v0.09</span></div>
   <div class="menu-items">
     <div class="menu-dropdown" id="menu-fichier">
-      <div class="menu-item" id="menu-fichier-btn" onclick="toggleMenuDropdown('menu-fichier',event)">Fichier</div>
+      <div class="menu-item" id="menu-fichier-btn" onclick="toggleMenuDropdown('menu-fichier',event)" data-i18n="menu.file">{{menu.file}}</div>
       <div class="menu-dropdown-list" id="menu-fichier-list">
         <div class="menu-dropdown-item" onclick="executeCommand('CLEAR');closeMenus()">
           <span>Nouveau</span>
@@ -1052,13 +1052,13 @@
       </div>
     </div>
     <div class="menu-dropdown" id="menu-lib">
-      <div class="menu-item" id="menu-lib-btn" onclick="toggleMenuDropdown('menu-lib',event)">Bibliothèque</div>
+      <div class="menu-item" id="menu-lib-btn" onclick="toggleMenuDropdown('menu-lib',event)" data-i18n="menu.library">{{menu.library}}</div>
       <div class="menu-dropdown-list" id="menu-lib-list"></div>
     </div>
-    <div class="menu-item" onclick="showHelp()">Aide</div>
+    <div class="menu-item" onclick="showHelp()" data-i18n="menu.help">{{menu.help}}</div>
   </div>
   <div class="topbar-right">
-    <span id="save-indicator" style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.5px;cursor:default;opacity:0.5;" title="État de sauvegarde">● NOUVEAU</span>
+    <span id="save-indicator" style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.5px;cursor:default;opacity:0.5;" title="{{tool.save_state}}" data-i18n-title="tool.save_state">● NOUVEAU</span>
     <span class="coord-display" id="coord-display">X: 0.00 Y: 0.00</span>
     <span class="snap-indicator" id="snap-label" onclick="toggleSnap()">SNAP</span>
     <span class="snap-indicator" id="osnap-label" onclick="toggleOsnap()" style="color:var(--osnap-endpoint)">OSNAP</span>
@@ -1071,48 +1071,48 @@
 <div class="dock-area" id="dock-area" oncontextmenu="showTBContext(event)">
 
   <!-- Toolbar: Fichier -->
-  <div class="cad-toolbar docked" id="tb-file" data-name="Fichier">
+  <div class="cad-toolbar docked" id="tb-file" data-name="{{tb.file}}" data-i18n-name="tb.file">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-file')" ondblclick="toggleTBDock('tb-file')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-file')" ondblclick="toggleTBDock('tb-file')">
-      <span class="tb-title">Fichier</span><span class="tb-close" onclick="hideToolbar('tb-file')">×</span>
+      <span class="tb-title" data-i18n="tb.file">{{tb.file}}</span><span class="tb-close" onclick="hideToolbar('tb-file')">×</span>
     </div>
     <div class="tb-buttons">
-      <button class="tool-btn text-btn" title="Ouvrir (Ctrl+O)" onclick="cmdOpen()">📂</button>
-      <button class="tool-btn text-btn" title="Sauvegarder (Ctrl+S)" onclick="cmdSave()">💾</button>
-      <button class="tool-btn text-btn" title="Exporter PDF (Ctrl+P)" onclick="openPrintDialog()" style="color:#ff9800">🖨</button>
-      <button class="tool-btn text-btn" title="Assistant IA Ollama" onclick="toggleAiPanel()" style="color:var(--accent)">🤖</button>
+      <button class="tool-btn text-btn" title="{{tool.open}}" data-i18n-title="tool.open" onclick="cmdOpen()">📂</button>
+      <button class="tool-btn text-btn" title="{{tool.save}}" data-i18n-title="tool.save" onclick="cmdSave()">💾</button>
+      <button class="tool-btn text-btn" title="{{tool.print}}" data-i18n-title="tool.print" onclick="openPrintDialog()" style="color:#ff9800">🖨</button>
+      <button class="tool-btn text-btn" title="{{tool.ai}}" data-i18n-title="tool.ai" onclick="toggleAiPanel()" style="color:var(--accent)">🤖</button>
     </div>
   </div>
   <input type="file" id="file-input" accept=".dxf,.dwg,.json,.mcad" style="display:none" onchange="handleFileOpen(event)">
 
   <!-- Toolbar: Modification -->
-  <div class="cad-toolbar docked" id="tb-modify" data-name="Modification">
+  <div class="cad-toolbar docked" id="tb-modify" data-name="{{tb.modify}}" data-i18n-name="tb.modify">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-modify')" ondblclick="toggleTBDock('tb-modify')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-modify')" ondblclick="toggleTBDock('tb-modify')">
-      <span class="tb-title">Modification</span><span class="tb-close" onclick="hideToolbar('tb-modify')">×</span>
+      <span class="tb-title" data-i18n="tb.modify">{{tb.modify}}</span><span class="tb-close" onclick="hideToolbar('tb-modify')">×</span>
     </div>
     <div class="tb-buttons">
       <!-- Sélection -->
-      <button class="tool-btn" data-tool="select" title="Sélection (V)" onclick="setTool('select')">
+      <button class="tool-btn" data-tool="select" title="{{tool.select}}" data-i18n-title="tool.select" onclick="setTool('select')">
         <svg viewBox="0 0 24 24"><path d="M5 3l14 9-7 1-4 7z" fill="currentColor" fill-opacity="0.25"/><path d="M5 3l14 9-7 1-4 7z"/></svg>
       </button>
       <div class="tb-sep"></div>
       <!-- Déplacer -->
-      <button class="tool-btn" data-tool="move_obj" title="Déplacer (M)" onclick="executeCommand('MOVE')">
+      <button class="tool-btn" data-tool="move_obj" title="{{tool.move}}" data-i18n-title="tool.move" onclick="executeCommand('MOVE')">
         <svg viewBox="0 0 24 24">
           <path d="M12 4v16M4 12h16"/>
           <path d="M12 4l-2 3M12 4l2 3M12 20l-2-3M12 20l2-3M4 12l3-2M4 12l3 2M20 12l-3-2M20 12l-3 2"/>
         </svg>
       </button>
       <!-- Copier -->
-      <button class="tool-btn" title="Copier (CO)" onclick="executeCommand('COPY')">
+      <button class="tool-btn" title="{{tool.copy}}" data-i18n-title="tool.copy" onclick="executeCommand('COPY')">
         <svg viewBox="0 0 24 24">
           <rect x="9" y="9" width="11" height="11" rx="1"/>
           <path d="M15 9V6a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/>
         </svg>
       </button>
       <!-- Miroir -->
-      <button class="tool-btn" data-tool="mirror" title="Miroir (MI)" onclick="executeCommand('MIRROR')">
+      <button class="tool-btn" data-tool="mirror" title="{{tool.mirror}}" data-i18n-title="tool.mirror" onclick="executeCommand('MIRROR')">
         <svg viewBox="0 0 24 24">
           <line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="3,2"/>
           <path d="M2 8l7 4-7 4z" fill="currentColor" fill-opacity="0.3"/>
@@ -1122,7 +1122,7 @@
         </svg>
       </button>
       <!-- Décaler -->
-      <button class="tool-btn" data-tool="offset" title="Décaler (O)" onclick="executeCommand('OFFSET')">
+      <button class="tool-btn" data-tool="offset" title="{{tool.offset}}" data-i18n-title="tool.offset" onclick="executeCommand('OFFSET')">
         <svg viewBox="0 0 24 24">
           <path d="M3 7 Q12 3 21 7"/>
           <path d="M3 13 Q12 9 21 13"/>
@@ -1131,7 +1131,7 @@
         </svg>
       </button>
       <!-- Trim -->
-      <button class="tool-btn" data-tool="trim" title="Couper (TR)" onclick="executeCommand('TRIM')">
+      <button class="tool-btn" data-tool="trim" title="{{tool.trim}}" data-i18n-title="tool.trim" onclick="executeCommand('TRIM')">
         <svg viewBox="0 0 24 24">
           <line x1="2" y1="12" x2="11" y2="12"/>
           <line x1="13" y1="12" x2="22" y2="12" stroke-dasharray="2,2" opacity="0.35"/>
@@ -1141,7 +1141,7 @@
         </svg>
       </button>
       <!-- Extend -->
-      <button class="tool-btn" data-tool="extend" title="Prolonger (EX)" onclick="executeCommand('EXTEND')">
+      <button class="tool-btn" data-tool="extend" title="{{tool.extend}}" data-i18n-title="tool.extend" onclick="executeCommand('EXTEND')">
         <svg viewBox="0 0 24 24">
           <!-- Ligne pointillée → prolongée jusqu'à la limite verticale -->
           <line x1="2" y1="12" x2="9" y2="12" stroke-dasharray="2,2" opacity="0.45"/>
@@ -1154,7 +1154,7 @@
         </svg>
       </button>
       <!-- Raccord -->
-      <button class="tool-btn" data-tool="fillet" title="Raccord (F)" onclick="executeCommand('FILLET')">
+      <button class="tool-btn" data-tool="fillet" title="{{tool.fillet}}" data-i18n-title="tool.fillet" onclick="executeCommand('FILLET')">
         <svg viewBox="0 0 24 24">
           <!-- Fillet : angle droit avec grand arc de raccord visible -->
           <line x1="4" y1="3" x2="4" y2="15"/>
@@ -1166,7 +1166,7 @@
         </svg>
       </button>
       <!-- Chanfrein -->
-      <button class="tool-btn" data-tool="chamfer" title="Chanfrein (CHA)" onclick="executeCommand('CHAMFER')">
+      <button class="tool-btn" data-tool="chamfer" title="{{tool.chamfer}}" data-i18n-title="tool.chamfer" onclick="executeCommand('CHAMFER')">
         <svg viewBox="0 0 24 24">
           <!-- Chamfer : angle droit avec grande diagonale droite bien visible -->
           <line x1="4" y1="3" x2="4" y2="14"/>
@@ -1178,7 +1178,7 @@
         </svg>
       </button>
       <!-- Échelle -->
-      <button class="tool-btn" data-tool="scale" title="Mise à l'échelle (SC)" onclick="executeCommand('SCALE')">
+      <button class="tool-btn" data-tool="scale" title="{{tool.scale}}" data-i18n-title="tool.scale" onclick="executeCommand('SCALE')">
         <svg viewBox="0 0 24 24">
           <path d="M3 21l6-6M21 3l-6 6" fill="none"/>
           <path d="M21 3h-5M21 3v5" fill="none"/>
@@ -1186,7 +1186,7 @@
         </svg>
       </button>
       <!-- Étirer -->
-      <button class="tool-btn" data-tool="stretch" title="Étirer (ET)" onclick="executeCommand('STRETCH')">
+      <button class="tool-btn" data-tool="stretch" title="{{tool.stretch}}" data-i18n-title="tool.stretch" onclick="executeCommand('STRETCH')">
         <svg viewBox="0 0 24 24">
           <path d="M3 12h18" fill="none"/>
           <path d="M17 8l4 4-4 4" fill="none"/>
@@ -1195,14 +1195,14 @@
         </svg>
       </button>
       <!-- Rotation -->
-      <button class="tool-btn" data-tool="rotate" title="Rotation (RO)" onclick="executeCommand('ROTATE')">
+      <button class="tool-btn" data-tool="rotate" title="{{tool.rotate}}" data-i18n-title="tool.rotate" onclick="executeCommand('ROTATE')">
         <svg viewBox="0 0 24 24">
           <path d="M20 8A9 9 0 1 0 21 13" fill="none"/>
           <path d="M20 3v5h-5" fill="none"/>
         </svg>
       </button>
       <!-- Joindre -->
-      <button class="tool-btn" data-tool="join" title="Joindre en polyligne (J)" onclick="executeCommand('JOIN')">
+      <button class="tool-btn" data-tool="join" title="{{tool.join}}" data-i18n-title="tool.join" onclick="executeCommand('JOIN')">
         <svg viewBox="0 0 24 24">
           <line x1="2" y1="18" x2="9" y2="12"/>
           <line x1="9" y1="12" x2="16" y2="6"/>
@@ -1212,14 +1212,14 @@
         </svg>
       </button>
       <!-- Réseau -->
-      <button class="tool-btn" title="Réseau rectangulaire (AR)" onclick="executeCommand('ARRAY')">
+      <button class="tool-btn" title="{{tool.array}}" data-i18n-title="tool.array" onclick="executeCommand('ARRAY')">
         <svg viewBox="0 0 24 24">
           <rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9.5" y="2" width="5" height="5" rx="1"/><rect x="17" y="2" width="5" height="5" rx="1"/>
           <rect x="2" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><rect x="17" y="9.5" width="5" height="5" rx="1"/>
           <rect x="2" y="17" width="5" height="5" rx="1"/><rect x="9.5" y="17" width="5" height="5" rx="1"/><rect x="17" y="17" width="5" height="5" rx="1"/>
         </svg>
       </button>
-      <button class="tool-btn" title="Réseau polaire (APO)" onclick="executeCommand('ARRAY_POLAR')">
+      <button class="tool-btn" title="{{tool.array_polar}}" data-i18n-title="tool.array_polar" onclick="executeCommand('ARRAY_POLAR')">
         <svg viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="7" fill="none" stroke-dasharray="2,2" opacity="0.45"/>
           <circle cx="12" cy="5" r="1.8"/><circle cx="18.1" cy="8.5" r="1.8"/><circle cx="18.1" cy="15.5" r="1.8"/>
@@ -1228,7 +1228,7 @@
         </svg>
       </button>
       <!-- Éclater bloc -->
-      <button class="tool-btn" title="Éclater (X)" onclick="executeCommand('EXPLODE')">
+      <button class="tool-btn" title="{{tool.explode_btn}}" data-i18n-title="tool.explode_btn" onclick="executeCommand('EXPLODE')">
         <svg viewBox="0 0 24 24">
           <rect x="8" y="8" width="8" height="8" rx="1"/>
           <line x1="12" y1="8" x2="12" y2="2"/><polygon points="10,4 14,4 12,1" fill="currentColor"/>
@@ -1265,40 +1265,40 @@
   </div>
 
   <!-- Toolbar: Dessin -->
-  <div class="cad-toolbar docked" id="tb-draw" data-name="Dessin">
+  <div class="cad-toolbar docked" id="tb-draw" data-name="{{tb.draw}}" data-i18n-name="tb.draw">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-draw')" ondblclick="toggleTBDock('tb-draw')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-draw')" ondblclick="toggleTBDock('tb-draw')">
-      <span class="tb-title">Dessin</span><span class="tb-close" onclick="hideToolbar('tb-draw')">×</span>
+      <span class="tb-title" data-i18n="tb.draw">{{tb.draw}}</span><span class="tb-close" onclick="hideToolbar('tb-draw')">×</span>
     </div>
     <div class="tb-buttons">
-      <button class="tool-btn" data-tool="line" title="Ligne (L)" onclick="setTool('line')">
+      <button class="tool-btn" data-tool="line" title="{{tool.line}}" data-i18n-title="tool.line" onclick="setTool('line')">
         <svg viewBox="0 0 24 24"><line x1="5" y1="19" x2="19" y2="5"/></svg>
       </button>
-      <button class="tool-btn" data-tool="rect" title="Rectangle (R)" onclick="setTool('rect')">
+      <button class="tool-btn" data-tool="rect" title="{{tool.rect}}" data-i18n-title="tool.rect" onclick="setTool('rect')">
         <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/></svg>
       </button>
-      <button class="tool-btn" data-tool="rectcenter" title="Rectangle par le centre (RC)" onclick="setTool('rectcenter')">
+      <button class="tool-btn" data-tool="rectcenter" title="{{tool.rectcenter}}" data-i18n-title="tool.rectcenter" onclick="setTool('rectcenter')">
         <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/><line x1="12" y1="9" x2="12" y2="15"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
       </button>
-      <button class="tool-btn" data-tool="polygon" title="Polygone régulier (POL)" onclick="executeCommand('POLYGON')">
+      <button class="tool-btn" data-tool="polygon" title="{{tool.polygon}}" data-i18n-title="tool.polygon" onclick="executeCommand('POLYGON')">
         <svg viewBox="0 0 24 24"><polygon points="12,3 20.5,8.5 20.5,15.5 12,21 3.5,15.5 3.5,8.5"/></svg>
       </button>
-      <button class="tool-btn" data-tool="circle" title="Cercle (C)" onclick="setTool('circle')">
+      <button class="tool-btn" data-tool="circle" title="{{tool.circle}}" data-i18n-title="tool.circle" onclick="setTool('circle')">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg>
       </button>
-      <button class="tool-btn" data-tool="ellipse" title="Ellipse (EL)" onclick="executeCommand('ELLIPSE')">
+      <button class="tool-btn" data-tool="ellipse" title="{{tool.ellipse}}" data-i18n-title="tool.ellipse" onclick="executeCommand('ELLIPSE')">
         <svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="6"/></svg>
       </button>
-      <button class="tool-btn" data-tool="arc" title="Arc (A)" onclick="setTool('arc')">
+      <button class="tool-btn" data-tool="arc" title="{{tool.arc}}" data-i18n-title="tool.arc" onclick="setTool('arc')">
         <svg viewBox="0 0 24 24"><path d="M5 19 A 10 10 0 0 1 19 5"/></svg>
       </button>
-      <button class="tool-btn" data-tool="polyline" title="Polyligne (PL)" onclick="setTool('polyline')">
+      <button class="tool-btn" data-tool="polyline" title="{{tool.polyline}}" data-i18n-title="tool.polyline" onclick="setTool('polyline')">
         <svg viewBox="0 0 24 24"><polyline points="4,18 8,8 14,14 20,4"/></svg>
       </button>
       <button class="tool-btn" data-tool="spline" title="Spline (SPL)" onclick="setTool('spline');termPrint('SPLINE: Cliquez les points de passage — C=Clore  Echap=Finir','info')">
         <svg viewBox="0 0 24 24"><path d="M4,18 C6,18 7,8 10,8 S16,14 20,4" fill="none"/></svg>
       </button>
-      <button class="tool-btn" data-tool="xline" title="Ligne infinie (XL)" onclick="executeCommand('XLINE')">
+      <button class="tool-btn" data-tool="xline" title="{{tool.xline}}" data-i18n-title="tool.xline" onclick="executeCommand('XLINE')">
         <svg viewBox="0 0 24 24" fill="none">
           <line x1="2" y1="12" x2="22" y2="12"/>
           <polyline points="5,9 2,12 5,15"/>
@@ -1327,7 +1327,7 @@
         </svg>
       </button>
       <!-- Hachures -->
-      <button class="tool-btn" data-tool="hatch" title="Hachures (H)" onclick="executeCommand('HATCH')">
+      <button class="tool-btn" data-tool="hatch" title="{{tool.hatch}}" data-i18n-title="tool.hatch" onclick="executeCommand('HATCH')">
         <svg viewBox="0 0 24 24">
           <rect x="3" y="3" width="18" height="18" rx="1"/>
           <line x1="3" y1="9"  x2="9"  y2="3"/>
@@ -1337,7 +1337,7 @@
           <line x1="15" y1="21" x2="21" y2="15"/>
         </svg>
       </button>
-      <button class="tool-btn" data-tool="tube" title="Tube 2 traits (TUBE)" onclick="executeCommand('TUBE')">
+      <button class="tool-btn" data-tool="tube" title="{{tool.tube}}" data-i18n-title="tool.tube" onclick="executeCommand('TUBE')">
         <svg viewBox="0 0 24 24">
           <line x1="3" y1="7" x2="21" y2="7"/>
           <line x1="3" y1="17" x2="21" y2="17"/>
@@ -1361,7 +1361,7 @@
       <button class="tool-btn" data-tool="text_place" title="Texte (T)" onclick="executeCommand('TEXT')">
         <svg viewBox="0 0 24 24" stroke="none"><text x="3" y="19" font-size="17" fill="currentColor" font-family="serif" font-style="italic">T</text></svg>
       </button>
-      <button class="tool-btn" data-tool="leader" title="Repère (LEADER)" onclick="executeCommand('LEADER')">
+      <button class="tool-btn" data-tool="leader" title="{{tool.leader}}" data-i18n-title="tool.leader" onclick="executeCommand('LEADER')">
         <svg viewBox="0 0 24 24">
           <line x1="5" y1="19" x2="15" y2="9"/>
           <polygon points="5,19 9,16 7,14" fill="currentColor"/>
@@ -1373,28 +1373,28 @@
   </div>
 
   <!-- Toolbar: Cotation -->
-  <div class="cad-toolbar docked" id="tb-dim" data-name="Cotation">
+  <div class="cad-toolbar docked" id="tb-dim" data-name="{{tb.dim}}" data-i18n-name="tb.dim">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-dim')" ondblclick="toggleTBDock('tb-dim')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-dim')" ondblclick="toggleTBDock('tb-dim')">
-      <span class="tb-title">Cotation</span><span class="tb-close" onclick="hideToolbar('tb-dim')">×</span>
+      <span class="tb-title" data-i18n="tb.dim">{{tb.dim}}</span><span class="tb-close" onclick="hideToolbar('tb-dim')">×</span>
     </div>
     <div class="tb-buttons">
-      <button class="tool-btn" title="Cote linéaire" onclick="executeCommand('LOAD dim');executeCommand('DIMLINEAR')">
+      <button class="tool-btn" title="{{tool.dim_linear}}" data-i18n-title="tool.dim_linear" onclick="executeCommand('LOAD dim');executeCommand('DIMLINEAR')">
         <svg viewBox="0 0 24 24"><line x1="4" y1="18" x2="20" y2="18"/><line x1="4" y1="12" x2="4" y2="20"/><line x1="20" y1="12" x2="20" y2="20"/><path d="M6 18l-2-2M6 18l-2 2M18 18l2-2M18 18l2 2"/></svg>
       </button>
-      <button class="tool-btn" title="Cote parallèle" onclick="executeCommand('LOAD dim');executeCommand('DIMALIGNED')">
+      <button class="tool-btn" title="{{tool.dim_aligned}}" data-i18n-title="tool.dim_aligned" onclick="executeCommand('LOAD dim');executeCommand('DIMALIGNED')">
         <svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="18" y2="6"/><line x1="2" y1="14" x2="8" y2="20"/><line x1="14" y1="2" x2="20" y2="8"/></svg>
       </button>
-      <button class="tool-btn" title="Cote angulaire" onclick="executeCommand('LOAD dim');executeCommand('DIMANGULAR')">
+      <button class="tool-btn" title="{{tool.dim_angular}}" data-i18n-title="tool.dim_angular" onclick="executeCommand('LOAD dim');executeCommand('DIMANGULAR')">
         <svg viewBox="0 0 24 24"><path d="M4 20l16-4M4 20l4-16"/><path d="M10 11 A7 7 0 0 0 14 15"/></svg>
       </button>
-      <button class="tool-btn" title="Cote rayon" onclick="executeCommand('LOAD dim');executeCommand('DIMRADIUS')">
+      <button class="tool-btn" title="{{tool.dim_radius}}" data-i18n-title="tool.dim_radius" onclick="executeCommand('LOAD dim');executeCommand('DIMRADIUS')">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><line x1="12" y1="12" x2="18" y2="8"/><text x="13" y="10" font-size="7" fill="currentColor" stroke="none">R</text></svg>
       </button>
-      <button class="tool-btn" title="Cote diamètre" onclick="executeCommand('LOAD dim');executeCommand('DIMDIAMETER')">
+      <button class="tool-btn" title="{{tool.dim_diameter}}" data-i18n-title="tool.dim_diameter" onclick="executeCommand('LOAD dim');executeCommand('DIMDIAMETER')">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><line x1="5" y1="16" x2="19" y2="8"/><text x="10" y="11" font-size="7" fill="currentColor" stroke="none">Ø</text></svg>
       </button>
-      <button class="tool-btn" data-tool="measure" title="Mesurer (ME)" onclick="setTool('measure')">
+      <button class="tool-btn" data-tool="measure" title="{{tool.measure}}" data-i18n-title="tool.measure" onclick="setTool('measure')">
         <svg viewBox="0 0 24 24" fill="none">
           <rect x="2" y="9" width="20" height="6" rx="1"/>
           <line x1="6"  y1="9" x2="6"  y2="14"/>
@@ -1403,7 +1403,7 @@
           <line x1="18" y1="9" x2="18" y2="12"/>
         </svg>
       </button>
-      <button class="tool-btn" id="calc-btn" title="Calculatrice (CALC)" onclick="toggleCalc()">
+      <button class="tool-btn" id="calc-btn" title="{{tool.calc}}" data-i18n-title="tool.calc" onclick="toggleCalc()">
         <svg viewBox="0 0 24 24" fill="none">
           <rect x="4" y="2" width="16" height="20" rx="2"/>
           <rect x="7" y="5" width="10" height="4" rx="1"/>
@@ -1415,10 +1415,10 @@
   </div>
 
   <!-- Toolbar: Accrochage -->
-  <div class="cad-toolbar docked" id="tb-snap" data-name="Accrochage">
+  <div class="cad-toolbar docked" id="tb-snap" data-name="{{tb.snap}}" data-i18n-name="tb.snap">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-snap')" ondblclick="toggleTBDock('tb-snap')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-snap')" ondblclick="toggleTBDock('tb-snap')">
-      <span class="tb-title">Accrochage</span><span class="tb-close" onclick="hideToolbar('tb-snap')">×</span>
+      <span class="tb-title" data-i18n="tb.snap">{{tb.snap}}</span><span class="tb-close" onclick="hideToolbar('tb-snap')">×</span>
     </div>
     <div class="tb-buttons">
       <button class="tool-btn" id="snap-btn" title="Grille Snap (F3)" onclick="toggleSnap()">
@@ -1440,13 +1440,13 @@
   </div>
 
   <!-- Toolbar: Vue -->
-  <div class="cad-toolbar docked" id="tb-view" data-name="Vue">
+  <div class="cad-toolbar docked" id="tb-view" data-name="{{tb.view}}" data-i18n-name="tb.view">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-view')" ondblclick="toggleTBDock('tb-view')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-view')" ondblclick="toggleTBDock('tb-view')">
-      <span class="tb-title">Vue</span><span class="tb-close" onclick="hideToolbar('tb-view')">×</span>
+      <span class="tb-title" data-i18n="tb.view">{{tb.view}}</span><span class="tb-close" onclick="hideToolbar('tb-view')">×</span>
     </div>
     <div class="tb-buttons">
-      <button class="tool-btn" title="Zoom Étendue" onclick="zoomExtents()">
+      <button class="tool-btn" title="{{tool.zoom_extents}}" data-i18n-title="tool.zoom_extents" onclick="zoomExtents()">
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
       </button>
       <button class="tool-btn" data-tool="pan" title="Panoramique" onclick="setTool('pan')">
@@ -1456,10 +1456,10 @@
   </div>
 
   <!-- Toolbar: Architecture -->
-  <div class="cad-toolbar docked" id="tb-arch" data-name="Architecture">
+  <div class="cad-toolbar docked" id="tb-arch" data-name="{{tb.arch}}" data-i18n-name="tb.arch">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-arch')" ondblclick="toggleTBDock('tb-arch')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-arch')" ondblclick="toggleTBDock('tb-arch')">
-      <span class="tb-title">Architecture</span><span class="tb-close" onclick="hideToolbar('tb-arch')">×</span>
+      <span class="tb-title" data-i18n="tb.arch">{{tb.arch}}</span><span class="tb-close" onclick="hideToolbar('tb-arch')">×</span>
     </div>
     <div class="tb-buttons">
       <button class="tool-btn" data-tool="wall" title="Mur (WALL)" onclick="executeCommand('LOAD arch');executeCommand('WALL')">
@@ -1487,10 +1487,10 @@
   </div>
 
   <!-- Toolbar: Électricité -->
-  <div class="cad-toolbar docked" id="tb-elec" data-name="Électricité">
+  <div class="cad-toolbar docked" id="tb-elec" data-name="{{tb.elec}}" data-i18n-name="tb.elec">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-elec')" ondblclick="toggleTBDock('tb-elec')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-elec')" ondblclick="toggleTBDock('tb-elec')">
-      <span class="tb-title">Électricité</span><span class="tb-close" onclick="hideToolbar('tb-elec')">×</span>
+      <span class="tb-title" data-i18n="tb.elec">{{tb.elec}}</span><span class="tb-close" onclick="hideToolbar('tb-elec')">×</span>
     </div>
     <div class="tb-buttons">
       <button class="tool-btn" data-tool="outlet" title="Prise (OUTLET)" onclick="executeCommand('LOAD elec');executeCommand('OUTLET')">
@@ -1632,27 +1632,27 @@
 
 <div id="array-dialog">
   <div class="ar-header">
-    <span>RÉSEAU RECTANGULAIRE</span>
+    <span data-i18n="dialog.array.title">{{dialog.array.title}}</span>
     <span class="lm-close" onclick="closeArrayDialog()">×</span>
   </div>
   <div class="ar-body">
     <div class="ar-group">
-      <div class="ar-label">Colonnes</div>
+      <div class="ar-label" data-i18n="dialog.array.cols">{{dialog.array.cols}}</div>
       <input id="ar-cols" class="ar-input" type="text" inputmode="decimal" value="3" oninput="arrayPreviewUpdate()">
     </div>
     <div class="ar-group">
-      <div class="ar-label">Espacement X</div>
+      <div class="ar-label" data-i18n="dialog.array.dx">{{dialog.array.dx}}</div>
       <div class="ar-pick-row">
         <input id="ar-dx" class="ar-input" type="text" inputmode="decimal" value="100" oninput="arrayPreviewUpdate()">
         <button class="ar-pick-btn" title="Cliquer 2 points sur le dessin" onclick="arrayPickSpacing('x')">⊶</button>
       </div>
     </div>
     <div class="ar-group">
-      <div class="ar-label">Lignes</div>
+      <div class="ar-label" data-i18n="dialog.array.rows">{{dialog.array.rows}}</div>
       <input id="ar-rows" class="ar-input" type="text" inputmode="decimal" value="3" oninput="arrayPreviewUpdate()">
     </div>
     <div class="ar-group">
-      <div class="ar-label">Espacement Y</div>
+      <div class="ar-label" data-i18n="dialog.array.dy">{{dialog.array.dy}}</div>
       <div class="ar-pick-row">
         <input id="ar-dy" class="ar-input" type="text" inputmode="decimal" value="100" oninput="arrayPreviewUpdate()">
         <button class="ar-pick-btn" title="Cliquer 2 points sur le dessin" onclick="arrayPickSpacing('y')" style="transform:rotate(90deg)">⊶</button>
@@ -1668,27 +1668,27 @@
 
 <div id="polar-array-dialog" style="display:none">
   <div class="ar-header">
-    <span>RÉSEAU POLAIRE</span>
+    <span data-i18n="dialog.polar.title">{{dialog.polar.title}}</span>
     <span class="lm-close" onclick="closePolarArrayDialog()">×</span>
   </div>
   <div class="ar-body">
     <div class="ar-group">
-      <div class="ar-label">Nb d'éléments</div>
+      <div class="ar-label" data-i18n="dialog.polar.count">{{dialog.polar.count}}</div>
       <input id="par-count" class="ar-input" type="text" inputmode="decimal" value="6" oninput="polarArrayPreviewUpdate()">
     </div>
     <div class="ar-group">
-      <div class="ar-label">Angle total (°)</div>
+      <div class="ar-label" data-i18n="dialog.polar.angle">{{dialog.polar.angle}}</div>
       <input id="par-angle" class="ar-input" type="text" inputmode="decimal" value="360" oninput="polarArrayPreviewUpdate()">
     </div>
     <div class="ar-group">
-      <div class="ar-label">Centre X</div>
+      <div class="ar-label" data-i18n="dialog.polar.cx">{{dialog.polar.cx}}</div>
       <div class="ar-pick-row">
         <input id="par-cx" class="ar-input" type="text" inputmode="decimal" value="0" oninput="polarArrayPreviewUpdate()">
         <button class="ar-pick-btn" title="Cliquer le centre sur le dessin" onclick="polarArrayPickCenter()">⊕</button>
       </div>
     </div>
     <div class="ar-group">
-      <div class="ar-label">Centre Y</div>
+      <div class="ar-label" data-i18n="dialog.polar.cy">{{dialog.polar.cy}}</div>
       <input id="par-cy" class="ar-input" type="text" inputmode="decimal" value="0" oninput="polarArrayPreviewUpdate()">
     </div>
   </div>
@@ -1708,7 +1708,7 @@
 <!-- CALCULATRICE -->
 <div id="calc-dialog" tabindex="-1" style="outline:none">
   <div class="calc-hdr" id="calc-drag">
-    <span>CALCULATRICE</span>
+    <span data-i18n="dialog.calc.title">{{dialog.calc.title}}</span>
     <div class="calc-hdr-btns">
       <button class="calc-mode-btn" id="calc-sci-btn" onclick="calcToggleSci()" title="Mode scientifique">SCI</button>
       <button class="calc-deg-btn active" id="calc-deg-btn" onclick="calcToggleDeg()" title="Degrés / Radians">DEG</button>
@@ -1934,7 +1934,7 @@
   <div class="terminal-output" id="term-output"></div>
   <div class="terminal-input-row">
     <span class="prompt-icon">❯</span>
-    <input type="text" id="cmd-input" placeholder="Commande ou mesure (100<45, @50,30, 200)..." autocomplete="off" spellcheck="false">
+    <input type="text" id="cmd-input" placeholder="{{cmd.placeholder}}" data-i18n-placeholder="cmd.placeholder" autocomplete="off" spellcheck="false">
   </div>
 </div>
 

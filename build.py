@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
 """
-MiniCAD — Script de build des bibliothèques (+ démo optionnelle + déploiement)
-===============================================================================
-Lit les fichiers dans libraries/ et injecte le bloc généré
-entre les marqueurs @@LIB_BEGIN / @@LIB_END dans minicad.html.
+MiniCAD — Script de build des bibliothèques (+ traductions + démo + déploiement)
+==================================================================================
+Source : src/minicad.html  (code pur avec marqueurs @@ et {{clés}} i18n)
+Outputs: minicad.html (FR), minicad_en.html (EN), minicad_org.html (multilang)
 
 Usage:
-    python build.py                    # build normal (sans démo)
-    python build.py --demo             # build avec séquence démo injectée
-    python build.py --demo --deploy    # build + upload index.html sur le serveur
-
-Ajouter une famille :
-  1. Créer libraries/<nom>.json  (copier ipe.json comme modèle)
-  2. Créer libraries/draws/<nom>.js  avec la fonction de dessin
-  3. Ajouter l'entrée dans libraries/index.json
-  4. Relancer python build.py
+    python build.py                    # build FR → minicad.html
+    python build.py --lang=en          # build EN → minicad_en.html (en plus)
+    python build.py --lang=all         # build toutes les langues disponibles
+    python build.py --demo             # + séquence démo injectée
+    python build.py --demo --deploy    # + upload sur le serveur (minicad_org multilang)
 """
 
 import json
@@ -51,8 +47,91 @@ ORG_OUT     = os.path.join(BASE_DIR, 'minicad_org.html')
 LIB_DIR     = os.path.join(BASE_DIR, 'libraries')
 INDEX_FILE  = os.path.join(LIB_DIR, 'index.json')
 HATCH_DIR   = os.path.join(BASE_DIR, 'hatches')
-HATCH_INDEX = os.path.join(HATCH_DIR, 'index.json')
-DEMO_FILE   = os.path.join(BASE_DIR, 'demo', 'demo_sequence.js')
+HATCH_INDEX  = os.path.join(HATCH_DIR, 'index.json')
+DEMO_FILE    = os.path.join(BASE_DIR, 'demo', 'demo_sequence.js')
+TRANS_DIR    = os.path.join(BASE_DIR, 'translations')
+
+
+# ── Traductions ────────────────────────────────────────────────────────────────
+
+def load_all_langs():
+    """Charge tous les fichiers JSON de translations/ (sauf _meta)."""
+    langs = {}
+    if not os.path.isdir(TRANS_DIR):
+        return langs
+    for fname in sorted(os.listdir(TRANS_DIR)):
+        if fname.endswith('.json'):
+            code = fname[:-5]
+            data = load_json(os.path.join(TRANS_DIR, fname))
+            data.pop('_meta', None)
+            langs[code] = data
+    return langs
+
+
+def apply_lang_mode_a(html, lang_code):
+    """Mode A — substitution directe des {{clés}}, supprime attributs data-i18n*.
+    Génère un fichier HTML autonome sans JS de traduction."""
+    lang_file = os.path.join(TRANS_DIR, lang_code + '.json')
+    if not os.path.exists(lang_file):
+        print(f'  ⚠  Traduction manquante : {lang_file}')
+        return html
+    data = load_json(lang_file)
+    data.pop('_meta', None)
+    for key, value in data.items():
+        html = html.replace('{{' + key + '}}', value)
+    # Signaler les clés non résolues
+    missing = set(re.findall(r'\{\{([^}]+)\}\}', html))
+    if missing:
+        print(f'  ⚠  Clés [{lang_code}] sans traduction : {missing}')
+    # Supprimer les attributs data-i18n* (inutiles en mode autonome)
+    html = re.sub(r'\s+data-i18n(?:-[a-z]+)?="[^"]*"', '', html)
+    return html
+
+
+def apply_lang_mode_b(html, default_lang='fr'):
+    """Mode B — injecte toutes les langues + switcher runtime.
+    Utilisé pour minicad_org.html (minicad.org)."""
+    langs = load_all_langs()
+    if not langs:
+        print('  ⚠  Aucun fichier de traduction trouvé dans translations/')
+        return apply_lang_mode_a(html, default_lang)
+
+    # Remplacer {{clés}} par la langue par défaut (FR) — garder data-i18n
+    default_data = langs.get(default_lang, {})
+    for key, value in default_data.items():
+        html = html.replace('{{' + key + '}}', value)
+
+    # Injecter l'objet TRANSLATIONS + fonction setLang + switcher
+    trans_json = json.dumps(langs, ensure_ascii=False, separators=(',', ':'))
+    i18n_js = f"""<script id="i18n-runtime">
+(function(){{
+  var T = {trans_json};
+  var _lang = localStorage.getItem('minicad_lang') || '{default_lang}';
+  window.setLang = function(lang) {{
+    if (!T[lang]) return;
+    _lang = lang;
+    localStorage.setItem('minicad_lang', lang);
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {{
+      var v = T[lang][el.dataset.i18n]; if (v) el.textContent = v;
+    }});
+    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {{
+      var v = T[lang][el.dataset.i18nTitle]; if (v) el.title = v;
+    }});
+    document.querySelectorAll('[data-i18n-name]').forEach(function(el) {{
+      var v = T[lang][el.dataset.i18nName]; if (v) el.dataset.name = v;
+    }});
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {{
+      var v = T[lang][el.dataset.i18nPlaceholder]; if (v) el.placeholder = v;
+    }});
+    document.querySelectorAll('.lang-btn').forEach(function(btn) {{
+      btn.classList.toggle('active', btn.dataset.lang === lang);
+    }});
+  }};
+  document.addEventListener('DOMContentLoaded', function() {{ window.setLang(_lang); }});
+}})();
+</script>"""
+    html = html.replace('</head>', i18n_js + '\n</head>', 1)
+    return html
 
 GTM_BLOCK = """\
 <!-- Cookie Consent + Google Tag Manager (chargé après consentement) -->
@@ -324,8 +403,19 @@ def deploy_sftp(local_file):
 
 
 def main():
-    with_demo  = '--demo'   in sys.argv
+    with_demo   = '--demo'   in sys.argv
     with_deploy = '--deploy' in sys.argv
+
+    # ── Langue(s) cible(s) ───────────────────────────────
+    lang_arg = next((a for a in sys.argv if a.startswith('--lang=')), None)
+    if lang_arg:
+        lang_val = lang_arg.split('=', 1)[1]
+        if lang_val == 'all':
+            target_langs = list(load_all_langs().keys())
+        else:
+            target_langs = lang_val.split(',')
+    else:
+        target_langs = ['fr']   # défaut : FR uniquement
 
     # ── Vérifications ────────────────────────────────────
     if not os.path.exists(HTML_SRC):
@@ -338,39 +428,51 @@ def main():
     index = load_json(INDEX_FILE)
 
     # ── Construire les blocs ──────────────────────────────
-    tag = '📦 MiniCAD build' + (' + démo' if with_demo else '')
-    print(f'{tag} — injection bibliothèques + hachures')
+    langs_label = '+'.join(target_langs).upper()
+    tag = f'📦 MiniCAD build [{langs_label}]' + (' + démo' if with_demo else '')
+    print(f'{tag} — injection bibliothèques + hachures + traductions')
     lib_block   = build_lib_js(index)
     hatch_index = load_json(HATCH_INDEX) if os.path.exists(HATCH_INDEX) else []
     hatch_block = build_hatch_js(hatch_index)
 
     # ── Lire la SOURCE (src/minicad.html — ne jamais écrire ici) ─────────
     with open(HTML_SRC, 'r', encoding='utf-8') as f:
-        html = f.read()
+        html_src = f.read()
 
-    # ── Injecter bibliothèques ───────────────────────────
-    html = inject_block(html, MARKER_BEGIN, MARKER_END, lib_block)
+    # ── Injecter bibliothèques + hachures (commun à tous les outputs) ─────
+    html_base = inject_block(html_src, MARKER_BEGIN, MARKER_END, lib_block)
+    if HATCH_MARKER_BEGIN in html_base:
+        html_base = inject_block(html_base, HATCH_MARKER_BEGIN, HATCH_MARKER_END, hatch_block)
 
-    # ── Injecter hachures ────────────────────────────────
-    if HATCH_MARKER_BEGIN in html:
-        html = inject_block(html, HATCH_MARKER_BEGIN, HATCH_MARKER_END, hatch_block)
+    # ── Génération des outputs par langue (Mode A) ────────────────────────
+    for lang in target_langs:
+        html_lang = apply_lang_mode_a(clear_demo_block(html_base), lang)
+        if lang == 'fr':
+            out_path = HTML_FILE          # minicad.html
+        else:
+            out_path = os.path.join(BASE_DIR, f'minicad_{lang}.html')
+        with open(out_path, 'w', encoding='utf-8') as f:
+            f.write(html_lang)
+        print(f'  ✓ [{lang.upper()}] → {os.path.basename(out_path)} ({len(html_lang.splitlines())} lignes)')
 
-    # ── minicad.html (racine) : output principal, bloc démo vide ─────────
-    html_dev = clear_demo_block(html)
-    with open(HTML_FILE, 'w', encoding='utf-8') as f:
-        f.write(html_dev)
-    print(f'  ✓ minicad.html généré depuis src/minicad.html')
-
-    # ── minicad_demo.html + minicad_org.html : uniquement avec --demo ───────
+    # ── minicad_demo.html (Mode A, FR) + minicad_org.html (Mode B multilang) ──
     if with_demo:
         demo_block = build_demo_js()
-        html_demo  = inject_block(html, DEMO_MARKER_BEGIN, DEMO_MARKER_END, demo_block)
+        html_with_demo = inject_block(html_base, DEMO_MARKER_BEGIN, DEMO_MARKER_END, demo_block)
+
+        # minicad_demo.html — Mode A FR (téléchargement GitHub avec démo)
+        html_demo = apply_lang_mode_a(html_with_demo, 'fr')
         with open(DEMO_OUT, 'w', encoding='utf-8') as f:
             f.write(html_demo)
+        print(f'  ✓ [FR+démo] → minicad_demo.html')
 
-        html_org = build_org_html(html_demo)   # basé sur minicad_demo.html (avec démo)
+        # minicad_org.html — Mode B multilang + GTM (minicad.org)
+        html_org_i18n = apply_lang_mode_b(html_with_demo, 'fr')
+        html_org = build_org_html(html_org_i18n)
         with open(ORG_OUT, 'w', encoding='utf-8') as f:
             f.write(html_org)
+        all_langs = list(load_all_langs().keys())
+        print(f'  ✓ [multilang:{",".join(all_langs)}] → minicad_org.html')
 
     # ── Déploiement SFTP ─────────────────────────────────
     if with_deploy:
@@ -388,7 +490,8 @@ def main():
     )
     print(f'  ✓ {n_cats} catégories, {n_fams} familles, {n_data} avec données')
     print(f'  ✓ {len(hatch_index)} patterns de hachure')
-    print(f'  ✓ src/minicad.html → minicad.html  ({len(html_dev.splitlines())} lignes)')
+    all_langs = load_all_langs()
+    print(f'  ✓ Traductions disponibles : {", ".join(all_langs.keys())}')
     if with_demo:
         print(f'  ✓ démo injectée → minicad_demo.html')
         print(f'  ✓ GTM + cookies injectés → minicad_org.html')
