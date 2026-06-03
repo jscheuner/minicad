@@ -1024,30 +1024,30 @@
       <div class="menu-item" id="menu-fichier-btn" onclick="toggleMenuDropdown('menu-fichier',event)" data-i18n="menu.file">{{menu.file}}</div>
       <div class="menu-dropdown-list" id="menu-fichier-list">
         <div class="menu-dropdown-item" onclick="executeCommand('CLEAR');closeMenus()">
-          <span>Nouveau</span>
+          <span data-i18n="menu.file.new">{{menu.file.new}}</span>
         </div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="cmdOpen();closeMenus()">
-          <span>Ouvrir…</span><span class="item-shortcut">Ctrl+O</span>
+          <span data-i18n="menu.file.open">{{menu.file.open}}</span><span class="item-shortcut">Ctrl+O</span>
         </div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="cmdSave();closeMenus()">
-          <span>Sauvegarder</span><span class="item-shortcut">Ctrl+S</span>
+          <span data-i18n="menu.file.save">{{menu.file.save}}</span><span class="item-shortcut">Ctrl+S</span>
         </div>
         <div class="menu-dropdown-item" onclick="cmdSave(null,true);closeMenus()">
-          <span>Sauvegarder sous…</span>
+          <span data-i18n="menu.file.save_as">{{menu.file.save_as}}</span>
         </div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="exportDXF();closeMenus()">
-          <span>Exporter DXF</span>
+          <span data-i18n="menu.file.export_dxf">{{menu.file.export_dxf}}</span>
         </div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="openPrintDialog();closeMenus()">
-          <span>Exporter PDF…</span><span class="item-shortcut">Ctrl+P</span>
+          <span data-i18n="menu.file.print">{{menu.file.print}}</span><span class="item-shortcut">Ctrl+P</span>
         </div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="openPrefsDialog();closeMenus()">
-          <span>Préférences…</span>
+          <span data-i18n="menu.file.prefs">{{menu.file.prefs}}</span>
         </div>
       </div>
     </div>
