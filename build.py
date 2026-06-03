@@ -38,13 +38,14 @@ def _load_env():
 
 _env = _load_env()
 SFTP_HOST     = _env.get('SFTP_HOST', '')
-SFTP_PORT     = int(_env.get('SFTP_PORT', 22))
+SFTP_PORT     = int(_env.get('SFTP_PORT', 21))
 SFTP_USER     = _env.get('SFTP_USER', '')
 SFTP_PASSWORD = _env.get('SFTP_PASSWORD', '')
 SFTP_REMOTE   = _env.get('SFTP_REMOTE', 'web/index.html')
 
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
-HTML_FILE   = os.path.join(BASE_DIR, 'minicad.html')
+HTML_SRC    = os.path.join(BASE_DIR, 'src', 'minicad.html')   # source (ne jamais écrire ici)
+HTML_FILE   = os.path.join(BASE_DIR, 'minicad.html')          # output racine (GitHub download)
 DEMO_OUT    = os.path.join(BASE_DIR, 'minicad_demo.html')
 ORG_OUT     = os.path.join(BASE_DIR, 'minicad_org.html')
 LIB_DIR     = os.path.join(BASE_DIR, 'libraries')
@@ -292,34 +293,34 @@ def clear_demo_block(html):
 
 
 def deploy_sftp(local_file):
-    """Upload local_file sur le serveur SFTP en tant qu'index.html."""
-    try:
-        import paramiko
-    except ImportError:
-        sys.exit('Erreur : paramiko non installé — pip install paramiko')
+    """Upload local_file sur le serveur FTP."""
+    from ftplib import FTP, all_errors as FTP_ERRORS
+    import socket
 
     if not SFTP_HOST or not SFTP_USER or not SFTP_PASSWORD:
-        sys.exit('Erreur : credentials SFTP manquants — créer un fichier .env (voir .env.example)')
-    print(f'  → Connexion SFTP {SFTP_USER}@{SFTP_HOST}:{SFTP_PORT} …')
-    transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
+        sys.exit('Erreur : credentials FTP manquants — créer un fichier .env (voir .env.example)')
+
+    timeout = int(_env.get('SFTP_TIMEOUT', 15))
+    remote_dir  = os.path.dirname(SFTP_REMOTE)   # ex: 'web'
+    remote_file = os.path.basename(SFTP_REMOTE)  # ex: 'index.html'
+
+    print(f'  → Connexion FTP {SFTP_USER}@{SFTP_HOST}:{SFTP_PORT} …')
     try:
-        transport.connect(username=SFTP_USER, password=SFTP_PASSWORD)
-        sftp = paramiko.SFTPClient.from_transport(transport)
-
-        # Supprimer l'index.html existant (ignorer si absent)
-        try:
-            sftp.remove(SFTP_REMOTE)
-            print(f'  ✓ index.html existant supprimé')
-        except FileNotFoundError:
-            pass
-
-        # Uploader le nouveau fichier
-        sftp.put(local_file, SFTP_REMOTE)
+        ftp = FTP()
+        ftp.connect(SFTP_HOST, SFTP_PORT, timeout=timeout)
+        ftp.login(SFTP_USER, SFTP_PASSWORD)
+        if remote_dir:
+            ftp.cwd(remote_dir)
+        with open(local_file, 'rb') as f:
+            ftp.storbinary(f'STOR {remote_file}', f)
+        ftp.quit()
         print(f'  ✓ {os.path.basename(local_file)} → {SFTP_REMOTE}  (déployé)')
-
-        sftp.close()
-    finally:
-        transport.close()
+    except socket.timeout:
+        sys.exit(f'Erreur : timeout ({timeout}s) — impossible de joindre {SFTP_HOST}:{SFTP_PORT}')
+    except (socket.gaierror, ConnectionRefusedError, OSError) as e:
+        sys.exit(f'Erreur réseau : {e}')
+    except FTP_ERRORS as e:
+        sys.exit(f'Erreur FTP : {e}')
 
 
 def main():
@@ -327,8 +328,9 @@ def main():
     with_deploy = '--deploy' in sys.argv
 
     # ── Vérifications ────────────────────────────────────
-    if not os.path.exists(HTML_FILE):
-        sys.exit(f'Erreur : {HTML_FILE} introuvable.')
+    if not os.path.exists(HTML_SRC):
+        sys.exit(f'Erreur : {HTML_SRC} introuvable.\n'
+                 f'  Le code source doit être dans src/minicad.html')
     if not os.path.exists(INDEX_FILE):
         sys.exit(f'Erreur : {INDEX_FILE} introuvable.')
 
@@ -342,8 +344,8 @@ def main():
     hatch_index = load_json(HATCH_INDEX) if os.path.exists(HATCH_INDEX) else []
     hatch_block = build_hatch_js(hatch_index)
 
-    # ── Lire le HTML ──────────────────────────────────────
-    with open(HTML_FILE, 'r', encoding='utf-8') as f:
+    # ── Lire la SOURCE (src/minicad.html — ne jamais écrire ici) ─────────
+    with open(HTML_SRC, 'r', encoding='utf-8') as f:
         html = f.read()
 
     # ── Injecter bibliothèques ───────────────────────────
@@ -353,10 +355,11 @@ def main():
     if HATCH_MARKER_BEGIN in html:
         html = inject_block(html, HATCH_MARKER_BEGIN, HATCH_MARKER_END, hatch_block)
 
-    # ── minicad.html : toujours mis à jour (libs, bloc démo vide) ────────
+    # ── minicad.html (racine) : output principal, bloc démo vide ─────────
     html_dev = clear_demo_block(html)
     with open(HTML_FILE, 'w', encoding='utf-8') as f:
         f.write(html_dev)
+    print(f'  ✓ minicad.html généré depuis src/minicad.html')
 
     # ── minicad_demo.html + minicad_org.html : uniquement avec --demo ───────
     if with_demo:
@@ -385,7 +388,7 @@ def main():
     )
     print(f'  ✓ {n_cats} catégories, {n_fams} familles, {n_data} avec données')
     print(f'  ✓ {len(hatch_index)} patterns de hachure')
-    print(f'  ✓ minicad.html mis à jour')
+    print(f'  ✓ src/minicad.html → minicad.html  ({len(html_dev.splitlines())} lignes)')
     if with_demo:
         print(f'  ✓ démo injectée → minicad_demo.html')
         print(f'  ✓ GTM + cookies injectés → minicad_org.html')
