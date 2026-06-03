@@ -127,6 +127,8 @@ def apply_lang_mode_b(html, default_lang='fr'):
       btn.classList.toggle('active', btn.dataset.lang === lang);
     }});
   }};
+  window.getLang = function() {{ return _lang; }};
+  window.T = T;
   document.addEventListener('DOMContentLoaded', function() {{ window.setLang(_lang); }});
 }})();
 </script>"""

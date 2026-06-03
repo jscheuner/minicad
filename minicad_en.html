@@ -11645,39 +11645,48 @@ function termPrint(text,cls='') {
 }
 
 function showHelp() {
-  termPrint('═══ COMMANDES ═══','info');
+  // _ht(key, fallback) — Mode A : fallback = valeur déjà substituée par build.py
+  //                      Mode B : lookup runtime dans TRANSLATIONS[currentLang]
+  function _ht(key, fallback) {
+    if (window.T && window.getLang) {
+      const lang = window.getLang();
+      return (window.T[lang] && window.T[lang][key]) || fallback;
+    }
+    return fallback;
+  }
+  termPrint(_ht('help.commands','═══ COMMANDS ═══'),'info');
   Object.entries(CMD).forEach(([name,cmd])=>{
     const aliases=cmd.alias?' ('+cmd.alias.join(', ')+')':'';
     const line=document.createElement('div');
     line.innerHTML='<span class="term-help-cmd">'+name+aliases+'</span> <span class="term-help-desc">— '+cmd.desc+'</span>';
     termOutput.appendChild(line);
   });
-  termPrint('═══ SAISIE DE MESURE (après 1er point) ═══','info');
-  termPrint('  100<45   — Polaire: distance 100, angle 45°','info');
-  termPrint('  50,30    — Relatif: +50 en X, +30 en Y (par défaut)','info');
-  termPrint('  @50,30   — Relatif: idem (explicite)','info');
-  termPrint('  #200,300 — Absolu: coordonnées X=200, Y=300','info');
-  termPrint('  150      — Distance 150 dans la direction du curseur','info');
-  termPrint('  Exemple: RECT → clic → 100,100 → carré 100×100 ✓','info');
-  termPrint('═══ FICHIERS ═══','info');
-  termPrint('  OPEN     — Ouvrir DXF / DWG / JSON (.mcad)','info');
-  termPrint('  SAVE     — Sauvegarder en JSON natif (.mcad)','info');
-  termPrint('  EXPORT DXF — Export DXF (AutoCAD 2000)','info');
-  termPrint('  EXPORT DWG — Export DWG (via DXF)','info');
-  termPrint('  EXPORT SVG — Export SVG','info');
-  termPrint('  Ctrl+O / Ctrl+S — Ouvrir / Sauvegarder','info');
-  termPrint('═══ CONTRAINTES ═══','info');
-  termPrint('  F8 = ORTHO (0°/90°/180°/270° uniquement)','info');
-  termPrint('  F10 = POLAIRE (incréments d\'angle configurables)','info');
-  termPrint('  POLAR [angle] — Changer l\'incrément (ex: POLAR 30)','info');
-  termPrint('  Ortho et Polaire sont mutuellement exclusifs','info');
-  termPrint('═══ SAISIE DYNAMIQUE ═══','info');
-  termPrint('  Infobulle Distance/Angle éditable près du curseur','info');
-  termPrint('  Tab = basculer entre champs D et A','info');
-  termPrint('  Entrez une valeur + Entrée = confirmer le point','info');
+  termPrint(_ht('help.measure','═══ POINT INPUT (after 1st point) ═══'),'info');
+  termPrint(_ht('help.measure.polar','  100<45   — Polar: distance 100, angle 45°'),'info');
+  termPrint(_ht('help.measure.rel','  50,30    — Relative: +50 X, +30 Y (default)'),'info');
+  termPrint(_ht('help.measure.relx','  @50,30   — Relative: same (explicit)'),'info');
+  termPrint(_ht('help.measure.abs','  #200,300 — Absolute: X=200, Y=300'),'info');
+  termPrint(_ht('help.measure.dist','  150      — Distance 150 in cursor direction'),'info');
+  termPrint(_ht('help.measure.ex','  Example: RECT → click → 100,100 → 100×100 square ✓'),'info');
+  termPrint(_ht('help.files','═══ FILES ═══'),'info');
+  termPrint(_ht('help.files.open','  OPEN     — Open DXF / DWG / JSON (.mcad)'),'info');
+  termPrint(_ht('help.files.save','  SAVE     — Save as native JSON (.mcad)'),'info');
+  termPrint(_ht('help.files.dxf','  EXPORT DXF — Export DXF (AutoCAD 2000)'),'info');
+  termPrint(_ht('help.files.dwg','  EXPORT DWG — Export DWG (via DXF)'),'info');
+  termPrint(_ht('help.files.svg','  EXPORT SVG — Export SVG'),'info');
+  termPrint(_ht('help.files.shortcut','  Ctrl+O / Ctrl+S — Open / Save'),'info');
+  termPrint(_ht('help.constraints','═══ CONSTRAINTS ═══'),'info');
+  termPrint(_ht('help.ortho','  F8 = ORTHO (0°/90°/180°/270° only)'),'info');
+  termPrint(_ht('help.polar','  F10 = POLAR (configurable angle increments)'),'info');
+  termPrint(_ht('help.polar.cmd','  POLAR [angle] — Change increment (e.g. POLAR 30)'),'info');
+  termPrint(_ht('help.polar.excl','  Ortho and Polar are mutually exclusive'),'info');
+  termPrint(_ht('help.di','═══ DYNAMIC INPUT ═══'),'info');
+  termPrint(_ht('help.di.tooltip','  Distance/Angle tooltip editable near cursor'),'info');
+  termPrint(_ht('help.di.tab','  Tab = toggle between D and A fields'),'info');
+  termPrint(_ht('help.di.confirm','  Enter a value + Enter = confirm point'),'info');
   Object.entries(modules).forEach(([key,mod])=>{
     if(!mod.loaded)return;
-    termPrint('═══ MODULE: '+mod.name.toUpperCase()+' ═══','info');
+    termPrint(_ht('help.module','═══ MODULE: {name} ═══').replace('{name}',mod.name.toUpperCase()),'info');
     Object.entries(mod.commands).forEach(([name,cmd])=>{
       const line=document.createElement('div');
       line.innerHTML='<span class="term-help-cmd">'+name+'</span> <span class="term-help-desc">— '+cmd.desc+'</span>';
