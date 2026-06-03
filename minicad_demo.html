@@ -18167,15 +18167,22 @@ initLibrary();
 
   // ── Bouton DÉMO toujours visible (même sans ?demo) ────────────────────
   window.addEventListener('load', () => {
+    // Conteneur groupé en bas à droite, au-dessus de la zone terminal
+    const wrap = document.createElement('div');
+    wrap.style.cssText = [
+      'position:fixed', 'bottom:52px', 'right:14px',
+      'display:flex', 'flex-direction:column', 'align-items:flex-end',
+      'gap:6px', 'z-index:9998'
+    ].join(';');
+
     const btn = document.createElement('button');
     btn.id = 'demo-launch-entry';
-    btn.textContent = IS_DEMO ? '▶  DÉMO' : '▶  DÉMO';
+    btn.textContent = '▶  DÉMO';
     btn.style.cssText = [
-      'position:fixed', 'top:48px', 'right:14px',
       'background:#ffd700', 'color:#0a0f1a',
       'border:none', 'border-radius:4px', 'padding:6px 14px',
       'font:700 12px "JetBrains Mono",monospace',
-      'cursor:pointer', 'z-index:9998',
+      'cursor:pointer',
       'box-shadow:0 2px 8px rgba(0,0,0,0.45)',
       'letter-spacing:.04em',
       'transition:background .2s'
@@ -18187,20 +18194,22 @@ initLibrary();
       else if (_demoRunning) { _demoRunning = false; location.href = location.pathname; }
       else { S.entities = []; render(); startDemo(); }
     };
-    document.body.appendChild(btn);
+    wrap.appendChild(btn);
 
     const lp = document.createElement('a');
     lp.href = 'https://liberapay.com/MiniCAD/donate';
     lp.target = '_blank';
     lp.rel = 'noopener';
     lp.title = 'Donate using Liberapay';
-    lp.style.cssText = 'position:fixed;top:84px;right:14px;z-index:9997;display:block;line-height:0';
+    lp.style.cssText = 'display:block;line-height:0';
     const lpImg = document.createElement('img');
     lpImg.alt = 'Donate using Liberapay';
     lpImg.src = 'https://liberapay.com/assets/widgets/donate.svg';
     lpImg.style.cssText = 'height:26px;display:block';
     lp.appendChild(lpImg);
-    document.body.appendChild(lp);
+    wrap.appendChild(lp);
+
+    document.body.appendChild(wrap);
 
     // remplacer par le bouton géré par la démo si on est en mode démo
     if (IS_DEMO) window._demoBtnEntry = btn;
