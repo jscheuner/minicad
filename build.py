@@ -130,7 +130,28 @@ def apply_lang_mode_b(html, default_lang='fr'):
   document.addEventListener('DOMContentLoaded', function() {{ window.setLang(_lang); }});
 }})();
 </script>"""
-    html = html.replace('</head>', i18n_js + '\n</head>', 1)
+    # Injecter le CSS + les boutons de langue dans la topbar
+    lang_codes = list(langs.keys())
+    lang_btns = ''.join(
+        f'<button class="lang-btn{" active" if c == default_lang else ""}" '
+        f'data-lang="{c}" onclick="setLang(\'{c}\')" '
+        f'title="Switch to {langs[c].get("_meta", {}).get("name", c.upper()) if "_meta" in langs.get(c, {}) else c.upper()}">'
+        f'{c.upper()}</button>'
+        for c in lang_codes
+    )
+    lang_css = """<style>
+.lang-switcher{display:flex;align-items:center;gap:3px;margin-left:8px}
+.lang-btn{background:transparent;border:1px solid #ffffff22;border-radius:3px;color:#ffffff55;
+  font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:.5px;
+  padding:2px 5px;cursor:pointer;transition:all .15s}
+.lang-btn:hover{border-color:#ffffff44;color:#ffffff88}
+.lang-btn.active{border-color:var(--accent,#00d4ff);color:var(--accent,#00d4ff)}
+</style>"""
+    lang_widget = f'<div class="lang-switcher" id="lang-switcher">{lang_btns}</div>'
+    # Injecter le CSS dans <head>
+    html = html.replace('</head>', lang_css + i18n_js + '\n</head>', 1)
+    # Injecter les boutons dans la topbar (avant </div> de topbar-right)
+    html = html.replace('</div>\n</div>', lang_widget + '\n</div>\n</div>', 1)
     return html
 
 GTM_BLOCK = """\
