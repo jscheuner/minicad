@@ -11647,46 +11647,75 @@ function termPrint(text,cls='') {
 function showHelp() {
   // _ht(key, fallback) — Mode A : fallback = valeur déjà substituée par build.py
   //                      Mode B : lookup runtime dans TRANSLATIONS[currentLang]
-  function _ht(key, fallback) {
+  // Lookup dans TRANSLATIONS (Mode B runtime) ou dans le dictionnaire FR embarqué (Mode A)
+  const _helpFR = {
+    'help.commands':      `{{help.commands}}`,
+    'help.measure':       `{{help.measure}}`,
+    'help.measure.polar': `{{help.measure.polar}}`,
+    'help.measure.rel':   `{{help.measure.rel}}`,
+    'help.measure.relx':  `{{help.measure.relx}}`,
+    'help.measure.abs':   `{{help.measure.abs}}`,
+    'help.measure.dist':  `{{help.measure.dist}}`,
+    'help.measure.ex':    `{{help.measure.ex}}`,
+    'help.files':         `{{help.files}}`,
+    'help.files.open':    `{{help.files.open}}`,
+    'help.files.save':    `{{help.files.save}}`,
+    'help.files.dxf':     `{{help.files.dxf}}`,
+    'help.files.dwg':     `{{help.files.dwg}}`,
+    'help.files.svg':     `{{help.files.svg}}`,
+    'help.files.shortcut':`{{help.files.shortcut}}`,
+    'help.constraints':   `{{help.constraints}}`,
+    'help.ortho':         `{{help.ortho}}`,
+    'help.polar':         `{{help.polar}}`,
+    'help.polar.cmd':     `{{help.polar.cmd}}`,
+    'help.polar.excl':    `{{help.polar.excl}}`,
+    'help.di':            `{{help.di}}`,
+    'help.di.tooltip':    `{{help.di.tooltip}}`,
+    'help.di.tab':        `{{help.di.tab}}`,
+    'help.di.confirm':    `{{help.di.confirm}}`,
+    'help.module':        `{{help.module}}`,
+  };
+  function _ht(key) {
     if (window.T && window.getLang) {
       const lang = window.getLang();
-      return (window.T[lang] && window.T[lang][key]) || fallback;
+      const v = window.T[lang] && window.T[lang][key];
+      if (v) return v;
     }
-    return fallback;
+    return _helpFR[key] || key;
   }
-  termPrint(_ht('help.commands','{{help.commands}}'),'info');
+  termPrint(_ht('help.commands'),'info');
   Object.entries(CMD).forEach(([name,cmd])=>{
     const aliases=cmd.alias?' ('+cmd.alias.join(', ')+')':'';
     const line=document.createElement('div');
     line.innerHTML='<span class="term-help-cmd">'+name+aliases+'</span> <span class="term-help-desc">— '+cmd.desc+'</span>';
     termOutput.appendChild(line);
   });
-  termPrint(_ht('help.measure','{{help.measure}}'),'info');
-  termPrint(_ht('help.measure.polar','{{help.measure.polar}}'),'info');
-  termPrint(_ht('help.measure.rel','{{help.measure.rel}}'),'info');
-  termPrint(_ht('help.measure.relx','{{help.measure.relx}}'),'info');
-  termPrint(_ht('help.measure.abs','{{help.measure.abs}}'),'info');
-  termPrint(_ht('help.measure.dist','{{help.measure.dist}}'),'info');
-  termPrint(_ht('help.measure.ex','{{help.measure.ex}}'),'info');
-  termPrint(_ht('help.files','{{help.files}}'),'info');
-  termPrint(_ht('help.files.open','{{help.files.open}}'),'info');
-  termPrint(_ht('help.files.save','{{help.files.save}}'),'info');
-  termPrint(_ht('help.files.dxf','{{help.files.dxf}}'),'info');
-  termPrint(_ht('help.files.dwg','{{help.files.dwg}}'),'info');
-  termPrint(_ht('help.files.svg','{{help.files.svg}}'),'info');
-  termPrint(_ht('help.files.shortcut','{{help.files.shortcut}}'),'info');
-  termPrint(_ht('help.constraints','{{help.constraints}}'),'info');
-  termPrint(_ht('help.ortho','{{help.ortho}}'),'info');
-  termPrint(_ht('help.polar','{{help.polar}}'),'info');
-  termPrint(_ht('help.polar.cmd','{{help.polar.cmd}}'),'info');
-  termPrint(_ht('help.polar.excl','{{help.polar.excl}}'),'info');
-  termPrint(_ht('help.di','{{help.di}}'),'info');
-  termPrint(_ht('help.di.tooltip','{{help.di.tooltip}}'),'info');
-  termPrint(_ht('help.di.tab','{{help.di.tab}}'),'info');
-  termPrint(_ht('help.di.confirm','{{help.di.confirm}}'),'info');
+  termPrint(_ht('help.measure'),'info');
+  termPrint(_ht('help.measure.polar'),'info');
+  termPrint(_ht('help.measure.rel'),'info');
+  termPrint(_ht('help.measure.relx'),'info');
+  termPrint(_ht('help.measure.abs'),'info');
+  termPrint(_ht('help.measure.dist'),'info');
+  termPrint(_ht('help.measure.ex'),'info');
+  termPrint(_ht('help.files'),'info');
+  termPrint(_ht('help.files.open'),'info');
+  termPrint(_ht('help.files.save'),'info');
+  termPrint(_ht('help.files.dxf'),'info');
+  termPrint(_ht('help.files.dwg'),'info');
+  termPrint(_ht('help.files.svg'),'info');
+  termPrint(_ht('help.files.shortcut'),'info');
+  termPrint(_ht('help.constraints'),'info');
+  termPrint(_ht('help.ortho'),'info');
+  termPrint(_ht('help.polar'),'info');
+  termPrint(_ht('help.polar.cmd'),'info');
+  termPrint(_ht('help.polar.excl'),'info');
+  termPrint(_ht('help.di'),'info');
+  termPrint(_ht('help.di.tooltip'),'info');
+  termPrint(_ht('help.di.tab'),'info');
+  termPrint(_ht('help.di.confirm'),'info');
   Object.entries(modules).forEach(([key,mod])=>{
     if(!mod.loaded)return;
-    termPrint(_ht('help.module','{{help.module}}').replace('{name}',mod.name.toUpperCase()),'info');
+    termPrint(_ht('help.module').replace('{name}',mod.name.toUpperCase()),'info');
     Object.entries(mod.commands).forEach(([name,cmd])=>{
       const line=document.createElement('div');
       line.innerHTML='<span class="term-help-cmd">'+name+'</span> <span class="term-help-desc">— '+cmd.desc+'</span>';

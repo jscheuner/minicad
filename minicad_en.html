@@ -11647,46 +11647,75 @@ function termPrint(text,cls='') {
 function showHelp() {
   // _ht(key, fallback) — Mode A : fallback = valeur déjà substituée par build.py
   //                      Mode B : lookup runtime dans TRANSLATIONS[currentLang]
-  function _ht(key, fallback) {
+  // Lookup dans TRANSLATIONS (Mode B runtime) ou dans le dictionnaire FR embarqué (Mode A)
+  const _helpFR = {
+    'help.commands':      `═══ COMMANDS ═══`,
+    'help.measure':       `═══ POINT INPUT (after 1st point) ═══`,
+    'help.measure.polar': `  100<45   — Polar: distance 100, angle 45°`,
+    'help.measure.rel':   `  50,30    — Relative: +50 X, +30 Y (default)`,
+    'help.measure.relx':  `  @50,30   — Relative: same (explicit)`,
+    'help.measure.abs':   `  #200,300 — Absolute: X=200, Y=300`,
+    'help.measure.dist':  `  150      — Distance 150 in cursor direction`,
+    'help.measure.ex':    `  Example: RECT → click → 100,100 → 100×100 square ✓`,
+    'help.files':         `═══ FILES ═══`,
+    'help.files.open':    `  OPEN     — Open DXF / DWG / JSON (.mcad)`,
+    'help.files.save':    `  SAVE     — Save as native JSON (.mcad)`,
+    'help.files.dxf':     `  EXPORT DXF — Export DXF (AutoCAD 2000)`,
+    'help.files.dwg':     `  EXPORT DWG — Export DWG (via DXF)`,
+    'help.files.svg':     `  EXPORT SVG — Export SVG`,
+    'help.files.shortcut':`  Ctrl+O / Ctrl+S — Open / Save`,
+    'help.constraints':   `═══ CONSTRAINTS ═══`,
+    'help.ortho':         `  F8 = ORTHO (0°/90°/180°/270° only)`,
+    'help.polar':         `  F10 = POLAR (configurable angle increments)`,
+    'help.polar.cmd':     `  POLAR [angle] — Change increment (e.g. POLAR 30)`,
+    'help.polar.excl':    `  Ortho and Polar are mutually exclusive`,
+    'help.di':            `═══ DYNAMIC INPUT ═══`,
+    'help.di.tooltip':    `  Distance/Angle tooltip editable near cursor`,
+    'help.di.tab':        `  Tab = toggle between D and A fields`,
+    'help.di.confirm':    `  Enter a value + Enter = confirm point`,
+    'help.module':        `═══ MODULE: {name} ═══`,
+  };
+  function _ht(key) {
     if (window.T && window.getLang) {
       const lang = window.getLang();
-      return (window.T[lang] && window.T[lang][key]) || fallback;
+      const v = window.T[lang] && window.T[lang][key];
+      if (v) return v;
     }
-    return fallback;
+    return _helpFR[key] || key;
   }
-  termPrint(_ht('help.commands','═══ COMMANDS ═══'),'info');
+  termPrint(_ht('help.commands'),'info');
   Object.entries(CMD).forEach(([name,cmd])=>{
     const aliases=cmd.alias?' ('+cmd.alias.join(', ')+')':'';
     const line=document.createElement('div');
     line.innerHTML='<span class="term-help-cmd">'+name+aliases+'</span> <span class="term-help-desc">— '+cmd.desc+'</span>';
     termOutput.appendChild(line);
   });
-  termPrint(_ht('help.measure','═══ POINT INPUT (after 1st point) ═══'),'info');
-  termPrint(_ht('help.measure.polar','  100<45   — Polar: distance 100, angle 45°'),'info');
-  termPrint(_ht('help.measure.rel','  50,30    — Relative: +50 X, +30 Y (default)'),'info');
-  termPrint(_ht('help.measure.relx','  @50,30   — Relative: same (explicit)'),'info');
-  termPrint(_ht('help.measure.abs','  #200,300 — Absolute: X=200, Y=300'),'info');
-  termPrint(_ht('help.measure.dist','  150      — Distance 150 in cursor direction'),'info');
-  termPrint(_ht('help.measure.ex','  Example: RECT → click → 100,100 → 100×100 square ✓'),'info');
-  termPrint(_ht('help.files','═══ FILES ═══'),'info');
-  termPrint(_ht('help.files.open','  OPEN     — Open DXF / DWG / JSON (.mcad)'),'info');
-  termPrint(_ht('help.files.save','  SAVE     — Save as native JSON (.mcad)'),'info');
-  termPrint(_ht('help.files.dxf','  EXPORT DXF — Export DXF (AutoCAD 2000)'),'info');
-  termPrint(_ht('help.files.dwg','  EXPORT DWG — Export DWG (via DXF)'),'info');
-  termPrint(_ht('help.files.svg','  EXPORT SVG — Export SVG'),'info');
-  termPrint(_ht('help.files.shortcut','  Ctrl+O / Ctrl+S — Open / Save'),'info');
-  termPrint(_ht('help.constraints','═══ CONSTRAINTS ═══'),'info');
-  termPrint(_ht('help.ortho','  F8 = ORTHO (0°/90°/180°/270° only)'),'info');
-  termPrint(_ht('help.polar','  F10 = POLAR (configurable angle increments)'),'info');
-  termPrint(_ht('help.polar.cmd','  POLAR [angle] — Change increment (e.g. POLAR 30)'),'info');
-  termPrint(_ht('help.polar.excl','  Ortho and Polar are mutually exclusive'),'info');
-  termPrint(_ht('help.di','═══ DYNAMIC INPUT ═══'),'info');
-  termPrint(_ht('help.di.tooltip','  Distance/Angle tooltip editable near cursor'),'info');
-  termPrint(_ht('help.di.tab','  Tab = toggle between D and A fields'),'info');
-  termPrint(_ht('help.di.confirm','  Enter a value + Enter = confirm point'),'info');
+  termPrint(_ht('help.measure'),'info');
+  termPrint(_ht('help.measure.polar'),'info');
+  termPrint(_ht('help.measure.rel'),'info');
+  termPrint(_ht('help.measure.relx'),'info');
+  termPrint(_ht('help.measure.abs'),'info');
+  termPrint(_ht('help.measure.dist'),'info');
+  termPrint(_ht('help.measure.ex'),'info');
+  termPrint(_ht('help.files'),'info');
+  termPrint(_ht('help.files.open'),'info');
+  termPrint(_ht('help.files.save'),'info');
+  termPrint(_ht('help.files.dxf'),'info');
+  termPrint(_ht('help.files.dwg'),'info');
+  termPrint(_ht('help.files.svg'),'info');
+  termPrint(_ht('help.files.shortcut'),'info');
+  termPrint(_ht('help.constraints'),'info');
+  termPrint(_ht('help.ortho'),'info');
+  termPrint(_ht('help.polar'),'info');
+  termPrint(_ht('help.polar.cmd'),'info');
+  termPrint(_ht('help.polar.excl'),'info');
+  termPrint(_ht('help.di'),'info');
+  termPrint(_ht('help.di.tooltip'),'info');
+  termPrint(_ht('help.di.tab'),'info');
+  termPrint(_ht('help.di.confirm'),'info');
   Object.entries(modules).forEach(([key,mod])=>{
     if(!mod.loaded)return;
-    termPrint(_ht('help.module','═══ MODULE: {name} ═══').replace('{name}',mod.name.toUpperCase()),'info');
+    termPrint(_ht('help.module').replace('{name}',mod.name.toUpperCase()),'info');
     Object.entries(mod.commands).forEach(([name,cmd])=>{
       const line=document.createElement('div');
       line.innerHTML='<span class="term-help-cmd">'+name+'</span> <span class="term-help-desc">— '+cmd.desc+'</span>';
