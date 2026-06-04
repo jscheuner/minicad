@@ -3468,9 +3468,23 @@ function getEntityBBox(e) {
     case 'rect':
       return { minX:Math.min(e.x1,e.x2)-pad, maxX:Math.max(e.x1,e.x2)+pad,
                minY:Math.min(e.y1,e.y2)-pad, maxY:Math.max(e.y1,e.y2)+pad };
-    case 'circle': case 'arc': case 'dim_radius': case 'dim_diameter':
+    case 'circle': case 'dim_radius': case 'dim_diameter':
       return { minX:(e.cx||0)-(e.r||50)-pad, maxX:(e.cx||0)+(e.r||50)+pad,
                minY:(e.cy||0)-(e.r||50)-pad, maxY:(e.cy||0)+(e.r||50)+pad };
+    case 'arc': {
+      // Bbox serrée : uniquement la portion d'arc, pas le cercle entier
+      const sa=e.startAngle, ea=e.endAngle, cx=e.cx||0, cy=e.cy||0, r=e.r||50;
+      const xs=[cx+r*Math.cos(sa), cx+r*Math.cos(ea)];
+      const ys=[cy+r*Math.sin(sa), cy+r*Math.sin(ea)];
+      // Ajouter les extrêmes de quadrant qui tombent dans l'arc
+      let end=ea; while(end<sa) end+=Math.PI*2;
+      for(let a=0; a<=Math.PI*2+1e-9; a+=Math.PI/2){
+        let ang=a; while(ang<sa) ang+=Math.PI*2;
+        if(ang<=end+1e-9){ xs.push(cx+r*Math.cos(a)); ys.push(cy+r*Math.sin(a)); }
+      }
+      return { minX:Math.min(...xs)-pad, maxX:Math.max(...xs)+pad,
+               minY:Math.min(...ys)-pad, maxY:Math.max(...ys)+pad };
+    }
     case 'ellipse': {
       const a = e.angle||0, rx=e.rx||50, ry=e.ry||25;
       const hw = Math.sqrt((rx*Math.cos(a))**2+(ry*Math.sin(a))**2);
