@@ -2234,9 +2234,21 @@ function _bestTangent(c1, c2, mx, my) {
   }, { t: null, d: Infinity }).t;
 }
 
+// Cache OSNAP — évite de recalculer si la souris n'a pas bougé de façon significative
+let _osnapCache = { wx: NaN, wy: NaN, nEntities: -1, result: null };
+
 function findOsnap(wx, wy) {
   if (!S.osnapEnabled) return null;
   if (S._tanFromCircle) S._tanResolvedP1 = null; // réinitialise à chaque frame
+
+  // Optim 1 — seuil de déplacement : retourner le résultat mis en cache
+  // si la souris n'a pas bougé de plus de 1.5 px écran et le dessin n'a pas changé.
+  const pixThresh = 1.5 / S.zoom;
+  if (Math.hypot(wx - _osnapCache.wx, wy - _osnapCache.wy) < pixThresh &&
+      S.entities.length === _osnapCache.nEntities) {
+    return _osnapCache.result;
+  }
+
   const tol = 15 / S.zoom;
   let best = null;
   let bestDist = tol;
@@ -2249,8 +2261,7 @@ function findOsnap(wx, wy) {
     }
   }
 
-  // Pré-filtrer une seule fois les entités proches du curseur.
-  // La boucle interne intersection réutilise cette liste → O(k²) au lieu de O(n×m).
+  // Pré-filtrer les entités proches du curseur (une seule fois).
   const _nearby = [];
   for (const e of S.entities) {
     if (!S.layers[e.layer]?.visible) continue;
@@ -2262,6 +2273,16 @@ function findOsnap(wx, wy) {
     }
     _nearby.push(e);
   }
+
+  // Optim 4 — cache des segments : getEntitySegments() appelé une seule fois par entité
+  const _segCache = new Map();
+  const segsOf = e => {
+    if (!_segCache.has(e)) _segCache.set(e, getEntitySegments(e));
+    return _segCache.get(e);
+  };
+
+  // Optim 3 — index pour éviter les paires dupliquées (A×B et B×A)
+  const _nearbyIdx = new Map(_nearby.map((e, i) => [e, i]));
 
   for (const e of _nearby) {
     // ENDPOINT
@@ -2411,14 +2432,20 @@ function findOsnap(wx, wy) {
     // INTERSECTION (segment-segment + cercle)
     if (S.osnapModes.intersection) {
       const isCircular = e.type === 'circle' || e.type === 'arc';
-      const segsA = getEntitySegments(e);
+      const segsA = segsOf(e); // optim 4 : segments cachés
+      const eIdx  = _nearbyIdx.get(e);
 
-      for (const e2 of _nearby) {  // déjà filtrées par bbox → O(k²) au lieu de O(n×m)
-        if (e2 === e) continue;
+      for (const e2 of _nearby) {
+        // Optim 3 — traiter chaque paire une seule fois (skip si e2 a déjà été traité en e)
+        if (_nearbyIdx.get(e2) <= eIdx) continue;
         const isCircular2 = e2.type === 'circle' || e2.type === 'arc';
 
         // Cercle / arc × cercle / arc
         if (isCircular && isCircular2) {
+          // Optim 2 — rejet rapide : vérifier si les cercles peuvent se croiser
+          const d2 = (e2.cx-e.cx)**2 + (e2.cy-e.cy)**2;
+          const rSum = e.r + e2.r, rDiff = Math.abs(e.r - e2.r);
+          if (d2 > rSum*rSum || d2 < rDiff*rDiff) continue;
           const pts = circleCircleIntersect(e.cx, e.cy, e.r, e2.cx, e2.cy, e2.r);
           for (const [px, py] of pts) {
             const a1 = Math.atan2(py - e.cy,  px - e.cx);
@@ -2447,7 +2474,7 @@ function findOsnap(wx, wy) {
 
         // Cercle / arc × segment
         if (isCircular && !isCircular2) {
-          for (const seg of getEntitySegments(e2)) {
+          for (const seg of segsOf(e2)) { // optim 4
             const pts = segCircleIntersect(seg[0], seg[1], seg[2], seg[3], e.cx, e.cy, e.r);
             for (const [px, py] of pts) {
               if (e.type === 'arc') {
@@ -2462,9 +2489,8 @@ function findOsnap(wx, wy) {
 
         // Segment × segment
         if (segsA.length) {
-          const segsB = getEntitySegments(e2);
           for (const a of segsA) {
-            for (const b of segsB) {
+            for (const b of segsOf(e2)) { // optim 4
               const pt = segSegIntersect(a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3]);
               if (pt) check(pt[0], pt[1], 'intersection', e);
             }
@@ -2626,6 +2652,8 @@ function findOsnap(wx, wy) {
     }
   }
 
+  // Optim 1 — mettre le résultat en cache
+  _osnapCache = { wx, wy, nEntities: S.entities.length, result: best };
   return best;
 }
 
