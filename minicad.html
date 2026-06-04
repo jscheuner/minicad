@@ -2249,16 +2249,21 @@ function findOsnap(wx, wy) {
     }
   }
 
+  // Pré-filtrer une seule fois les entités proches du curseur.
+  // La boucle interne intersection réutilise cette liste → O(k²) au lieu de O(n×m).
+  const _nearby = [];
   for (const e of S.entities) {
     if (!S.layers[e.layer]?.visible) continue;
-    // Skip entities whose bounding box is farther than tol from cursor
     const ebb = getEntityBBox(e);
     if (ebb) {
       const dx = Math.max(ebb.minX - wx, 0, wx - ebb.maxX);
       const dy = Math.max(ebb.minY - wy, 0, wy - ebb.maxY);
       if (dx * dx + dy * dy > tol * tol) continue;
     }
+    _nearby.push(e);
+  }
 
+  for (const e of _nearby) {
     // ENDPOINT
     if (S.osnapModes.endpoint) {
       if (e.type === 'point') check(e.x, e.y, 'endpoint', e);
@@ -2408,15 +2413,8 @@ function findOsnap(wx, wy) {
       const isCircular = e.type === 'circle' || e.type === 'arc';
       const segsA = getEntitySegments(e);
 
-      for (const e2 of S.entities) {
-        if (e2 === e || !S.layers[e2.layer]?.visible) continue;
-        // Skip e2 si sa bbox est loin du curseur
-        const bb2 = getEntityBBox(e2);
-        if (bb2) {
-          const dx = Math.max(bb2.minX - wx, 0, wx - bb2.maxX);
-          const dy = Math.max(bb2.minY - wy, 0, wy - bb2.maxY);
-          if (dx * dx + dy * dy > (tol * 4) * (tol * 4)) continue;
-        }
+      for (const e2 of _nearby) {  // déjà filtrées par bbox → O(k²) au lieu de O(n×m)
+        if (e2 === e) continue;
         const isCircular2 = e2.type === 'circle' || e2.type === 'arc';
 
         // Cercle / arc × cercle / arc
