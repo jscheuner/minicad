@@ -10336,6 +10336,42 @@ function findCircleEntity(wx, wy) {
       const hit = _findTubeBendArc(e, wx, wy, tol);
       if (hit) return hit;
     }
+    if (e.type === 'polyline' || e.type === 'cable') {
+      const hit = _findPolyArcSeg(e, wx, wy, tol);
+      if (hit) return hit;
+    }
+  }
+  return null;
+}
+
+// Cherche un segment d'arc (bulge) d'une polyligne proche de (wx,wy).
+// Retourne {cx,cy,r} synthétique compatible DIMRADIUS/DIMDIAMETER.
+function _findPolyArcSeg(e, wx, wy, tol) {
+  const pts = e.points;
+  if (!pts || pts.length < 2) return null;
+  // Liste des segments, segment de fermeture inclus si fermée sans doublon
+  const segs = [];
+  for (let i = 0; i < pts.length - 1; i++) segs.push([pts[i], pts[i+1]]);
+  const f = pts[0], l = pts[pts.length-1];
+  if (e.closed && Math.hypot(f[0]-l[0], f[1]-l[1]) > 1e-9) segs.push([l, f]);
+  for (const [p1, p2] of segs) {
+    const b = p1[2] || 0;
+    if (b === 0) continue;
+    const x1=p1[0], y1=p1[1], x2=p2[0], y2=p2[1];
+    const d = Math.hypot(x2-x1, y2-y1);
+    if (d < 1e-9) continue;
+    const r = d*(1+b*b)/(4*Math.abs(b));
+    const sag = Math.sqrt(Math.max(0, r*r - d*d/4));
+    const mx=(x1+x2)/2, my=(y1+y2)/2, pdx=-(y2-y1)/d, pdy=(x2-x1)/d;
+    const cx = mx + Math.sign(b)*pdx*sag, cy = my + Math.sign(b)*pdy*sag;
+    if (Math.abs(Math.hypot(wx-cx, wy-cy) - r) >= tol) continue;
+    // Vérifier que le clic est bien sur la portion d'arc (et pas sur le cercle ailleurs)
+    const a1=Math.atan2(y1-cy,x1-cx), ac=Math.atan2(wy-cy,wx-cx);
+    const sweepSign = (Math.abs(b)>1 ? -1 : 1) * Math.sign(b);
+    const mag = Math.abs(4*Math.atan(b));
+    let dac = sweepSign>0 ? (ac-a1) : (a1-ac);
+    dac = ((dac % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+    if (dac <= mag + 0.06) return { cx, cy, r };
   }
   return null;
 }
