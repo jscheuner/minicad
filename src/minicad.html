@@ -3489,6 +3489,37 @@ const CMD = {
     S.selected = newIds;
     updateSaveIndicator('modified'); autoSave(); render(); updateUI();
   }},
+
+  GROUP: { alias: ['GR','GROUPE','GROUPER'], desc: 'Grouper les entités sélectionnées (Ctrl+G)', exec: () => {
+    const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+    if (targets.length < 2) { termPrint('GROUPE : sélectionner au moins 2 entités, puis GROUPE (ou Ctrl+G)', 'warning'); return; }
+    pushUndo();
+    const children = [];
+    targets.forEach(ent => {
+      const i = S.entities.findIndex(e => e.id === ent.id);
+      if (i !== -1) { children.push(ent); S.entities.splice(i, 1); }
+    });
+    const block = { type:'block', id:S.nextId++, layer:S.currentLayer, name:'Groupe', entities:children };
+    S.entities.push(block);
+    S.selected = [block.id];
+    updateSaveIndicator('modified'); autoSave(); render(); updateUI();
+    termPrint('Groupe créé — ' + children.length + ' entités (#' + block.id + ')', 'success');
+  }},
+
+  UNGROUP: { alias: ['UNG','DEGROUPER','DÉGROUPER','DEGROUPE','DÉGROUPE'], desc: 'Dégrouper les groupes sélectionnés (Ctrl+Shift+G)', exec: () => {
+    const blocks = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && e.type === 'block');
+    if (!blocks.length) { termPrint('DÉGROUPER : sélectionner un ou plusieurs groupes', 'warning'); return; }
+    pushUndo();
+    const newIds = [];
+    blocks.forEach(blk => {
+      const i = S.entities.findIndex(e => e.id === blk.id);
+      if (i !== -1) S.entities.splice(i, 1);
+      (blk.entities || []).forEach(ch => { ch.id = S.nextId++; S.entities.push(ch); newIds.push(ch.id); });
+    });
+    S.selected = newIds;
+    updateSaveIndicator('modified'); autoSave(); render(); updateUI();
+    termPrint('Dégroupé — ' + newIds.length + ' entité(s)', 'success');
+  }},
 };
 
 // ===== CANVAS =====
@@ -13070,6 +13101,8 @@ document.addEventListener('keydown',(ev)=>{
   if(ev.ctrlKey&&ev.key==='x'){ev.preventDefault();clipboardCut();}
   if(ev.ctrlKey&&ev.key==='c'){ev.preventDefault();clipboardCopy();}
   if(ev.ctrlKey&&ev.key==='v'){ev.preventDefault();clipboardPaste();}
+  if(ev.ctrlKey&&ev.key==='g'){ev.preventDefault();CMD.GROUP.exec();}
+  if(ev.ctrlKey&&ev.shiftKey&&ev.key==='G'){ev.preventDefault();CMD.UNGROUP.exec();}
   if(ev.key==='Delete')CMD.ERASE.exec();
   // Skip single-letter tool shortcuts during fillet/chamfer (those tools handle keys via cmdInput)
   if(!ev.ctrlKey && !ev.metaKey && S.tool!=='fillet' && S.tool!=='chamfer' && S.tool!=='join') {
