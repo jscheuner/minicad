@@ -9982,6 +9982,26 @@ function arcOutlineCrossesRect(cx,cy,r,startAngle,endAngle, minX,minY,maxX,maxY)
   return false;
 }
 
+// Ellipse (éventuellement inclinée) croise-t-elle le rectangle ?
+// Approche : échantillonner 72 points sur le pourtour et tester les segments.
+function ellipseOutlineCrossesRect(cx,cy,rx,ry,angle,sa,ea, minX,minY,maxX,maxY){
+  const isArc = sa !== undefined && ea !== undefined;
+  const start = isArc ? sa : 0;
+  let end   = isArc ? ea : Math.PI*2;
+  if(isArc){ while(end < start) end += Math.PI*2; }
+  const N = 72;
+  const cosA = Math.cos(angle), sinA = Math.sin(angle);
+  const pts = [];
+  for(let i=0; i<=N; i++){
+    const t = start + (end-start)*i/N;
+    const lx = rx*Math.cos(t), ly = ry*Math.sin(t);
+    pts.push([cx + lx*cosA - ly*sinA, cy + lx*sinA + ly*cosA]);
+  }
+  for(let i=0; i<pts.length-1; i++)
+    if(segIntersectsRect(pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1], minX,minY,maxX,maxY)) return true;
+  return false;
+}
+
 // True si le segment (x1,y1)→(x2,y2) coupe ou est dans le rectangle (rx1,ry1,rx2,ry2)
 function segIntersectsRect(x1,y1,x2,y2, rx1,ry1,rx2,ry2){
   const dx=x2-x1,dy=y2-y1;
@@ -10024,6 +10044,10 @@ function entityInRect(e, minX, minY, maxX, maxY, windowMode) {
   }
   if(e.type==='arc'){
     return arcOutlineCrossesRect(e.cx,e.cy,e.r,e.startAngle,e.endAngle, minX,minY,maxX,maxY);
+  }
+  if(e.type==='ellipse'){
+    return ellipseOutlineCrossesRect(e.cx,e.cy,e.rx,e.ry,e.angle||0,
+      e.startAngle,e.endAngle, minX,minY,maxX,maxY);
   }
   // tube, dim_*, text, etc. : bounding box overlap suffit (déjà vérifié)
   return true;
