@@ -9582,13 +9582,18 @@ function offsetPolylinePoints(pts, dist, closed) {
       const mx=(x1+x2)/2, my=(y1+y2)/2;
       const pdx=-(y2-y1)/len, pdy=(x2-x1)/len;
       const cx=mx+Math.sign(bulge)*pdx*sag, cy=my+Math.sign(bulge)*pdy*sag;
-      const rNew = r - Math.sign(bulge)*dist; // centre côté bulge → offset gauche rapproche
+      // Portée géométrique SIGNÉE réelle autour du centre. Le signe du bulge s'inverse
+      // pour un arc majeur (|bulge|>1) — même bascule que le rendu (b>0)!==(|b|>1).
+      const major = Math.abs(bulge) > 1;
+      const theta0 = (major ? -1 : 1) * Math.sign(bulge) * Math.abs(4*Math.atan(bulge));
+      // Offset = gauche du sens de parcours. r diminue si le centre est à gauche (sweep>0),
+      // augmente si à droite (sweep<0). Sinon un arc majeur se décale à l'envers (inversion).
+      const rNew = r - Math.sign(theta0)*dist;
       // Rayon réduit à ≤0 → l'arc disparaît, les voisins se rejoignent en angle vif.
-      // Seuil relatif au rayon pour absorber le bruit FP (ex. rayon 5 décalé de 5 → rNew≈2e-8).
       if (rNew <= 1e-6 * Math.max(1, r)) continue;
       const a1=Math.atan2(y1-cy,x1-cx), a2=Math.atan2(y2-cy,x2-cx);
       const s=[cx+rNew*Math.cos(a1), cy+rNew*Math.sin(a1)], e=[cx+rNew*Math.cos(a2), cy+rNew*Math.sin(a2)];
-      prim[i] = { arc:true, bulge, cx, cy, r:rNew, a1, a2, theta0:4*Math.atan(bulge),
+      prim[i] = { arc:true, bulge, cx, cy, r:rNew, a1, a2, theta0,
         start:s.slice(), end:e.slice(), start0:s.slice(), end0:e.slice() };
     } else {
       const nx=-(y2-y1)/len*dist, ny=(x2-x1)/len*dist;
@@ -9671,13 +9676,16 @@ function offsetPolylinePoints(pts, dist, closed) {
     if (next && next!==s) next.start = next.start0.slice();
   }
 
-  // 3) Bulge recalculé depuis les extrémités finales, ancré sur θ0 (jamais d'arc inversé)
+  // 3) Bulge recalculé depuis les extrémités finales, ancré sur θ0 (jamais d'arc inversé).
+  //    Conversion portée signée → bulge avec la MÊME bascule de signe que le rendu pour
+  //    les arcs majeurs (|sweep|>π), sinon un arc majeur ressort inversé.
   const bulgeOf = (s) => {
     if (!s || !s.arc) return 0;
     const a1=Math.atan2(s.start[1]-s.cy,s.start[0]-s.cx);
     const a2=Math.atan2(s.end[1]-s.cy,s.end[0]-s.cx);
     let dA=a2-a1; dA += 2*Math.PI*Math.round((s.theta0-dA)/(2*Math.PI));
-    return Math.tan(dA/4);
+    const mag=Math.abs(dA), major=mag>Math.PI;
+    return (major ? -1 : 1) * Math.sign(dA) * Math.tan(mag/4);
   };
 
   // 4) Assemblage : start (avec bulge) puis end de chaque primitive ; fusion des points
