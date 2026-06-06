@@ -1113,8 +1113,6 @@
         <div class="menu-dropdown-item" onclick="executeCommand('CABLE');closeMenus()"><span data-i18n="tool.cable">{{tool.cable}}</span></div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="executeCommand('TUBE');closeMenus()"><span data-i18n="tool.tube">{{tool.tube}}</span></div>
-        <div class="menu-dropdown-sep"></div>
-        <div class="lib-sub-item"><span data-i18n="menu.library">{{menu.library}}</span><div class="lib-sub-list" id="menu-lib-list"></div></div>
       </div>
     </div>
     <div class="menu-dropdown" id="menu-cotation">
@@ -1135,6 +1133,10 @@
         <div class="menu-dropdown-item" onclick="executeCommand('AREA');closeMenus()"><span data-i18n="tool.area">{{tool.area}}</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('CALC');closeMenus()"><span data-i18n="tool.calc">{{tool.calc}}</span></div>
       </div>
+    </div>
+    <div class="menu-dropdown" id="menu-lib">
+      <div class="menu-item" id="menu-lib-btn" onclick="toggleMenuDropdown('menu-lib',event)" data-i18n="menu.library">{{menu.library}}</div>
+      <div class="menu-dropdown-list" id="menu-lib-list"></div>
     </div>
     <div class="menu-item" onclick="showHelp()" data-i18n="menu.help">{{menu.help}}</div>
   </div>

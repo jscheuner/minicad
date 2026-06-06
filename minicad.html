@@ -1113,8 +1113,6 @@
         <div class="menu-dropdown-item" onclick="executeCommand('CABLE');closeMenus()"><span>Câble (CAB)</span></div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="executeCommand('TUBE');closeMenus()"><span>Tube 2 traits (TUBE)</span></div>
-        <div class="menu-dropdown-sep"></div>
-        <div class="lib-sub-item"><span>Bibliothèque</span><div class="lib-sub-list" id="menu-lib-list"></div></div>
       </div>
     </div>
     <div class="menu-dropdown" id="menu-cotation">
@@ -1135,6 +1133,10 @@
         <div class="menu-dropdown-item" onclick="executeCommand('AREA');closeMenus()"><span>Aire (AREA)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('CALC');closeMenus()"><span>Calculatrice (CALC)</span></div>
       </div>
+    </div>
+    <div class="menu-dropdown" id="menu-lib">
+      <div class="menu-item" id="menu-lib-btn" onclick="toggleMenuDropdown('menu-lib',event)">Bibliothèque</div>
+      <div class="menu-dropdown-list" id="menu-lib-list"></div>
     </div>
     <div class="menu-item" onclick="showHelp()">Aide</div>
   </div>
