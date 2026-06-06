@@ -2246,10 +2246,13 @@ function findOsnap(wx, wy) {
 
   // Optim 1 — seuil de déplacement : retourner le résultat mis en cache
   // si la souris n'a pas bougé de plus de 1.5 px écran et le dessin n'a pas changé.
+  // Exception : tangente différée active → on doit recalculer _tanResolvedP1 chaque frame
+  // (sinon le cache renvoie tôt et _tanResolvedP1 reste null → 1er point non recalculé).
   const pixThresh = 1.5 / S.zoom;
   const _drawRef = (S.drawing && S.drawPoints.length > 0)
     ? S.drawPoints[S.drawPoints.length - 1].join(',') : '';
-  if (Math.hypot(wx - _osnapCache.wx, wy - _osnapCache.wy) < pixThresh &&
+  if (!S._tanFromCircle &&
+      Math.hypot(wx - _osnapCache.wx, wy - _osnapCache.wy) < pixThresh &&
       S.entities.length === _osnapCache.nEntities &&
       _drawRef === _osnapCache.drawRef) {
     return _osnapCache.result;
@@ -2289,6 +2292,16 @@ function findOsnap(wx, wy) {
 
   // Optim 3 — index pour éviter les paires dupliquées (A×B et B×A)
   const _nearbyIdx = new Map(_nearby.map((e, i) => [e, i]));
+
+  // Optim 5 — filtre INTERSECTION : un point d'intersection est sur la COURBE des entités.
+  // Pour un grand cercle, le curseur en plein milieu est loin du tracé (la bbox couvre
+  // tout le disque) → on l'exclut de la boucle O(k²) d'intersection. Évite le lag quand
+  // plusieurs grands cercles se chevauchent. (CENTER/QUADRANT continuent d'utiliser _nearby.)
+  const _nearbyX = _nearby.filter(e =>
+    (e.type === 'circle' || e.type === 'arc')
+      ? Math.abs(Math.hypot(wx - e.cx, wy - e.cy) - e.r) < tol
+      : true);
+  const _nearbyXIdx = new Map(_nearbyX.map((e, i) => [e, i]));
 
   for (const e of _nearby) {
     // ENDPOINT
@@ -2435,15 +2448,15 @@ function findOsnap(wx, wy) {
       check(e.cx + e.ry*sin,  e.cy - e.ry*cos,  'quadrant', e);
     }
 
-    // INTERSECTION (segment-segment + cercle)
-    if (S.osnapModes.intersection) {
+    // INTERSECTION (segment-segment + cercle) — restreint à _nearbyX (curseur près du tracé)
+    if (S.osnapModes.intersection && _nearbyXIdx.has(e)) {
       const isCircular = e.type === 'circle' || e.type === 'arc';
       const segsA = segsOf(e); // optim 4 : segments cachés
-      const eIdx  = _nearbyIdx.get(e);
+      const eIdx  = _nearbyXIdx.get(e);
 
-      for (const e2 of _nearby) {
+      for (const e2 of _nearbyX) {
         // Optim 3 — traiter chaque paire une seule fois (skip si e2 a déjà été traité en e)
-        if (_nearbyIdx.get(e2) <= eIdx) continue;
+        if (_nearbyXIdx.get(e2) <= eIdx) continue;
         const isCircular2 = e2.type === 'circle' || e2.type === 'arc';
 
         // Cercle / arc × cercle / arc
@@ -2453,7 +2466,8 @@ function findOsnap(wx, wy) {
           const rSum = e.r + e2.r, rDiff = Math.abs(e.r - e2.r);
           if (d2 > rSum*rSum || d2 < rDiff*rDiff) continue;
           const pts = circleCircleIntersect(e.cx, e.cy, e.r, e2.cx, e2.cy, e2.r);
-          for (const [px, py] of pts) {
+          for (const pt of pts) {
+            const px = pt.x, py = pt.y;
             const a1 = Math.atan2(py - e.cy,  px - e.cx);
             const a2 = Math.atan2(py - e2.cy, px - e2.cx);
             if (e.type  === 'arc' && !angleInArc(a1, e.startAngle,  e.endAngle))  continue;
@@ -2737,19 +2751,8 @@ function projectOnLine(px, py, x1, y1, x2, y2) {
   return [x1 + t * dx, y1 + t * dy];
 }
 
-// Returns 0, 1 or 2 intersection points of two circles (or arcs — caller checks angular range)
-function circleCircleIntersect(cx1, cy1, r1, cx2, cy2, r2) {
-  const dx = cx2-cx1, dy = cy2-cy1;
-  const d = Math.hypot(dx, dy);
-  if (d < 1e-10 || d > r1+r2+1e-10 || d < Math.abs(r1-r2)-1e-10) return [];
-  const a = (r1*r1 - r2*r2 + d*d) / (2*d);
-  const h2 = r1*r1 - a*a;
-  if (h2 < 0) return [];
-  const h = Math.sqrt(h2);
-  const mx = cx1 + a*dx/d, my = cy1 + a*dy/d;
-  if (h < 1e-10) return [[mx, my]];
-  return [[mx + h*dy/d, my - h*dx/d], [mx - h*dy/d, my + h*dx/d]];
-}
+// circleCircleIntersect : défini plus bas (retourne [{x,y}]). Le doublon qui retournait
+// des paires [x,y] a été retiré (il masquait l'autre par hoisting et cassait l'OSNAP).
 
 // Returns intersection points of a segment with a circle, where t∈[0,1] on the segment
 function segCircleIntersect(x1, y1, x2, y2, cx, cy, r) {
@@ -5289,6 +5292,14 @@ function drawEntity(e) {
         if (bulge !== 0) drawPolyArcSegToPath(prev, curr, bulge);
         else { const [qx,qy] = w2s(curr[0],curr[1]); ctx.lineTo(qx,qy); }
       }
+      // Segment de fermeture : on honore le drapeau e.closed même si le doublon du
+      // 1er point n'est pas présent (import DXF, anciens fichiers…). No-op si déjà bouclé.
+      const fp = e.points[0], lp = e.points[e.points.length-1];
+      if (e.closed && Math.hypot(fp[0]-lp[0], fp[1]-lp[1]) > 1e-9) {
+        const bulge = lp[2] || 0;
+        if (bulge !== 0) drawPolyArcSegToPath(lp, fp, bulge);
+        else { const [qx,qy] = w2s(fp[0],fp[1]); ctx.lineTo(qx,qy); }
+      }
       ctx.stroke();
       if (e.type === 'cable') ctx.setLineDash([]);
       break;
@@ -5730,11 +5741,24 @@ function getGripPoints(e) {
       gp(_twx, _twy, (ent, nx, ny) => { ent.textWx = nx; ent.textWy = ny; });
       break;
     }
-    case 'polyline': case 'cable':
-      e.points.forEach((p, i) => {
-        gp(p[0], p[1], (ent, nx, ny) => { ent.points[i] = [nx, ny]; });
-      });
+    case 'polyline': case 'cable': {
+      const pts = e.points, n = pts.length;
+      // Polyligne fermée à doublon : ne pas afficher de poignée pour le doublon final ;
+      // déplacer le 1er sommet déplace aussi le doublon (sinon le contour se déchire).
+      const dup = e.closed && n > 2 && Math.hypot(pts[0][0]-pts[n-1][0], pts[0][1]-pts[n-1][1]) < 1e-9;
+      const nGrips = dup ? n - 1 : n;
+      for (let i = 0; i < nGrips; i++) {
+        gp(pts[i][0], pts[i][1], (ent, nx, ny) => {
+          const o = ent.points[i];
+          ent.points[i] = o.length > 2 ? [nx, ny, o[2]] : [nx, ny]; // conserver le bulge
+          if (i === 0 && dup) {
+            const L = ent.points[ent.points.length-1];
+            ent.points[ent.points.length-1] = L.length > 2 ? [nx, ny, L[2]] : [nx, ny];
+          }
+        });
+      }
       break;
+    }
     case 'spline':
       e.points.forEach((p, i) => {
         gp(p[0], p[1], (ent, nx, ny) => { ent.points[i] = [nx, ny]; });
@@ -6598,12 +6622,23 @@ function applyFilletChamfer(seg1,cx1,cy1, seg2,cx2,cy2, type) {
   const adjPoly = seg1.entity===seg2.entity &&
                   seg1.segIdx>=0 && seg2.segIdx>=0 &&
                   Math.abs(seg1.segIdx-seg2.segIdx)===1;
+  // Sommet de FERMETURE d'une polyligne fermée (convention : 1er point dupliqué en fin).
+  // Les 2 segments y sont seg 0 (sortant) et seg len-2 (entrant) → |Δ|≠1, non vu par adjPoly.
+  const _pp = seg1.entity.points;
+  const _closedPoly = seg1.entity===seg2.entity && _pp &&
+    (seg1.entity.closed || (_pp.length>2 &&
+      Math.hypot(_pp[0][0]-_pp[_pp.length-1][0], _pp[0][1]-_pp[_pp.length-1][1])<1e-9));
+  const wrapPoly = _closedPoly && seg1.segIdx>=0 && seg2.segIdx>=0 && _pp.length>=4 &&
+    ((seg1.segIdx===0 && seg2.segIdx===_pp.length-2) ||
+     (seg2.segIdx===0 && seg1.segIdx===_pp.length-2));
 
   if(type==='fillet'){
     const r=S.filletRadius;
     if(r===0){
       // Sharp corner: trim/extend both segments to their intersection, no arc
-      if(adjPoly){
+      if(wrapPoly){
+        // Le sommet de couture EST déjà l'intersection (angle vif) → rien à modifier
+      } else if(adjPoly){
         const [sE]=seg1.segIdx<seg2.segIdx?[seg1,seg2]:[seg2,seg1];
         const pts = sE.entity.points;
         pts[sE.segIdx+1] = [ix, iy];
@@ -6626,7 +6661,20 @@ function applyFilletChamfer(seg1,cx1,cy1, seg2,cx2,cy2, type) {
     const swapped = ea-sa > Math.PI;
     if(swapped){let tmp=sa;sa=ea;ea=tmp;while(ea<sa)ea+=Math.PI*2;}
     const targetLayer = seg1.entity.layer;
-    if(adjPoly){
+    if(wrapPoly){
+      // Raccord au sommet de couture : l'arc devient le segment de fermeture (bulge sur
+      // le dernier point). points[0]=tangente sortante, points[len-1]=tangente entrante.
+      const segIn = (seg1.segIdx===_pp.length-2) ? seg1 : seg2; // entrant (finit au sommet)
+      const tIn  = (segIn===seg1) ? [t1x,t1y] : [t2x,t2y];
+      const tOut = (segIn===seg1) ? [t2x,t2y] : [t1x,t1y];
+      const aIn=Math.atan2(tIn[1]-arcCy,tIn[0]-arcCx), aOut=Math.atan2(tOut[1]-arcCy,tOut[0]-arcCx);
+      let span=aOut-aIn; while(span<=-Math.PI)span+=2*Math.PI; while(span>Math.PI)span-=2*Math.PI;
+      const bulge=Math.tan(span/4); // arc mineur tIn→tOut (segment de fermeture)
+      const pts=seg1.entity.points;
+      pts[pts.length-1]=[tIn[0],tIn[1],bulge];
+      pts[0]=[tOut[0],tOut[1]];
+      seg1.entity.closed=true;
+    } else if(adjPoly){
       const [sE,sL]=seg1.segIdx<seg2.segIdx?[seg1,seg2]:[seg2,seg1];
       const [tEx,tEy]=sE===seg1?[t1x,t1y]:[t2x,t2y];
       const [tLx,tLy]=sL===seg1?[t1x,t1y]:[t2x,t2y];
@@ -6652,7 +6700,16 @@ function applyFilletChamfer(seg1,cx1,cy1, seg2,cx2,cy2, type) {
     const p1x=ix+d1*u1x, p1y=iy+d1*u1y;
     const p2x=ix+d2*u2x, p2y=iy+d2*u2y;
     const targetLayer = seg1.entity.layer;
-    if(adjPoly){
+    if(wrapPoly){
+      // Chanfrein au sommet de couture : la diagonale devient le segment de fermeture (droit).
+      const segIn = (seg1.segIdx===_pp.length-2) ? seg1 : seg2;
+      const pIn  = (segIn===seg1) ? [p1x,p1y] : [p2x,p2y];
+      const pOut = (segIn===seg1) ? [p2x,p2y] : [p1x,p1y];
+      const pts=seg1.entity.points;
+      pts[pts.length-1]=[pIn[0],pIn[1]]; // pas de bulge → chanfrein droit
+      pts[0]=[pOut[0],pOut[1]];
+      seg1.entity.closed=true;
+    } else if(adjPoly){
       const [sE,sL]=seg1.segIdx<seg2.segIdx?[seg1,seg2]:[seg2,seg1];
       const [pEx,pEy]=sE===seg1?[p1x,p1y]:[p2x,p2y];
       const [pLx,pLy]=sL===seg1?[p1x,p1y]:[p2x,p2y];
@@ -6960,7 +7017,7 @@ function drawRotatePreview() {
 
 function drawOffsetGhost() {
   const [mx, my] = S.mouseWorld;
-  const supported = ['line','wall','circle','arc','rect','polyline','cable'];
+  const supported = ['line','wall','circle','arc','rect','polyline','cable','ellipse','spline'];
   const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && supported.includes(e.type));
   if (!targets.length) return;
   ctx.save(); ctx.globalAlpha = 0.65; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
@@ -7258,7 +7315,11 @@ function confirmDynamicInput() {
     }
     const val = parseFloat(up);
     if (S._ellipStep === 1 && !isNaN(val) && val > 0) {
-      const [cx,cy]=S._ellipCenter; const [mx,my]=S.mouseWorld;
+      const [cx,cy]=S._ellipCenter;
+      let [mx,my]=S.mouseWorld;
+      // Utiliser la position contrainte (OSNAP/Ortho/Polaire) comme pour la prévisualisation
+      if (S.currentOsnap) { mx=S.currentOsnap.x; my=S.currentOsnap.y; }
+      else { [mx,my]=snapToGrid(mx,my); if(S.ortho)[mx,my]=applyOrtho(cx,cy,mx,my); else if(S.polar)[mx,my]=applyPolar(cx,cy,mx,my); }
       S._ellipRx=val; S._ellipAngle=Math.atan2(my-cy,mx-cx); S._ellipStep=2;
       S.drawPoints=[[cx,cy]]; termPrint('ELLIPSE: Demi-axe 2  |  [A]=Arc','info');
       render(); setTimeout(smartFocus,0); return;
@@ -8121,16 +8182,24 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       else if (tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
       else termPrint('Longueur (ex: 150) ou 100<45 ou cliquez le 2ème point', 'warning');
     } else {
-      // Tangente différée : 2e clic avec résolution cercle-à-cercle
-      if (tool === 'line' && S._tanFromCircle && S.currentOsnap?.type === 'tangent' && S._tanResolvedP1) {
-        const p1 = S._tanResolvedP1, p2 = [wx, wy];
-        pushUndo();
-        S.entities.push({ type:'line', id:S.nextId++, layer:S.currentLayer,
-                          x1:p1[0], y1:p1[1], x2:p2[0], y2:p2[1] });
-        termPrint('Tangente tracée — Point suivant (Echap pour terminer)', 'warning');
-        S._tanFromCircle = null; S._tanFromCircleId = null; S._tanResolvedP1 = null;
-        S.drawPoints = [[p2[0], p2[1]]];
-        updateSaveIndicator('modified'); autoSave(); render(); return;
+      // Tangente différée : 2e clic avec résolution cercle-à-cercle.
+      // On recalcule p1 ET p2 depuis le 2e cercle snappé (tangente commune cohérente),
+      // sans dépendre de _tanResolvedP1 (robuste s'il y a plusieurs cercles).
+      if (tool === 'line' && S._tanFromCircle && S.currentOsnap?.type === 'tangent' &&
+          S.currentOsnap.entity && S.currentOsnap.entity.id !== S._tanFromCircleId) {
+        const e2 = S.currentOsnap.entity;
+        const t = _bestTangent(S._tanFromCircle, { cx:e2.cx, cy:e2.cy, r:e2.r },
+                               S.currentOsnap.x, S.currentOsnap.y);
+        if (t) {
+          const p1 = t.p1, p2 = t.p2;
+          pushUndo();
+          S.entities.push({ type:'line', id:S.nextId++, layer:S.currentLayer,
+                            x1:p1[0], y1:p1[1], x2:p2[0], y2:p2[1] });
+          termPrint('Tangente commune tracée — Point suivant (Echap pour terminer)', 'warning');
+          S._tanFromCircle = null; S._tanFromCircleId = null; S._tanResolvedP1 = null;
+          S.drawPoints = [[p2[0], p2[1]]];
+          updateSaveIndicator('modified'); autoSave(); render(); return;
+        }
       }
       let tx = wx, ty = wy;
       if (S.drawPoints.length > 0 && tool !== 'rect' && tool !== 'rectcenter') [tx, ty] = applyConstraint(S.drawPoints[0][0], S.drawPoints[0][1], wx, wy);
@@ -8324,7 +8393,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
 
   // Offset — clic sur le côté → décale tous les sélectionnés
   if (tool === 'offset') {
-    const supported = ['line','wall','circle','arc','rect','polyline','cable'];
+    const supported = ['line','wall','circle','arc','rect','polyline','cable','ellipse','spline'];
     const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && supported.includes(e.type));
     if (!targets.length) { termPrint('Aucun objet décalable sélectionné','warning'); render(); return; }
     pushUndo();
@@ -9167,6 +9236,10 @@ function extractSubPoly(pts, nSegs, t1, t2) {
 function applyTrimPolyline(ent, prims, clickWx, clickWy) {
   const pts=ent.points, nSegs=pts.length-1;
   if(nSegs<1) return false;
+  // Polyligne fermée (rect converti, ou closed) : la couture pts[0]=pts[nSegs] n'est PAS
+  // une coupe → les pièces autour de la couture sont en réalité reliées. On traite en cycle.
+  const isClosed = ent.closed ||
+    (nSegs>=2 && Math.hypot(pts[0][0]-pts[nSegs][0], pts[0][1]-pts[nSegs][1])<1e-9);
   const globalTs=[];
   for(let i=0;i<nSegs;i++){
     const p1=pts[i],p2=pts[i+1];
@@ -9197,6 +9270,32 @@ function applyTrimPolyline(ent, prims, clickWx, clickWy) {
     const d=Math.hypot(p1[0]+lt*dx-clickWx,p1[1]+lt*dy-clickWy);
     if(d<minDist){minDist=d;clickGlobalT=i+lt;}
   }
+  if(isClosed){
+    // Cycle : M coupes → M pièces [T[k], T[k+1]] (+ pièce de couture [T[M-1], T[0]+nSegs]).
+    // On retire la pièce cliquée ; les M-1 restantes forment UNE polyligne ouverte.
+    const M=globalTs.length;
+    let rem=-1;
+    for(let k=0;k<M;k++){
+      const a=globalTs[k], b=(k+1<M)?globalTs[k+1]:globalTs[0]+nSegs;
+      let c=clickGlobalT; if(k===M-1 && c<a) c+=nSegs; // ramener le clic dans la pièce de couture
+      if(c>=a-1e-9 && c<=b+1e-9){rem=k;break;}
+    }
+    if(rem<0) rem=0;
+    let kept;
+    if(rem===M-1){
+      // pièce retirée = couture → garder [T[0], T[M-1]] (sans traverser la couture)
+      kept=extractSubPoly(pts,nSegs, globalTs[0], globalTs[M-1]);
+    } else {
+      // pièce interne retirée → le reste s'enroule par la couture : [T[rem+1], nSegs] + [0, T[rem]]
+      const part1=extractSubPoly(pts,nSegs, globalTs[rem+1], nSegs);
+      const part2=extractSubPoly(pts,nSegs, 0, globalTs[rem]);
+      kept=part1.slice(0,-1).concat(part2); // point de couture unique (bulge de part2)
+    }
+    if(kept.length<2){S.entities=S.entities.filter(e=>e.id!==ent.id);return true;}
+    ent.points=kept; ent.closed=false; // ouverte après ajustement
+    return true;
+  }
+
   const breaks=[0,...globalTs,nSegs];
   let remIdx=0;
   for(let i=0;i<breaks.length-1;i++){if(clickGlobalT>=breaks[i]-1e-9&&clickGlobalT<=breaks[i+1]+1e-9){remIdx=i;break;}}
@@ -9518,40 +9617,163 @@ function mirrorEntity(src,ax,ay,bx,by) {
 }
 
 // Offset a polyline's vertex array by `dist` (signed: + = left of direction, - = right)
-function offsetPolylinePoints(pts, dist) {
-  const n = pts.length;
-  if (n < 2) return null;
-  // Build offset segments (parallel, shifted by dist to the left of each segment direction)
-  const segs = [];
-  for (let i = 0; i < n - 1; i++) {
-    const [ax,ay] = pts[i], [bx,by] = pts[i+1];
-    const len = Math.hypot(bx-ax, by-ay);
-    if (len < 1e-9) { segs.push(null); continue; }
-    const nx = -(by-ay)/len * dist, ny = (bx-ax)/len * dist;
-    segs.push([ax+nx, ay+ny, bx+nx, by+ny]);
+function offsetPolylinePoints(pts, dist, closed) {
+  if (!pts || pts.length < 2) return null;
+  // Convention : une polyligne fermée duplique le 1er point en fin de tableau.
+  let verts = pts.map(p => p.slice());
+  const isClosed = !!closed;
+  if (isClosed && verts.length >= 2) {
+    const f = verts[0], l = verts[verts.length - 1];
+    if (Math.hypot(f[0]-l[0], f[1]-l[1]) < 1e-9) verts = verts.slice(0, -1);
   }
-  // First valid segment
-  const valid = segs.filter(Boolean);
-  if (!valid.length) return null;
-  const newPts = [];
-  // Start point: start of first segment
-  const fs = segs.find(Boolean);
-  newPts.push([fs[0], fs[1]]);
-  // Intermediate points: intersection of consecutive offset segments
-  for (let i = 0; i < segs.length - 1; i++) {
-    const s1 = segs[i], s2 = segs[i+1];
-    if (!s1 || !s2) { if (s2) newPts.push([s2[0], s2[1]]); continue; }
-    const d1x=s1[2]-s1[0], d1y=s1[3]-s1[1];
-    const d2x=s2[2]-s2[0], d2y=s2[3]-s2[1];
-    const denom = d1x*d2y - d1y*d2x;
-    if (Math.abs(denom) < 1e-9) { newPts.push([s1[2], s1[3]]); continue; }
-    const t = ((s2[0]-s1[0])*d2y - (s2[1]-s1[1])*d2x) / denom;
-    newPts.push([s1[0]+t*d1x, s1[1]+t*d1y]);
+  const m = verts.length;
+  const nSeg = isClosed ? m : m - 1;
+  if (nSeg < 1) return null;
+
+  // 1) Chaque segment devient une primitive décalée (droite parallèle ou arc concentrique).
+  //    Arc : même centre, rayon ± dist, mêmes angles radiaux a1/a2 (portée θ0 = 4·atan(bulge)).
+  //    start/end pourront bouger lors de la résolution des jonctions (trim/extend).
+  const prim = new Array(nSeg).fill(null);
+  for (let i = 0; i < nSeg; i++) {
+    const A = verts[i], B = verts[(i+1) % m];
+    const x1=A[0], y1=A[1], bulge=A[2]||0, x2=B[0], y2=B[1];
+    const len = Math.hypot(x2-x1, y2-y1);
+    if (len < 1e-9) continue;
+    if (bulge !== 0) {
+      const r   = len*(1+bulge*bulge)/(4*Math.abs(bulge));
+      const sag = Math.sqrt(Math.max(0, r*r - len*len/4));
+      const mx=(x1+x2)/2, my=(y1+y2)/2;
+      const pdx=-(y2-y1)/len, pdy=(x2-x1)/len;
+      const cx=mx+Math.sign(bulge)*pdx*sag, cy=my+Math.sign(bulge)*pdy*sag;
+      // Portée géométrique SIGNÉE réelle autour du centre. Le signe du bulge s'inverse
+      // pour un arc majeur (|bulge|>1) — même bascule que le rendu (b>0)!==(|b|>1).
+      const major = Math.abs(bulge) > 1;
+      const theta0 = (major ? -1 : 1) * Math.sign(bulge) * Math.abs(4*Math.atan(bulge));
+      // Offset = gauche du sens de parcours. r diminue si le centre est à gauche (sweep>0),
+      // augmente si à droite (sweep<0). Sinon un arc majeur se décale à l'envers (inversion).
+      const rNew = r - Math.sign(theta0)*dist;
+      // Rayon réduit à ≤0 → l'arc disparaît, les voisins se rejoignent en angle vif.
+      if (rNew <= 1e-6 * Math.max(1, r)) continue;
+      const a1=Math.atan2(y1-cy,x1-cx), a2=Math.atan2(y2-cy,x2-cx);
+      const s=[cx+rNew*Math.cos(a1), cy+rNew*Math.sin(a1)], e=[cx+rNew*Math.cos(a2), cy+rNew*Math.sin(a2)];
+      prim[i] = { arc:true, bulge, cx, cy, r:rNew, a1, a2, theta0,
+        start:s.slice(), end:e.slice(), start0:s.slice(), end0:e.slice() };
+    } else {
+      const nx=-(y2-y1)/len*dist, ny=(x2-x1)/len*dist;
+      const s=[x1+nx,y1+ny], e=[x2+nx,y2+ny];
+      prim[i] = { arc:false, start:s.slice(), end:e.slice(), start0:s.slice(), end0:e.slice() };
+    }
   }
-  // End point: end of last segment
-  const ls = [...segs].reverse().find(Boolean);
-  newPts.push([ls[2], ls[3]]);
-  return newPts;
+  if (!prim.some(Boolean)) return null;
+
+  // Helpers
+  const lineLine = (A,B) => {
+    const d1x=A.end[0]-A.start[0], d1y=A.end[1]-A.start[1];
+    const d2x=B.end[0]-B.start[0], d2y=B.end[1]-B.start[1];
+    const den=d1x*d2y-d1y*d2x;
+    if (Math.abs(den)<1e-9) return null;
+    const t=((B.start[0]-A.start[0])*d2y-(B.start[1]-A.start[1])*d2x)/den;
+    return [A.start[0]+t*d1x, A.start[1]+t*d1y];
+  };
+  const angDist = (a,b) => { let d=((a-b)%(2*Math.PI)+3*Math.PI)%(2*Math.PI)-Math.PI; return Math.abs(d); };
+  const MAX_TRIM = 70*Math.PI/180; // au-delà : jonction jugée dégénérée → on laisse un raccord droit
+  // Un candidat est valide pour un arc si l'extrémité ne bouge pas de trop ET que la portée
+  // résultante ne s'inverse pas / ne bascule pas mineur→majeur (la cause des « spikes »).
+  const arcCandOK = (s, c, movingEnd) => {
+    const ang = Math.atan2(c[1]-s.cy, c[0]-s.cx);
+    if (angDist(ang, movingEnd ? s.a2 : s.a1) > MAX_TRIM) return false;
+    let dA = movingEnd ? (ang - s.a1) : (s.a2 - ang);
+    dA += 2*Math.PI*Math.round((s.theta0 - dA)/(2*Math.PI));
+    if (s.theta0 * dA < 0) return false;                                   // sens inversé
+    if (Math.abs(s.theta0) < Math.PI-1e-6 && Math.abs(dA) > Math.PI+1e-3) return false; // mineur→majeur
+    return true;
+  };
+
+  // 2) Résolution des jonctions : A finit / B commence. Si une intersection « propre »
+  //    existe (trim faible, pas d'inversion d'arc), on fusionne A.end=B.start=X ; sinon gap.
+  const resolve = (A,B) => {
+    if (!A || !B || A===B) return;
+    if (!A.arc && !B.arc) { const X=lineLine(A,B); if(X){A.end=X;B.start=X;} return; }
+    // candidats d'intersection des deux courbes décalées
+    let cands=[];
+    if (A.arc && B.arc) cands=circleCircleIntersect(A.cx,A.cy,A.r,B.cx,B.cy,B.r).map(p=>[p.x,p.y]);
+    else if (A.arc) cands=lineCircleIntersectInf(B.start[0],B.start[1],B.end[0],B.end[1],A.cx,A.cy,A.r)
+                          .map(t=>[B.start[0]+t*(B.end[0]-B.start[0]), B.start[1]+t*(B.end[1]-B.start[1])]);
+    else            cands=lineCircleIntersectInf(A.start[0],A.start[1],A.end[0],A.end[1],B.cx,B.cy,B.r)
+                          .map(t=>[A.start[0]+t*(A.end[0]-A.start[0]), A.start[1]+t*(A.end[1]-A.start[1])]);
+    // candidat valide le plus proche des extrémités radiales (sinon gap = raccord droit)
+    const ref=[(A.end[0]+B.start[0])/2, (A.end[1]+B.start[1])/2];
+    let best=null, bd=Infinity;
+    for (const c of cands) {
+      if (A.arc && !arcCandOK(A,c,true))  continue;
+      if (B.arc && !arcCandOK(B,c,false)) continue;
+      const d=Math.hypot(c[0]-ref[0],c[1]-ref[1]);
+      if (d<bd){bd=d;best=c;}
+    }
+    if (best) { A.end=best.slice(); B.start=best.slice(); } // sinon : gap (raccord droit)
+  };
+  // On résout entre primitives CONSÉCUTIVES NON NULLES : un arc effondré (rayon ≤ 0,
+  // ex. rayon 5 décalé de 8) disparaît et ses deux voisins se rejoignent en angle vif.
+  const idx = [];
+  for (let i=0;i<nSeg;i++) if (prim[i]) idx.push(i);
+  const k = idx.length;
+  const nJunc = isClosed ? k : k-1;
+  for (let j=0;j<nJunc;j++) resolve(prim[idx[j]], prim[idx[(j+1)%k]]);
+
+  // 2b) Garde-fou final : un arc dont la portée résultante s'inverse, bascule
+  //     mineur→majeur ou dévie trop de θ0 (cause des « spikes ») reprend ses extrémités
+  //     radiales — et ses voisins non nuls reprennent l'extrémité partagée (raccord droit).
+  const MAX_DSWEEP = 40*Math.PI/180;
+  for (let p=0;p<k;p++){
+    const s=prim[idx[p]]; if(!s.arc) continue;
+    let dA=Math.atan2(s.end[1]-s.cy,s.end[0]-s.cx)-Math.atan2(s.start[1]-s.cy,s.start[0]-s.cx);
+    dA += 2*Math.PI*Math.round((s.theta0-dA)/(2*Math.PI));
+    const bad = (s.theta0*dA<0) ||
+                (Math.abs(s.theta0)<Math.PI-1e-6 && Math.abs(dA)>Math.PI+1e-3) ||
+                (angDist(dA, s.theta0) > MAX_DSWEEP);
+    if (!bad) continue;
+    s.start=s.start0.slice(); s.end=s.end0.slice();
+    const prev = isClosed ? prim[idx[(p-1+k)%k]] : (p>0 ? prim[idx[p-1]] : null);
+    const next = isClosed ? prim[idx[(p+1)%k]]   : (p<k-1 ? prim[idx[p+1]] : null);
+    if (prev && prev!==s) prev.end   = prev.end0.slice();
+    if (next && next!==s) next.start = next.start0.slice();
+  }
+
+  // 3) Bulge recalculé depuis les extrémités finales, ancré sur θ0 (jamais d'arc inversé).
+  //    Conversion portée signée → bulge avec la MÊME bascule de signe que le rendu pour
+  //    les arcs majeurs (|sweep|>π), sinon un arc majeur ressort inversé.
+  const bulgeOf = (s) => {
+    if (!s || !s.arc) return 0;
+    const a1=Math.atan2(s.start[1]-s.cy,s.start[0]-s.cx);
+    const a2=Math.atan2(s.end[1]-s.cy,s.end[0]-s.cx);
+    let dA=a2-a1; dA += 2*Math.PI*Math.round((s.theta0-dA)/(2*Math.PI));
+    const mag=Math.abs(dA), major=mag>Math.PI;
+    return (major ? -1 : 1) * Math.sign(dA) * Math.tan(mag/4);
+  };
+
+  // 4) Assemblage : start (avec bulge) puis end de chaque primitive ; fusion des points
+  //    consécutifs identiques (jonction propre), conservation des gaps (raccord droit).
+  const raw=[];
+  for (let i=0;i<nSeg;i++){
+    const s=prim[i]; if(!s) continue;
+    raw.push([s.start[0], s.start[1], bulgeOf(s)]);
+    raw.push([s.end[0], s.end[1], 0]);
+  }
+  const EPS=1e-6;
+  const merged=[];
+  for (const p of raw){
+    const last=merged[merged.length-1];
+    if (last && Math.hypot(last[0]-p[0],last[1]-p[1])<EPS){
+      if (p[2]) last[2]=p[2]; // le 'start' suivant porte le bulge du segment à venir
+    } else merged.push(p.slice());
+  }
+  if (isClosed && merged.length>1){
+    const f=merged[0], l=merged[merged.length-1];
+    if (Math.hypot(f[0]-l[0],f[1]-l[1])<EPS) merged.pop(); // doublon de bouclage
+    merged.push([merged[0][0], merged[0][1]]);             // refermer (convention)
+  }
+  const out = merged.map(p => p[2] ? [p[0],p[1],p[2]] : [p[0],p[1]]);
+  return out.length>=2 ? out : null;
 }
 
 // Create a new entity that is a geometric offset of src by dist, on the side of (sideX, sideY)
@@ -9576,6 +9798,19 @@ function computeOffsetGeom(src, dist, sideX, sideY) {
     e.r = src.r + sign*dist;
     if (e.r <= 0) return null;
 
+  } else if (src.type === 'ellipse') {
+    // Décalage approché : rx/ry ± dist (exact aux extrémités des axes). Le vrai offset
+    // d'une ellipse n'est pas une ellipse, mais on reste sur une entité ellipse simple.
+    // Côté : projeter le clic en repère local (rotation -angle) → dedans/dehors.
+    const a = src.angle || 0, cos = Math.cos(a), sin = Math.sin(a);
+    const dx = sideX - src.cx, dy = sideY - src.cy;
+    const lx = dx*cos + dy*sin, ly = -dx*sin + dy*cos; // repère propre de l'ellipse
+    const inside = (lx*lx)/(src.rx*src.rx) + (ly*ly)/(src.ry*src.ry) < 1;
+    const sign = inside ? -1 : 1;
+    e.rx = src.rx + sign*dist;
+    e.ry = src.ry + sign*dist;
+    if (e.rx <= 0 || e.ry <= 0) return null;
+
   } else if (src.type === 'rect') {
     const minX=Math.min(src.x1,src.x2), maxX=Math.max(src.x1,src.x2);
     const minY=Math.min(src.y1,src.y2), maxY=Math.max(src.y1,src.y2);
@@ -9588,20 +9823,43 @@ function computeOffsetGeom(src, dist, sideX, sideY) {
   } else if (src.type === 'polyline' || src.type === 'cable') {
     const pts = src.points;
     if (!pts || pts.length < 2) return null;
-    // Determine sign from nearest segment
+    // Signe (côté du clic) déterminé par le segment le plus proche.
+    // distToSeg sur la corde suffit (même pour les arcs) pour choisir le côté.
     let bestD = Infinity, bestCross = 0;
-    for (let i = 0; i < pts.length-1; i++) {
+    for (let i=0;i<pts.length-1;i++) {
       const [ax,ay]=pts[i], [bx,by]=pts[i+1];
       const d = distToSeg(sideX,sideY,ax,ay,bx,by);
-      if (d < bestD) {
-        bestD = d;
-        bestCross = (bx-ax)*(sideY-ay) - (by-ay)*(sideX-ax);
-      }
+      if (d < bestD) { bestD = d; bestCross = (bx-ax)*(sideY-ay) - (by-ay)*(sideX-ax); }
     }
     const sign = bestCross >= 0 ? 1 : -1;
-    const newPts = offsetPolylinePoints(pts, sign*dist);
+    const newPts = offsetPolylinePoints(pts, sign*dist, src.closed);
     if (!newPts) return null;
     e.points = newPts;
+
+  } else if (src.type === 'spline') {
+    const pts = src.points;
+    if (!pts || pts.length < 2) return null;
+    // Côté du clic : échantillonner la courbe (catmullRom) et prendre le segment le plus proche.
+    const sampled = catmullRom(pts, src.closed, 16);
+    let bestD = Infinity, bestCross = 0;
+    for (let i=0;i<sampled.length-1;i++) {
+      const [ax,ay]=sampled[i], [bx,by]=sampled[i+1];
+      const d = distToSeg(sideX,sideY,ax,ay,bx,by);
+      if (d < bestD) { bestD = d; bestCross = (bx-ax)*(sideY-ay) - (by-ay)*(sideX-ax); }
+    }
+    const sign = bestCross >= 0 ? 1 : -1;
+    // Décale chaque point de contrôle le long de sa normale (tangente prev→next).
+    // Reste une spline ; approché entre les points de contrôle, exact en chacun.
+    const n = pts.length;
+    e.points = pts.map((p, i) => {
+      let prev, next;
+      if (src.closed) { prev = pts[(i-1+n)%n]; next = pts[(i+1)%n]; }
+      else { prev = pts[Math.max(0,i-1)]; next = pts[Math.min(n-1,i+1)]; }
+      const tx = next[0]-prev[0], ty = next[1]-prev[1];
+      const tl = Math.hypot(tx,ty) || 1;
+      const nx = -ty/tl, ny = tx/tl; // normale gauche
+      return [p[0] + sign*dist*nx, p[1] + sign*dist*ny];
+    });
 
   } else {
     return null;
@@ -9749,6 +10007,10 @@ function hitTest(wx,wy) {
       let d=Infinity;
       for(let j=0;j<e.points.length-1;j++)
         d=Math.min(d, distToSeg(wx,wy,e.points[j][0],e.points[j][1],e.points[j+1][0],e.points[j+1][1]));
+      // Segment de fermeture si fermée sans doublon du 1er point
+      const fp=e.points[0], lp=e.points[e.points.length-1];
+      if(e.closed && Math.hypot(fp[0]-lp[0],fp[1]-lp[1])>1e-9)
+        d=Math.min(d, distToSeg(wx,wy,lp[0],lp[1],fp[0],fp[1]));
       tryHit(e,d);
     }
     else if(e.type==='spline'){
@@ -9978,6 +10240,26 @@ function arcOutlineCrossesRect(cx,cy,r,startAngle,endAngle, minX,minY,maxX,maxY)
   return false;
 }
 
+// Ellipse (éventuellement inclinée) croise-t-elle le rectangle ?
+// Approche : échantillonner 72 points sur le pourtour et tester les segments.
+function ellipseOutlineCrossesRect(cx,cy,rx,ry,angle,sa,ea, minX,minY,maxX,maxY){
+  const isArc = sa !== undefined && ea !== undefined;
+  const start = isArc ? sa : 0;
+  let end   = isArc ? ea : Math.PI*2;
+  if(isArc){ while(end < start) end += Math.PI*2; }
+  const N = 72;
+  const cosA = Math.cos(angle), sinA = Math.sin(angle);
+  const pts = [];
+  for(let i=0; i<=N; i++){
+    const t = start + (end-start)*i/N;
+    const lx = rx*Math.cos(t), ly = ry*Math.sin(t);
+    pts.push([cx + lx*cosA - ly*sinA, cy + lx*sinA + ly*cosA]);
+  }
+  for(let i=0; i<pts.length-1; i++)
+    if(segIntersectsRect(pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1], minX,minY,maxX,maxY)) return true;
+  return false;
+}
+
 // True si le segment (x1,y1)→(x2,y2) coupe ou est dans le rectangle (rx1,ry1,rx2,ry2)
 function segIntersectsRect(x1,y1,x2,y2, rx1,ry1,rx2,ry2){
   const dx=x2-x1,dy=y2-y1;
@@ -10020,6 +10302,10 @@ function entityInRect(e, minX, minY, maxX, maxY, windowMode) {
   }
   if(e.type==='arc'){
     return arcOutlineCrossesRect(e.cx,e.cy,e.r,e.startAngle,e.endAngle, minX,minY,maxX,maxY);
+  }
+  if(e.type==='ellipse'){
+    return ellipseOutlineCrossesRect(e.cx,e.cy,e.rx,e.ry,e.angle||0,
+      e.startAngle,e.endAngle, minX,minY,maxX,maxY);
   }
   // tube, dim_*, text, etc. : bounding box overlap suffit (déjà vérifié)
   return true;
@@ -10080,6 +10366,42 @@ function findCircleEntity(wx, wy) {
       const hit = _findTubeBendArc(e, wx, wy, tol);
       if (hit) return hit;
     }
+    if (e.type === 'polyline' || e.type === 'cable') {
+      const hit = _findPolyArcSeg(e, wx, wy, tol);
+      if (hit) return hit;
+    }
+  }
+  return null;
+}
+
+// Cherche un segment d'arc (bulge) d'une polyligne proche de (wx,wy).
+// Retourne {cx,cy,r} synthétique compatible DIMRADIUS/DIMDIAMETER.
+function _findPolyArcSeg(e, wx, wy, tol) {
+  const pts = e.points;
+  if (!pts || pts.length < 2) return null;
+  // Liste des segments, segment de fermeture inclus si fermée sans doublon
+  const segs = [];
+  for (let i = 0; i < pts.length - 1; i++) segs.push([pts[i], pts[i+1]]);
+  const f = pts[0], l = pts[pts.length-1];
+  if (e.closed && Math.hypot(f[0]-l[0], f[1]-l[1]) > 1e-9) segs.push([l, f]);
+  for (const [p1, p2] of segs) {
+    const b = p1[2] || 0;
+    if (b === 0) continue;
+    const x1=p1[0], y1=p1[1], x2=p2[0], y2=p2[1];
+    const d = Math.hypot(x2-x1, y2-y1);
+    if (d < 1e-9) continue;
+    const r = d*(1+b*b)/(4*Math.abs(b));
+    const sag = Math.sqrt(Math.max(0, r*r - d*d/4));
+    const mx=(x1+x2)/2, my=(y1+y2)/2, pdx=-(y2-y1)/d, pdy=(x2-x1)/d;
+    const cx = mx + Math.sign(b)*pdx*sag, cy = my + Math.sign(b)*pdy*sag;
+    if (Math.abs(Math.hypot(wx-cx, wy-cy) - r) >= tol) continue;
+    // Vérifier que le clic est bien sur la portion d'arc (et pas sur le cercle ailleurs)
+    const a1=Math.atan2(y1-cy,x1-cx), ac=Math.atan2(wy-cy,wx-cx);
+    const sweepSign = (Math.abs(b)>1 ? -1 : 1) * Math.sign(b);
+    const mag = Math.abs(4*Math.atan(b));
+    let dac = sweepSign>0 ? (ac-a1) : (a1-ac);
+    dac = ((dac % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+    if (dac <= mag + 0.06) return { cx, cy, r };
   }
   return null;
 }
@@ -10235,6 +10557,45 @@ function _propChange(id, field, val, isText) {
   render(); autoSave();
 }
 
+function _propChangeClosed(id, val) {
+  const e = S.entities.find(en => en.id === id);
+  if (!e || !e.points || e.points.length < 2) return;
+  const makeClosed = (val === 'true' || val === true);
+  const pts = e.points;
+  const f = pts[0], l = pts[pts.length-1];
+  const dup = pts.length > 2 && Math.hypot(f[0]-l[0], f[1]-l[1]) < 1e-9;
+  pushUndo();
+  if (e.type === 'polyline' || e.type === 'cable') {
+    // Convention : une polyligne fermée duplique le 1er point en fin de tableau.
+    if (makeClosed && !dup) pts.push([f[0], f[1]]);
+    else if (!makeClosed && dup) pts.pop();
+  }
+  // Les splines pilotent la fermeture par le seul drapeau (pas de doublon).
+  e.closed = makeClosed;
+  render(); autoSave(); updateProperties();
+  termPrint('#'+id+' '+(makeClosed?'fermée':'ouverte'), 'info');
+}
+
+function _propChangeEllipseDim(id, axis, val) {
+  const e = S.entities.find(en => en.id === id);
+  if (!e || e.type !== 'ellipse') return;
+  const n = parseFloat(val);
+  if (isNaN(n) || n <= 0) return;
+  pushUndo();
+  e[axis] = n / 2;
+  render(); autoSave(); updateProperties();
+}
+
+function _propChangeEllipseAngle(id, valDeg) {
+  const e = S.entities.find(en => en.id === id);
+  if (!e || e.type !== 'ellipse') return;
+  const deg = parseFloat(valDeg);
+  if (isNaN(deg)) return;
+  pushUndo();
+  e.angle = deg * Math.PI / 180;
+  render(); autoSave(); updateProperties();
+}
+
 function _propChangeLongueurMulti(val) {
   const newLen = parseFloat(val);
   if (isNaN(newLen) || newLen <= 0) return;
@@ -10337,7 +10698,7 @@ function _updatePropertiesSingle(e) {
     h += row('Y2', inp('y2', e.y2.toFixed(2)));
     if (e.type==='line'||e.type==='wall') h += row('Longueur','<input type="number" class="prop-input" step="any" value="'+Math.hypot(e.x2-e.x1,e.y2-e.y1).toFixed(2)+'" onchange="_propChangeLongueur('+id+',this.value)" />');
   }
-  if (e.cx !== undefined) {
+  if (e.cx !== undefined && e.type !== 'ellipse') {
     h += row('CX', inp('cx', e.cx.toFixed(2)));
     h += row('CY', inp('cy', e.cy.toFixed(2)));
     h += row('Rayon', inp('r', e.r.toFixed(2)));
@@ -10349,7 +10710,19 @@ function _updatePropertiesSingle(e) {
   if (e.thickness !== undefined) h += row('Épaisseur', inp('thickness', e.thickness));
   if (e.content !== undefined) h += row('Texte', inp('content', e.content, true));
   if (e.size !== undefined) h += row('Taille', inp('size', e.size));
-  if (e.points) h += row('Points', '<span class="prop-value">'+e.points.length+'</span>');
+  if (e.points) {
+    if (['polyline','cable','spline'].includes(e.type)) {
+      const p = e.points, dup = p.length>2 && Math.hypot(p[0][0]-p[p.length-1][0], p[0][1]-p[p.length-1][1])<1e-9;
+      const closedNow = e.closed === true || dup;
+      h += row('Sommets', '<span class="prop-value">'+(closedNow && dup ? p.length-1 : p.length)+'</span>');
+      const sel = '<select class="prop-select" onchange="_propChangeClosed('+id+',this.value)">'+
+        '<option value="false"'+(!closedNow?' selected':'')+'>Ouverte</option>'+
+        '<option value="true"'+(closedNow?' selected':'')+'>Fermée</option></select>';
+      h += row('Contour', sel);
+    } else {
+      h += row('Points', '<span class="prop-value">'+e.points.length+'</span>');
+    }
+  }
   if (e.type === 'tube') {
     const tr = e.tubeRadius || 20;
     h += row('Ø tube', '<span class="prop-value">'+(tr*2).toFixed(1)+'</span>');
@@ -10366,9 +10739,12 @@ function _updatePropertiesSingle(e) {
   if (e.type === 'ellipse') {
     h += row('CX', inp('cx', e.cx.toFixed(2)));
     h += row('CY', inp('cy', e.cy.toFixed(2)));
-    h += row('Rx', inp('rx', e.rx.toFixed(2)));
-    h += row('Ry', inp('ry', e.ry.toFixed(2)));
-    h += row('Angle', inp('angle', ((e.angle||0)*180/Math.PI).toFixed(2)));
+    h += row('Rx (½ axe 1)', inp('rx', e.rx.toFixed(2)));
+    h += row('Ry (½ axe 2)', inp('ry', e.ry.toFixed(2)));
+    h += row('Larg. (2×Rx)', '<input type="number" class="prop-input" step="any" value="'+(e.rx*2).toFixed(2)+'" onchange="_propChangeEllipseDim('+id+',\'rx\',this.value)" />');
+    h += row('Haut. (2×Ry)', '<input type="number" class="prop-input" step="any" value="'+(e.ry*2).toFixed(2)+'" onchange="_propChangeEllipseDim('+id+',\'ry\',this.value)" />');
+    const angDeg = ((e.angle||0)*180/Math.PI).toFixed(2);
+    h += row('Angle (°)', '<input type="number" class="prop-input" step="any" value="'+angDeg+'" onchange="_propChangeEllipseAngle('+id+',this.value)" />');
   }
   if (e.profileFamily) {
     h += row('Profil', '<span class="prop-value">'+e.profileFamily+(e.profileSize?' '+e.profileSize:'')+'</span>');
