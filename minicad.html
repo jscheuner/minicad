@@ -7017,7 +7017,7 @@ function drawRotatePreview() {
 
 function drawOffsetGhost() {
   const [mx, my] = S.mouseWorld;
-  const supported = ['line','wall','circle','arc','rect','polyline','cable','ellipse'];
+  const supported = ['line','wall','circle','arc','rect','polyline','cable','ellipse','spline'];
   const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && supported.includes(e.type));
   if (!targets.length) return;
   ctx.save(); ctx.globalAlpha = 0.65; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
@@ -8393,7 +8393,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
 
   // Offset — clic sur le côté → décale tous les sélectionnés
   if (tool === 'offset') {
-    const supported = ['line','wall','circle','arc','rect','polyline','cable','ellipse'];
+    const supported = ['line','wall','circle','arc','rect','polyline','cable','ellipse','spline'];
     const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && supported.includes(e.type));
     if (!targets.length) { termPrint('Aucun objet décalable sélectionné','warning'); render(); return; }
     pushUndo();
@@ -9805,6 +9805,31 @@ function computeOffsetGeom(src, dist, sideX, sideY) {
     const newPts = offsetPolylinePoints(pts, sign*dist, src.closed);
     if (!newPts) return null;
     e.points = newPts;
+
+  } else if (src.type === 'spline') {
+    const pts = src.points;
+    if (!pts || pts.length < 2) return null;
+    // Côté du clic : échantillonner la courbe (catmullRom) et prendre le segment le plus proche.
+    const sampled = catmullRom(pts, src.closed, 16);
+    let bestD = Infinity, bestCross = 0;
+    for (let i=0;i<sampled.length-1;i++) {
+      const [ax,ay]=sampled[i], [bx,by]=sampled[i+1];
+      const d = distToSeg(sideX,sideY,ax,ay,bx,by);
+      if (d < bestD) { bestD = d; bestCross = (bx-ax)*(sideY-ay) - (by-ay)*(sideX-ax); }
+    }
+    const sign = bestCross >= 0 ? 1 : -1;
+    // Décale chaque point de contrôle le long de sa normale (tangente prev→next).
+    // Reste une spline ; approché entre les points de contrôle, exact en chacun.
+    const n = pts.length;
+    e.points = pts.map((p, i) => {
+      let prev, next;
+      if (src.closed) { prev = pts[(i-1+n)%n]; next = pts[(i+1)%n]; }
+      else { prev = pts[Math.max(0,i-1)]; next = pts[Math.min(n-1,i+1)]; }
+      const tx = next[0]-prev[0], ty = next[1]-prev[1];
+      const tl = Math.hypot(tx,ty) || 1;
+      const nx = -ty/tl, ny = tx/tl; // normale gauche
+      return [p[0] + sign*dist*nx, p[1] + sign*dist*ny];
+    });
 
   } else {
     return null;
