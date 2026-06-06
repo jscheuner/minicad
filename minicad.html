@@ -10239,6 +10239,16 @@ function _propChange(id, field, val, isText) {
   render(); autoSave();
 }
 
+function _propChangeEllipseAngle(id, valDeg) {
+  const e = S.entities.find(en => en.id === id);
+  if (!e || e.type !== 'ellipse') return;
+  const deg = parseFloat(valDeg);
+  if (isNaN(deg)) return;
+  pushUndo();
+  e.angle = deg * Math.PI / 180;
+  render(); autoSave(); updateProperties();
+}
+
 function _propChangeLongueurMulti(val) {
   const newLen = parseFloat(val);
   if (isNaN(newLen) || newLen <= 0) return;
@@ -10341,7 +10351,7 @@ function _updatePropertiesSingle(e) {
     h += row('Y2', inp('y2', e.y2.toFixed(2)));
     if (e.type==='line'||e.type==='wall') h += row('Longueur','<input type="number" class="prop-input" step="any" value="'+Math.hypot(e.x2-e.x1,e.y2-e.y1).toFixed(2)+'" onchange="_propChangeLongueur('+id+',this.value)" />');
   }
-  if (e.cx !== undefined) {
+  if (e.cx !== undefined && e.type !== 'ellipse') {
     h += row('CX', inp('cx', e.cx.toFixed(2)));
     h += row('CY', inp('cy', e.cy.toFixed(2)));
     h += row('Rayon', inp('r', e.r.toFixed(2)));
@@ -10370,9 +10380,12 @@ function _updatePropertiesSingle(e) {
   if (e.type === 'ellipse') {
     h += row('CX', inp('cx', e.cx.toFixed(2)));
     h += row('CY', inp('cy', e.cy.toFixed(2)));
-    h += row('Rx', inp('rx', e.rx.toFixed(2)));
-    h += row('Ry', inp('ry', e.ry.toFixed(2)));
-    h += row('Angle', inp('angle', ((e.angle||0)*180/Math.PI).toFixed(2)));
+    h += row('Rx (½ axe 1)', inp('rx', e.rx.toFixed(2)));
+    h += row('Ry (½ axe 2)', inp('ry', e.ry.toFixed(2)));
+    h += row('Larg. (2×Rx)', '<span class="prop-value">'+(e.rx*2).toFixed(2)+'</span>');
+    h += row('Haut. (2×Ry)', '<span class="prop-value">'+(e.ry*2).toFixed(2)+'</span>');
+    const angDeg = ((e.angle||0)*180/Math.PI).toFixed(2);
+    h += row('Angle (°)', '<input type="number" class="prop-input" step="any" value="'+angDeg+'" onchange="_propChangeEllipseAngle('+id+',this.value)" />');
   }
   if (e.profileFamily) {
     h += row('Profil', '<span class="prop-value">'+e.profileFamily+(e.profileSize?' '+e.profileSize:'')+'</span>');
