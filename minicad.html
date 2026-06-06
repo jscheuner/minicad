@@ -9525,20 +9525,20 @@ function mirrorEntity(src,ax,ay,bx,by) {
 function offsetPolylinePoints(pts, dist, closed) {
   if (!pts || pts.length < 2) return null;
   // Convention : une polyligne fermée duplique le 1er point en fin de tableau.
-  // On retire ce doublon pour raisonner en sommets uniques.
   let verts = pts.map(p => p.slice());
   const isClosed = !!closed;
   if (isClosed && verts.length >= 2) {
     const f = verts[0], l = verts[verts.length - 1];
     if (Math.hypot(f[0]-l[0], f[1]-l[1]) < 1e-9) verts = verts.slice(0, -1);
   }
-  const m = verts.length;             // sommets uniques
-  const nSeg = isClosed ? m : m - 1;  // nombre de segments
+  const m = verts.length;
+  const nSeg = isClosed ? m : m - 1;
   if (nSeg < 1) return null;
 
-  // 1) Segments décalés (droite ou arc). Pour un arc : même centre, rayon ± dist.
-  //    dist est signé (gauche du sens de parcours, déjà multiplié par le signe côté clic).
-  const seg = new Array(nSeg).fill(null);
+  // 1) Chaque segment devient une primitive décalée (droite parallèle ou arc concentrique).
+  //    Arc : même centre, rayon ± dist, mêmes angles radiaux a1/a2 (portée θ0 = 4·atan(bulge)).
+  //    start/end pourront bouger lors de la résolution des jonctions (trim/extend).
+  const prim = new Array(nSeg).fill(null);
   for (let i = 0; i < nSeg; i++) {
     const A = verts[i], B = verts[(i+1) % m];
     const x1=A[0], y1=A[1], bulge=A[2]||0, x2=B[0], y2=B[1];
@@ -9548,87 +9548,121 @@ function offsetPolylinePoints(pts, dist, closed) {
       const r   = len*(1+bulge*bulge)/(4*Math.abs(bulge));
       const sag = Math.sqrt(Math.max(0, r*r - len*len/4));
       const mx=(x1+x2)/2, my=(y1+y2)/2;
-      const pdx=-(y2-y1)/len, pdy=(x2-x1)/len; // normale gauche du chord
+      const pdx=-(y2-y1)/len, pdy=(x2-x1)/len;
       const cx=mx+Math.sign(bulge)*pdx*sag, cy=my+Math.sign(bulge)*pdy*sag;
-      // centre à gauche si bulge>0 → offset gauche rapproche du centre → r - dist
-      const rNew = r - Math.sign(bulge)*dist;
+      const rNew = r - Math.sign(bulge)*dist; // centre côté bulge → offset gauche rapproche
       if (rNew <= 1e-9) continue;
       const a1=Math.atan2(y1-cy,x1-cx), a2=Math.atan2(y2-cy,x2-cx);
-      seg[i] = { arc:true, bulge, cx, cy, r:rNew,
-        p1:[cx+rNew*Math.cos(a1), cy+rNew*Math.sin(a1)],
-        p2:[cx+rNew*Math.cos(a2), cy+rNew*Math.sin(a2)] };
+      const s=[cx+rNew*Math.cos(a1), cy+rNew*Math.sin(a1)], e=[cx+rNew*Math.cos(a2), cy+rNew*Math.sin(a2)];
+      prim[i] = { arc:true, bulge, cx, cy, r:rNew, a1, a2, theta0:4*Math.atan(bulge),
+        start:s.slice(), end:e.slice(), start0:s.slice(), end0:e.slice() };
     } else {
       const nx=-(y2-y1)/len*dist, ny=(x2-x1)/len*dist;
-      seg[i] = { arc:false, p1:[x1+nx,y1+ny], p2:[x2+nx,y2+ny] };
+      const s=[x1+nx,y1+ny], e=[x2+nx,y2+ny];
+      prim[i] = { arc:false, start:s.slice(), end:e.slice(), start0:s.slice(), end0:e.slice() };
     }
   }
-  if (!seg.some(Boolean)) return null;
+  if (!prim.some(Boolean)) return null;
 
-  // 2) Coin = position décalée d'un sommet = intersection des 2 courbes adjacentes
-  const lineLine = (s1,s2) => {
-    const ax=s1.p1[0],ay=s1.p1[1],bx=s1.p2[0],by=s1.p2[1];
-    const cx=s2.p1[0],cy=s2.p1[1],dx=s2.p2[0],dy=s2.p2[1];
-    const d1x=bx-ax,d1y=by-ay,d2x=dx-cx,d2y=dy-cy;
+  // Helpers
+  const lineLine = (A,B) => {
+    const d1x=A.end[0]-A.start[0], d1y=A.end[1]-A.start[1];
+    const d2x=B.end[0]-B.start[0], d2y=B.end[1]-B.start[1];
     const den=d1x*d2y-d1y*d2x;
     if (Math.abs(den)<1e-9) return null;
-    const t=((cx-ax)*d2y-(cy-ay)*d2x)/den;
-    return [ax+t*d1x, ay+t*d1y];
+    const t=((B.start[0]-A.start[0])*d2y-(B.start[1]-A.start[1])*d2x)/den;
+    return [A.start[0]+t*d1x, A.start[1]+t*d1y];
   };
-  const pickNearest = (cands, ref) => {
-    let best=null, bd=Infinity;
-    for (const c of cands) { const d=Math.hypot(c[0]-ref[0],c[1]-ref[1]); if(d<bd){bd=d;best=c;} }
-    return best;
-  };
-  // sIn arrive au sommet, sOut en repart → renvoie le coin commun
-  const junction = (sIn, sOut) => {
-    if (!sIn && !sOut) return null;
-    if (!sIn)  return sOut.p1.slice();
-    if (!sOut) return sIn.p2.slice();
-    const ref = [(sIn.p2[0]+sOut.p1[0])/2, (sIn.p2[1]+sOut.p1[1])/2];
-    if (!sIn.arc && !sOut.arc) return lineLine(sIn,sOut) || ref;
-    let cands = [];
-    if (sIn.arc && sOut.arc) {
-      cands = circleCircleIntersect(sIn.cx,sIn.cy,sIn.r, sOut.cx,sOut.cy,sOut.r).map(p=>[p.x,p.y]);
-    } else if (sIn.arc) { // sOut droite
-      cands = lineCircleIntersectInf(sOut.p1[0],sOut.p1[1],sOut.p2[0],sOut.p2[1], sIn.cx,sIn.cy,sIn.r)
-        .map(t=>[sOut.p1[0]+t*(sOut.p2[0]-sOut.p1[0]), sOut.p1[1]+t*(sOut.p2[1]-sOut.p1[1])]);
-    } else { // sIn droite, sOut arc
-      cands = lineCircleIntersectInf(sIn.p1[0],sIn.p1[1],sIn.p2[0],sIn.p2[1], sOut.cx,sOut.cy,sOut.r)
-        .map(t=>[sIn.p1[0]+t*(sIn.p2[0]-sIn.p1[0]), sIn.p1[1]+t*(sIn.p2[1]-sIn.p1[1])]);
-    }
-    return pickNearest(cands, ref) || ref;
+  const angDist = (a,b) => { let d=((a-b)%(2*Math.PI)+3*Math.PI)%(2*Math.PI)-Math.PI; return Math.abs(d); };
+  const MAX_TRIM = 70*Math.PI/180; // au-delà : jonction jugée dégénérée → on laisse un raccord droit
+  // Un candidat est valide pour un arc si l'extrémité ne bouge pas de trop ET que la portée
+  // résultante ne s'inverse pas / ne bascule pas mineur→majeur (la cause des « spikes »).
+  const arcCandOK = (s, c, movingEnd) => {
+    const ang = Math.atan2(c[1]-s.cy, c[0]-s.cx);
+    if (angDist(ang, movingEnd ? s.a2 : s.a1) > MAX_TRIM) return false;
+    let dA = movingEnd ? (ang - s.a1) : (s.a2 - ang);
+    dA += 2*Math.PI*Math.round((s.theta0 - dA)/(2*Math.PI));
+    if (s.theta0 * dA < 0) return false;                                   // sens inversé
+    if (Math.abs(s.theta0) < Math.PI-1e-6 && Math.abs(dA) > Math.PI+1e-3) return false; // mineur→majeur
+    return true;
   };
 
-  // corner[j] = position décalée du sommet j
-  const corner = new Array(m).fill(null);
-  if (isClosed) {
-    for (let j=0;j<m;j++) corner[j] = junction(seg[(j-1+nSeg)%nSeg], seg[j%nSeg]);
-  } else {
-    corner[0]   = seg[0] ? seg[0].p1.slice() : null;
-    for (let j=1;j<m-1;j++) corner[j] = junction(seg[j-1], seg[j]);
-    corner[m-1] = seg[nSeg-1] ? seg[nSeg-1].p2.slice() : null;
+  // 2) Résolution des jonctions : A finit / B commence. Si une intersection « propre »
+  //    existe (trim faible, pas d'inversion d'arc), on fusionne A.end=B.start=X ; sinon gap.
+  const resolve = (A,B) => {
+    if (!A || !B) return;
+    if (!A.arc && !B.arc) { const X=lineLine(A,B); if(X){A.end=X;B.start=X;} return; }
+    // candidats d'intersection des deux courbes décalées
+    let cands=[];
+    if (A.arc && B.arc) cands=circleCircleIntersect(A.cx,A.cy,A.r,B.cx,B.cy,B.r).map(p=>[p.x,p.y]);
+    else if (A.arc) cands=lineCircleIntersectInf(B.start[0],B.start[1],B.end[0],B.end[1],A.cx,A.cy,A.r)
+                          .map(t=>[B.start[0]+t*(B.end[0]-B.start[0]), B.start[1]+t*(B.end[1]-B.start[1])]);
+    else            cands=lineCircleIntersectInf(A.start[0],A.start[1],A.end[0],A.end[1],B.cx,B.cy,B.r)
+                          .map(t=>[A.start[0]+t*(A.end[0]-A.start[0]), A.start[1]+t*(A.end[1]-A.start[1])]);
+    // candidat valide le plus proche des extrémités radiales (sinon gap = raccord droit)
+    const ref=[(A.end[0]+B.start[0])/2, (A.end[1]+B.start[1])/2];
+    let best=null, bd=Infinity;
+    for (const c of cands) {
+      if (A.arc && !arcCandOK(A,c,true))  continue;
+      if (B.arc && !arcCandOK(B,c,false)) continue;
+      const d=Math.hypot(c[0]-ref[0],c[1]-ref[1]);
+      if (d<bd){bd=d;best=c;}
+    }
+    if (best) { A.end=best.slice(); B.start=best.slice(); } // sinon : gap (raccord droit)
+  };
+  const lastIdx = isClosed ? nSeg : nSeg-1;
+  for (let i=0;i<lastIdx;i++) resolve(prim[i], prim[(i+1)%nSeg]);
+
+  // 2b) Garde-fou final : un arc dont la portée résultante s'inverse, bascule
+  //     mineur→majeur ou dévie trop de θ0 (cause des « spikes ») reprend ses extrémités
+  //     radiales — et ses voisins reprennent l'extrémité partagée (gaps = raccords droits).
+  const MAX_DSWEEP = 40*Math.PI/180;
+  for (let i=0;i<nSeg;i++){
+    const s=prim[i]; if(!s||!s.arc) continue;
+    let dA=Math.atan2(s.end[1]-s.cy,s.end[0]-s.cx)-Math.atan2(s.start[1]-s.cy,s.start[0]-s.cx);
+    dA += 2*Math.PI*Math.round((s.theta0-dA)/(2*Math.PI));
+    const bad = (s.theta0*dA<0) ||
+                (Math.abs(s.theta0)<Math.PI-1e-6 && Math.abs(dA)>Math.PI+1e-3) ||
+                (angDist(dA, s.theta0) > MAX_DSWEEP);
+    if (!bad) continue;
+    s.start=s.start0.slice(); s.end=s.end0.slice();
+    const prev = isClosed ? prim[(i-1+nSeg)%nSeg] : (i>0 ? prim[i-1] : null);
+    const next = isClosed ? prim[(i+1)%nSeg]      : (i<nSeg-1 ? prim[i+1] : null);
+    if (prev) prev.end   = prev.end0.slice();
+    if (next) next.start = next.start0.slice();
   }
 
-  // 3) Recalcul des bulges : les extrémités d'arc ont bougé vers les coins
-  const bulgeOf = (s, start, end) => {
-    if (!s || !s.arc || !start || !end) return 0;
-    const a1=Math.atan2(start[1]-s.cy,start[0]-s.cx);
-    const a2=Math.atan2(end[1]-s.cy,end[0]-s.cx);
-    let dA=a2-a1;
-    if (s.bulge>0) { while(dA<=0) dA+=2*Math.PI; } else { while(dA>=0) dA-=2*Math.PI; }
+  // 3) Bulge recalculé depuis les extrémités finales, ancré sur θ0 (jamais d'arc inversé)
+  const bulgeOf = (s) => {
+    if (!s || !s.arc) return 0;
+    const a1=Math.atan2(s.start[1]-s.cy,s.start[0]-s.cx);
+    const a2=Math.atan2(s.end[1]-s.cy,s.end[0]-s.cx);
+    let dA=a2-a1; dA += 2*Math.PI*Math.round((s.theta0-dA)/(2*Math.PI));
     return Math.tan(dA/4);
   };
 
-  // 4) Assemblage : 1 point par sommet, le bulge porté par le segment sortant
-  const out = [];
-  for (let i=0;i<m;i++) {
-    const c = corner[i];
-    if (!c) continue;
-    let b = 0;
-    if (i < nSeg) b = bulgeOf(seg[i % nSeg], c, corner[(i+1)%m]);
-    out.push(b!==0 ? [c[0],c[1],b] : [c[0],c[1]]);
+  // 4) Assemblage : start (avec bulge) puis end de chaque primitive ; fusion des points
+  //    consécutifs identiques (jonction propre), conservation des gaps (raccord droit).
+  const raw=[];
+  for (let i=0;i<nSeg;i++){
+    const s=prim[i]; if(!s) continue;
+    raw.push([s.start[0], s.start[1], bulgeOf(s)]);
+    raw.push([s.end[0], s.end[1], 0]);
   }
-  if (isClosed && out.length>=1) out.push(out[0].slice()); // refermer (convention doublon)
+  const EPS=1e-6;
+  const merged=[];
+  for (const p of raw){
+    const last=merged[merged.length-1];
+    if (last && Math.hypot(last[0]-p[0],last[1]-p[1])<EPS){
+      if (p[2]) last[2]=p[2]; // le 'start' suivant porte le bulge du segment à venir
+    } else merged.push(p.slice());
+  }
+  if (isClosed && merged.length>1){
+    const f=merged[0], l=merged[merged.length-1];
+    if (Math.hypot(f[0]-l[0],f[1]-l[1])<EPS) merged.pop(); // doublon de bouclage
+    merged.push([merged[0][0], merged[0][1]]);             // refermer (convention)
+  }
+  const out = merged.map(p => p[2] ? [p[0],p[1],p[2]] : [p[0],p[1]]);
   return out.length>=2 ? out : null;
 }
 
