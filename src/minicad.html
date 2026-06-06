@@ -5738,11 +5738,24 @@ function getGripPoints(e) {
       gp(_twx, _twy, (ent, nx, ny) => { ent.textWx = nx; ent.textWy = ny; });
       break;
     }
-    case 'polyline': case 'cable':
-      e.points.forEach((p, i) => {
-        gp(p[0], p[1], (ent, nx, ny) => { ent.points[i] = [nx, ny]; });
-      });
+    case 'polyline': case 'cable': {
+      const pts = e.points, n = pts.length;
+      // Polyligne fermée à doublon : ne pas afficher de poignée pour le doublon final ;
+      // déplacer le 1er sommet déplace aussi le doublon (sinon le contour se déchire).
+      const dup = e.closed && n > 2 && Math.hypot(pts[0][0]-pts[n-1][0], pts[0][1]-pts[n-1][1]) < 1e-9;
+      const nGrips = dup ? n - 1 : n;
+      for (let i = 0; i < nGrips; i++) {
+        gp(pts[i][0], pts[i][1], (ent, nx, ny) => {
+          const o = ent.points[i];
+          ent.points[i] = o.length > 2 ? [nx, ny, o[2]] : [nx, ny]; // conserver le bulge
+          if (i === 0 && dup) {
+            const L = ent.points[ent.points.length-1];
+            ent.points[ent.points.length-1] = L.length > 2 ? [nx, ny, L[2]] : [nx, ny];
+          }
+        });
+      }
       break;
+    }
     case 'spline':
       e.points.forEach((p, i) => {
         gp(p[0], p[1], (ent, nx, ny) => { ent.points[i] = [nx, ny]; });
