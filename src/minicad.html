@@ -7017,7 +7017,7 @@ function drawRotatePreview() {
 
 function drawOffsetGhost() {
   const [mx, my] = S.mouseWorld;
-  const supported = ['line','wall','circle','arc','rect','polyline','cable'];
+  const supported = ['line','wall','circle','arc','rect','polyline','cable','ellipse'];
   const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && supported.includes(e.type));
   if (!targets.length) return;
   ctx.save(); ctx.globalAlpha = 0.65; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
@@ -8393,7 +8393,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
 
   // Offset — clic sur le côté → décale tous les sélectionnés
   if (tool === 'offset') {
-    const supported = ['line','wall','circle','arc','rect','polyline','cable'];
+    const supported = ['line','wall','circle','arc','rect','polyline','cable','ellipse'];
     const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && supported.includes(e.type));
     if (!targets.length) { termPrint('Aucun objet décalable sélectionné','warning'); render(); return; }
     pushUndo();
@@ -9767,6 +9767,19 @@ function computeOffsetGeom(src, dist, sideX, sideY) {
     const sign = dfc >= src.r ? 1 : -1;
     e.r = src.r + sign*dist;
     if (e.r <= 0) return null;
+
+  } else if (src.type === 'ellipse') {
+    // Décalage approché : rx/ry ± dist (exact aux extrémités des axes). Le vrai offset
+    // d'une ellipse n'est pas une ellipse, mais on reste sur une entité ellipse simple.
+    // Côté : projeter le clic en repère local (rotation -angle) → dedans/dehors.
+    const a = src.angle || 0, cos = Math.cos(a), sin = Math.sin(a);
+    const dx = sideX - src.cx, dy = sideY - src.cy;
+    const lx = dx*cos + dy*sin, ly = -dx*sin + dy*cos; // repère propre de l'ellipse
+    const inside = (lx*lx)/(src.rx*src.rx) + (ly*ly)/(src.ry*src.ry) < 1;
+    const sign = inside ? -1 : 1;
+    e.rx = src.rx + sign*dist;
+    e.ry = src.ry + sign*dist;
+    if (e.rx <= 0 || e.ry <= 0) return null;
 
   } else if (src.type === 'rect') {
     const minX=Math.min(src.x1,src.x2), maxX=Math.max(src.x1,src.x2);
