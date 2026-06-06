@@ -9551,7 +9551,9 @@ function offsetPolylinePoints(pts, dist, closed) {
       const pdx=-(y2-y1)/len, pdy=(x2-x1)/len;
       const cx=mx+Math.sign(bulge)*pdx*sag, cy=my+Math.sign(bulge)*pdy*sag;
       const rNew = r - Math.sign(bulge)*dist; // centre côté bulge → offset gauche rapproche
-      if (rNew <= 1e-9) continue;
+      // Rayon réduit à ≤0 → l'arc disparaît, les voisins se rejoignent en angle vif.
+      // Seuil relatif au rayon pour absorber le bruit FP (ex. rayon 5 décalé de 5 → rNew≈2e-8).
+      if (rNew <= 1e-6 * Math.max(1, r)) continue;
       const a1=Math.atan2(y1-cy,x1-cx), a2=Math.atan2(y2-cy,x2-cx);
       const s=[cx+rNew*Math.cos(a1), cy+rNew*Math.sin(a1)], e=[cx+rNew*Math.cos(a2), cy+rNew*Math.sin(a2)];
       prim[i] = { arc:true, bulge, cx, cy, r:rNew, a1, a2, theta0:4*Math.atan(bulge),
@@ -9590,7 +9592,7 @@ function offsetPolylinePoints(pts, dist, closed) {
   // 2) Résolution des jonctions : A finit / B commence. Si une intersection « propre »
   //    existe (trim faible, pas d'inversion d'arc), on fusionne A.end=B.start=X ; sinon gap.
   const resolve = (A,B) => {
-    if (!A || !B) return;
+    if (!A || !B || A===B) return;
     if (!A.arc && !B.arc) { const X=lineLine(A,B); if(X){A.end=X;B.start=X;} return; }
     // candidats d'intersection des deux courbes décalées
     let cands=[];
@@ -9610,15 +9612,20 @@ function offsetPolylinePoints(pts, dist, closed) {
     }
     if (best) { A.end=best.slice(); B.start=best.slice(); } // sinon : gap (raccord droit)
   };
-  const lastIdx = isClosed ? nSeg : nSeg-1;
-  for (let i=0;i<lastIdx;i++) resolve(prim[i], prim[(i+1)%nSeg]);
+  // On résout entre primitives CONSÉCUTIVES NON NULLES : un arc effondré (rayon ≤ 0,
+  // ex. rayon 5 décalé de 8) disparaît et ses deux voisins se rejoignent en angle vif.
+  const idx = [];
+  for (let i=0;i<nSeg;i++) if (prim[i]) idx.push(i);
+  const k = idx.length;
+  const nJunc = isClosed ? k : k-1;
+  for (let j=0;j<nJunc;j++) resolve(prim[idx[j]], prim[idx[(j+1)%k]]);
 
   // 2b) Garde-fou final : un arc dont la portée résultante s'inverse, bascule
   //     mineur→majeur ou dévie trop de θ0 (cause des « spikes ») reprend ses extrémités
-  //     radiales — et ses voisins reprennent l'extrémité partagée (gaps = raccords droits).
+  //     radiales — et ses voisins non nuls reprennent l'extrémité partagée (raccord droit).
   const MAX_DSWEEP = 40*Math.PI/180;
-  for (let i=0;i<nSeg;i++){
-    const s=prim[i]; if(!s||!s.arc) continue;
+  for (let p=0;p<k;p++){
+    const s=prim[idx[p]]; if(!s.arc) continue;
     let dA=Math.atan2(s.end[1]-s.cy,s.end[0]-s.cx)-Math.atan2(s.start[1]-s.cy,s.start[0]-s.cx);
     dA += 2*Math.PI*Math.round((s.theta0-dA)/(2*Math.PI));
     const bad = (s.theta0*dA<0) ||
@@ -9626,10 +9633,10 @@ function offsetPolylinePoints(pts, dist, closed) {
                 (angDist(dA, s.theta0) > MAX_DSWEEP);
     if (!bad) continue;
     s.start=s.start0.slice(); s.end=s.end0.slice();
-    const prev = isClosed ? prim[(i-1+nSeg)%nSeg] : (i>0 ? prim[i-1] : null);
-    const next = isClosed ? prim[(i+1)%nSeg]      : (i<nSeg-1 ? prim[i+1] : null);
-    if (prev) prev.end   = prev.end0.slice();
-    if (next) next.start = next.start0.slice();
+    const prev = isClosed ? prim[idx[(p-1+k)%k]] : (p>0 ? prim[idx[p-1]] : null);
+    const next = isClosed ? prim[idx[(p+1)%k]]   : (p<k-1 ? prim[idx[p+1]] : null);
+    if (prev && prev!==s) prev.end   = prev.end0.slice();
+    if (next && next!==s) next.start = next.start0.slice();
   }
 
   // 3) Bulge recalculé depuis les extrémités finales, ancré sur θ0 (jamais d'arc inversé)
