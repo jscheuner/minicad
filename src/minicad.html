@@ -2466,7 +2466,8 @@ function findOsnap(wx, wy) {
           const rSum = e.r + e2.r, rDiff = Math.abs(e.r - e2.r);
           if (d2 > rSum*rSum || d2 < rDiff*rDiff) continue;
           const pts = circleCircleIntersect(e.cx, e.cy, e.r, e2.cx, e2.cy, e2.r);
-          for (const [px, py] of pts) {
+          for (const pt of pts) {
+            const px = pt.x, py = pt.y;
             const a1 = Math.atan2(py - e.cy,  px - e.cx);
             const a2 = Math.atan2(py - e2.cy, px - e2.cx);
             if (e.type  === 'arc' && !angleInArc(a1, e.startAngle,  e.endAngle))  continue;
@@ -2750,19 +2751,8 @@ function projectOnLine(px, py, x1, y1, x2, y2) {
   return [x1 + t * dx, y1 + t * dy];
 }
 
-// Returns 0, 1 or 2 intersection points of two circles (or arcs — caller checks angular range)
-function circleCircleIntersect(cx1, cy1, r1, cx2, cy2, r2) {
-  const dx = cx2-cx1, dy = cy2-cy1;
-  const d = Math.hypot(dx, dy);
-  if (d < 1e-10 || d > r1+r2+1e-10 || d < Math.abs(r1-r2)-1e-10) return [];
-  const a = (r1*r1 - r2*r2 + d*d) / (2*d);
-  const h2 = r1*r1 - a*a;
-  if (h2 < 0) return [];
-  const h = Math.sqrt(h2);
-  const mx = cx1 + a*dx/d, my = cy1 + a*dy/d;
-  if (h < 1e-10) return [[mx, my]];
-  return [[mx + h*dy/d, my - h*dx/d], [mx - h*dy/d, my + h*dx/d]];
-}
+// circleCircleIntersect : défini plus bas (retourne [{x,y}]). Le doublon qui retournait
+// des paires [x,y] a été retiré (il masquait l'autre par hoisting et cassait l'OSNAP).
 
 // Returns intersection points of a segment with a circle, where t∈[0,1] on the segment
 function segCircleIntersect(x1, y1, x2, y2, cx, cy, r) {
