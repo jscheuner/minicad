@@ -9523,93 +9523,113 @@ function mirrorEntity(src,ax,ay,bx,by) {
 
 // Offset a polyline's vertex array by `dist` (signed: + = left of direction, - = right)
 function offsetPolylinePoints(pts, dist, closed) {
-  const n = pts.length;
-  if (n < 2) return null;
-  // Pour une polyline fermée, on ajoute le segment de retour au premier point
-  const verts = closed ? [...pts, pts[0]] : pts;
-  const nSegs = verts.length - 1;
-  if (nSegs < 1) return null;
+  if (!pts || pts.length < 2) return null;
+  // Convention : une polyligne fermée duplique le 1er point en fin de tableau.
+  // On retire ce doublon pour raisonner en sommets uniques.
+  let verts = pts.map(p => p.slice());
+  const isClosed = !!closed;
+  if (isClosed && verts.length >= 2) {
+    const f = verts[0], l = verts[verts.length - 1];
+    if (Math.hypot(f[0]-l[0], f[1]-l[1]) < 1e-9) verts = verts.slice(0, -1);
+  }
+  const m = verts.length;             // sommets uniques
+  const nSeg = isClosed ? m : m - 1;  // nombre de segments
+  if (nSeg < 1) return null;
 
-  // --- Calcul des segments décalés (lignes ou arcs) ---
-  const offSegs = [];
-  for (let i = 0; i < nSegs; i++) {
-    const p1 = verts[i], p2 = verts[i+1];
-    const x1=p1[0], y1=p1[1], bulge=p1[2]||0, x2=p2[0], y2=p2[1];
+  // 1) Segments décalés (droite ou arc). Pour un arc : même centre, rayon ± dist.
+  //    dist est signé (gauche du sens de parcours, déjà multiplié par le signe côté clic).
+  const seg = new Array(nSeg).fill(null);
+  for (let i = 0; i < nSeg; i++) {
+    const A = verts[i], B = verts[(i+1) % m];
+    const x1=A[0], y1=A[1], bulge=A[2]||0, x2=B[0], y2=B[1];
     const len = Math.hypot(x2-x1, y2-y1);
-    if (len < 1e-9) { offSegs.push(null); continue; }
-
+    if (len < 1e-9) continue;
     if (bulge !== 0) {
-      // Arc : décaler le rayon, garder le même centre et le même bulge
-      const r = len*(1+bulge*bulge)/(4*Math.abs(bulge));
+      const r   = len*(1+bulge*bulge)/(4*Math.abs(bulge));
       const sag = Math.sqrt(Math.max(0, r*r - len*len/4));
       const mx=(x1+x2)/2, my=(y1+y2)/2;
-      const pdx=-(y2-y1)/len, pdy=(x2-x1)/len;
-      const ccx=mx+Math.sign(bulge)*pdx*sag, ccy=my+Math.sign(bulge)*pdy*sag;
-      const rNew = r + Math.sign(bulge)*dist;
-      if (rNew <= 0) { offSegs.push(null); continue; }
-      const a1=Math.atan2(y1-ccy, x1-ccx), a2=Math.atan2(y2-ccy, x2-ccx);
-      offSegs.push({ arc:true,
-        p1:[ccx+rNew*Math.cos(a1), ccy+rNew*Math.sin(a1)],
-        p2:[ccx+rNew*Math.cos(a2), ccy+rNew*Math.sin(a2)],
-        bulge });
+      const pdx=-(y2-y1)/len, pdy=(x2-x1)/len; // normale gauche du chord
+      const cx=mx+Math.sign(bulge)*pdx*sag, cy=my+Math.sign(bulge)*pdy*sag;
+      // centre à gauche si bulge>0 → offset gauche rapproche du centre → r - dist
+      const rNew = r - Math.sign(bulge)*dist;
+      if (rNew <= 1e-9) continue;
+      const a1=Math.atan2(y1-cy,x1-cx), a2=Math.atan2(y2-cy,x2-cx);
+      seg[i] = { arc:true, bulge, cx, cy, r:rNew,
+        p1:[cx+rNew*Math.cos(a1), cy+rNew*Math.sin(a1)],
+        p2:[cx+rNew*Math.cos(a2), cy+rNew*Math.sin(a2)] };
     } else {
-      // Droite : décalage normal gauche
       const nx=-(y2-y1)/len*dist, ny=(x2-x1)/len*dist;
-      offSegs.push({ arc:false, p1:[x1+nx,y1+ny], p2:[x2+nx,y2+ny] });
+      seg[i] = { arc:false, p1:[x1+nx,y1+ny], p2:[x2+nx,y2+ny] };
     }
   }
-  if (!offSegs.some(Boolean)) return null;
+  if (!seg.some(Boolean)) return null;
 
-  // --- Calcul des coins (intersection ou jonction tangente) ---
-  // corners[i] = point entre offSegs[i] et offSegs[(i+1)%nSegs]
-  const junctionN = closed ? nSegs : nSegs-1;
-  const corners = [];
-  function lineLine(s1, s2) {
-    const [ax,ay]=s1.p1, [bx,by]=s1.p2, [cx,cy]=s2.p1, [dx,dy]=s2.p2;
-    const d1x=bx-ax, d1y=by-ay, d2x=dx-cx, d2y=dy-cy;
-    const denom=d1x*d2y-d1y*d2x;
-    if (Math.abs(denom)<1e-9) return [bx,by];
-    const t=((cx-ax)*d2y-(cy-ay)*d2x)/denom;
+  // 2) Coin = position décalée d'un sommet = intersection des 2 courbes adjacentes
+  const lineLine = (s1,s2) => {
+    const ax=s1.p1[0],ay=s1.p1[1],bx=s1.p2[0],by=s1.p2[1];
+    const cx=s2.p1[0],cy=s2.p1[1],dx=s2.p2[0],dy=s2.p2[1];
+    const d1x=bx-ax,d1y=by-ay,d2x=dx-cx,d2y=dy-cy;
+    const den=d1x*d2y-d1y*d2x;
+    if (Math.abs(den)<1e-9) return null;
+    const t=((cx-ax)*d2y-(cy-ay)*d2x)/den;
     return [ax+t*d1x, ay+t*d1y];
-  }
-  for (let i=0; i<junctionN; i++) {
-    const s1=offSegs[i], s2=offSegs[(i+1)%nSegs];
-    if (!s1&&!s2) { corners.push(null); continue; }
-    if (!s1) { corners.push(s2.p1.slice()); continue; }
-    if (!s2) { corners.push(s1.p2.slice()); continue; }
-    // Deux droites → intersection miter ; sinon jonction tangente → extrémité de l'arc
-    corners.push((!s1.arc && !s2.arc) ? lineLine(s1,s2) : s1.p2.slice());
+  };
+  const pickNearest = (cands, ref) => {
+    let best=null, bd=Infinity;
+    for (const c of cands) { const d=Math.hypot(c[0]-ref[0],c[1]-ref[1]); if(d<bd){bd=d;best=c;} }
+    return best;
+  };
+  // sIn arrive au sommet, sOut en repart → renvoie le coin commun
+  const junction = (sIn, sOut) => {
+    if (!sIn && !sOut) return null;
+    if (!sIn)  return sOut.p1.slice();
+    if (!sOut) return sIn.p2.slice();
+    const ref = [(sIn.p2[0]+sOut.p1[0])/2, (sIn.p2[1]+sOut.p1[1])/2];
+    if (!sIn.arc && !sOut.arc) return lineLine(sIn,sOut) || ref;
+    let cands = [];
+    if (sIn.arc && sOut.arc) {
+      cands = circleCircleIntersect(sIn.cx,sIn.cy,sIn.r, sOut.cx,sOut.cy,sOut.r).map(p=>[p.x,p.y]);
+    } else if (sIn.arc) { // sOut droite
+      cands = lineCircleIntersectInf(sOut.p1[0],sOut.p1[1],sOut.p2[0],sOut.p2[1], sIn.cx,sIn.cy,sIn.r)
+        .map(t=>[sOut.p1[0]+t*(sOut.p2[0]-sOut.p1[0]), sOut.p1[1]+t*(sOut.p2[1]-sOut.p1[1])]);
+    } else { // sIn droite, sOut arc
+      cands = lineCircleIntersectInf(sIn.p1[0],sIn.p1[1],sIn.p2[0],sIn.p2[1], sOut.cx,sOut.cy,sOut.r)
+        .map(t=>[sIn.p1[0]+t*(sIn.p2[0]-sIn.p1[0]), sIn.p1[1]+t*(sIn.p2[1]-sIn.p1[1])]);
+    }
+    return pickNearest(cands, ref) || ref;
+  };
+
+  // corner[j] = position décalée du sommet j
+  const corner = new Array(m).fill(null);
+  if (isClosed) {
+    for (let j=0;j<m;j++) corner[j] = junction(seg[(j-1+nSeg)%nSeg], seg[j%nSeg]);
+  } else {
+    corner[0]   = seg[0] ? seg[0].p1.slice() : null;
+    for (let j=1;j<m-1;j++) corner[j] = junction(seg[j-1], seg[j]);
+    corner[m-1] = seg[nSeg-1] ? seg[nSeg-1].p2.slice() : null;
   }
 
-  // --- Assemblage des nouveaux points ---
-  const newPts = [];
-  if (closed) {
-    // Polyline fermée : nSegs points, chacun est le coin AVANT le segment i
-    for (let i=0; i<nSegs; i++) {
-      const s=offSegs[i];
-      if (!s) continue;
-      const prevCorner = corners[(i-1+nSegs)%nSegs];
-      newPts.push([
-        prevCorner ? prevCorner[0] : s.p1[0],
-        prevCorner ? prevCorner[1] : s.p1[1],
-        s.arc ? s.bulge : 0
-      ]);
-    }
-  } else {
-    // Polyline ouverte
-    const fs=offSegs.find(Boolean);
-    if (!fs) return null;
-    newPts.push([fs.p1[0], fs.p1[1], fs.arc ? fs.bulge : 0]);
-    for (let i=0; i<corners.length; i++) {
-      const s2=offSegs[i+1];
-      if (!s2) continue;
-      const c=corners[i];
-      if (c) newPts.push([c[0], c[1], s2.arc ? s2.bulge : 0]);
-    }
-    const ls=[...offSegs].reverse().find(Boolean);
-    if (ls) newPts.push([ls.p2[0], ls.p2[1]]);
+  // 3) Recalcul des bulges : les extrémités d'arc ont bougé vers les coins
+  const bulgeOf = (s, start, end) => {
+    if (!s || !s.arc || !start || !end) return 0;
+    const a1=Math.atan2(start[1]-s.cy,start[0]-s.cx);
+    const a2=Math.atan2(end[1]-s.cy,end[0]-s.cx);
+    let dA=a2-a1;
+    if (s.bulge>0) { while(dA<=0) dA+=2*Math.PI; } else { while(dA>=0) dA-=2*Math.PI; }
+    return Math.tan(dA/4);
+  };
+
+  // 4) Assemblage : 1 point par sommet, le bulge porté par le segment sortant
+  const out = [];
+  for (let i=0;i<m;i++) {
+    const c = corner[i];
+    if (!c) continue;
+    let b = 0;
+    if (i < nSeg) b = bulgeOf(seg[i % nSeg], c, corner[(i+1)%m]);
+    out.push(b!==0 ? [c[0],c[1],b] : [c[0],c[1]]);
   }
-  return newPts.length>=2 ? newPts : null;
+  if (isClosed && out.length>=1) out.push(out[0].slice()); // refermer (convention doublon)
+  return out.length>=2 ? out : null;
 }
 
 // Create a new entity that is a geometric offset of src by dist, on the side of (sideX, sideY)
@@ -9646,10 +9666,11 @@ function computeOffsetGeom(src, dist, sideX, sideY) {
   } else if (src.type === 'polyline' || src.type === 'cable') {
     const pts = src.points;
     if (!pts || pts.length < 2) return null;
-    // Determine sign from nearest segment (also check closing segment for closed polys)
-    const allSegs = src.closed ? [...pts.map((_,i)=>i), 0].reduce((acc,_,i,arr)=>{ if(i<pts.length) acc.push([pts[i],pts[(i+1)%pts.length]]); return acc; },[]) : pts.slice(0,-1).map((p,i)=>[p,pts[i+1]]);
+    // Signe (côté du clic) déterminé par le segment le plus proche.
+    // distToSeg sur la corde suffit (même pour les arcs) pour choisir le côté.
     let bestD = Infinity, bestCross = 0;
-    for (const [[ax,ay],[bx,by]] of allSegs) {
+    for (let i=0;i<pts.length-1;i++) {
+      const [ax,ay]=pts[i], [bx,by]=pts[i+1];
       const d = distToSeg(sideX,sideY,ax,ay,bx,by);
       if (d < bestD) { bestD = d; bestCross = (bx-ax)*(sideY-ay) - (by-ay)*(sideX-ax); }
     }
