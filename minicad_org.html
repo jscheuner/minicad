@@ -2355,9 +2355,27 @@ function _bestTangent(c1, c2, mx, my) {
   }, { t: null, d: Infinity }).t;
 }
 
+// Cache OSNAP — évite de recalculer si la souris n'a pas bougé de façon significative
+let _osnapCache = { wx: NaN, wy: NaN, nEntities: -1, drawRef: '', result: null };
+// Dwell timer OTRACK — acquisition différée (~500 ms de survol immobile)
+let _acqPending = null; // { ax, ay, dx, dy } — candidat en attente
+let _acqTimer   = null; // handle setTimeout
+
 function findOsnap(wx, wy) {
   if (!S.osnapEnabled) return null;
   if (S._tanFromCircle) S._tanResolvedP1 = null; // réinitialise à chaque frame
+
+  // Optim 1 — seuil de déplacement : retourner le résultat mis en cache
+  // si la souris n'a pas bougé de plus de 1.5 px écran et le dessin n'a pas changé.
+  const pixThresh = 1.5 / S.zoom;
+  const _drawRef = (S.drawing && S.drawPoints.length > 0)
+    ? S.drawPoints[S.drawPoints.length - 1].join(',') : '';
+  if (Math.hypot(wx - _osnapCache.wx, wy - _osnapCache.wy) < pixThresh &&
+      S.entities.length === _osnapCache.nEntities &&
+      _drawRef === _osnapCache.drawRef) {
+    return _osnapCache.result;
+  }
+
   const tol = 15 / S.zoom;
   let best = null;
   let bestDist = tol;
@@ -2370,16 +2388,30 @@ function findOsnap(wx, wy) {
     }
   }
 
+  // Pré-filtrer les entités proches du curseur (une seule fois).
+  const _nearby = [];
   for (const e of S.entities) {
     if (!S.layers[e.layer]?.visible) continue;
-    // Skip entities whose bounding box is farther than tol from cursor
     const ebb = getEntityBBox(e);
     if (ebb) {
       const dx = Math.max(ebb.minX - wx, 0, wx - ebb.maxX);
       const dy = Math.max(ebb.minY - wy, 0, wy - ebb.maxY);
       if (dx * dx + dy * dy > tol * tol) continue;
     }
+    _nearby.push(e);
+  }
 
+  // Optim 4 — cache des segments : getEntitySegments() appelé une seule fois par entité
+  const _segCache = new Map();
+  const segsOf = e => {
+    if (!_segCache.has(e)) _segCache.set(e, getEntitySegments(e));
+    return _segCache.get(e);
+  };
+
+  // Optim 3 — index pour éviter les paires dupliquées (A×B et B×A)
+  const _nearbyIdx = new Map(_nearby.map((e, i) => [e, i]));
+
+  for (const e of _nearby) {
     // ENDPOINT
     if (S.osnapModes.endpoint) {
       if (e.type === 'point') check(e.x, e.y, 'endpoint', e);
@@ -2527,21 +2559,20 @@ function findOsnap(wx, wy) {
     // INTERSECTION (segment-segment + cercle)
     if (S.osnapModes.intersection) {
       const isCircular = e.type === 'circle' || e.type === 'arc';
-      const segsA = getEntitySegments(e);
+      const segsA = segsOf(e); // optim 4 : segments cachés
+      const eIdx  = _nearbyIdx.get(e);
 
-      for (const e2 of S.entities) {
-        if (e2 === e || !S.layers[e2.layer]?.visible) continue;
-        // Skip e2 si sa bbox est loin du curseur
-        const bb2 = getEntityBBox(e2);
-        if (bb2) {
-          const dx = Math.max(bb2.minX - wx, 0, wx - bb2.maxX);
-          const dy = Math.max(bb2.minY - wy, 0, wy - bb2.maxY);
-          if (dx * dx + dy * dy > (tol * 4) * (tol * 4)) continue;
-        }
+      for (const e2 of _nearby) {
+        // Optim 3 — traiter chaque paire une seule fois (skip si e2 a déjà été traité en e)
+        if (_nearbyIdx.get(e2) <= eIdx) continue;
         const isCircular2 = e2.type === 'circle' || e2.type === 'arc';
 
         // Cercle / arc × cercle / arc
         if (isCircular && isCircular2) {
+          // Optim 2 — rejet rapide : vérifier si les cercles peuvent se croiser
+          const d2 = (e2.cx-e.cx)**2 + (e2.cy-e.cy)**2;
+          const rSum = e.r + e2.r, rDiff = Math.abs(e.r - e2.r);
+          if (d2 > rSum*rSum || d2 < rDiff*rDiff) continue;
           const pts = circleCircleIntersect(e.cx, e.cy, e.r, e2.cx, e2.cy, e2.r);
           for (const [px, py] of pts) {
             const a1 = Math.atan2(py - e.cy,  px - e.cx);
@@ -2570,7 +2601,7 @@ function findOsnap(wx, wy) {
 
         // Cercle / arc × segment
         if (isCircular && !isCircular2) {
-          for (const seg of getEntitySegments(e2)) {
+          for (const seg of segsOf(e2)) { // optim 4
             const pts = segCircleIntersect(seg[0], seg[1], seg[2], seg[3], e.cx, e.cy, e.r);
             for (const [px, py] of pts) {
               if (e.type === 'arc') {
@@ -2585,9 +2616,8 @@ function findOsnap(wx, wy) {
 
         // Segment × segment
         if (segsA.length) {
-          const segsB = getEntitySegments(e2);
           for (const a of segsA) {
-            for (const b of segsB) {
+            for (const b of segsOf(e2)) { // optim 4
               const pt = segSegIntersect(a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3]);
               if (pt) check(pt[0], pt[1], 'intersection', e);
             }
@@ -2670,14 +2700,30 @@ function findOsnap(wx, wy) {
     const acqTol = 12 / S.zoom;
     const extTol = 12 / S.zoom;
 
-    // Acquisition : survol de l'extrémité → mémorise le point + direction sortante
-    const tryAcquire = (px, py, extDx, extDy) => {
-      if (Math.hypot(px - wx, py - wy) < acqTol) {
-        if (!S.osnapAcquired.some(a => Math.hypot(a.ax - px, a.ay - py) < 2 / S.zoom)) {
-          S.osnapAcquired.push({ ax: px, ay: py, dx: extDx, dy: extDy });
+    // Acquisition OTRACK avec dwell timer (~500 ms de survol immobile).
+    // tryAcquire démarre un setTimeout ; l'acquisition réelle se fait dans le callback.
+    // _acqCandidateSeen indique si un candidat valide a été trouvé ce frame (cache miss).
+    let _acqCandidateSeen = false;
+    const tryAcquire = (px, py, extDx = 0, extDy = 0) => {
+      if (Math.hypot(px - wx, py - wy) >= acqTol) return;
+      if (S.osnapAcquired.some(a => Math.hypot(a.ax - px, a.ay - py) < 2 / S.zoom)) return;
+      _acqCandidateSeen = true;
+      // Même candidat que le timer en cours → ne pas redémarrer
+      if (_acqPending && Math.hypot(_acqPending.ax - px, _acqPending.ay - py) < 2 / S.zoom) return;
+      // Nouveau candidat : annuler l'ancien timer et démarrer un nouveau
+      if (_acqTimer) { clearTimeout(_acqTimer); _acqTimer = null; }
+      _acqPending = { ax: px, ay: py, dx: extDx, dy: extDy };
+      const snap = { ax: px, ay: py, dx: extDx, dy: extDy };
+      _acqTimer = setTimeout(() => {
+        const [cx, cy] = S.mouseWorld;
+        if (Math.hypot(cx - snap.ax, cy - snap.ay) < acqTol &&
+            !S.osnapAcquired.some(a => Math.hypot(a.ax - snap.ax, a.ay - snap.ay) < 2 / S.zoom)) {
+          S.osnapAcquired.push(snap);
           if (S.osnapAcquired.length > 3) S.osnapAcquired.shift();
         }
-      }
+        _acqPending = null; _acqTimer = null;
+        _osnapCache.wx = NaN; scheduleRender();
+      }, 500);
     };
     for (const e of S.entities) {
       if (!S.layers[e.layer]?.visible) continue;
@@ -2703,9 +2749,29 @@ function findOsnap(wx, wy) {
         if (ln > 1e-6) tryAcquire(pn[0], pn[1], (pn[0]-pn1[0])/ln, (pn[1]-pn1[1])/ln);
       }
     }
+    // Acquérir aussi le point OSNAP standard (midpoint, coin rect, centre…) via le même dwell
+    if (best && ['endpoint', 'midpoint', 'center', 'quadrant'].includes(best.type)) {
+      tryAcquire(best.x, best.y, 0, 0);
+    }
+    // Si aucun candidat trouvé ce frame (cache miss) → annuler le timer en cours
+    if (!_acqCandidateSeen) {
+      if (_acqTimer) { clearTimeout(_acqTimer); _acqTimer = null; }
+      _acqPending = null;
+    }
 
     // Lignes de tracking : directions selon Ortho/Polaire/libre
     // Les snaps de tracking ne s'activent que si aucun OSNAP standard n'a été trouvé
+
+    // AutoCAD OTRACK : quand Ortho/Polaire est actif pendant un tracé, utiliser la
+    // position contrainte comme référence pour le tracking (pas la souris brute).
+    // Ainsi V-depuis-B donne (Bx, baseY) au lieu de (Bx, mouseY).
+    let twx = wx, twy = wy;
+    if (!best && (S.ortho || S.polar) && S.drawing && S.drawPoints.length > 0) {
+      const p = S.drawPoints[S.drawPoints.length - 1];
+      if (S.ortho) [twx, twy] = applyOrtho(p[0], p[1], wx, wy);
+      else         [twx, twy] = applyPolar(p[0], p[1], wx, wy);
+    }
+
     const tracks = [];
     if (!best) {
       for (const acq of S.osnapAcquired) {
@@ -2715,19 +2781,12 @@ function findOsnap(wx, wy) {
       }
     }
 
-    // Snaps directs sur une ligne de tracking
-    for (const tr of tracks) {
-      const t = (wx - tr.acq.ax) * tr.dx + (wy - tr.acq.ay) * tr.dy;
-      if (tr.isExt && t < 1e-6) continue;
-      const snapX = tr.acq.ax + t * tr.dx, snapY = tr.acq.ay + t * tr.dy;
-      const perpD = Math.hypot(wx - snapX, wy - snapY);
-      if (perpD < extTol && perpD < bestDist) {
-        bestDist = perpD;
-        best = { x: snapX, y: snapY, type: 'extension', tr };
-      }
-    }
-
-    // Snaps sur l'intersection de deux lignes de tracking (points acquis différents)
+    // PHASE 1 — Intersections de deux pistes (PRIORITÉ sur les snaps directs)
+    // Condition : curseur à <extTol de CHAQUE piste individuellement (zone carré).
+    // Ceci couvre le cas "premier point" (pas encore drawing) ET le cas "ligne depuis endpoint".
+    // La condition perpA/perpB est plus large que d<extTol : les deux pistes convergent
+    // vers le curseur → pas besoin de comparer avec bestDist (OSNAP standard a déjà bloqué).
+    let _intersectionFound = false;
     for (let i = 0; i < tracks.length - 1; i++) {
       for (let j = i + 1; j < tracks.length; j++) {
         const a = tracks[i], b = tracks[j];
@@ -2740,15 +2799,44 @@ function findOsnap(wx, wy) {
         if (a.isExt && t < 1e-6) continue;
         if (b.isExt && s < 1e-6) continue;
         const ix = a.acq.ax + t * a.dx, iy = a.acq.ay + t * a.dy;
-        const d = Math.hypot(wx - ix, wy - iy);
-        if (d < extTol && d < bestDist) {
-          bestDist = d;
-          best = { x: ix, y: iy, type: 'extension', trA: a, trB: b };
+        // Distance perpendiculaire du curseur contraint à chaque piste
+        const tA = (twx-a.acq.ax)*a.dx + (twy-a.acq.ay)*a.dy;
+        const perpA = Math.hypot(twx-(a.acq.ax+tA*a.dx), twy-(a.acq.ay+tA*a.dy));
+        const tB = (twx-b.acq.ax)*b.dx + (twy-b.acq.ay)*b.dy;
+        const perpB = Math.hypot(twx-(b.acq.ax+tB*b.dx), twy-(b.acq.ay+tB*b.dy));
+        if (perpA < extTol && perpB < extTol) {
+          const d = Math.hypot(twx - ix, twy - iy);
+          if (!_intersectionFound || d < bestDist) {
+            bestDist = d;
+            best = { x: ix, y: iy, type: 'extension', trA: a, trB: b };
+            _intersectionFound = true;
+          }
+        }
+      }
+    }
+
+    // PHASE 2 — Snaps directs sur une ligne de tracking (uniquement si pas d'intersection)
+    // _skipAcq : si drawPoints[last] est aussi un point acquis, sauter son snap direct
+    // (sa position contrainte a perpD=0 partout sur ses lignes H/V, bloquerait les autres).
+    if (!_intersectionFound) {
+      const _skipAcq = (twx !== wx || twy !== wy) && S.drawing && S.drawPoints.length > 0
+        ? S.drawPoints[S.drawPoints.length - 1] : null;
+      for (const tr of tracks) {
+        if (_skipAcq && Math.hypot(tr.acq.ax - _skipAcq[0], tr.acq.ay - _skipAcq[1]) < 1e-6) continue;
+        const t = (twx - tr.acq.ax) * tr.dx + (twy - tr.acq.ay) * tr.dy;
+        if (tr.isExt && t < 1e-6) continue;
+        const snapX = tr.acq.ax + t * tr.dx, snapY = tr.acq.ay + t * tr.dy;
+        const perpD = Math.hypot(twx - snapX, twy - snapY);
+        if (perpD < extTol && perpD < bestDist) {
+          bestDist = perpD;
+          best = { x: snapX, y: snapY, type: 'extension', tr };
         }
       }
     }
   }
 
+  // Optim 1 — mettre le résultat en cache
+  _osnapCache = { wx, wy, nEntities: S.entities.length, drawRef: _drawRef, result: best };
   return best;
 }
 
@@ -3589,9 +3677,23 @@ function getEntityBBox(e) {
     case 'rect':
       return { minX:Math.min(e.x1,e.x2)-pad, maxX:Math.max(e.x1,e.x2)+pad,
                minY:Math.min(e.y1,e.y2)-pad, maxY:Math.max(e.y1,e.y2)+pad };
-    case 'circle': case 'arc': case 'dim_radius': case 'dim_diameter':
+    case 'circle': case 'dim_radius': case 'dim_diameter':
       return { minX:(e.cx||0)-(e.r||50)-pad, maxX:(e.cx||0)+(e.r||50)+pad,
                minY:(e.cy||0)-(e.r||50)-pad, maxY:(e.cy||0)+(e.r||50)+pad };
+    case 'arc': {
+      // Bbox serrée : uniquement la portion d'arc, pas le cercle entier
+      const sa=e.startAngle, ea=e.endAngle, cx=e.cx||0, cy=e.cy||0, r=e.r||50;
+      const xs=[cx+r*Math.cos(sa), cx+r*Math.cos(ea)];
+      const ys=[cy+r*Math.sin(sa), cy+r*Math.sin(ea)];
+      // Ajouter les extrêmes de quadrant qui tombent dans l'arc
+      let end=ea; while(end<sa) end+=Math.PI*2;
+      for(let a=0; a<=Math.PI*2+1e-9; a+=Math.PI/2){
+        let ang=a; while(ang<sa) ang+=Math.PI*2;
+        if(ang<=end+1e-9){ xs.push(cx+r*Math.cos(a)); ys.push(cy+r*Math.sin(a)); }
+      }
+      return { minX:Math.min(...xs)-pad, maxX:Math.max(...xs)+pad,
+               minY:Math.min(...ys)-pad, maxY:Math.max(...ys)+pad };
+    }
     case 'ellipse': {
       const a = e.angle||0, rx=e.rx||50, ry=e.ry||25;
       const hw = Math.sqrt((rx*Math.cos(a))**2+(ry*Math.sin(a))**2);
@@ -3962,14 +4064,25 @@ function _drawDynamicLayer() {
     }
     // Cas 3 : pas de snap — afficher la meilleure direction par point acquis
     else {
+      // Même contrainte Ortho/Polaire que dans findOsnap
+      let tmwx = mwx, tmwy = mwy;
+      if ((S.ortho || S.polar) && S.drawing && S.drawPoints.length > 0) {
+        const p = S.drawPoints[S.drawPoints.length - 1];
+        if (S.ortho) [tmwx, tmwy] = applyOrtho(p[0], p[1], mwx, mwy);
+        else         [tmwx, tmwy] = applyPolar(p[0], p[1], mwx, mwy);
+      }
+      const skipPos3 = (tmwx !== mwx || tmwy !== mwy) && S.drawing && S.drawPoints.length > 0
+        ? S.drawPoints[S.drawPoints.length - 1] : null;
       S.osnapAcquired.forEach(acq => {
+        // Masquer le trail depuis le point de base (déjà géré par ORTHO visuellement)
+        if (skipPos3 && Math.hypot(acq.ax - skipPos3[0], acq.ay - skipPos3[1]) < 1e-6) return;
         const dirs = getExtTrackDirs(acq);
         let bestDir = null, bestPerp = Infinity;
         for (const d of dirs) {
-          const t = (mwx - acq.ax) * d.dx + (mwy - acq.ay) * d.dy;
+          const t = (tmwx - acq.ax) * d.dx + (tmwy - acq.ay) * d.dy;
           if (d.isExt && t < 1e-6) continue;
           const snapX = acq.ax + t * d.dx, snapY = acq.ay + t * d.dy;
-          const perp = Math.hypot(mwx - snapX, mwy - snapY);
+          const perp = Math.hypot(tmwx - snapX, tmwy - snapY);
           if (perp < bestPerp) { bestPerp = perp; bestDir = { d, t, snapX, snapY }; }
         }
         if (!bestDir || bestPerp > dispTol) return;
@@ -10176,6 +10289,7 @@ function toggleOsnap() {
 function toggleOrtho() {
   S.ortho=!S.ortho;
   if (S.ortho) S.polar = false; // mutually exclusive
+  _osnapCache.wx = NaN; // invalide le cache OSNAP (twx/twy dépend de ortho)
   document.getElementById('ortho-label').className='snap-indicator'+(S.ortho?'':' off');
   document.getElementById('ortho-btn').classList.toggle('active',S.ortho);
   document.getElementById('polar-label').className='snap-indicator'+(S.polar?'':' off');
@@ -10187,6 +10301,7 @@ function toggleOrtho() {
 function togglePolar() {
   S.polar=!S.polar;
   if (S.polar) S.ortho = false; // mutually exclusive
+  _osnapCache.wx = NaN; // invalide le cache OSNAP
   document.getElementById('polar-label').className='snap-indicator'+(S.polar?'':' off');
   if(S.polar) document.getElementById('polar-label').style.color='var(--success)';
   document.getElementById('polar-btn').classList.toggle('active',S.polar);
