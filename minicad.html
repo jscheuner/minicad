@@ -2632,25 +2632,12 @@ function findOsnap(wx, wy) {
       }
     }
 
-    // Snaps directs sur une ligne de tracking
-    // Si le point acquis coïncide avec drawPoints[last] (point de base du tracé), on saute
-    // le snap direct : la position contrainte est déjà sur ses lignes H/V → distance=0 partout,
-    // ce qui bloquerait les snaps d'intersection avec d'autres points acquis.
-    const _skipAcq = (twx !== wx || twy !== wy) && S.drawing && S.drawPoints.length > 0
-      ? S.drawPoints[S.drawPoints.length - 1] : null;
-    for (const tr of tracks) {
-      if (_skipAcq && Math.hypot(tr.acq.ax - _skipAcq[0], tr.acq.ay - _skipAcq[1]) < 1e-6) continue;
-      const t = (twx - tr.acq.ax) * tr.dx + (twy - tr.acq.ay) * tr.dy;
-      if (tr.isExt && t < 1e-6) continue;
-      const snapX = tr.acq.ax + t * tr.dx, snapY = tr.acq.ay + t * tr.dy;
-      const perpD = Math.hypot(twx - snapX, twy - snapY);
-      if (perpD < extTol && perpD < bestDist) {
-        bestDist = perpD;
-        best = { x: snapX, y: snapY, type: 'extension', tr };
-      }
-    }
-
-    // Snaps sur l'intersection de deux lignes de tracking (points acquis différents)
+    // PHASE 1 — Intersections de deux pistes (PRIORITÉ sur les snaps directs)
+    // Condition : curseur à <extTol de CHAQUE piste individuellement (zone carré).
+    // Ceci couvre le cas "premier point" (pas encore drawing) ET le cas "ligne depuis endpoint".
+    // La condition perpA/perpB est plus large que d<extTol : les deux pistes convergent
+    // vers le curseur → pas besoin de comparer avec bestDist (OSNAP standard a déjà bloqué).
+    let _intersectionFound = false;
     for (let i = 0; i < tracks.length - 1; i++) {
       for (let j = i + 1; j < tracks.length; j++) {
         const a = tracks[i], b = tracks[j];
@@ -2663,10 +2650,37 @@ function findOsnap(wx, wy) {
         if (a.isExt && t < 1e-6) continue;
         if (b.isExt && s < 1e-6) continue;
         const ix = a.acq.ax + t * a.dx, iy = a.acq.ay + t * a.dy;
-        const d = Math.hypot(twx - ix, twy - iy);
-        if (d < extTol && d < bestDist) {
-          bestDist = d;
-          best = { x: ix, y: iy, type: 'extension', trA: a, trB: b };
+        // Distance perpendiculaire du curseur contraint à chaque piste
+        const tA = (twx-a.acq.ax)*a.dx + (twy-a.acq.ay)*a.dy;
+        const perpA = Math.hypot(twx-(a.acq.ax+tA*a.dx), twy-(a.acq.ay+tA*a.dy));
+        const tB = (twx-b.acq.ax)*b.dx + (twy-b.acq.ay)*b.dy;
+        const perpB = Math.hypot(twx-(b.acq.ax+tB*b.dx), twy-(b.acq.ay+tB*b.dy));
+        if (perpA < extTol && perpB < extTol) {
+          const d = Math.hypot(twx - ix, twy - iy);
+          if (!_intersectionFound || d < bestDist) {
+            bestDist = d;
+            best = { x: ix, y: iy, type: 'extension', trA: a, trB: b };
+            _intersectionFound = true;
+          }
+        }
+      }
+    }
+
+    // PHASE 2 — Snaps directs sur une ligne de tracking (uniquement si pas d'intersection)
+    // _skipAcq : si drawPoints[last] est aussi un point acquis, sauter son snap direct
+    // (sa position contrainte a perpD=0 partout sur ses lignes H/V, bloquerait les autres).
+    if (!_intersectionFound) {
+      const _skipAcq = (twx !== wx || twy !== wy) && S.drawing && S.drawPoints.length > 0
+        ? S.drawPoints[S.drawPoints.length - 1] : null;
+      for (const tr of tracks) {
+        if (_skipAcq && Math.hypot(tr.acq.ax - _skipAcq[0], tr.acq.ay - _skipAcq[1]) < 1e-6) continue;
+        const t = (twx - tr.acq.ax) * tr.dx + (twy - tr.acq.ay) * tr.dy;
+        if (tr.isExt && t < 1e-6) continue;
+        const snapX = tr.acq.ax + t * tr.dx, snapY = tr.acq.ay + t * tr.dy;
+        const perpD = Math.hypot(twx - snapX, twy - snapY);
+        if (perpD < extTol && perpD < bestDist) {
+          bestDist = perpD;
+          best = { x: snapX, y: snapY, type: 'extension', tr };
         }
       }
     }
