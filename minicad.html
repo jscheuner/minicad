@@ -2236,6 +2236,9 @@ function _bestTangent(c1, c2, mx, my) {
 
 // Cache OSNAP — évite de recalculer si la souris n'a pas bougé de façon significative
 let _osnapCache = { wx: NaN, wy: NaN, nEntities: -1, drawRef: '', result: null };
+// Dwell timer OTRACK — acquisition différée (~500 ms de survol immobile)
+let _acqPending = null; // { ax, ay, dx, dy } — candidat en attente
+let _acqTimer   = null; // handle setTimeout
 
 function findOsnap(wx, wy) {
   if (!S.osnapEnabled) return null;
@@ -2576,14 +2579,30 @@ function findOsnap(wx, wy) {
     const acqTol = 12 / S.zoom;
     const extTol = 12 / S.zoom;
 
-    // Acquisition : survol de l'extrémité → mémorise le point + direction sortante
-    const tryAcquire = (px, py, extDx, extDy) => {
-      if (Math.hypot(px - wx, py - wy) < acqTol) {
-        if (!S.osnapAcquired.some(a => Math.hypot(a.ax - px, a.ay - py) < 2 / S.zoom)) {
-          S.osnapAcquired.push({ ax: px, ay: py, dx: extDx, dy: extDy });
+    // Acquisition OTRACK avec dwell timer (~500 ms de survol immobile).
+    // tryAcquire démarre un setTimeout ; l'acquisition réelle se fait dans le callback.
+    // _acqCandidateSeen indique si un candidat valide a été trouvé ce frame (cache miss).
+    let _acqCandidateSeen = false;
+    const tryAcquire = (px, py, extDx = 0, extDy = 0) => {
+      if (Math.hypot(px - wx, py - wy) >= acqTol) return;
+      if (S.osnapAcquired.some(a => Math.hypot(a.ax - px, a.ay - py) < 2 / S.zoom)) return;
+      _acqCandidateSeen = true;
+      // Même candidat que le timer en cours → ne pas redémarrer
+      if (_acqPending && Math.hypot(_acqPending.ax - px, _acqPending.ay - py) < 2 / S.zoom) return;
+      // Nouveau candidat : annuler l'ancien timer et démarrer un nouveau
+      if (_acqTimer) { clearTimeout(_acqTimer); _acqTimer = null; }
+      _acqPending = { ax: px, ay: py, dx: extDx, dy: extDy };
+      const snap = { ax: px, ay: py, dx: extDx, dy: extDy };
+      _acqTimer = setTimeout(() => {
+        const [cx, cy] = S.mouseWorld;
+        if (Math.hypot(cx - snap.ax, cy - snap.ay) < acqTol &&
+            !S.osnapAcquired.some(a => Math.hypot(a.ax - snap.ax, a.ay - snap.ay) < 2 / S.zoom)) {
+          S.osnapAcquired.push(snap);
           if (S.osnapAcquired.length > 3) S.osnapAcquired.shift();
         }
-      }
+        _acqPending = null; _acqTimer = null;
+        _osnapCache.wx = NaN; scheduleRender();
+      }, 500);
     };
     for (const e of S.entities) {
       if (!S.layers[e.layer]?.visible) continue;
@@ -2609,14 +2628,14 @@ function findOsnap(wx, wy) {
         if (ln > 1e-6) tryAcquire(pn[0], pn[1], (pn[0]-pn1[0])/ln, (pn[1]-pn1[1])/ln);
       }
     }
-    // Acquérir aussi le point OSNAP standard courant (midpoint, coin rect, centre…)
-    // pour OTRACK — dx/dy=0 → tracking H/V uniquement (pas d'extension directionnelle).
+    // Acquérir aussi le point OSNAP standard (midpoint, coin rect, centre…) via le même dwell
     if (best && ['endpoint', 'midpoint', 'center', 'quadrant'].includes(best.type)) {
-      if (Math.hypot(best.x - wx, best.y - wy) < acqTol &&
-          !S.osnapAcquired.some(a => Math.hypot(a.ax - best.x, a.ay - best.y) < 2 / S.zoom)) {
-        S.osnapAcquired.push({ ax: best.x, ay: best.y, dx: 0, dy: 0 });
-        if (S.osnapAcquired.length > 3) S.osnapAcquired.shift();
-      }
+      tryAcquire(best.x, best.y, 0, 0);
+    }
+    // Si aucun candidat trouvé ce frame (cache miss) → annuler le timer en cours
+    if (!_acqCandidateSeen) {
+      if (_acqTimer) { clearTimeout(_acqTimer); _acqTimer = null; }
+      _acqPending = null;
     }
 
     // Lignes de tracking : directions selon Ortho/Polaire/libre
