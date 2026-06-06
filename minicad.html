@@ -2035,6 +2035,8 @@ const S = {
   // COPY pending selection
   copyPending: false,
   explodePending: false,
+  groupPending: false,
+  ungroupPending: false,
   // MIRROR pending selection
   mirrorPending: false,
   rotatePending: false,
@@ -3490,9 +3492,15 @@ const CMD = {
     updateSaveIndicator('modified'); autoSave(); render(); updateUI();
   }},
 
-  GROUP: { alias: ['GR','GROUPE','GROUPER'], desc: 'Grouper les entités sélectionnées (Ctrl+G)', exec: () => {
+  GROUP: { alias: ['GR','GROUPE','GROUPER'], desc: 'Grouper des entités en un groupe', exec: () => {
     const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
-    if (targets.length < 2) { termPrint('GROUPE : sélectionner au moins 2 entités, puis GROUPE (ou Ctrl+G)', 'warning'); return; }
+    if (targets.length < 2) {
+      // Pas (assez) de présélection → étape de sélection au Pickbox, valider par Entrée
+      S.groupPending = true; setTool('select');
+      termPrint('GROUPE : sélectionner les objets (≥2), puis Entrée — Échap pour annuler', 'info');
+      return;
+    }
+    S.groupPending = false;
     pushUndo();
     const children = [];
     targets.forEach(ent => {
@@ -3506,9 +3514,15 @@ const CMD = {
     termPrint('Groupe créé — ' + children.length + ' entités (#' + block.id + ')', 'success');
   }},
 
-  UNGROUP: { alias: ['UNG','DEGROUPER','DÉGROUPER','DEGROUPE','DÉGROUPE'], desc: 'Dégrouper les groupes sélectionnés (Ctrl+Shift+G)', exec: () => {
+  UNGROUP: { alias: ['UNG','DEGROUPER','DÉGROUPER','DEGROUPE','DÉGROUPE'], desc: 'Dégrouper des groupes', exec: () => {
     const blocks = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && e.type === 'block');
-    if (!blocks.length) { termPrint('DÉGROUPER : sélectionner un ou plusieurs groupes', 'warning'); return; }
+    if (!blocks.length) {
+      // Pas de groupe présélectionné → étape de sélection au Pickbox, valider par Entrée
+      S.ungroupPending = true; setTool('select');
+      termPrint('DÉGROUPER : sélectionner un ou plusieurs groupes, puis Entrée — Échap pour annuler', 'info');
+      return;
+    }
+    S.ungroupPending = false;
     pushUndo();
     const newIds = [];
     blocks.forEach(blk => {
@@ -7547,7 +7561,7 @@ function getCursorMode() {
   if (t === 'area') return S._areaMode === 'points' ? 'draw' : 'pick';
   if (t === 'polygon') return 'draw';
   if (t === 'ellipse') return 'draw';
-  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.arrayPending || S.polarArrayPending) ? 'pick' : 'idle';
+  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.groupPending || S.ungroupPending || S.arrayPending || S.polarArrayPending) ? 'pick' : 'idle';
   if (t === 'stretch' && S.stretchStep === 0) return 'pick';
   if (t === 'trim' || t === 'extend') return 'pick';
   if (t === 'fillet' || t === 'chamfer' || t === 'join' || t === 'hatch') return 'pick';
@@ -10475,6 +10489,8 @@ const _toolCmdName = {
 function setTool(t) {
   if(t !== 'select' && t !== 'copy') S.copyPending=false;
   if(t !== 'select') S.explodePending=false;
+  if(t !== 'select') S.groupPending=false;
+  if(t !== 'select') S.ungroupPending=false;
   if(t !== 'select') S.arrayPending=false;
   if(t !== 'select') S.polarArrayPending=false;
   if(t !== 'select' && t !== 'mirror') S.mirrorPending=false;
@@ -12876,6 +12892,18 @@ document.addEventListener('keydown',(ev)=>{
     S.explodePending=false; executeCommand('EXPLODE'); return;
   }
 
+  // Enter global: grouper
+  if(ev.key==='Enter' && S.groupPending){
+    ev.preventDefault();
+    S.groupPending=false; CMD.GROUP.exec(); return;
+  }
+
+  // Enter global: dégrouper
+  if(ev.key==='Enter' && S.ungroupPending){
+    ev.preventDefault();
+    S.ungroupPending=false; CMD.UNGROUP.exec(); return;
+  }
+
   // Enter global: valider sélection arrayPending
   if(ev.key==='Enter' && S.arrayPending){
     ev.preventDefault();
@@ -12944,6 +12972,12 @@ document.addEventListener('keydown',(ev)=>{
   }
   if(ev.key==='Escape' && S.explodePending){
     S.explodePending=false; termPrint('Éclater annulé','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S.groupPending){
+    S.groupPending=false; termPrint('Groupe annulé','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S.ungroupPending){
+    S.ungroupPending=false; termPrint('Dégroupage annulé','warning'); setTool('select'); return;
   }
   if(ev.key==='Escape' && S.arrayPickAxis){
     S.arrayPickAxis=null; S.arrayPickPt1=null;
@@ -13101,8 +13135,6 @@ document.addEventListener('keydown',(ev)=>{
   if(ev.ctrlKey&&ev.key==='x'){ev.preventDefault();clipboardCut();}
   if(ev.ctrlKey&&ev.key==='c'){ev.preventDefault();clipboardCopy();}
   if(ev.ctrlKey&&ev.key==='v'){ev.preventDefault();clipboardPaste();}
-  if(ev.ctrlKey&&ev.key==='g'){ev.preventDefault();CMD.GROUP.exec();}
-  if(ev.ctrlKey&&ev.shiftKey&&ev.key==='G'){ev.preventDefault();CMD.UNGROUP.exec();}
   if(ev.key==='Delete')CMD.ERASE.exec();
   // Skip single-letter tool shortcuts during fillet/chamfer (those tools handle keys via cmdInput)
   if(!ev.ctrlKey && !ev.metaKey && S.tool!=='fillet' && S.tool!=='chamfer' && S.tool!=='join') {
