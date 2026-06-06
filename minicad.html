@@ -10239,6 +10239,16 @@ function _propChange(id, field, val, isText) {
   render(); autoSave();
 }
 
+function _propChangeEllipseDim(id, axis, val) {
+  const e = S.entities.find(en => en.id === id);
+  if (!e || e.type !== 'ellipse') return;
+  const n = parseFloat(val);
+  if (isNaN(n) || n <= 0) return;
+  pushUndo();
+  e[axis] = n / 2;
+  render(); autoSave(); updateProperties();
+}
+
 function _propChangeEllipseAngle(id, valDeg) {
   const e = S.entities.find(en => en.id === id);
   if (!e || e.type !== 'ellipse') return;
@@ -10382,8 +10392,8 @@ function _updatePropertiesSingle(e) {
     h += row('CY', inp('cy', e.cy.toFixed(2)));
     h += row('Rx (½ axe 1)', inp('rx', e.rx.toFixed(2)));
     h += row('Ry (½ axe 2)', inp('ry', e.ry.toFixed(2)));
-    h += row('Larg. (2×Rx)', '<span class="prop-value">'+(e.rx*2).toFixed(2)+'</span>');
-    h += row('Haut. (2×Ry)', '<span class="prop-value">'+(e.ry*2).toFixed(2)+'</span>');
+    h += row('Larg. (2×Rx)', '<input type="number" class="prop-input" step="any" value="'+(e.rx*2).toFixed(2)+'" onchange="_propChangeEllipseDim('+id+',\'rx\',this.value)" />');
+    h += row('Haut. (2×Ry)', '<input type="number" class="prop-input" step="any" value="'+(e.ry*2).toFixed(2)+'" onchange="_propChangeEllipseDim('+id+',\'ry\',this.value)" />');
     const angDeg = ((e.angle||0)*180/Math.PI).toFixed(2);
     h += row('Angle (°)', '<input type="number" class="prop-input" step="any" value="'+angDeg+'" onchange="_propChangeEllipseAngle('+id+',this.value)" />');
   }
