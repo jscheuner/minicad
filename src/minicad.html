@@ -1051,9 +1051,90 @@
         </div>
       </div>
     </div>
-    <div class="menu-dropdown" id="menu-lib">
-      <div class="menu-item" id="menu-lib-btn" onclick="toggleMenuDropdown('menu-lib',event)" data-i18n="menu.library">{{menu.library}}</div>
-      <div class="menu-dropdown-list" id="menu-lib-list"></div>
+    <div class="menu-dropdown" id="menu-dessin">
+      <div class="menu-item" id="menu-dessin-btn" onclick="toggleMenuDropdown('menu-dessin',event)" data-i18n="menu.draw">{{menu.draw}}</div>
+      <div class="menu-dropdown-list" id="menu-dessin-list">
+        <div class="menu-dropdown-item" onclick="setTool('line');closeMenus()"><span data-i18n="tool.line">{{tool.line}}</span></div>
+        <div class="menu-dropdown-item" onclick="setTool('polyline');closeMenus()"><span data-i18n="tool.polyline">{{tool.polyline}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('XLINE');closeMenus()"><span data-i18n="tool.xline">{{tool.xline}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('RAY');closeMenus()"><span data-i18n="tool.ray">{{tool.ray}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('RAY_REV');closeMenus()"><span data-i18n="tool.ray_rev">{{tool.ray_rev}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="setTool('rect');closeMenus()"><span data-i18n="tool.rect">{{tool.rect}}</span></div>
+        <div class="menu-dropdown-item" onclick="setTool('rectcenter');closeMenus()"><span data-i18n="tool.rectcenter">{{tool.rectcenter}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('POLYGON');closeMenus()"><span data-i18n="tool.polygon">{{tool.polygon}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="setTool('circle');closeMenus()"><span data-i18n="tool.circle">{{tool.circle}}</span></div>
+        <div class="menu-dropdown-item" onclick="setTool('arc');closeMenus()"><span data-i18n="tool.arc">{{tool.arc}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('ELLIPSE');closeMenus()"><span data-i18n="tool.ellipse">{{tool.ellipse}}</span></div>
+        <div class="menu-dropdown-item" onclick="setTool('spline');closeMenus()"><span data-i18n="tool.spline">{{tool.spline}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('POINT');closeMenus()"><span data-i18n="tool.point">{{tool.point}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('HATCH');closeMenus()"><span data-i18n="tool.hatch">{{tool.hatch}}</span></div>
+      </div>
+    </div>
+    <div class="menu-dropdown" id="menu-modifier">
+      <div class="menu-item" id="menu-modifier-btn" onclick="toggleMenuDropdown('menu-modifier',event)" data-i18n="menu.modify">{{menu.modify}}</div>
+      <div class="menu-dropdown-list" id="menu-modifier-list">
+        <div class="menu-dropdown-item" onclick="executeCommand('MOVE');closeMenus()"><span data-i18n="tool.move">{{tool.move}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('COPY');closeMenus()"><span data-i18n="tool.copy">{{tool.copy}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('ROTATE');closeMenus()"><span data-i18n="tool.rotate">{{tool.rotate}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('SCALE');closeMenus()"><span data-i18n="tool.scale">{{tool.scale}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('MIRROR');closeMenus()"><span data-i18n="tool.mirror">{{tool.mirror}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('OFFSET');closeMenus()"><span data-i18n="tool.offset">{{tool.offset}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('ARRAY');closeMenus()"><span data-i18n="tool.array">{{tool.array}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('ARRAY_POLAR');closeMenus()"><span data-i18n="tool.array_polar">{{tool.array_polar}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('TRIM');closeMenus()"><span data-i18n="tool.trim">{{tool.trim}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('EXTEND');closeMenus()"><span data-i18n="tool.extend">{{tool.extend}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('FILLET');closeMenus()"><span data-i18n="tool.fillet">{{tool.fillet}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('CHAMFER');closeMenus()"><span data-i18n="tool.chamfer">{{tool.chamfer}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('JOIN');closeMenus()"><span data-i18n="tool.join">{{tool.join}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('STRETCH');closeMenus()"><span data-i18n="tool.stretch">{{tool.stretch}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIVIDE');closeMenus()"><span data-i18n="tool.divide">{{tool.divide}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('EXPLODE');closeMenus()"><span data-i18n="tool.explode">{{tool.explode}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('GROUP');closeMenus()"><span data-i18n="tool.group">{{tool.group}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('UNGROUP');closeMenus()"><span data-i18n="tool.ungroup">{{tool.ungroup}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('ERASE');closeMenus()"><span data-i18n="tool.erase">{{tool.erase}}</span></div>
+      </div>
+    </div>
+    <div class="menu-dropdown" id="menu-inserer">
+      <div class="menu-item" id="menu-inserer-btn" onclick="toggleMenuDropdown('menu-inserer',event)" data-i18n="menu.insert">{{menu.insert}}</div>
+      <div class="menu-dropdown-list" id="menu-inserer-list">
+        <div class="menu-dropdown-item" onclick="executeCommand('WALL');closeMenus()"><span data-i18n="tool.wall">{{tool.wall}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DOOR');closeMenus()"><span data-i18n="tool.door">{{tool.door}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('WINDOW');closeMenus()"><span data-i18n="tool.window">{{tool.window}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('OUTLET');closeMenus()"><span data-i18n="tool.outlet">{{tool.outlet}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('SWITCH');closeMenus()"><span data-i18n="tool.switch">{{tool.switch}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('CABLE');closeMenus()"><span data-i18n="tool.cable">{{tool.cable}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('TUBE');closeMenus()"><span data-i18n="tool.tube">{{tool.tube}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="lib-sub-item"><span data-i18n="menu.library">{{menu.library}}</span><div class="lib-sub-list" id="menu-lib-list"></div></div>
+      </div>
+    </div>
+    <div class="menu-dropdown" id="menu-cotation">
+      <div class="menu-item" id="menu-cotation-btn" onclick="toggleMenuDropdown('menu-cotation',event)" data-i18n="menu.dimension">{{menu.dimension}}</div>
+      <div class="menu-dropdown-list" id="menu-cotation-list">
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMLINEAR');closeMenus()"><span data-i18n="tool.dim_linear">{{tool.dim_linear}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMALIGNED');closeMenus()"><span data-i18n="tool.dim_aligned">{{tool.dim_aligned}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMANGULAR');closeMenus()"><span data-i18n="tool.dim_angular">{{tool.dim_angular}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMRADIUS');closeMenus()"><span data-i18n="tool.dim_radius">{{tool.dim_radius}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMDIAMETER');closeMenus()"><span data-i18n="tool.dim_diameter">{{tool.dim_diameter}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMSTYLE');closeMenus()"><span data-i18n="tool.dimstyle">{{tool.dimstyle}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('TEXT');closeMenus()"><span data-i18n="tool.text">{{tool.text}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('LEADER');closeMenus()"><span data-i18n="tool.leader">{{tool.leader}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="setTool('measure');closeMenus()"><span data-i18n="tool.measure">{{tool.measure}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIST');closeMenus()"><span data-i18n="tool.dist">{{tool.dist}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('AREA');closeMenus()"><span data-i18n="tool.area">{{tool.area}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('CALC');closeMenus()"><span data-i18n="tool.calc">{{tool.calc}}</span></div>
+      </div>
     </div>
     <div class="menu-item" onclick="showHelp()" data-i18n="menu.help">{{menu.help}}</div>
   </div>

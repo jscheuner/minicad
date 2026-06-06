@@ -1051,9 +1051,90 @@
         </div>
       </div>
     </div>
-    <div class="menu-dropdown" id="menu-lib">
-      <div class="menu-item" id="menu-lib-btn" onclick="toggleMenuDropdown('menu-lib',event)">Bibliothèque</div>
-      <div class="menu-dropdown-list" id="menu-lib-list"></div>
+    <div class="menu-dropdown" id="menu-dessin">
+      <div class="menu-item" id="menu-dessin-btn" onclick="toggleMenuDropdown('menu-dessin',event)">Dessin</div>
+      <div class="menu-dropdown-list" id="menu-dessin-list">
+        <div class="menu-dropdown-item" onclick="setTool('line');closeMenus()"><span>Ligne (L)</span></div>
+        <div class="menu-dropdown-item" onclick="setTool('polyline');closeMenus()"><span>Polyligne (PL)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('XLINE');closeMenus()"><span>Ligne infinie (XL)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('RAY');closeMenus()"><span>Demi-droite</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('RAY_REV');closeMenus()"><span>Demi-droite inverse (RAY_REV)</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="setTool('rect');closeMenus()"><span>Rectangle (R)</span></div>
+        <div class="menu-dropdown-item" onclick="setTool('rectcenter');closeMenus()"><span>Rectangle par le centre (RC)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('POLYGON');closeMenus()"><span>Polygone régulier (POL)</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="setTool('circle');closeMenus()"><span>Cercle (C)</span></div>
+        <div class="menu-dropdown-item" onclick="setTool('arc');closeMenus()"><span>Arc (A)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('ELLIPSE');closeMenus()"><span>Ellipse (EL)</span></div>
+        <div class="menu-dropdown-item" onclick="setTool('spline');closeMenus()"><span>Spline (SPL)</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('POINT');closeMenus()"><span>Point (PT)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('HATCH');closeMenus()"><span>Hachures (H)</span></div>
+      </div>
+    </div>
+    <div class="menu-dropdown" id="menu-modifier">
+      <div class="menu-item" id="menu-modifier-btn" onclick="toggleMenuDropdown('menu-modifier',event)">Modifier</div>
+      <div class="menu-dropdown-list" id="menu-modifier-list">
+        <div class="menu-dropdown-item" onclick="executeCommand('MOVE');closeMenus()"><span>Déplacer (M)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('COPY');closeMenus()"><span>Copier (CO)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('ROTATE');closeMenus()"><span>Rotation (RO)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('SCALE');closeMenus()"><span>Mise à l'échelle (SC)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('MIRROR');closeMenus()"><span>Miroir (MI)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('OFFSET');closeMenus()"><span>Décaler (O)</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('ARRAY');closeMenus()"><span>Réseau rectangulaire (AR)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('ARRAY_POLAR');closeMenus()"><span>Réseau polaire (APO)</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('TRIM');closeMenus()"><span>Couper (TR)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('EXTEND');closeMenus()"><span>Prolonger (EX)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('FILLET');closeMenus()"><span>Raccord (F)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('CHAMFER');closeMenus()"><span>Chanfrein (CHA)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('JOIN');closeMenus()"><span>Joindre en polyligne (J)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('STRETCH');closeMenus()"><span>Étirer (ET)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIVIDE');closeMenus()"><span>Diviser (DIV)</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('EXPLODE');closeMenus()"><span>Éclater (X)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('GROUP');closeMenus()"><span>Grouper (GROUPE)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('UNGROUP');closeMenus()"><span>Dégrouper (DÉGROUPER)</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('ERASE');closeMenus()"><span>Supprimer (Suppr)</span></div>
+      </div>
+    </div>
+    <div class="menu-dropdown" id="menu-inserer">
+      <div class="menu-item" id="menu-inserer-btn" onclick="toggleMenuDropdown('menu-inserer',event)">Insérer</div>
+      <div class="menu-dropdown-list" id="menu-inserer-list">
+        <div class="menu-dropdown-item" onclick="executeCommand('WALL');closeMenus()"><span>Mur (W)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DOOR');closeMenus()"><span>Porte (DOOR)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('WINDOW');closeMenus()"><span>Fenêtre (WINDOW)</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('OUTLET');closeMenus()"><span>Prise (OUTLET)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('SWITCH');closeMenus()"><span>Interrupteur (SWITCH)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('CABLE');closeMenus()"><span>Câble (CAB)</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('TUBE');closeMenus()"><span>Tube 2 traits (TUBE)</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="lib-sub-item"><span>Bibliothèque</span><div class="lib-sub-list" id="menu-lib-list"></div></div>
+      </div>
+    </div>
+    <div class="menu-dropdown" id="menu-cotation">
+      <div class="menu-item" id="menu-cotation-btn" onclick="toggleMenuDropdown('menu-cotation',event)">Cotation</div>
+      <div class="menu-dropdown-list" id="menu-cotation-list">
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMLINEAR');closeMenus()"><span>Cote linéaire</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMALIGNED');closeMenus()"><span>Cote parallèle</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMANGULAR');closeMenus()"><span>Cote angulaire</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMRADIUS');closeMenus()"><span>Cote rayon</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMDIAMETER');closeMenus()"><span>Cote diamètre</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMSTYLE');closeMenus()"><span>Styles de cotes (DIMSTYLE)</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('TEXT');closeMenus()"><span>Texte (TX)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('LEADER');closeMenus()"><span>Repère (LEADER)</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="setTool('measure');closeMenus()"><span>Mesurer (ME)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIST');closeMenus()"><span>Distance (DI)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('AREA');closeMenus()"><span>Aire (AREA)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('CALC');closeMenus()"><span>Calculatrice (CALC)</span></div>
+      </div>
     </div>
     <div class="menu-item" onclick="showHelp()">Aide</div>
   </div>
