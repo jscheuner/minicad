@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
 """
-MiniCAD — Script de build des bibliothèques (+ démo optionnelle + déploiement)
-===============================================================================
-Lit les fichiers dans libraries/ et injecte le bloc généré
-entre les marqueurs @@LIB_BEGIN / @@LIB_END dans minicad.html.
+MiniCAD — Script de build des bibliothèques (+ traductions + démo + déploiement)
+==================================================================================
+Source : src/minicad.html  (code pur avec marqueurs @@ et {{clés}} i18n)
+Outputs: minicad.html (FR), minicad_en.html (EN), minicad_org.html (multilang)
 
 Usage:
-    python build.py                    # build normal (sans démo)
-    python build.py --demo             # build avec séquence démo injectée
-    python build.py --demo --deploy    # build + upload index.html sur le serveur
-
-Ajouter une famille :
-  1. Créer libraries/<nom>.json  (copier ipe.json comme modèle)
-  2. Créer libraries/draws/<nom>.js  avec la fonction de dessin
-  3. Ajouter l'entrée dans libraries/index.json
-  4. Relancer python build.py
+    python build.py                    # build FR → minicad.html
+    python build.py --lang=en          # build EN → minicad_en.html (en plus)
+    python build.py --lang=all         # build toutes les langues disponibles
+    python build.py --demo             # + séquence démo injectée
+    python build.py --demo --deploy    # + upload sur le serveur (minicad_org multilang)
 """
 
 import json
@@ -38,20 +34,127 @@ def _load_env():
 
 _env = _load_env()
 SFTP_HOST     = _env.get('SFTP_HOST', '')
-SFTP_PORT     = int(_env.get('SFTP_PORT', 22))
+SFTP_PORT     = int(_env.get('SFTP_PORT', 21))
 SFTP_USER     = _env.get('SFTP_USER', '')
 SFTP_PASSWORD = _env.get('SFTP_PASSWORD', '')
 SFTP_REMOTE   = _env.get('SFTP_REMOTE', 'web/index.html')
 
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
-HTML_FILE   = os.path.join(BASE_DIR, 'minicad.html')
+HTML_SRC    = os.path.join(BASE_DIR, 'src', 'minicad.html')   # source (ne jamais écrire ici)
+HTML_FILE   = os.path.join(BASE_DIR, 'minicad.html')          # output racine (GitHub download)
 DEMO_OUT    = os.path.join(BASE_DIR, 'minicad_demo.html')
 ORG_OUT     = os.path.join(BASE_DIR, 'minicad_org.html')
 LIB_DIR     = os.path.join(BASE_DIR, 'libraries')
 INDEX_FILE  = os.path.join(LIB_DIR, 'index.json')
 HATCH_DIR   = os.path.join(BASE_DIR, 'hatches')
-HATCH_INDEX = os.path.join(HATCH_DIR, 'index.json')
-DEMO_FILE   = os.path.join(BASE_DIR, 'demo', 'demo_sequence.js')
+HATCH_INDEX  = os.path.join(HATCH_DIR, 'index.json')
+DEMO_FILE    = os.path.join(BASE_DIR, 'demo', 'demo_sequence.js')
+TRANS_DIR    = os.path.join(BASE_DIR, 'translations')
+
+
+# ── Traductions ────────────────────────────────────────────────────────────────
+
+def load_all_langs():
+    """Charge tous les fichiers JSON de translations/ (sauf _meta)."""
+    langs = {}
+    if not os.path.isdir(TRANS_DIR):
+        return langs
+    for fname in sorted(os.listdir(TRANS_DIR)):
+        if fname.endswith('.json'):
+            code = fname[:-5]
+            data = load_json(os.path.join(TRANS_DIR, fname))
+            data.pop('_meta', None)
+            langs[code] = data
+    return langs
+
+
+def apply_lang_mode_a(html, lang_code):
+    """Mode A — substitution directe des {{clés}}, supprime attributs data-i18n*.
+    Génère un fichier HTML autonome sans JS de traduction."""
+    lang_file = os.path.join(TRANS_DIR, lang_code + '.json')
+    if not os.path.exists(lang_file):
+        print(f'  ⚠  Traduction manquante : {lang_file}')
+        return html
+    data = load_json(lang_file)
+    data.pop('_meta', None)
+    for key, value in data.items():
+        html = html.replace('{{' + key + '}}', value)
+    # Signaler les clés non résolues
+    missing = set(re.findall(r'\{\{([^}]+)\}\}', html))
+    if missing:
+        print(f'  ⚠  Clés [{lang_code}] sans traduction : {missing}')
+    # Supprimer les attributs data-i18n* (inutiles en mode autonome)
+    html = re.sub(r'\s+data-i18n(?:-[a-z]+)?="[^"]*"', '', html)
+    return html
+
+
+def apply_lang_mode_b(html, default_lang='fr'):
+    """Mode B — injecte toutes les langues + switcher runtime.
+    Utilisé pour minicad_org.html (minicad.org)."""
+    langs = load_all_langs()
+    if not langs:
+        print('  ⚠  Aucun fichier de traduction trouvé dans translations/')
+        return apply_lang_mode_a(html, default_lang)
+
+    # Remplacer {{clés}} par la langue par défaut (FR) — garder data-i18n
+    default_data = langs.get(default_lang, {})
+    for key, value in default_data.items():
+        html = html.replace('{{' + key + '}}', value)
+
+    # Injecter l'objet TRANSLATIONS + fonction setLang + switcher
+    trans_json = json.dumps(langs, ensure_ascii=False, separators=(',', ':'))
+    i18n_js = f"""<script id="i18n-runtime">
+(function(){{
+  var T = {trans_json};
+  var _lang = localStorage.getItem('minicad_lang') || '{default_lang}';
+  window.setLang = function(lang) {{
+    if (!T[lang]) return;
+    _lang = lang;
+    localStorage.setItem('minicad_lang', lang);
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {{
+      var v = T[lang][el.dataset.i18n]; if (v) el.textContent = v;
+    }});
+    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {{
+      var v = T[lang][el.dataset.i18nTitle]; if (v) el.title = v;
+    }});
+    document.querySelectorAll('[data-i18n-name]').forEach(function(el) {{
+      var v = T[lang][el.dataset.i18nName]; if (v) el.dataset.name = v;
+    }});
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {{
+      var v = T[lang][el.dataset.i18nPlaceholder]; if (v) el.placeholder = v;
+    }});
+    document.querySelectorAll('.lang-btn').forEach(function(btn) {{
+      btn.classList.toggle('active', btn.dataset.lang === lang);
+    }});
+  }};
+  window.getLang = function() {{ return _lang; }};
+  window.T = T;
+  document.addEventListener('DOMContentLoaded', function() {{ window.setLang(_lang); }});
+}})();
+</script>"""
+    # Injecter le CSS + les boutons de langue dans la topbar
+    lang_codes = list(langs.keys())
+    lang_btns = ''.join(
+        f'<button class="lang-btn{" active" if c == default_lang else ""}" '
+        f'data-lang="{c}" onclick="setLang(\'{c}\')" '
+        f'title="Switch to {langs[c].get("_meta", {}).get("name", c.upper()) if "_meta" in langs.get(c, {}) else c.upper()}">'
+        f'{c.upper()}</button>'
+        for c in lang_codes
+    )
+    lang_css = """<style>
+.lang-switcher{display:flex;align-items:center;gap:3px;margin-left:8px}
+.lang-btn{background:transparent;border:1px solid #ffffff22;border-radius:3px;color:#ffffff55;
+  font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:.5px;
+  padding:2px 5px;cursor:pointer;transition:all .15s}
+.lang-btn:hover{border-color:#ffffff44;color:#ffffff88}
+.lang-btn.active{border-color:var(--accent,#00d4ff);color:var(--accent,#00d4ff)}
+</style>"""
+    lang_widget = f'<div class="lang-switcher" id="lang-switcher">{lang_btns}</div>'
+    # Injecter le CSS dans <head>
+    html = html.replace('</head>', lang_css + i18n_js + '\n</head>', 1)
+    # Injecter les boutons dans la topbar (avant </div> de topbar-right)
+    html = html.replace('</div>\n</div>', lang_widget + '\n</div>\n</div>', 1)
+    return html
 
 GTM_BLOCK = """\
 <!-- Cookie Consent + Google Tag Manager (chargé après consentement) -->
@@ -292,43 +395,55 @@ def clear_demo_block(html):
 
 
 def deploy_sftp(local_file):
-    """Upload local_file sur le serveur SFTP en tant qu'index.html."""
-    try:
-        import paramiko
-    except ImportError:
-        sys.exit('Erreur : paramiko non installé — pip install paramiko')
+    """Upload local_file sur le serveur FTP."""
+    from ftplib import FTP, all_errors as FTP_ERRORS
+    import socket
 
     if not SFTP_HOST or not SFTP_USER or not SFTP_PASSWORD:
-        sys.exit('Erreur : credentials SFTP manquants — créer un fichier .env (voir .env.example)')
-    print(f'  → Connexion SFTP {SFTP_USER}@{SFTP_HOST}:{SFTP_PORT} …')
-    transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
+        sys.exit('Erreur : credentials FTP manquants — créer un fichier .env (voir .env.example)')
+
+    timeout = int(_env.get('SFTP_TIMEOUT', 15))
+    remote_dir  = os.path.dirname(SFTP_REMOTE)   # ex: 'web'
+    remote_file = os.path.basename(SFTP_REMOTE)  # ex: 'index.html'
+
+    print(f'  → Connexion FTP {SFTP_USER}@{SFTP_HOST}:{SFTP_PORT} …')
     try:
-        transport.connect(username=SFTP_USER, password=SFTP_PASSWORD)
-        sftp = paramiko.SFTPClient.from_transport(transport)
-
-        # Supprimer l'index.html existant (ignorer si absent)
-        try:
-            sftp.remove(SFTP_REMOTE)
-            print(f'  ✓ index.html existant supprimé')
-        except FileNotFoundError:
-            pass
-
-        # Uploader le nouveau fichier
-        sftp.put(local_file, SFTP_REMOTE)
+        ftp = FTP()
+        ftp.connect(SFTP_HOST, SFTP_PORT, timeout=timeout)
+        ftp.login(SFTP_USER, SFTP_PASSWORD)
+        if remote_dir:
+            ftp.cwd(remote_dir)
+        with open(local_file, 'rb') as f:
+            ftp.storbinary(f'STOR {remote_file}', f)
+        ftp.quit()
         print(f'  ✓ {os.path.basename(local_file)} → {SFTP_REMOTE}  (déployé)')
-
-        sftp.close()
-    finally:
-        transport.close()
+    except socket.timeout:
+        sys.exit(f'Erreur : timeout ({timeout}s) — impossible de joindre {SFTP_HOST}:{SFTP_PORT}')
+    except (socket.gaierror, ConnectionRefusedError, OSError) as e:
+        sys.exit(f'Erreur réseau : {e}')
+    except FTP_ERRORS as e:
+        sys.exit(f'Erreur FTP : {e}')
 
 
 def main():
-    with_demo  = '--demo'   in sys.argv
+    with_demo   = '--demo'   in sys.argv
     with_deploy = '--deploy' in sys.argv
 
+    # ── Langue(s) cible(s) ───────────────────────────────
+    lang_arg = next((a for a in sys.argv if a.startswith('--lang=')), None)
+    if lang_arg:
+        lang_val = lang_arg.split('=', 1)[1]
+        if lang_val == 'all':
+            target_langs = list(load_all_langs().keys())
+        else:
+            target_langs = lang_val.split(',')
+    else:
+        target_langs = ['fr']   # défaut : FR uniquement
+
     # ── Vérifications ────────────────────────────────────
-    if not os.path.exists(HTML_FILE):
-        sys.exit(f'Erreur : {HTML_FILE} introuvable.')
+    if not os.path.exists(HTML_SRC):
+        sys.exit(f'Erreur : {HTML_SRC} introuvable.\n'
+                 f'  Le code source doit être dans src/minicad.html')
     if not os.path.exists(INDEX_FILE):
         sys.exit(f'Erreur : {INDEX_FILE} introuvable.')
 
@@ -336,38 +451,51 @@ def main():
     index = load_json(INDEX_FILE)
 
     # ── Construire les blocs ──────────────────────────────
-    tag = '📦 MiniCAD build' + (' + démo' if with_demo else '')
-    print(f'{tag} — injection bibliothèques + hachures')
+    langs_label = '+'.join(target_langs).upper()
+    tag = f'📦 MiniCAD build [{langs_label}]' + (' + démo' if with_demo else '')
+    print(f'{tag} — injection bibliothèques + hachures + traductions')
     lib_block   = build_lib_js(index)
     hatch_index = load_json(HATCH_INDEX) if os.path.exists(HATCH_INDEX) else []
     hatch_block = build_hatch_js(hatch_index)
 
-    # ── Lire le HTML ──────────────────────────────────────
-    with open(HTML_FILE, 'r', encoding='utf-8') as f:
-        html = f.read()
+    # ── Lire la SOURCE (src/minicad.html — ne jamais écrire ici) ─────────
+    with open(HTML_SRC, 'r', encoding='utf-8') as f:
+        html_src = f.read()
 
-    # ── Injecter bibliothèques ───────────────────────────
-    html = inject_block(html, MARKER_BEGIN, MARKER_END, lib_block)
+    # ── Injecter bibliothèques + hachures (commun à tous les outputs) ─────
+    html_base = inject_block(html_src, MARKER_BEGIN, MARKER_END, lib_block)
+    if HATCH_MARKER_BEGIN in html_base:
+        html_base = inject_block(html_base, HATCH_MARKER_BEGIN, HATCH_MARKER_END, hatch_block)
 
-    # ── Injecter hachures ────────────────────────────────
-    if HATCH_MARKER_BEGIN in html:
-        html = inject_block(html, HATCH_MARKER_BEGIN, HATCH_MARKER_END, hatch_block)
+    # ── Génération des outputs par langue (Mode A) ────────────────────────
+    for lang in target_langs:
+        html_lang = apply_lang_mode_a(clear_demo_block(html_base), lang)
+        if lang == 'fr':
+            out_path = HTML_FILE          # minicad.html
+        else:
+            out_path = os.path.join(BASE_DIR, f'minicad_{lang}.html')
+        with open(out_path, 'w', encoding='utf-8') as f:
+            f.write(html_lang)
+        print(f'  ✓ [{lang.upper()}] → {os.path.basename(out_path)} ({len(html_lang.splitlines())} lignes)')
 
-    # ── minicad.html : toujours mis à jour (libs, bloc démo vide) ────────
-    html_dev = clear_demo_block(html)
-    with open(HTML_FILE, 'w', encoding='utf-8') as f:
-        f.write(html_dev)
-
-    # ── minicad_demo.html + minicad_org.html : uniquement avec --demo ───────
+    # ── minicad_demo.html (Mode A, FR) + minicad_org.html (Mode B multilang) ──
     if with_demo:
         demo_block = build_demo_js()
-        html_demo  = inject_block(html, DEMO_MARKER_BEGIN, DEMO_MARKER_END, demo_block)
+        html_with_demo = inject_block(html_base, DEMO_MARKER_BEGIN, DEMO_MARKER_END, demo_block)
+
+        # minicad_demo.html — Mode A FR (téléchargement GitHub avec démo)
+        html_demo = apply_lang_mode_a(html_with_demo, 'fr')
         with open(DEMO_OUT, 'w', encoding='utf-8') as f:
             f.write(html_demo)
+        print(f'  ✓ [FR+démo] → minicad_demo.html')
 
-        html_org = build_org_html(html_demo)   # basé sur minicad_demo.html (avec démo)
+        # minicad_org.html — Mode B multilang + GTM (minicad.org)
+        html_org_i18n = apply_lang_mode_b(html_with_demo, 'fr')
+        html_org = build_org_html(html_org_i18n)
         with open(ORG_OUT, 'w', encoding='utf-8') as f:
             f.write(html_org)
+        all_langs = list(load_all_langs().keys())
+        print(f'  ✓ [multilang:{",".join(all_langs)}] → minicad_org.html')
 
     # ── Déploiement SFTP ─────────────────────────────────
     if with_deploy:
@@ -385,7 +513,8 @@ def main():
     )
     print(f'  ✓ {n_cats} catégories, {n_fams} familles, {n_data} avec données')
     print(f'  ✓ {len(hatch_index)} patterns de hachure')
-    print(f'  ✓ minicad.html mis à jour')
+    all_langs = load_all_langs()
+    print(f'  ✓ Traductions disponibles : {", ".join(all_langs.keys())}')
     if with_demo:
         print(f'  ✓ démo injectée → minicad_demo.html')
         print(f'  ✓ GTM + cookies injectés → minicad_org.html')

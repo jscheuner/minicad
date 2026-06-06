@@ -50,7 +50,11 @@
         { "name": "Tube de clôture - série moyenne", "draw": "drawProfileTUBEROND", "data": "acier_tube_cloture.json", "script": "draws/tube_rond.js" },
         { "name": "Tube de clôture - soudé, galvanisé, bouts lisses", "draw": "drawProfileTUBEROND", "data": "acier_tube_cloture_galva.json", "script": "draws/tube_rond.js" },
         { "name": "Tube bouilleur soudé à bouts lisses", "draw": "drawProfileTUBEROND", "data": "acier_tube_bouilleur_soude.json", "script": "draws/tube_rond.js" },
-        { "name": "Tube bouilleur sans soudure", "draw": "drawProfileTUBEROND", "data": "acier_tube_bouilleur_sans_soudure.json", "script": "draws/tube_rond.js" }
+        { "name": "Tube bouilleur sans soudure", "draw": "drawProfileTUBEROND", "data": "acier_tube_bouilleur_sans_soudure.json", "script": "draws/tube_rond.js" },
+        { "name": "Tubes sans soudure, à parois épaisses", "draw": "drawProfileTUBEROND", "data": "acier_tube_parois_epaisses.json", "script": "draws/tube_rond.js" },
+        { "name": "Tubes de précision sans soudure, étiré à froid", "draw": "drawProfileTUBEROND", "data": "acier_tube_de_precision_sans_soudure_etire_a_froid.json", "script": "draws/tube_rond.js" },
+        { "name": "Tubes en acier pour conduites hydrauliques, sans soudure", "draw": "drawProfileTUBEROND", "data": "acier_tube_sans_soudure_conduites_hydraulique.json", "script": "draws/tube_rond.js" }
+        
     ] },
     { "name": "🔩 Visserie",           "families": [] },
     { "name": "📐 Plats et cornières", "families": [] }

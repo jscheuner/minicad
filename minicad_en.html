@@ -1021,44 +1021,44 @@
   <div class="topbar-logo"><svg width="176" height="44" style="vertical-align:middle" viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" aria-label="MiniCAD" style="display:block"><g transform="translate(6,10) scale(0.8)"><rect x="0" y="0" width="100" height="100" rx="20" fill="#16222E"/><path d="M24,70 L24,40 Q24,24 37,24 Q50,24 50,40 L50,70 M50,40 Q50,24 63,24 Q76,24 76,40 L76,70" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="butt" stroke-linejoin="round"/><rect x="16" y="62" width="16" height="16" fill="none" stroke="#FF5436" stroke-width="3"/></g><text x="104" y="63" style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',monospace;font-size:44px;font-weight:500;letter-spacing:0.5px"><tspan fill="#c8d6e5">mini</tspan><tspan fill="#FF5436">cad</tspan></text></svg><span style="font-size:10px;font-weight:300;color:var(--text-dim);vertical-align:middle;margin-left:6px;letter-spacing:0">v0.09</span></div>
   <div class="menu-items">
     <div class="menu-dropdown" id="menu-fichier">
-      <div class="menu-item" id="menu-fichier-btn" onclick="toggleMenuDropdown('menu-fichier',event)">Fichier</div>
+      <div class="menu-item" id="menu-fichier-btn" onclick="toggleMenuDropdown('menu-fichier',event)">File</div>
       <div class="menu-dropdown-list" id="menu-fichier-list">
         <div class="menu-dropdown-item" onclick="executeCommand('CLEAR');closeMenus()">
-          <span>Nouveau</span>
+          <span>New</span>
         </div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="cmdOpen();closeMenus()">
-          <span>Ouvrir…</span><span class="item-shortcut">Ctrl+O</span>
+          <span>Open…</span><span class="item-shortcut">Ctrl+O</span>
         </div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="cmdSave();closeMenus()">
-          <span>Sauvegarder</span><span class="item-shortcut">Ctrl+S</span>
+          <span>Save</span><span class="item-shortcut">Ctrl+S</span>
         </div>
         <div class="menu-dropdown-item" onclick="cmdSave(null,true);closeMenus()">
-          <span>Sauvegarder sous…</span>
+          <span>Save as…</span>
         </div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="exportDXF();closeMenus()">
-          <span>Exporter DXF</span>
+          <span>Export DXF</span>
         </div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="openPrintDialog();closeMenus()">
-          <span>Imprimer / Export PDF</span><span class="item-shortcut">Ctrl+P</span>
+          <span>Print / Export PDF</span><span class="item-shortcut">Ctrl+P</span>
         </div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="openPrefsDialog();closeMenus()">
-          <span>Préférences…</span>
+          <span>Preferences…</span>
         </div>
       </div>
     </div>
     <div class="menu-dropdown" id="menu-lib">
-      <div class="menu-item" id="menu-lib-btn" onclick="toggleMenuDropdown('menu-lib',event)">Bibliothèque</div>
+      <div class="menu-item" id="menu-lib-btn" onclick="toggleMenuDropdown('menu-lib',event)">Library</div>
       <div class="menu-dropdown-list" id="menu-lib-list"></div>
     </div>
-    <div class="menu-item" onclick="showHelp()">Aide</div>
+    <div class="menu-item" onclick="showHelp()">Help</div>
   </div>
   <div class="topbar-right">
-    <span id="save-indicator" style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.5px;cursor:default;opacity:0.5;" title="État de sauvegarde">● NOUVEAU</span>
+    <span id="save-indicator" style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.5px;cursor:default;opacity:0.5;" title="Save State">● NOUVEAU</span>
     <span class="coord-display" id="coord-display">X: 0.00 Y: 0.00</span>
     <span class="snap-indicator" id="snap-label" onclick="toggleSnap()">SNAP</span>
     <span class="snap-indicator" id="osnap-label" onclick="toggleOsnap()" style="color:var(--osnap-endpoint)">OSNAP</span>
@@ -1071,48 +1071,48 @@
 <div class="dock-area" id="dock-area" oncontextmenu="showTBContext(event)">
 
   <!-- Toolbar: Fichier -->
-  <div class="cad-toolbar docked" id="tb-file" data-name="Fichier">
+  <div class="cad-toolbar docked" id="tb-file" data-name="File">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-file')" ondblclick="toggleTBDock('tb-file')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-file')" ondblclick="toggleTBDock('tb-file')">
-      <span class="tb-title">Fichier</span><span class="tb-close" onclick="hideToolbar('tb-file')">×</span>
+      <span class="tb-title">File</span><span class="tb-close" onclick="hideToolbar('tb-file')">×</span>
     </div>
     <div class="tb-buttons">
-      <button class="tool-btn text-btn" title="Ouvrir (Ctrl+O)" onclick="cmdOpen()">📂</button>
-      <button class="tool-btn text-btn" title="Sauvegarder (Ctrl+S)" onclick="cmdSave()">💾</button>
-      <button class="tool-btn text-btn" title="Exporter PDF (Ctrl+P)" onclick="openPrintDialog()" style="color:#ff9800">🖨</button>
-      <button class="tool-btn text-btn" title="Assistant IA Ollama" onclick="toggleAiPanel()" style="color:var(--accent)">🤖</button>
+      <button class="tool-btn text-btn" title="Open (Ctrl+O)" onclick="cmdOpen()">📂</button>
+      <button class="tool-btn text-btn" title="Save (Ctrl+S)" onclick="cmdSave()">💾</button>
+      <button class="tool-btn text-btn" title="Export PDF (Ctrl+P)" onclick="openPrintDialog()" style="color:#ff9800">🖨</button>
+      <button class="tool-btn text-btn" title="AI Assistant Ollama" onclick="toggleAiPanel()" style="color:var(--accent)">🤖</button>
     </div>
   </div>
   <input type="file" id="file-input" accept=".dxf,.dwg,.json,.mcad" style="display:none" onchange="handleFileOpen(event)">
 
   <!-- Toolbar: Modification -->
-  <div class="cad-toolbar docked" id="tb-modify" data-name="Modification">
+  <div class="cad-toolbar docked" id="tb-modify" data-name="Modify">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-modify')" ondblclick="toggleTBDock('tb-modify')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-modify')" ondblclick="toggleTBDock('tb-modify')">
-      <span class="tb-title">Modification</span><span class="tb-close" onclick="hideToolbar('tb-modify')">×</span>
+      <span class="tb-title">Modify</span><span class="tb-close" onclick="hideToolbar('tb-modify')">×</span>
     </div>
     <div class="tb-buttons">
       <!-- Sélection -->
-      <button class="tool-btn" data-tool="select" title="Sélection (V)" onclick="setTool('select')">
+      <button class="tool-btn" data-tool="select" title="Select (V)" onclick="setTool('select')">
         <svg viewBox="0 0 24 24"><path d="M5 3l14 9-7 1-4 7z" fill="currentColor" fill-opacity="0.25"/><path d="M5 3l14 9-7 1-4 7z"/></svg>
       </button>
       <div class="tb-sep"></div>
       <!-- Déplacer -->
-      <button class="tool-btn" data-tool="move_obj" title="Déplacer (M)" onclick="executeCommand('MOVE')">
+      <button class="tool-btn" data-tool="move_obj" title="Move (M)" onclick="executeCommand('MOVE')">
         <svg viewBox="0 0 24 24">
           <path d="M12 4v16M4 12h16"/>
           <path d="M12 4l-2 3M12 4l2 3M12 20l-2-3M12 20l2-3M4 12l3-2M4 12l3 2M20 12l-3-2M20 12l-3 2"/>
         </svg>
       </button>
       <!-- Copier -->
-      <button class="tool-btn" title="Copier (CO)" onclick="executeCommand('COPY')">
+      <button class="tool-btn" title="Copy (CO)" onclick="executeCommand('COPY')">
         <svg viewBox="0 0 24 24">
           <rect x="9" y="9" width="11" height="11" rx="1"/>
           <path d="M15 9V6a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/>
         </svg>
       </button>
       <!-- Miroir -->
-      <button class="tool-btn" data-tool="mirror" title="Miroir (MI)" onclick="executeCommand('MIRROR')">
+      <button class="tool-btn" data-tool="mirror" title="Mirror (MI)" onclick="executeCommand('MIRROR')">
         <svg viewBox="0 0 24 24">
           <line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="3,2"/>
           <path d="M2 8l7 4-7 4z" fill="currentColor" fill-opacity="0.3"/>
@@ -1122,7 +1122,7 @@
         </svg>
       </button>
       <!-- Décaler -->
-      <button class="tool-btn" data-tool="offset" title="Décaler (O)" onclick="executeCommand('OFFSET')">
+      <button class="tool-btn" data-tool="offset" title="Offset (O)" onclick="executeCommand('OFFSET')">
         <svg viewBox="0 0 24 24">
           <path d="M3 7 Q12 3 21 7"/>
           <path d="M3 13 Q12 9 21 13"/>
@@ -1131,7 +1131,7 @@
         </svg>
       </button>
       <!-- Trim -->
-      <button class="tool-btn" data-tool="trim" title="Couper (TR)" onclick="executeCommand('TRIM')">
+      <button class="tool-btn" data-tool="trim" title="Trim (TR)" onclick="executeCommand('TRIM')">
         <svg viewBox="0 0 24 24">
           <line x1="2" y1="12" x2="11" y2="12"/>
           <line x1="13" y1="12" x2="22" y2="12" stroke-dasharray="2,2" opacity="0.35"/>
@@ -1141,7 +1141,7 @@
         </svg>
       </button>
       <!-- Extend -->
-      <button class="tool-btn" data-tool="extend" title="Prolonger (EX)" onclick="executeCommand('EXTEND')">
+      <button class="tool-btn" data-tool="extend" title="Extend (EX)" onclick="executeCommand('EXTEND')">
         <svg viewBox="0 0 24 24">
           <!-- Ligne pointillée → prolongée jusqu'à la limite verticale -->
           <line x1="2" y1="12" x2="9" y2="12" stroke-dasharray="2,2" opacity="0.45"/>
@@ -1154,7 +1154,7 @@
         </svg>
       </button>
       <!-- Raccord -->
-      <button class="tool-btn" data-tool="fillet" title="Raccord (F)" onclick="executeCommand('FILLET')">
+      <button class="tool-btn" data-tool="fillet" title="Fillet (F)" onclick="executeCommand('FILLET')">
         <svg viewBox="0 0 24 24">
           <!-- Fillet : angle droit avec grand arc de raccord visible -->
           <line x1="4" y1="3" x2="4" y2="15"/>
@@ -1166,7 +1166,7 @@
         </svg>
       </button>
       <!-- Chanfrein -->
-      <button class="tool-btn" data-tool="chamfer" title="Chanfrein (CHA)" onclick="executeCommand('CHAMFER')">
+      <button class="tool-btn" data-tool="chamfer" title="Chamfer (CHA)" onclick="executeCommand('CHAMFER')">
         <svg viewBox="0 0 24 24">
           <!-- Chamfer : angle droit avec grande diagonale droite bien visible -->
           <line x1="4" y1="3" x2="4" y2="14"/>
@@ -1178,7 +1178,7 @@
         </svg>
       </button>
       <!-- Échelle -->
-      <button class="tool-btn" data-tool="scale" title="Mise à l'échelle (SC)" onclick="executeCommand('SCALE')">
+      <button class="tool-btn" data-tool="scale" title="Scale (SC)" onclick="executeCommand('SCALE')">
         <svg viewBox="0 0 24 24">
           <path d="M3 21l6-6M21 3l-6 6" fill="none"/>
           <path d="M21 3h-5M21 3v5" fill="none"/>
@@ -1186,7 +1186,7 @@
         </svg>
       </button>
       <!-- Étirer -->
-      <button class="tool-btn" data-tool="stretch" title="Étirer (ET)" onclick="executeCommand('STRETCH')">
+      <button class="tool-btn" data-tool="stretch" title="Stretch (ET)" onclick="executeCommand('STRETCH')">
         <svg viewBox="0 0 24 24">
           <path d="M3 12h18" fill="none"/>
           <path d="M17 8l4 4-4 4" fill="none"/>
@@ -1195,14 +1195,14 @@
         </svg>
       </button>
       <!-- Rotation -->
-      <button class="tool-btn" data-tool="rotate" title="Rotation (RO)" onclick="executeCommand('ROTATE')">
+      <button class="tool-btn" data-tool="rotate" title="Rotate (RO)" onclick="executeCommand('ROTATE')">
         <svg viewBox="0 0 24 24">
           <path d="M20 8A9 9 0 1 0 21 13" fill="none"/>
           <path d="M20 3v5h-5" fill="none"/>
         </svg>
       </button>
       <!-- Joindre -->
-      <button class="tool-btn" data-tool="join" title="Joindre en polyligne (J)" onclick="executeCommand('JOIN')">
+      <button class="tool-btn" data-tool="join" title="Join as Polyline (J)" onclick="executeCommand('JOIN')">
         <svg viewBox="0 0 24 24">
           <line x1="2" y1="18" x2="9" y2="12"/>
           <line x1="9" y1="12" x2="16" y2="6"/>
@@ -1212,14 +1212,14 @@
         </svg>
       </button>
       <!-- Réseau -->
-      <button class="tool-btn" title="Réseau rectangulaire (AR)" onclick="executeCommand('ARRAY')">
+      <button class="tool-btn" title="Rectangular Array (AR)" onclick="executeCommand('ARRAY')">
         <svg viewBox="0 0 24 24">
           <rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9.5" y="2" width="5" height="5" rx="1"/><rect x="17" y="2" width="5" height="5" rx="1"/>
           <rect x="2" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><rect x="17" y="9.5" width="5" height="5" rx="1"/>
           <rect x="2" y="17" width="5" height="5" rx="1"/><rect x="9.5" y="17" width="5" height="5" rx="1"/><rect x="17" y="17" width="5" height="5" rx="1"/>
         </svg>
       </button>
-      <button class="tool-btn" title="Réseau polaire (APO)" onclick="executeCommand('ARRAY_POLAR')">
+      <button class="tool-btn" title="Polar Array (APO)" onclick="executeCommand('ARRAY_POLAR')">
         <svg viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="7" fill="none" stroke-dasharray="2,2" opacity="0.45"/>
           <circle cx="12" cy="5" r="1.8"/><circle cx="18.1" cy="8.5" r="1.8"/><circle cx="18.1" cy="15.5" r="1.8"/>
@@ -1228,7 +1228,7 @@
         </svg>
       </button>
       <!-- Éclater bloc -->
-      <button class="tool-btn" title="Éclater (X)" onclick="executeCommand('EXPLODE')">
+      <button class="tool-btn" title="Explode (X)" onclick="executeCommand('EXPLODE')">
         <svg viewBox="0 0 24 24">
           <rect x="8" y="8" width="8" height="8" rx="1"/>
           <line x1="12" y1="8" x2="12" y2="2"/><polygon points="10,4 14,4 12,1" fill="currentColor"/>
@@ -1265,25 +1265,25 @@
   </div>
 
   <!-- Toolbar: Dessin -->
-  <div class="cad-toolbar docked" id="tb-draw" data-name="Dessin">
+  <div class="cad-toolbar docked" id="tb-draw" data-name="Draw">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-draw')" ondblclick="toggleTBDock('tb-draw')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-draw')" ondblclick="toggleTBDock('tb-draw')">
-      <span class="tb-title">Dessin</span><span class="tb-close" onclick="hideToolbar('tb-draw')">×</span>
+      <span class="tb-title">Draw</span><span class="tb-close" onclick="hideToolbar('tb-draw')">×</span>
     </div>
     <div class="tb-buttons">
-      <button class="tool-btn" data-tool="line" title="Ligne (L)" onclick="setTool('line')">
+      <button class="tool-btn" data-tool="line" title="Line (L)" onclick="setTool('line')">
         <svg viewBox="0 0 24 24"><line x1="5" y1="19" x2="19" y2="5"/></svg>
       </button>
       <button class="tool-btn" data-tool="rect" title="Rectangle (R)" onclick="setTool('rect')">
         <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/></svg>
       </button>
-      <button class="tool-btn" data-tool="rectcenter" title="Rectangle par le centre (RC)" onclick="setTool('rectcenter')">
+      <button class="tool-btn" data-tool="rectcenter" title="Rectangle by Center (RC)" onclick="setTool('rectcenter')">
         <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/><line x1="12" y1="9" x2="12" y2="15"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
       </button>
-      <button class="tool-btn" data-tool="polygon" title="Polygone régulier (POL)" onclick="executeCommand('POLYGON')">
+      <button class="tool-btn" data-tool="polygon" title="Regular Polygon (POL)" onclick="executeCommand('POLYGON')">
         <svg viewBox="0 0 24 24"><polygon points="12,3 20.5,8.5 20.5,15.5 12,21 3.5,15.5 3.5,8.5"/></svg>
       </button>
-      <button class="tool-btn" data-tool="circle" title="Cercle (C)" onclick="setTool('circle')">
+      <button class="tool-btn" data-tool="circle" title="Circle (C)" onclick="setTool('circle')">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg>
       </button>
       <button class="tool-btn" data-tool="ellipse" title="Ellipse (EL)" onclick="executeCommand('ELLIPSE')">
@@ -1292,13 +1292,13 @@
       <button class="tool-btn" data-tool="arc" title="Arc (A)" onclick="setTool('arc')">
         <svg viewBox="0 0 24 24"><path d="M5 19 A 10 10 0 0 1 19 5"/></svg>
       </button>
-      <button class="tool-btn" data-tool="polyline" title="Polyligne (PL)" onclick="setTool('polyline')">
+      <button class="tool-btn" data-tool="polyline" title="Polyline (PL)" onclick="setTool('polyline')">
         <svg viewBox="0 0 24 24"><polyline points="4,18 8,8 14,14 20,4"/></svg>
       </button>
       <button class="tool-btn" data-tool="spline" title="Spline (SPL)" onclick="setTool('spline');termPrint('SPLINE: Cliquez les points de passage — C=Clore  Echap=Finir','info')">
         <svg viewBox="0 0 24 24"><path d="M4,18 C6,18 7,8 10,8 S16,14 20,4" fill="none"/></svg>
       </button>
-      <button class="tool-btn" data-tool="xline" title="Ligne infinie (XL)" onclick="executeCommand('XLINE')">
+      <button class="tool-btn" data-tool="xline" title="Construction Line (XL)" onclick="executeCommand('XLINE')">
         <svg viewBox="0 0 24 24" fill="none">
           <line x1="2" y1="12" x2="22" y2="12"/>
           <polyline points="5,9 2,12 5,15"/>
@@ -1327,7 +1327,7 @@
         </svg>
       </button>
       <!-- Hachures -->
-      <button class="tool-btn" data-tool="hatch" title="Hachures (H)" onclick="executeCommand('HATCH')">
+      <button class="tool-btn" data-tool="hatch" title="Hatch (H)" onclick="executeCommand('HATCH')">
         <svg viewBox="0 0 24 24">
           <rect x="3" y="3" width="18" height="18" rx="1"/>
           <line x1="3" y1="9"  x2="9"  y2="3"/>
@@ -1337,7 +1337,7 @@
           <line x1="15" y1="21" x2="21" y2="15"/>
         </svg>
       </button>
-      <button class="tool-btn" data-tool="tube" title="Tube 2 traits (TUBE)" onclick="executeCommand('TUBE')">
+      <button class="tool-btn" data-tool="tube" title="Tube 2-line (TUBE)" onclick="executeCommand('TUBE')">
         <svg viewBox="0 0 24 24">
           <line x1="3" y1="7" x2="21" y2="7"/>
           <line x1="3" y1="17" x2="21" y2="17"/>
@@ -1361,7 +1361,7 @@
       <button class="tool-btn" data-tool="text_place" title="Texte (T)" onclick="executeCommand('TEXT')">
         <svg viewBox="0 0 24 24" stroke="none"><text x="3" y="19" font-size="17" fill="currentColor" font-family="serif" font-style="italic">T</text></svg>
       </button>
-      <button class="tool-btn" data-tool="leader" title="Repère (LEADER)" onclick="executeCommand('LEADER')">
+      <button class="tool-btn" data-tool="leader" title="Leader (LEADER)" onclick="executeCommand('LEADER')">
         <svg viewBox="0 0 24 24">
           <line x1="5" y1="19" x2="15" y2="9"/>
           <polygon points="5,19 9,16 7,14" fill="currentColor"/>
@@ -1373,28 +1373,28 @@
   </div>
 
   <!-- Toolbar: Cotation -->
-  <div class="cad-toolbar docked" id="tb-dim" data-name="Cotation">
+  <div class="cad-toolbar docked" id="tb-dim" data-name="Dimension">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-dim')" ondblclick="toggleTBDock('tb-dim')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-dim')" ondblclick="toggleTBDock('tb-dim')">
-      <span class="tb-title">Cotation</span><span class="tb-close" onclick="hideToolbar('tb-dim')">×</span>
+      <span class="tb-title">Dimension</span><span class="tb-close" onclick="hideToolbar('tb-dim')">×</span>
     </div>
     <div class="tb-buttons">
-      <button class="tool-btn" title="Cote linéaire" onclick="executeCommand('LOAD dim');executeCommand('DIMLINEAR')">
+      <button class="tool-btn" title="Linear Dimension" onclick="executeCommand('LOAD dim');executeCommand('DIMLINEAR')">
         <svg viewBox="0 0 24 24"><line x1="4" y1="18" x2="20" y2="18"/><line x1="4" y1="12" x2="4" y2="20"/><line x1="20" y1="12" x2="20" y2="20"/><path d="M6 18l-2-2M6 18l-2 2M18 18l2-2M18 18l2 2"/></svg>
       </button>
-      <button class="tool-btn" title="Cote parallèle" onclick="executeCommand('LOAD dim');executeCommand('DIMALIGNED')">
+      <button class="tool-btn" title="Aligned Dimension" onclick="executeCommand('LOAD dim');executeCommand('DIMALIGNED')">
         <svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="18" y2="6"/><line x1="2" y1="14" x2="8" y2="20"/><line x1="14" y1="2" x2="20" y2="8"/></svg>
       </button>
-      <button class="tool-btn" title="Cote angulaire" onclick="executeCommand('LOAD dim');executeCommand('DIMANGULAR')">
+      <button class="tool-btn" title="Angular Dimension" onclick="executeCommand('LOAD dim');executeCommand('DIMANGULAR')">
         <svg viewBox="0 0 24 24"><path d="M4 20l16-4M4 20l4-16"/><path d="M10 11 A7 7 0 0 0 14 15"/></svg>
       </button>
-      <button class="tool-btn" title="Cote rayon" onclick="executeCommand('LOAD dim');executeCommand('DIMRADIUS')">
+      <button class="tool-btn" title="Radius Dimension" onclick="executeCommand('LOAD dim');executeCommand('DIMRADIUS')">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><line x1="12" y1="12" x2="18" y2="8"/><text x="13" y="10" font-size="7" fill="currentColor" stroke="none">R</text></svg>
       </button>
-      <button class="tool-btn" title="Cote diamètre" onclick="executeCommand('LOAD dim');executeCommand('DIMDIAMETER')">
+      <button class="tool-btn" title="Diameter Dimension" onclick="executeCommand('LOAD dim');executeCommand('DIMDIAMETER')">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><line x1="5" y1="16" x2="19" y2="8"/><text x="10" y="11" font-size="7" fill="currentColor" stroke="none">Ø</text></svg>
       </button>
-      <button class="tool-btn" data-tool="measure" title="Mesurer (ME)" onclick="setTool('measure')">
+      <button class="tool-btn" data-tool="measure" title="Measure (ME)" onclick="setTool('measure')">
         <svg viewBox="0 0 24 24" fill="none">
           <rect x="2" y="9" width="20" height="6" rx="1"/>
           <line x1="6"  y1="9" x2="6"  y2="14"/>
@@ -1403,7 +1403,7 @@
           <line x1="18" y1="9" x2="18" y2="12"/>
         </svg>
       </button>
-      <button class="tool-btn" id="calc-btn" title="Calculatrice (CALC)" onclick="toggleCalc()">
+      <button class="tool-btn" id="calc-btn" title="Calculator (CALC)" onclick="toggleCalc()">
         <svg viewBox="0 0 24 24" fill="none">
           <rect x="4" y="2" width="16" height="20" rx="2"/>
           <rect x="7" y="5" width="10" height="4" rx="1"/>
@@ -1415,10 +1415,10 @@
   </div>
 
   <!-- Toolbar: Accrochage -->
-  <div class="cad-toolbar docked" id="tb-snap" data-name="Accrochage">
+  <div class="cad-toolbar docked" id="tb-snap" data-name="Snap">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-snap')" ondblclick="toggleTBDock('tb-snap')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-snap')" ondblclick="toggleTBDock('tb-snap')">
-      <span class="tb-title">Accrochage</span><span class="tb-close" onclick="hideToolbar('tb-snap')">×</span>
+      <span class="tb-title">Snap</span><span class="tb-close" onclick="hideToolbar('tb-snap')">×</span>
     </div>
     <div class="tb-buttons">
       <button class="tool-btn" id="snap-btn" title="Grille Snap (F3)" onclick="toggleSnap()">
@@ -1440,13 +1440,13 @@
   </div>
 
   <!-- Toolbar: Vue -->
-  <div class="cad-toolbar docked" id="tb-view" data-name="Vue">
+  <div class="cad-toolbar docked" id="tb-view" data-name="View">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-view')" ondblclick="toggleTBDock('tb-view')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-view')" ondblclick="toggleTBDock('tb-view')">
-      <span class="tb-title">Vue</span><span class="tb-close" onclick="hideToolbar('tb-view')">×</span>
+      <span class="tb-title">View</span><span class="tb-close" onclick="hideToolbar('tb-view')">×</span>
     </div>
     <div class="tb-buttons">
-      <button class="tool-btn" title="Zoom Étendue" onclick="zoomExtents()">
+      <button class="tool-btn" title="Zoom Extents" onclick="zoomExtents()">
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
       </button>
       <button class="tool-btn" data-tool="pan" title="Panoramique" onclick="setTool('pan')">
@@ -1487,10 +1487,10 @@
   </div>
 
   <!-- Toolbar: Électricité -->
-  <div class="cad-toolbar docked" id="tb-elec" data-name="Électricité">
+  <div class="cad-toolbar docked" id="tb-elec" data-name="Electrical">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-elec')" ondblclick="toggleTBDock('tb-elec')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-elec')" ondblclick="toggleTBDock('tb-elec')">
-      <span class="tb-title">Électricité</span><span class="tb-close" onclick="hideToolbar('tb-elec')">×</span>
+      <span class="tb-title">Electrical</span><span class="tb-close" onclick="hideToolbar('tb-elec')">×</span>
     </div>
     <div class="tb-buttons">
       <button class="tool-btn" data-tool="outlet" title="Prise (OUTLET)" onclick="executeCommand('LOAD elec');executeCommand('OUTLET')">
@@ -1632,27 +1632,27 @@
 
 <div id="array-dialog">
   <div class="ar-header">
-    <span>RÉSEAU RECTANGULAIRE</span>
+    <span>RECTANGULAR ARRAY</span>
     <span class="lm-close" onclick="closeArrayDialog()">×</span>
   </div>
   <div class="ar-body">
     <div class="ar-group">
-      <div class="ar-label">Colonnes</div>
+      <div class="ar-label">Columns</div>
       <input id="ar-cols" class="ar-input" type="text" inputmode="decimal" value="3" oninput="arrayPreviewUpdate()">
     </div>
     <div class="ar-group">
-      <div class="ar-label">Espacement X</div>
+      <div class="ar-label">X Spacing</div>
       <div class="ar-pick-row">
         <input id="ar-dx" class="ar-input" type="text" inputmode="decimal" value="100" oninput="arrayPreviewUpdate()">
         <button class="ar-pick-btn" title="Cliquer 2 points sur le dessin" onclick="arrayPickSpacing('x')">⊶</button>
       </div>
     </div>
     <div class="ar-group">
-      <div class="ar-label">Lignes</div>
+      <div class="ar-label">Rows</div>
       <input id="ar-rows" class="ar-input" type="text" inputmode="decimal" value="3" oninput="arrayPreviewUpdate()">
     </div>
     <div class="ar-group">
-      <div class="ar-label">Espacement Y</div>
+      <div class="ar-label">Y Spacing</div>
       <div class="ar-pick-row">
         <input id="ar-dy" class="ar-input" type="text" inputmode="decimal" value="100" oninput="arrayPreviewUpdate()">
         <button class="ar-pick-btn" title="Cliquer 2 points sur le dessin" onclick="arrayPickSpacing('y')" style="transform:rotate(90deg)">⊶</button>
@@ -1668,27 +1668,27 @@
 
 <div id="polar-array-dialog" style="display:none">
   <div class="ar-header">
-    <span>RÉSEAU POLAIRE</span>
+    <span>POLAR ARRAY</span>
     <span class="lm-close" onclick="closePolarArrayDialog()">×</span>
   </div>
   <div class="ar-body">
     <div class="ar-group">
-      <div class="ar-label">Nb d'éléments</div>
+      <div class="ar-label">Item count</div>
       <input id="par-count" class="ar-input" type="text" inputmode="decimal" value="6" oninput="polarArrayPreviewUpdate()">
     </div>
     <div class="ar-group">
-      <div class="ar-label">Angle total (°)</div>
+      <div class="ar-label">Total angle (°)</div>
       <input id="par-angle" class="ar-input" type="text" inputmode="decimal" value="360" oninput="polarArrayPreviewUpdate()">
     </div>
     <div class="ar-group">
-      <div class="ar-label">Centre X</div>
+      <div class="ar-label">Center X</div>
       <div class="ar-pick-row">
         <input id="par-cx" class="ar-input" type="text" inputmode="decimal" value="0" oninput="polarArrayPreviewUpdate()">
         <button class="ar-pick-btn" title="Cliquer le centre sur le dessin" onclick="polarArrayPickCenter()">⊕</button>
       </div>
     </div>
     <div class="ar-group">
-      <div class="ar-label">Centre Y</div>
+      <div class="ar-label">Center Y</div>
       <input id="par-cy" class="ar-input" type="text" inputmode="decimal" value="0" oninput="polarArrayPreviewUpdate()">
     </div>
   </div>
@@ -1708,7 +1708,7 @@
 <!-- CALCULATRICE -->
 <div id="calc-dialog" tabindex="-1" style="outline:none">
   <div class="calc-hdr" id="calc-drag">
-    <span>CALCULATRICE</span>
+    <span>CALCULATOR</span>
     <div class="calc-hdr-btns">
       <button class="calc-mode-btn" id="calc-sci-btn" onclick="calcToggleSci()" title="Mode scientifique">SCI</button>
       <button class="calc-deg-btn active" id="calc-deg-btn" onclick="calcToggleDeg()" title="Degrés / Radians">DEG</button>
@@ -1934,7 +1934,7 @@
   <div class="terminal-output" id="term-output"></div>
   <div class="terminal-input-row">
     <span class="prompt-icon">❯</span>
-    <input type="text" id="cmd-input" placeholder="Commande ou mesure (100<45, @50,30, 200)..." autocomplete="off" spellcheck="false">
+    <input type="text" id="cmd-input" placeholder="Command or measure (100<45, @50,30, 200)..." autocomplete="off" spellcheck="false">
   </div>
 </div>
 
@@ -11764,30 +11764,30 @@ function showHelp() {
   //                      Mode B : lookup runtime dans TRANSLATIONS[currentLang]
   // Lookup dans TRANSLATIONS (Mode B runtime) ou dans le dictionnaire FR embarqué (Mode A)
   const _helpFR = {
-    'help.commands':      `═══ COMMANDES ═══`,
-    'help.measure':       `═══ SAISIE DE MESURE (après 1er point) ═══`,
-    'help.measure.polar': `  100<45   — Polaire: distance 100, angle 45°`,
-    'help.measure.rel':   `  50,30    — Relatif: +50 en X, +30 en Y (par défaut)`,
-    'help.measure.relx':  `  @50,30   — Relatif: idem (explicite)`,
-    'help.measure.abs':   `  #200,300 — Absolu: coordonnées X=200, Y=300`,
-    'help.measure.dist':  `  150      — Distance 150 dans la direction du curseur`,
-    'help.measure.ex':    `  Exemple: RECT → clic → 100,100 → carré 100×100 ✓`,
-    'help.files':         `═══ FICHIERS ═══`,
-    'help.files.open':    `  OPEN     — Ouvrir DXF / DWG / JSON (.mcad)`,
-    'help.files.save':    `  SAVE     — Sauvegarder en JSON natif (.mcad)`,
+    'help.commands':      `═══ COMMANDS ═══`,
+    'help.measure':       `═══ POINT INPUT (after 1st point) ═══`,
+    'help.measure.polar': `  100<45   — Polar: distance 100, angle 45°`,
+    'help.measure.rel':   `  50,30    — Relative: +50 X, +30 Y (default)`,
+    'help.measure.relx':  `  @50,30   — Relative: same (explicit)`,
+    'help.measure.abs':   `  #200,300 — Absolute: X=200, Y=300`,
+    'help.measure.dist':  `  150      — Distance 150 in cursor direction`,
+    'help.measure.ex':    `  Example: RECT → click → 100,100 → 100×100 square ✓`,
+    'help.files':         `═══ FILES ═══`,
+    'help.files.open':    `  OPEN     — Open DXF / DWG / JSON (.mcad)`,
+    'help.files.save':    `  SAVE     — Save as native JSON (.mcad)`,
     'help.files.dxf':     `  EXPORT DXF — Export DXF (AutoCAD 2000)`,
     'help.files.dwg':     `  EXPORT DWG — Export DWG (via DXF)`,
     'help.files.svg':     `  EXPORT SVG — Export SVG`,
-    'help.files.shortcut':`  Ctrl+O / Ctrl+S — Ouvrir / Sauvegarder`,
-    'help.constraints':   `═══ CONTRAINTES ═══`,
-    'help.ortho':         `  F8 = ORTHO (0°/90°/180°/270° uniquement)`,
-    'help.polar':         `  F10 = POLAIRE (increments d'angle configurables)`,
-    'help.polar.cmd':     `  POLAR [angle] — Modifier increment (ex: POLAR 30)`,
-    'help.polar.excl':    `  Ortho et Polaire sont mutuellement exclusifs`,
-    'help.di':            `═══ SAISIE DYNAMIQUE ═══`,
-    'help.di.tooltip':    `  Infobulle Distance/Angle éditable près du curseur`,
-    'help.di.tab':        `  Tab = basculer entre champs D et A`,
-    'help.di.confirm':    `  Entrez une valeur + Entrée = confirmer le point`,
+    'help.files.shortcut':`  Ctrl+O / Ctrl+S — Open / Save`,
+    'help.constraints':   `═══ CONSTRAINTS ═══`,
+    'help.ortho':         `  F8 = ORTHO (0°/90°/180°/270° only)`,
+    'help.polar':         `  F10 = POLAR (configurable angle increments)`,
+    'help.polar.cmd':     `  POLAR [angle] — Change increment (e.g. POLAR 30)`,
+    'help.polar.excl':    `  Ortho and Polar are mutually exclusive`,
+    'help.di':            `═══ DYNAMIC INPUT ═══`,
+    'help.di.tooltip':    `  Distance/Angle tooltip editable near cursor`,
+    'help.di.tab':        `  Tab = toggle between D and A fields`,
+    'help.di.confirm':    `  Enter a value + Enter = confirm point`,
     'help.module':        `═══ MODULE: {name} ═══`,
   };
   function _ht(key) {
@@ -18309,473 +18309,7 @@ async function initLibrary() {
 
 initLibrary();
 
-// @@DEMO_BEGIN — Généré par build.py --demo — ne pas éditer directement
-// Éditer demo/demo_sequence.js puis relancer build.py --demo
-// demo/demo_sequence.js — Séquence démo automatique MiniCAD
-// Injecté par build.py --demo entre @@DEMO_BEGIN / @@DEMO_END
-// Activé par ?demo dans l'URL (ex: minicad.html?demo)
-
-(function () {
-  const IS_DEMO = location.search.includes('demo') || location.hash.includes('demo');
-
-  // ── Bouton DÉMO toujours visible (même sans ?demo) ────────────────────
-  window.addEventListener('load', () => {
-    // Conteneur groupé en bas à droite, au-dessus de la zone terminal
-    const wrap = document.createElement('div');
-    wrap.style.cssText = [
-      'position:fixed', 'bottom:52px', 'right:14px',
-      'display:flex', 'flex-direction:column', 'align-items:flex-end',
-      'gap:6px', 'z-index:9998'
-    ].join(';');
-
-    const btn = document.createElement('button');
-    btn.id = 'demo-launch-entry';
-    btn.textContent = '▶  DÉMO';
-    btn.style.cssText = [
-      'background:#ffd700', 'color:#0a0f1a',
-      'border:none', 'border-radius:4px', 'padding:6px 14px',
-      'font:700 12px "JetBrains Mono",monospace',
-      'cursor:pointer',
-      'box-shadow:0 2px 8px rgba(0,0,0,0.45)',
-      'letter-spacing:.04em',
-      'transition:background .2s'
-    ].join(';');
-    btn.onmouseenter = () => { btn.style.background = '#ffe94d'; };
-    btn.onmouseleave = () => { btn.style.background = '#ffd700'; };
-    btn.onclick = () => {
-      if (!IS_DEMO) { location.href = location.pathname + '?demo'; }
-      else if (_demoRunning) { _demoRunning = false; location.href = location.pathname; }
-      else { S.entities = []; render(); startDemo(); }
-    };
-    wrap.appendChild(btn);
-
-    const lp = document.createElement('a');
-    lp.href = 'https://liberapay.com/MiniCAD/donate';
-    lp.target = '_blank';
-    lp.rel = 'noopener';
-    lp.title = 'Donate using Liberapay';
-    lp.style.cssText = 'display:block;line-height:0';
-    const lpImg = document.createElement('img');
-    lpImg.alt = 'Donate using Liberapay';
-    lpImg.src = 'https://liberapay.com/assets/widgets/donate.svg';
-    lpImg.style.cssText = 'height:26px;display:block';
-    lp.appendChild(lpImg);
-    wrap.appendChild(lp);
-
-    document.body.appendChild(wrap);
-
-    // remplacer par le bouton géré par la démo si on est en mode démo
-    if (IS_DEMO) window._demoBtnEntry = btn;
-  });
-
-  if (!IS_DEMO) return;
-
-  // ── Utilitaires ──────────────────────────────────────────────────────
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-  function worldToCanvas(wx, wy) {
-    // Coordonnées canvas (pixels, pas screen)
-    const sx = (wx - S.panX) * S.zoom + canvas.width  / 2;
-    const sy = -(wy - S.panY) * S.zoom + canvas.height / 2;
-    return [sx, sy];
-  }
-
-  function worldToScreen(wx, wy) {
-    const rect = canvas.getBoundingClientRect();
-    const [sx, sy] = worldToCanvas(wx, wy);
-    return [
-      rect.left + sx * (rect.width  / canvas.width),
-      rect.top  + sy * (rect.height / canvas.height)
-    ];
-  }
-
-  function addEnt(e) {
-    e.id    = S.nextId++;
-    e.layer = S.currentLayer;
-    S.entities.push(e);
-    render();
-  }
-
-  // ── Curseur flottant (pour navigation toolbar) ────────────────────────
-  let dot;
-  function createDot() {
-    dot = document.createElement('div');
-    dot.id = 'demo-dot';
-    dot.style.cssText = [
-      'position:fixed', 'width:16px', 'height:16px', 'border-radius:50%',
-      'background:rgba(255,215,0,0.92)', 'border:2px solid rgba(0,0,0,0.5)',
-      'box-shadow:0 0 10px #ffd70099', 'pointer-events:none', 'z-index:9999',
-      'transform:translate(-50%,-50%)',
-      'display:none'
-    ].join(';');
-    document.body.appendChild(dot);
-  }
-
-  function dotPos(px, py) {
-    dot.style.left = px + 'px';
-    dot.style.top  = py + 'px';
-  }
-
-  async function dotMoveTo(px, py, ms) {
-    dot.style.display = 'block';
-    dot.style.transition = `left ${ms}ms cubic-bezier(.4,0,.2,1), top ${ms}ms cubic-bezier(.4,0,.2,1)`;
-    dotPos(px, py);
-    await sleep(ms + 80);
-  }
-
-  async function dotClick() {
-    dot.style.transition = 'transform .12s';
-    dot.style.transform = 'translate(-50%,-50%) scale(1.6)';
-    await sleep(140);
-    dot.style.transform = 'translate(-50%,-50%) scale(1)';
-    await sleep(320);
-  }
-
-  // ── Curseur canvas MiniCAD (vrais réticules) ──────────────────────────
-  // Anime S.mouseScreen avec easing et appelle render() à chaque frame
-  let _cursorAnim = null;
-
-  function easeInOut(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
-
-  async function moveCursor(wx, wy, ms) {
-    if (_cursorAnim) { _cursorAnim.cancel = true; }
-    dot.style.display = 'none';   // cacher le dot pendant qu'on dessine
-    mouseOnCanvas = true;
-
-    const startX = S.mouseScreen ? S.mouseScreen[0] : canvas.width  / 2;
-    const startY = S.mouseScreen ? S.mouseScreen[1] : canvas.height / 2;
-    const [endX, endY] = worldToCanvas(wx, wy);
-
-    const anim = { cancel: false };
-    _cursorAnim = anim;
-    const t0 = performance.now();
-
-    await new Promise(resolve => {
-      function frame(now) {
-        if (anim.cancel) { resolve(); return; }
-        const t = Math.min(1, (now - t0) / ms);
-        const e = easeInOut(t);
-        S.mouseScreen = [
-          startX + (endX - startX) * e,
-          startY + (endY - startY) * e
-        ];
-        render();
-        if (t < 1) requestAnimationFrame(frame);
-        else { resolve(); }
-      }
-      requestAnimationFrame(frame);
-    });
-  }
-
-  async function clickWorld(wx, wy, moveMs) {
-    await moveCursor(wx, wy, moveMs || 1600);
-    // Pulse visuel : cercle flash sur le canvas
-    const [cx, cy] = worldToCanvas(wx, wy);
-    const ctx = canvas.getContext('2d');
-    for (let r = 4; r <= 18; r += 7) {
-      render();
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255,215,0,0.7)';
-      ctx.lineWidth   = 2;
-      ctx.stroke();
-      await sleep(50);
-    }
-    await sleep(120);
-  }
-
-  // ── Sélection style de cote dans le panneau latéral ─────────────────
-  async function selectDimStyle(name) {
-    const sel = document.querySelector('#dimstyle-panel select');
-    if (!sel) { _dsSet(name); return; }
-
-    mouseOnCanvas = false;
-    S.mouseScreen = null;
-    render();
-
-    const rect = sel.getBoundingClientRect();
-    const px   = rect.left + rect.width  / 2;
-    const py   = rect.top  + rect.height / 2;
-
-    dot.style.display = 'block';
-    dot.style.transition = 'left 840ms cubic-bezier(.4,0,.2,1), top 840ms cubic-bezier(.4,0,.2,1)';
-    dotPos(px, py);
-    await sleep(960);
-
-    sel.style.outline = '2px solid #ffd700';
-    sel.style.boxShadow = '0 0 8px #ffd70088';
-    await dotClick();
-
-    _dsSet(name);          // applique le style + rafraîchit le select
-    sel.value = name;      // met le select à jour visuellement
-
-    await sleep(500);
-    sel.style.outline = '';
-    sel.style.boxShadow = '';
-    dot.style.display = 'none';
-    await sleep(400);
-  }
-
-  // ── Clic sur un bouton toolbar ────────────────────────────────────────
-  async function clickToolBtn(toolName) {
-    const btn = document.querySelector(`[data-tool="${toolName}"]`);
-    if (!btn) return;
-
-    mouseOnCanvas = false;
-    S.mouseScreen = null;
-    render();
-
-    const rect  = btn.getBoundingClientRect();
-    const px    = rect.left + rect.width  / 2;
-    const py    = rect.top  + rect.height / 2;
-
-    // Déplacer le dot vers le bouton
-    dot.style.display = 'block';
-    dot.style.transition = 'left 840ms cubic-bezier(.4,0,.2,1), top 840ms cubic-bezier(.4,0,.2,1)';
-    dotPos(px, py);
-    await sleep(960);
-
-    // Flash doré sur le bouton
-    const origOutline = btn.style.outline;
-    btn.style.outline = '2px solid #ffd700';
-    btn.style.boxShadow = '0 0 8px #ffd70088';
-    await dotClick();
-    await sleep(240);
-    btn.style.outline = origOutline || '';
-    btn.style.boxShadow = '';
-
-    dot.style.display = 'none';
-    await sleep(400);
-  }
-
-  // ── Bandeau d'explication ─────────────────────────────────────────────
-  let panel;
-  function createPanel() {
-    panel = document.createElement('div');
-    panel.id = 'demo-panel';
-    panel.style.cssText = [
-      'position:fixed', 'top:58px', 'left:50%', 'transform:translateX(-50%)',
-      'background:rgba(10,15,26,0.93)', 'color:#ffd700',
-      'padding:5px 22px', 'border-radius:20px',
-      'font:600 13px/1.6 "JetBrains Mono",monospace',
-      'z-index:9998', 'pointer-events:none',
-      'border:1px solid rgba(255,215,0,0.35)',
-      'transition:opacity .3s', 'opacity:0', 'white-space:nowrap'
-    ].join(';');
-    document.body.appendChild(panel);
-  }
-
-  async function explain(text, hold) {
-    panel.textContent = text;
-    panel.style.opacity = '1';
-    if (hold) { await sleep(hold); panel.style.opacity = '0'; await sleep(280); }
-  }
-
-  function demoBtnRunning(running) {
-    const btn = window._demoBtnEntry;
-    if (!btn) return;
-    btn.textContent  = running ? '✕  Sortir du mode démo' : '▶  DÉMO';
-    btn.style.background = running ? '#ffb300' : '#ffd700';
-    btn.style.cursor = 'pointer';
-  }
-
-  // ── IPE 160 simplifié ─────────────────────────────────────────────────
-  function ipeProfile(cx, cy) {
-    const h=160, b=82, tw=5.0, tf=7.4;
-    const hh=h/2, bh=b/2, th=tw/2;
-    addEnt({ type:'polyline', points:[
-      [cx-bh, cy-hh], [cx+bh, cy-hh], [cx+bh, cy-hh+tf],
-      [cx+th, cy-hh+tf], [cx+th, cy+hh-tf],
-      [cx+bh, cy+hh-tf], [cx+bh, cy+hh],
-      [cx-bh, cy+hh], [cx-bh, cy+hh-tf],
-      [cx-th, cy+hh-tf], [cx-th, cy-hh+tf],
-      [cx-bh, cy-hh+tf], [cx-bh, cy-hh]
-    ], closed: false });
-  }
-
-  // ── Séquence principale ───────────────────────────────────────────────
-  let _demoRunning = false;
-
-  async function startDemo() {
-    if (_demoRunning) return;
-    _demoRunning = true;
-    demoBtnRunning(true);
-
-    S.entities = []; S.selected = [];
-    S.panX = 0; S.panY = 0; S.zoom = 1.1;
-    mouseOnCanvas = false;
-    S.mouseScreen = null;
-    termPrint('━━ Démo MiniCAD ━━', 'info');
-    render();
-    await sleep(1000);
-
-    // ── 1. Lignes — LINE ──────────────────────────────────────────────
-    await explain('Lignes — LINE');
-    await clickToolBtn('line');
-    S.tool = 'line';
-
-    termPrint('LINE', 'info');
-    await clickWorld(-220, -130);
-    await clickWorld( 220, -130, 1400);
-    addEnt({ type:'line', x1:-220, y1:-130, x2: 220, y2:-130 });
-    await clickWorld( 220,  130, 1400);
-    addEnt({ type:'line', x1: 220, y1:-130, x2: 220, y2: 130 });
-    await clickWorld(-220,  130, 1400);
-    addEnt({ type:'line', x1: 220, y1: 130, x2:-220, y2: 130 });
-    await clickWorld(-220, -130, 1400);
-    addEnt({ type:'line', x1:-220, y1: 130, x2:-220, y2:-130 });
-    await sleep(600);
-
-    if (!_demoRunning) return;
-
-    // ── 2. Cercle — CIRCLE ────────────────────────────────────────────
-    await explain('Cercle — CIRCLE', 0);
-    await clickToolBtn('circle');
-    S.tool = 'circle';
-
-    termPrint('CIRCLE', 'info');
-    await clickWorld(0, 0, 1400);
-    await moveCursor(0, 65, 1200);
-    addEnt({ type:'circle', cx:0, cy:0, r:65 });
-    await sleep(700);
-
-    if (!_demoRunning) return;
-
-    // ── 3. Polyligne — POLYLINE ───────────────────────────────────────
-    await explain('Polyligne — POLYLINE', 0);
-    await clickToolBtn('polyline');
-    S.tool = 'polyline';
-
-    termPrint('PL', 'info');
-    const tri = [[-190,-120],[-90,-120],[-140,-30],[-190,-120]];
-    for (const [tx,ty] of tri.slice(0,-1)) await clickWorld(tx, ty, 1400);
-    addEnt({ type:'polyline', points:tri, closed:false });
-    await sleep(600);
-
-    if (!_demoRunning) return;
-
-    // ── 4. Arc — ARC ──────────────────────────────────────────────────
-    await explain('Arc — ARC', 0);
-    await clickToolBtn('arc');
-    S.tool = 'arc';
-
-    termPrint('ARC', 'info');
-    await moveCursor(110, 60, 1400);
-    addEnt({ type:'arc', cx:110, cy:0, r:60, startAngle: Math.PI/6, endAngle: 5*Math.PI/6 });
-    await sleep(700);
-
-    if (!_demoRunning) return;
-
-    // ── 5. Hachures — HATCH ───────────────────────────────────────────
-    await explain('Hachures — HATCH', 0);
-    await clickToolBtn('hatch');
-    S.tool = 'pick';
-
-    termPrint('H', 'info');
-    await moveCursor(-140, -90, 1400);
-    addEnt({ type:'hatch', points:[[-190,-120],[-90,-120],[-140,-30]], angle:45, spacing:14, pattern:'lines' });
-    await sleep(700);
-
-    if (!_demoRunning) return;
-
-    // ── 6. Raccord — FILLET ───────────────────────────────────────────
-    await explain('Raccord — FILLET (r=30)', 0);
-    await clickToolBtn('fillet');
-    S.tool = 'pick';
-
-    termPrint('F 30', 'info');
-    await clickWorld(-220, -50, 1400);   // clic sur la ligne verticale gauche
-    await clickWorld(-160, -130, 1400);  // clic sur la ligne horizontale basse
-
-    // Raccourcir les deux lignes aux points de tangence (r=30)
-    const bLine = S.entities.find(e => e.type==='line' && Math.abs(e.x1+220)<1 && Math.abs(e.y1+130)<1 && Math.abs(e.y2+130)<1);
-    if (bLine) bLine.x1 = -190;   // tangente sur ligne basse
-    const lLine = S.entities.find(e => e.type==='line' && Math.abs(e.x1+220)<1 && Math.abs(e.x2+220)<1 && Math.abs(e.y2+130)<1);
-    if (lLine) lLine.y2 = -100;   // tangente sur ligne gauche
-
-    addEnt({ type:'arc', cx:-190, cy:-100, r:30, startAngle:-Math.PI, endAngle:-Math.PI/2 });
-    await sleep(700);
-
-    if (!_demoRunning) return;
-
-    // ── 7. Cotation 1:10 — DIMLINEAR ─────────────────────────────────
-    await explain('Cotation 1:10 — DIMLINEAR', 0);
-    S.tool = 'pick';
-    await selectDimStyle('1:10');
-
-    termPrint('DIMLINEAR', 'info');
-    await clickWorld(-220, -130, 1400);
-    await clickWorld( 220, -130, 1400);
-    addEnt({ type:'dim_linear', x1:-220, y1:-130, x2:220, y2:-130, isHoriz:true, offset:-40, dimStyle:'1:10' });
-    await sleep(700);
-
-    if (!_demoRunning) return;
-
-    // ── 8. Offset cercle — OFFSET ─────────────────────────────────────
-    await explain('Décalage — OFFSET 20', 0);
-    await clickToolBtn('offset');
-    S.tool = 'pick';
-
-    termPrint('OFFSET 20', 'info');
-    await moveCursor(0, 65, 1400);
-    addEnt({ type:'circle', cx:0, cy:0, r:85 });
-    await sleep(700);
-
-    if (!_demoRunning) return;
-
-    // ── 9. Profilé IPE 160 ────────────────────────────────────────────
-    await explain('Bibliothèque — IPE 160', 0);
-    mouseOnCanvas = false;
-    S.mouseScreen = null;
-    render();
-
-    termPrint('ipe 160', 'info');
-    await sleep(700);
-    dot.style.display = 'none';
-    await moveCursor(140, 0, 1400);
-    ipeProfile(140, 0);
-    await sleep(800);
-
-    if (!_demoRunning) return;
-
-    // ── 10. Texte — TEXT ─────────────────────────────────────────────
-    await explain('Annotation — TEXT', 0);
-    await clickToolBtn('text_place');
-    S.tool = 'text_place';
-
-    termPrint('TEXT', 'info');
-    await clickWorld(-205, 118, 1400);
-    addEnt({ type:'text', x:-205, y:118, content:'MiniCAD v0.09', size:14 });
-    await sleep(800);
-
-    if (!_demoRunning) return;
-
-    // ── Fin ───────────────────────────────────────────────────────────
-    mouseOnCanvas = false;
-    S.mouseScreen = null;
-    S.tool = 'select';
-    dot.style.display = 'none';
-    render();
-
-    await explain('✓  Dessin technique 2D — un seul fichier HTML', 3600);
-    termPrint('━━ Fin démo — rechargement… ━━', 'success');
-
-    await sleep(2000);
-    _demoRunning = false;
-    demoBtnRunning(false);
-    startDemo();
-  }
-
-  // ── Démarrage après init MiniCAD ──────────────────────────────────────
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      createDot();
-      createPanel();
-      startDemo();
-    }, 900);
-  });
-
-})();
+// @@DEMO_BEGIN
 // @@DEMO_END
 
 </script>
