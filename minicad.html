@@ -9522,40 +9522,94 @@ function mirrorEntity(src,ax,ay,bx,by) {
 }
 
 // Offset a polyline's vertex array by `dist` (signed: + = left of direction, - = right)
-function offsetPolylinePoints(pts, dist) {
+function offsetPolylinePoints(pts, dist, closed) {
   const n = pts.length;
   if (n < 2) return null;
-  // Build offset segments (parallel, shifted by dist to the left of each segment direction)
-  const segs = [];
-  for (let i = 0; i < n - 1; i++) {
-    const [ax,ay] = pts[i], [bx,by] = pts[i+1];
-    const len = Math.hypot(bx-ax, by-ay);
-    if (len < 1e-9) { segs.push(null); continue; }
-    const nx = -(by-ay)/len * dist, ny = (bx-ax)/len * dist;
-    segs.push([ax+nx, ay+ny, bx+nx, by+ny]);
+  // Pour une polyline fermée, on ajoute le segment de retour au premier point
+  const verts = closed ? [...pts, pts[0]] : pts;
+  const nSegs = verts.length - 1;
+  if (nSegs < 1) return null;
+
+  // --- Calcul des segments décalés (lignes ou arcs) ---
+  const offSegs = [];
+  for (let i = 0; i < nSegs; i++) {
+    const p1 = verts[i], p2 = verts[i+1];
+    const x1=p1[0], y1=p1[1], bulge=p1[2]||0, x2=p2[0], y2=p2[1];
+    const len = Math.hypot(x2-x1, y2-y1);
+    if (len < 1e-9) { offSegs.push(null); continue; }
+
+    if (bulge !== 0) {
+      // Arc : décaler le rayon, garder le même centre et le même bulge
+      const r = len*(1+bulge*bulge)/(4*Math.abs(bulge));
+      const sag = Math.sqrt(Math.max(0, r*r - len*len/4));
+      const mx=(x1+x2)/2, my=(y1+y2)/2;
+      const pdx=-(y2-y1)/len, pdy=(x2-x1)/len;
+      const ccx=mx+Math.sign(bulge)*pdx*sag, ccy=my+Math.sign(bulge)*pdy*sag;
+      const rNew = r + Math.sign(bulge)*dist;
+      if (rNew <= 0) { offSegs.push(null); continue; }
+      const a1=Math.atan2(y1-ccy, x1-ccx), a2=Math.atan2(y2-ccy, x2-ccx);
+      offSegs.push({ arc:true,
+        p1:[ccx+rNew*Math.cos(a1), ccy+rNew*Math.sin(a1)],
+        p2:[ccx+rNew*Math.cos(a2), ccy+rNew*Math.sin(a2)],
+        bulge });
+    } else {
+      // Droite : décalage normal gauche
+      const nx=-(y2-y1)/len*dist, ny=(x2-x1)/len*dist;
+      offSegs.push({ arc:false, p1:[x1+nx,y1+ny], p2:[x2+nx,y2+ny] });
+    }
   }
-  // First valid segment
-  const valid = segs.filter(Boolean);
-  if (!valid.length) return null;
+  if (!offSegs.some(Boolean)) return null;
+
+  // --- Calcul des coins (intersection ou jonction tangente) ---
+  // corners[i] = point entre offSegs[i] et offSegs[(i+1)%nSegs]
+  const junctionN = closed ? nSegs : nSegs-1;
+  const corners = [];
+  function lineLine(s1, s2) {
+    const [ax,ay]=s1.p1, [bx,by]=s1.p2, [cx,cy]=s2.p1, [dx,dy]=s2.p2;
+    const d1x=bx-ax, d1y=by-ay, d2x=dx-cx, d2y=dy-cy;
+    const denom=d1x*d2y-d1y*d2x;
+    if (Math.abs(denom)<1e-9) return [bx,by];
+    const t=((cx-ax)*d2y-(cy-ay)*d2x)/denom;
+    return [ax+t*d1x, ay+t*d1y];
+  }
+  for (let i=0; i<junctionN; i++) {
+    const s1=offSegs[i], s2=offSegs[(i+1)%nSegs];
+    if (!s1&&!s2) { corners.push(null); continue; }
+    if (!s1) { corners.push(s2.p1.slice()); continue; }
+    if (!s2) { corners.push(s1.p2.slice()); continue; }
+    // Deux droites → intersection miter ; sinon jonction tangente → extrémité de l'arc
+    corners.push((!s1.arc && !s2.arc) ? lineLine(s1,s2) : s1.p2.slice());
+  }
+
+  // --- Assemblage des nouveaux points ---
   const newPts = [];
-  // Start point: start of first segment
-  const fs = segs.find(Boolean);
-  newPts.push([fs[0], fs[1]]);
-  // Intermediate points: intersection of consecutive offset segments
-  for (let i = 0; i < segs.length - 1; i++) {
-    const s1 = segs[i], s2 = segs[i+1];
-    if (!s1 || !s2) { if (s2) newPts.push([s2[0], s2[1]]); continue; }
-    const d1x=s1[2]-s1[0], d1y=s1[3]-s1[1];
-    const d2x=s2[2]-s2[0], d2y=s2[3]-s2[1];
-    const denom = d1x*d2y - d1y*d2x;
-    if (Math.abs(denom) < 1e-9) { newPts.push([s1[2], s1[3]]); continue; }
-    const t = ((s2[0]-s1[0])*d2y - (s2[1]-s1[1])*d2x) / denom;
-    newPts.push([s1[0]+t*d1x, s1[1]+t*d1y]);
+  if (closed) {
+    // Polyline fermée : nSegs points, chacun est le coin AVANT le segment i
+    for (let i=0; i<nSegs; i++) {
+      const s=offSegs[i];
+      if (!s) continue;
+      const prevCorner = corners[(i-1+nSegs)%nSegs];
+      newPts.push([
+        prevCorner ? prevCorner[0] : s.p1[0],
+        prevCorner ? prevCorner[1] : s.p1[1],
+        s.arc ? s.bulge : 0
+      ]);
+    }
+  } else {
+    // Polyline ouverte
+    const fs=offSegs.find(Boolean);
+    if (!fs) return null;
+    newPts.push([fs.p1[0], fs.p1[1], fs.arc ? fs.bulge : 0]);
+    for (let i=0; i<corners.length; i++) {
+      const s2=offSegs[i+1];
+      if (!s2) continue;
+      const c=corners[i];
+      if (c) newPts.push([c[0], c[1], s2.arc ? s2.bulge : 0]);
+    }
+    const ls=[...offSegs].reverse().find(Boolean);
+    if (ls) newPts.push([ls.p2[0], ls.p2[1]]);
   }
-  // End point: end of last segment
-  const ls = [...segs].reverse().find(Boolean);
-  newPts.push([ls[2], ls[3]]);
-  return newPts;
+  return newPts.length>=2 ? newPts : null;
 }
 
 // Create a new entity that is a geometric offset of src by dist, on the side of (sideX, sideY)
@@ -9592,18 +9646,15 @@ function computeOffsetGeom(src, dist, sideX, sideY) {
   } else if (src.type === 'polyline' || src.type === 'cable') {
     const pts = src.points;
     if (!pts || pts.length < 2) return null;
-    // Determine sign from nearest segment
+    // Determine sign from nearest segment (also check closing segment for closed polys)
+    const allSegs = src.closed ? [...pts.map((_,i)=>i), 0].reduce((acc,_,i,arr)=>{ if(i<pts.length) acc.push([pts[i],pts[(i+1)%pts.length]]); return acc; },[]) : pts.slice(0,-1).map((p,i)=>[p,pts[i+1]]);
     let bestD = Infinity, bestCross = 0;
-    for (let i = 0; i < pts.length-1; i++) {
-      const [ax,ay]=pts[i], [bx,by]=pts[i+1];
+    for (const [[ax,ay],[bx,by]] of allSegs) {
       const d = distToSeg(sideX,sideY,ax,ay,bx,by);
-      if (d < bestD) {
-        bestD = d;
-        bestCross = (bx-ax)*(sideY-ay) - (by-ay)*(sideX-ax);
-      }
+      if (d < bestD) { bestD = d; bestCross = (bx-ax)*(sideY-ay) - (by-ay)*(sideX-ax); }
     }
     const sign = bestCross >= 0 ? 1 : -1;
-    const newPts = offsetPolylinePoints(pts, sign*dist);
+    const newPts = offsetPolylinePoints(pts, sign*dist, src.closed);
     if (!newPts) return null;
     e.points = newPts;
 
