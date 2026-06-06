@@ -9236,6 +9236,10 @@ function extractSubPoly(pts, nSegs, t1, t2) {
 function applyTrimPolyline(ent, prims, clickWx, clickWy) {
   const pts=ent.points, nSegs=pts.length-1;
   if(nSegs<1) return false;
+  // Polyligne fermée (rect converti, ou closed) : la couture pts[0]=pts[nSegs] n'est PAS
+  // une coupe → les pièces autour de la couture sont en réalité reliées. On traite en cycle.
+  const isClosed = ent.closed ||
+    (nSegs>=2 && Math.hypot(pts[0][0]-pts[nSegs][0], pts[0][1]-pts[nSegs][1])<1e-9);
   const globalTs=[];
   for(let i=0;i<nSegs;i++){
     const p1=pts[i],p2=pts[i+1];
@@ -9266,6 +9270,32 @@ function applyTrimPolyline(ent, prims, clickWx, clickWy) {
     const d=Math.hypot(p1[0]+lt*dx-clickWx,p1[1]+lt*dy-clickWy);
     if(d<minDist){minDist=d;clickGlobalT=i+lt;}
   }
+  if(isClosed){
+    // Cycle : M coupes → M pièces [T[k], T[k+1]] (+ pièce de couture [T[M-1], T[0]+nSegs]).
+    // On retire la pièce cliquée ; les M-1 restantes forment UNE polyligne ouverte.
+    const M=globalTs.length;
+    let rem=-1;
+    for(let k=0;k<M;k++){
+      const a=globalTs[k], b=(k+1<M)?globalTs[k+1]:globalTs[0]+nSegs;
+      let c=clickGlobalT; if(k===M-1 && c<a) c+=nSegs; // ramener le clic dans la pièce de couture
+      if(c>=a-1e-9 && c<=b+1e-9){rem=k;break;}
+    }
+    if(rem<0) rem=0;
+    let kept;
+    if(rem===M-1){
+      // pièce retirée = couture → garder [T[0], T[M-1]] (sans traverser la couture)
+      kept=extractSubPoly(pts,nSegs, globalTs[0], globalTs[M-1]);
+    } else {
+      // pièce interne retirée → le reste s'enroule par la couture : [T[rem+1], nSegs] + [0, T[rem]]
+      const part1=extractSubPoly(pts,nSegs, globalTs[rem+1], nSegs);
+      const part2=extractSubPoly(pts,nSegs, 0, globalTs[rem]);
+      kept=part1.slice(0,-1).concat(part2); // point de couture unique (bulge de part2)
+    }
+    if(kept.length<2){S.entities=S.entities.filter(e=>e.id!==ent.id);return true;}
+    ent.points=kept; ent.closed=false; // ouverte après ajustement
+    return true;
+  }
+
   const breaks=[0,...globalTs,nSegs];
   let remIdx=0;
   for(let i=0;i<breaks.length-1;i++){if(clickGlobalT>=breaks[i]-1e-9&&clickGlobalT<=breaks[i+1]+1e-9){remIdx=i;break;}}
