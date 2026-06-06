@@ -2246,10 +2246,13 @@ function findOsnap(wx, wy) {
 
   // Optim 1 — seuil de déplacement : retourner le résultat mis en cache
   // si la souris n'a pas bougé de plus de 1.5 px écran et le dessin n'a pas changé.
+  // Exception : tangente différée active → on doit recalculer _tanResolvedP1 chaque frame
+  // (sinon le cache renvoie tôt et _tanResolvedP1 reste null → 1er point non recalculé).
   const pixThresh = 1.5 / S.zoom;
   const _drawRef = (S.drawing && S.drawPoints.length > 0)
     ? S.drawPoints[S.drawPoints.length - 1].join(',') : '';
-  if (Math.hypot(wx - _osnapCache.wx, wy - _osnapCache.wy) < pixThresh &&
+  if (!S._tanFromCircle &&
+      Math.hypot(wx - _osnapCache.wx, wy - _osnapCache.wy) < pixThresh &&
       S.entities.length === _osnapCache.nEntities &&
       _drawRef === _osnapCache.drawRef) {
     return _osnapCache.result;
@@ -8146,16 +8149,24 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       else if (tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
       else termPrint('Longueur (ex: 150) ou 100<45 ou cliquez le 2ème point', 'warning');
     } else {
-      // Tangente différée : 2e clic avec résolution cercle-à-cercle
-      if (tool === 'line' && S._tanFromCircle && S.currentOsnap?.type === 'tangent' && S._tanResolvedP1) {
-        const p1 = S._tanResolvedP1, p2 = [wx, wy];
-        pushUndo();
-        S.entities.push({ type:'line', id:S.nextId++, layer:S.currentLayer,
-                          x1:p1[0], y1:p1[1], x2:p2[0], y2:p2[1] });
-        termPrint('Tangente tracée — Point suivant (Echap pour terminer)', 'warning');
-        S._tanFromCircle = null; S._tanFromCircleId = null; S._tanResolvedP1 = null;
-        S.drawPoints = [[p2[0], p2[1]]];
-        updateSaveIndicator('modified'); autoSave(); render(); return;
+      // Tangente différée : 2e clic avec résolution cercle-à-cercle.
+      // On recalcule p1 ET p2 depuis le 2e cercle snappé (tangente commune cohérente),
+      // sans dépendre de _tanResolvedP1 (robuste s'il y a plusieurs cercles).
+      if (tool === 'line' && S._tanFromCircle && S.currentOsnap?.type === 'tangent' &&
+          S.currentOsnap.entity && S.currentOsnap.entity.id !== S._tanFromCircleId) {
+        const e2 = S.currentOsnap.entity;
+        const t = _bestTangent(S._tanFromCircle, { cx:e2.cx, cy:e2.cy, r:e2.r },
+                               S.currentOsnap.x, S.currentOsnap.y);
+        if (t) {
+          const p1 = t.p1, p2 = t.p2;
+          pushUndo();
+          S.entities.push({ type:'line', id:S.nextId++, layer:S.currentLayer,
+                            x1:p1[0], y1:p1[1], x2:p2[0], y2:p2[1] });
+          termPrint('Tangente commune tracée — Point suivant (Echap pour terminer)', 'warning');
+          S._tanFromCircle = null; S._tanFromCircleId = null; S._tanResolvedP1 = null;
+          S.drawPoints = [[p2[0], p2[1]]];
+          updateSaveIndicator('modified'); autoSave(); render(); return;
+        }
       }
       let tx = wx, ty = wy;
       if (S.drawPoints.length > 0 && tool !== 'rect' && tool !== 'rectcenter') [tx, ty] = applyConstraint(S.drawPoints[0][0], S.drawPoints[0][1], wx, wy);
