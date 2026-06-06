@@ -77,6 +77,8 @@
   "tool.ortho": "Ortho (F8)",
   "tool.polar": "Polaire (F10)",
   "tool.explode_btn": "Éclater (X)",
+  "tool.group": "Grouper (GROUPE)",
+  "tool.ungroup": "Dégrouper (DÉGROUPER)",
   "tool.ai": "Assistant IA Ollama",
   "tool.print": "Exporter PDF (Ctrl+P)",
   "tool.save_state": "État de sauvegarde",

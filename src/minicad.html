@@ -1237,6 +1237,23 @@
           <line x1="8" y1="12" x2="2" y2="12"/><polygon points="4,10 4,14 1,12" fill="currentColor"/>
         </svg>
       </button>
+      <!-- Grouper -->
+      <button class="tool-btn" title="{{tool.group}}" data-i18n-title="tool.group" onclick="executeCommand('GROUP')">
+        <svg viewBox="0 0 24 24">
+          <rect x="3.5" y="3.5" width="17" height="17" rx="2" fill="none" stroke-dasharray="3,2" opacity="0.55"/>
+          <rect x="6.5" y="6.5" width="6" height="6" rx="1"/>
+          <rect x="12.5" y="12" width="5" height="5" rx="1"/>
+        </svg>
+      </button>
+      <!-- Dégrouper -->
+      <button class="tool-btn" title="{{tool.ungroup}}" data-i18n-title="tool.ungroup" onclick="executeCommand('UNGROUP')">
+        <svg viewBox="0 0 24 24">
+          <rect x="1.5" y="4.5" width="9.5" height="9.5" rx="1.5" fill="none" stroke-dasharray="3,2" opacity="0.55"/>
+          <rect x="13" y="10" width="9.5" height="9.5" rx="1.5" fill="none" stroke-dasharray="3,2" opacity="0.55"/>
+          <rect x="3.8" y="6.8" width="4.8" height="4.8" rx="1"/>
+          <rect x="15.3" y="12.3" width="4.8" height="4.8" rx="1"/>
+        </svg>
+      </button>
       <!-- Diviser  -->
       <button class="tool-btn" data-tool="divide_pick" title="Diviser (DIV)" onclick="executeCommand('DIVIDE')">
         <svg viewBox="0 0 24 24">
