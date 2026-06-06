@@ -7258,7 +7258,11 @@ function confirmDynamicInput() {
     }
     const val = parseFloat(up);
     if (S._ellipStep === 1 && !isNaN(val) && val > 0) {
-      const [cx,cy]=S._ellipCenter; const [mx,my]=S.mouseWorld;
+      const [cx,cy]=S._ellipCenter;
+      let [mx,my]=S.mouseWorld;
+      // Utiliser la position contrainte (OSNAP/Ortho/Polaire) comme pour la prévisualisation
+      if (S.currentOsnap) { mx=S.currentOsnap.x; my=S.currentOsnap.y; }
+      else { [mx,my]=snapToGrid(mx,my); if(S.ortho)[mx,my]=applyOrtho(cx,cy,mx,my); else if(S.polar)[mx,my]=applyPolar(cx,cy,mx,my); }
       S._ellipRx=val; S._ellipAngle=Math.atan2(my-cy,mx-cx); S._ellipStep=2;
       S.drawPoints=[[cx,cy]]; termPrint('ELLIPSE: Demi-axe 2  |  [A]=Arc','info');
       render(); setTimeout(smartFocus,0); return;
