@@ -164,6 +164,18 @@ Profilés de charpente insérables depuis le panneau ou via la commande `ipe 160
 
 Les barres d'outils sont **déplaçables** (drag & drop dock/float, clic-droit pour masquer/réinitialiser).
 
+### Curseurs
+
+Le curseur change de forme selon l'action attendue. Trois curseurs, à désigner toujours par ces noms :
+
+| Nom | Apparence | Quand |
+|-----|-----------|-------|
+| **Réticule** | Grande croix de visée pleine (lignes traversant tout l'écran), sans carré | Désigner un point : outils de dessin (ligne, cercle, cote…), décalage, copier, déplacer un point… |
+| **Pickbox** | Petit carré seul, sans lignes | Sélectionner des objets : ajuster, prolonger, raccord, chanfrein, joindre, hachure, grouper, dégrouper… |
+| **Réticule + pickbox** | Croix (avec un espace au centre) **et** petit carré | Outil Sélection au repos (curseur par défaut) |
+
+*(noms internes du code : `Réticule`=`draw`, `Pickbox`=`pick`, `Réticule + pickbox`=`idle`)*
+
 ---
 
 ## Raccourcis clavier

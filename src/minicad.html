@@ -1051,6 +1051,89 @@
         </div>
       </div>
     </div>
+    <div class="menu-dropdown" id="menu-dessin">
+      <div class="menu-item" id="menu-dessin-btn" onclick="toggleMenuDropdown('menu-dessin',event)" data-i18n="menu.draw">{{menu.draw}}</div>
+      <div class="menu-dropdown-list" id="menu-dessin-list">
+        <div class="menu-dropdown-item" onclick="setTool('line');closeMenus()"><span data-i18n="tool.line">{{tool.line}}</span></div>
+        <div class="menu-dropdown-item" onclick="setTool('polyline');closeMenus()"><span data-i18n="tool.polyline">{{tool.polyline}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('XLINE');closeMenus()"><span data-i18n="tool.xline">{{tool.xline}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('RAY');closeMenus()"><span data-i18n="tool.ray">{{tool.ray}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('RAY_REV');closeMenus()"><span data-i18n="tool.ray_rev">{{tool.ray_rev}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="setTool('rect');closeMenus()"><span data-i18n="tool.rect">{{tool.rect}}</span></div>
+        <div class="menu-dropdown-item" onclick="setTool('rectcenter');closeMenus()"><span data-i18n="tool.rectcenter">{{tool.rectcenter}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('POLYGON');closeMenus()"><span data-i18n="tool.polygon">{{tool.polygon}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="setTool('circle');closeMenus()"><span data-i18n="tool.circle">{{tool.circle}}</span></div>
+        <div class="menu-dropdown-item" onclick="setTool('arc');closeMenus()"><span data-i18n="tool.arc">{{tool.arc}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('ELLIPSE');closeMenus()"><span data-i18n="tool.ellipse">{{tool.ellipse}}</span></div>
+        <div class="menu-dropdown-item" onclick="setTool('spline');closeMenus()"><span data-i18n="tool.spline">{{tool.spline}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('POINT');closeMenus()"><span data-i18n="tool.point">{{tool.point}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('HATCH');closeMenus()"><span data-i18n="tool.hatch">{{tool.hatch}}</span></div>
+      </div>
+    </div>
+    <div class="menu-dropdown" id="menu-modifier">
+      <div class="menu-item" id="menu-modifier-btn" onclick="toggleMenuDropdown('menu-modifier',event)" data-i18n="menu.modify">{{menu.modify}}</div>
+      <div class="menu-dropdown-list" id="menu-modifier-list">
+        <div class="menu-dropdown-item" onclick="executeCommand('MOVE');closeMenus()"><span data-i18n="tool.move">{{tool.move}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('COPY');closeMenus()"><span data-i18n="tool.copy">{{tool.copy}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('ROTATE');closeMenus()"><span data-i18n="tool.rotate">{{tool.rotate}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('SCALE');closeMenus()"><span data-i18n="tool.scale">{{tool.scale}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('MIRROR');closeMenus()"><span data-i18n="tool.mirror">{{tool.mirror}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('OFFSET');closeMenus()"><span data-i18n="tool.offset">{{tool.offset}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('ARRAY');closeMenus()"><span data-i18n="tool.array">{{tool.array}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('ARRAY_POLAR');closeMenus()"><span data-i18n="tool.array_polar">{{tool.array_polar}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('TRIM');closeMenus()"><span data-i18n="tool.trim">{{tool.trim}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('EXTEND');closeMenus()"><span data-i18n="tool.extend">{{tool.extend}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('FILLET');closeMenus()"><span data-i18n="tool.fillet">{{tool.fillet}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('CHAMFER');closeMenus()"><span data-i18n="tool.chamfer">{{tool.chamfer}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('JOIN');closeMenus()"><span data-i18n="tool.join">{{tool.join}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('STRETCH');closeMenus()"><span data-i18n="tool.stretch">{{tool.stretch}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIVIDE');closeMenus()"><span data-i18n="tool.divide">{{tool.divide}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('EXPLODE');closeMenus()"><span data-i18n="tool.explode">{{tool.explode}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('GROUP');closeMenus()"><span data-i18n="tool.group">{{tool.group}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('UNGROUP');closeMenus()"><span data-i18n="tool.ungroup">{{tool.ungroup}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('ERASE');closeMenus()"><span data-i18n="tool.erase">{{tool.erase}}</span></div>
+      </div>
+    </div>
+    <div class="menu-dropdown" id="menu-inserer">
+      <div class="menu-item" id="menu-inserer-btn" onclick="toggleMenuDropdown('menu-inserer',event)" data-i18n="menu.insert">{{menu.insert}}</div>
+      <div class="menu-dropdown-list" id="menu-inserer-list">
+        <div class="menu-dropdown-item" onclick="executeCommand('WALL');closeMenus()"><span data-i18n="tool.wall">{{tool.wall}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DOOR');closeMenus()"><span data-i18n="tool.door">{{tool.door}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('WINDOW');closeMenus()"><span data-i18n="tool.window">{{tool.window}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('OUTLET');closeMenus()"><span data-i18n="tool.outlet">{{tool.outlet}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('SWITCH');closeMenus()"><span data-i18n="tool.switch">{{tool.switch}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('CABLE');closeMenus()"><span data-i18n="tool.cable">{{tool.cable}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('TUBE');closeMenus()"><span data-i18n="tool.tube">{{tool.tube}}</span></div>
+      </div>
+    </div>
+    <div class="menu-dropdown" id="menu-cotation">
+      <div class="menu-item" id="menu-cotation-btn" onclick="toggleMenuDropdown('menu-cotation',event)" data-i18n="menu.dimension">{{menu.dimension}}</div>
+      <div class="menu-dropdown-list" id="menu-cotation-list">
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMLINEAR');closeMenus()"><span data-i18n="tool.dim_linear">{{tool.dim_linear}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMALIGNED');closeMenus()"><span data-i18n="tool.dim_aligned">{{tool.dim_aligned}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMANGULAR');closeMenus()"><span data-i18n="tool.dim_angular">{{tool.dim_angular}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMRADIUS');closeMenus()"><span data-i18n="tool.dim_radius">{{tool.dim_radius}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMDIAMETER');closeMenus()"><span data-i18n="tool.dim_diameter">{{tool.dim_diameter}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMSTYLE');closeMenus()"><span data-i18n="tool.dimstyle">{{tool.dimstyle}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('TEXT');closeMenus()"><span data-i18n="tool.text">{{tool.text}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('LEADER');closeMenus()"><span data-i18n="tool.leader">{{tool.leader}}</span></div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="setTool('measure');closeMenus()"><span data-i18n="tool.measure">{{tool.measure}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIST');closeMenus()"><span data-i18n="tool.dist">{{tool.dist}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('AREA');closeMenus()"><span data-i18n="tool.area">{{tool.area}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('CALC');closeMenus()"><span data-i18n="tool.calc">{{tool.calc}}</span></div>
+      </div>
+    </div>
     <div class="menu-dropdown" id="menu-lib">
       <div class="menu-item" id="menu-lib-btn" onclick="toggleMenuDropdown('menu-lib',event)" data-i18n="menu.library">{{menu.library}}</div>
       <div class="menu-dropdown-list" id="menu-lib-list"></div>
@@ -1235,6 +1318,23 @@
           <line x1="16" y1="12" x2="22" y2="12"/><polygon points="20,10 20,14 23,12" fill="currentColor"/>
           <line x1="12" y1="16" x2="12" y2="22"/><polygon points="10,20 14,20 12,23" fill="currentColor"/>
           <line x1="8" y1="12" x2="2" y2="12"/><polygon points="4,10 4,14 1,12" fill="currentColor"/>
+        </svg>
+      </button>
+      <!-- Grouper -->
+      <button class="tool-btn" title="{{tool.group}}" data-i18n-title="tool.group" onclick="executeCommand('GROUP')">
+        <svg viewBox="0 0 24 24">
+          <rect x="3.5" y="3.5" width="17" height="17" rx="2" fill="none" stroke-dasharray="3,2" opacity="0.55"/>
+          <rect x="6.5" y="6.5" width="6" height="6" rx="1"/>
+          <rect x="12.5" y="12" width="5" height="5" rx="1"/>
+        </svg>
+      </button>
+      <!-- Dégrouper -->
+      <button class="tool-btn" title="{{tool.ungroup}}" data-i18n-title="tool.ungroup" onclick="executeCommand('UNGROUP')">
+        <svg viewBox="0 0 24 24">
+          <rect x="1.5" y="4.5" width="9.5" height="9.5" rx="1.5" fill="none" stroke-dasharray="3,2" opacity="0.55"/>
+          <rect x="13" y="10" width="9.5" height="9.5" rx="1.5" fill="none" stroke-dasharray="3,2" opacity="0.55"/>
+          <rect x="3.8" y="6.8" width="4.8" height="4.8" rx="1"/>
+          <rect x="15.3" y="12.3" width="4.8" height="4.8" rx="1"/>
         </svg>
       </button>
       <!-- Diviser  -->
@@ -2035,6 +2135,8 @@ const S = {
   // COPY pending selection
   copyPending: false,
   explodePending: false,
+  groupPending: false,
+  ungroupPending: false,
   // MIRROR pending selection
   mirrorPending: false,
   rotatePending: false,
@@ -3488,6 +3590,49 @@ const CMD = {
     });
     S.selected = newIds;
     updateSaveIndicator('modified'); autoSave(); render(); updateUI();
+  }},
+
+  GROUP: { alias: ['GR','GROUPE','GROUPER'], desc: 'Grouper des entités en un groupe', exec: () => {
+    const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+    if (targets.length < 2) {
+      // Pas (assez) de présélection → étape de sélection au Pickbox, valider par Entrée
+      S.groupPending = true; setTool('select');
+      termPrint('GROUPE : sélectionner les objets (≥2), puis Entrée — Échap pour annuler', 'info');
+      return;
+    }
+    S.groupPending = false;
+    pushUndo();
+    const children = [];
+    targets.forEach(ent => {
+      const i = S.entities.findIndex(e => e.id === ent.id);
+      if (i !== -1) { children.push(ent); S.entities.splice(i, 1); }
+    });
+    const block = { type:'block', id:S.nextId++, layer:S.currentLayer, name:'Groupe', entities:children };
+    S.entities.push(block);
+    S.selected = [block.id];
+    updateSaveIndicator('modified'); autoSave(); render(); updateUI();
+    termPrint('Groupe créé — ' + children.length + ' entités (#' + block.id + ')', 'success');
+  }},
+
+  UNGROUP: { alias: ['UNG','DEGROUPER','DÉGROUPER','DEGROUPE','DÉGROUPE'], desc: 'Dégrouper des groupes', exec: () => {
+    const blocks = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && e.type === 'block');
+    if (!blocks.length) {
+      // Pas de groupe présélectionné → étape de sélection au Pickbox, valider par Entrée
+      S.ungroupPending = true; setTool('select');
+      termPrint('DÉGROUPER : sélectionner un ou plusieurs groupes, puis Entrée — Échap pour annuler', 'info');
+      return;
+    }
+    S.ungroupPending = false;
+    pushUndo();
+    const newIds = [];
+    blocks.forEach(blk => {
+      const i = S.entities.findIndex(e => e.id === blk.id);
+      if (i !== -1) S.entities.splice(i, 1);
+      (blk.entities || []).forEach(ch => { ch.id = S.nextId++; S.entities.push(ch); newIds.push(ch.id); });
+    });
+    S.selected = newIds;
+    updateSaveIndicator('modified'); autoSave(); render(); updateUI();
+    termPrint('Dégroupé — ' + newIds.length + ' entité(s)', 'success');
   }},
 };
 
@@ -7516,7 +7661,7 @@ function getCursorMode() {
   if (t === 'area') return S._areaMode === 'points' ? 'draw' : 'pick';
   if (t === 'polygon') return 'draw';
   if (t === 'ellipse') return 'draw';
-  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.arrayPending || S.polarArrayPending) ? 'pick' : 'idle';
+  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.groupPending || S.ungroupPending || S.arrayPending || S.polarArrayPending) ? 'pick' : 'idle';
   if (t === 'stretch' && S.stretchStep === 0) return 'pick';
   if (t === 'trim' || t === 'extend') return 'pick';
   if (t === 'fillet' || t === 'chamfer' || t === 'join' || t === 'hatch') return 'pick';
@@ -10444,6 +10589,8 @@ const _toolCmdName = {
 function setTool(t) {
   if(t !== 'select' && t !== 'copy') S.copyPending=false;
   if(t !== 'select') S.explodePending=false;
+  if(t !== 'select') S.groupPending=false;
+  if(t !== 'select') S.ungroupPending=false;
   if(t !== 'select') S.arrayPending=false;
   if(t !== 'select') S.polarArrayPending=false;
   if(t !== 'select' && t !== 'mirror') S.mirrorPending=false;
@@ -10533,15 +10680,13 @@ function pushUndo() {
 
 function zoomExtents() {
   if(!S.entities.length){S.zoom=1;S.panX=0;S.panY=0;render();return;}
+  // getEntityBBox couvre tous les types (cercle, arc, ellipse, tube, BLOC récursif…)
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   S.entities.forEach(e=>{
-    const pts=[];
-    if(e.x1!==undefined){pts.push([e.x1,e.y1]);pts.push([e.x2,e.y2]);}
-    if(e.cx!==undefined && e.r!==undefined){pts.push([e.cx-e.r,e.cy-e.r]);pts.push([e.cx+e.r,e.cy+e.r]);}
-    if(e.x!==undefined&&e.x1===undefined)pts.push([e.x,e.y]);
-    if(e.points)e.points.forEach(p=>pts.push(p));
-    pts.forEach(([x,y])=>{minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);});
+    const bb=getEntityBBox(e);
+    if(bb){minX=Math.min(minX,bb.minX);minY=Math.min(minY,bb.minY);maxX=Math.max(maxX,bb.maxX);maxY=Math.max(maxY,bb.maxY);}
   });
+  if(minX===Infinity){S.zoom=1;S.panX=0;S.panY=0;render();return;}
   const w=maxX-minX||100,h=maxY-minY||100;
   S.zoom=Math.min((canvasW-80)/w,(canvasH-80)/h);
   S.panX=-(minX+maxX)/2*S.zoom; S.panY=(minY+maxY)/2*S.zoom;
@@ -11055,21 +11200,16 @@ function confirmArray() {
       }
     }
   }
-  // Remove originals, replace with block
+  // Remplacer les originaux par les copies SÉPARÉES (entités indépendantes, éditables)
   S.arraySourceIds.forEach(id => {
     const i = S.entities.findIndex(e => e.id === id);
     if (i !== -1) S.entities.splice(i, 1);
   });
-  const block = {
-    type: 'block', id: S.nextId++, layer: S.currentLayer,
-    name: 'Array ' + cols + '×' + rows,
-    entities: children
-  };
-  S.entities.push(block);
-  S.selected = [block.id];
+  children.forEach(c => S.entities.push(c));
+  S.selected = children.map(c => c.id);
   closeArrayDialog();
   updateSaveIndicator('modified'); autoSave(); render(); updateUI();
-  termPrint('Réseau ' + cols + '×' + rows + ' créé — ' + children.length + ' entités (bloc #' + block.id + ')', 'success');
+  termPrint('Réseau ' + cols + '×' + rows + ' créé — ' + children.length + ' entités', 'success');
 }
 
 function openPolarArrayDialog() {
@@ -11377,14 +11517,13 @@ function confirmPolarArray() {
       children.push(copy);
     }
   }
-  // Remplacer les originaux par un bloc
+  // Remplacer les originaux par les copies SÉPARÉES (entités indépendantes, éditables)
   S.polarArraySourceIds.forEach(id => { const i = S.entities.findIndex(e => e.id === id); if (i !== -1) S.entities.splice(i, 1); });
-  const block = { type:'block', id:S.nextId++, layer:S.currentLayer, name:'PolarArray ' + count + '×' + totalAngle + '°', entities:children };
-  S.entities.push(block);
-  S.selected = [block.id];
+  children.forEach(c => S.entities.push(c));
+  S.selected = children.map(c => c.id);
   closePolarArrayDialog();
   updateSaveIndicator('modified'); autoSave(); render(); updateUI();
-  termPrint('Réseau polaire ' + count + ' éléments / ' + totalAngle + '° — ' + children.length + ' entités (bloc #' + block.id + ')', 'success');
+  termPrint('Réseau polaire ' + count + ' éléments / ' + totalAngle + '° — ' + children.length + ' entités', 'success');
 }
 
 function getLayerLineDash(t) {
@@ -12853,6 +12992,18 @@ document.addEventListener('keydown',(ev)=>{
     S.explodePending=false; executeCommand('EXPLODE'); return;
   }
 
+  // Enter global: grouper
+  if(ev.key==='Enter' && S.groupPending){
+    ev.preventDefault();
+    S.groupPending=false; CMD.GROUP.exec(); return;
+  }
+
+  // Enter global: dégrouper
+  if(ev.key==='Enter' && S.ungroupPending){
+    ev.preventDefault();
+    S.ungroupPending=false; CMD.UNGROUP.exec(); return;
+  }
+
   // Enter global: valider sélection arrayPending
   if(ev.key==='Enter' && S.arrayPending){
     ev.preventDefault();
@@ -12921,6 +13072,12 @@ document.addEventListener('keydown',(ev)=>{
   }
   if(ev.key==='Escape' && S.explodePending){
     S.explodePending=false; termPrint('Éclater annulé','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S.groupPending){
+    S.groupPending=false; termPrint('Groupe annulé','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S.ungroupPending){
+    S.ungroupPending=false; termPrint('Dégroupage annulé','warning'); setTool('select'); return;
   }
   if(ev.key==='Escape' && S.arrayPickAxis){
     S.arrayPickAxis=null; S.arrayPickPt1=null;
