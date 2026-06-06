@@ -2609,6 +2609,15 @@ function findOsnap(wx, wy) {
         if (ln > 1e-6) tryAcquire(pn[0], pn[1], (pn[0]-pn1[0])/ln, (pn[1]-pn1[1])/ln);
       }
     }
+    // Acquérir aussi le point OSNAP standard courant (midpoint, coin rect, centre…)
+    // pour OTRACK — dx/dy=0 → tracking H/V uniquement (pas d'extension directionnelle).
+    if (best && ['endpoint', 'midpoint', 'center', 'quadrant'].includes(best.type)) {
+      if (Math.hypot(best.x - wx, best.y - wy) < acqTol &&
+          !S.osnapAcquired.some(a => Math.hypot(a.ax - best.x, a.ay - best.y) < 2 / S.zoom)) {
+        S.osnapAcquired.push({ ax: best.x, ay: best.y, dx: 0, dy: 0 });
+        if (S.osnapAcquired.length > 3) S.osnapAcquired.shift();
+      }
+    }
 
     // Lignes de tracking : directions selon Ortho/Polaire/libre
     // Les snaps de tracking ne s'activent que si aucun OSNAP standard n'a été trouvé
