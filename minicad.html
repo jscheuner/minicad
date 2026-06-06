@@ -6622,12 +6622,23 @@ function applyFilletChamfer(seg1,cx1,cy1, seg2,cx2,cy2, type) {
   const adjPoly = seg1.entity===seg2.entity &&
                   seg1.segIdx>=0 && seg2.segIdx>=0 &&
                   Math.abs(seg1.segIdx-seg2.segIdx)===1;
+  // Sommet de FERMETURE d'une polyligne fermée (convention : 1er point dupliqué en fin).
+  // Les 2 segments y sont seg 0 (sortant) et seg len-2 (entrant) → |Δ|≠1, non vu par adjPoly.
+  const _pp = seg1.entity.points;
+  const _closedPoly = seg1.entity===seg2.entity && _pp &&
+    (seg1.entity.closed || (_pp.length>2 &&
+      Math.hypot(_pp[0][0]-_pp[_pp.length-1][0], _pp[0][1]-_pp[_pp.length-1][1])<1e-9));
+  const wrapPoly = _closedPoly && seg1.segIdx>=0 && seg2.segIdx>=0 && _pp.length>=4 &&
+    ((seg1.segIdx===0 && seg2.segIdx===_pp.length-2) ||
+     (seg2.segIdx===0 && seg1.segIdx===_pp.length-2));
 
   if(type==='fillet'){
     const r=S.filletRadius;
     if(r===0){
       // Sharp corner: trim/extend both segments to their intersection, no arc
-      if(adjPoly){
+      if(wrapPoly){
+        // Le sommet de couture EST déjà l'intersection (angle vif) → rien à modifier
+      } else if(adjPoly){
         const [sE]=seg1.segIdx<seg2.segIdx?[seg1,seg2]:[seg2,seg1];
         const pts = sE.entity.points;
         pts[sE.segIdx+1] = [ix, iy];
@@ -6650,7 +6661,20 @@ function applyFilletChamfer(seg1,cx1,cy1, seg2,cx2,cy2, type) {
     const swapped = ea-sa > Math.PI;
     if(swapped){let tmp=sa;sa=ea;ea=tmp;while(ea<sa)ea+=Math.PI*2;}
     const targetLayer = seg1.entity.layer;
-    if(adjPoly){
+    if(wrapPoly){
+      // Raccord au sommet de couture : l'arc devient le segment de fermeture (bulge sur
+      // le dernier point). points[0]=tangente sortante, points[len-1]=tangente entrante.
+      const segIn = (seg1.segIdx===_pp.length-2) ? seg1 : seg2; // entrant (finit au sommet)
+      const tIn  = (segIn===seg1) ? [t1x,t1y] : [t2x,t2y];
+      const tOut = (segIn===seg1) ? [t2x,t2y] : [t1x,t1y];
+      const aIn=Math.atan2(tIn[1]-arcCy,tIn[0]-arcCx), aOut=Math.atan2(tOut[1]-arcCy,tOut[0]-arcCx);
+      let span=aOut-aIn; while(span<=-Math.PI)span+=2*Math.PI; while(span>Math.PI)span-=2*Math.PI;
+      const bulge=Math.tan(span/4); // arc mineur tIn→tOut (segment de fermeture)
+      const pts=seg1.entity.points;
+      pts[pts.length-1]=[tIn[0],tIn[1],bulge];
+      pts[0]=[tOut[0],tOut[1]];
+      seg1.entity.closed=true;
+    } else if(adjPoly){
       const [sE,sL]=seg1.segIdx<seg2.segIdx?[seg1,seg2]:[seg2,seg1];
       const [tEx,tEy]=sE===seg1?[t1x,t1y]:[t2x,t2y];
       const [tLx,tLy]=sL===seg1?[t1x,t1y]:[t2x,t2y];
@@ -6676,7 +6700,16 @@ function applyFilletChamfer(seg1,cx1,cy1, seg2,cx2,cy2, type) {
     const p1x=ix+d1*u1x, p1y=iy+d1*u1y;
     const p2x=ix+d2*u2x, p2y=iy+d2*u2y;
     const targetLayer = seg1.entity.layer;
-    if(adjPoly){
+    if(wrapPoly){
+      // Chanfrein au sommet de couture : la diagonale devient le segment de fermeture (droit).
+      const segIn = (seg1.segIdx===_pp.length-2) ? seg1 : seg2;
+      const pIn  = (segIn===seg1) ? [p1x,p1y] : [p2x,p2y];
+      const pOut = (segIn===seg1) ? [p2x,p2y] : [p1x,p1y];
+      const pts=seg1.entity.points;
+      pts[pts.length-1]=[pIn[0],pIn[1]]; // pas de bulge → chanfrein droit
+      pts[0]=[pOut[0],pOut[1]];
+      seg1.entity.closed=true;
+    } else if(adjPoly){
       const [sE,sL]=seg1.segIdx<seg2.segIdx?[seg1,seg2]:[seg2,seg1];
       const [pEx,pEy]=sE===seg1?[p1x,p1y]:[p2x,p2y];
       const [pLx,pLy]=sL===seg1?[p1x,p1y]:[p2x,p2y];
