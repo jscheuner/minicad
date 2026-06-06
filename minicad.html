@@ -5289,6 +5289,14 @@ function drawEntity(e) {
         if (bulge !== 0) drawPolyArcSegToPath(prev, curr, bulge);
         else { const [qx,qy] = w2s(curr[0],curr[1]); ctx.lineTo(qx,qy); }
       }
+      // Segment de fermeture : on honore le drapeau e.closed même si le doublon du
+      // 1er point n'est pas présent (import DXF, anciens fichiers…). No-op si déjà bouclé.
+      const fp = e.points[0], lp = e.points[e.points.length-1];
+      if (e.closed && Math.hypot(fp[0]-lp[0], fp[1]-lp[1]) > 1e-9) {
+        const bulge = lp[2] || 0;
+        if (bulge !== 0) drawPolyArcSegToPath(lp, fp, bulge);
+        else { const [qx,qy] = w2s(fp[0],fp[1]); ctx.lineTo(qx,qy); }
+      }
       ctx.stroke();
       if (e.type === 'cable') ctx.setLineDash([]);
       break;
@@ -9866,6 +9874,10 @@ function hitTest(wx,wy) {
       let d=Infinity;
       for(let j=0;j<e.points.length-1;j++)
         d=Math.min(d, distToSeg(wx,wy,e.points[j][0],e.points[j][1],e.points[j+1][0],e.points[j+1][1]));
+      // Segment de fermeture si fermée sans doublon du 1er point
+      const fp=e.points[0], lp=e.points[e.points.length-1];
+      if(e.closed && Math.hypot(fp[0]-lp[0],fp[1]-lp[1])>1e-9)
+        d=Math.min(d, distToSeg(wx,wy,lp[0],lp[1],fp[0],fp[1]));
       tryHit(e,d);
     }
     else if(e.type==='spline'){
