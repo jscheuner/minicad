@@ -2235,7 +2235,7 @@ function _bestTangent(c1, c2, mx, my) {
 }
 
 // Cache OSNAP — évite de recalculer si la souris n'a pas bougé de façon significative
-let _osnapCache = { wx: NaN, wy: NaN, nEntities: -1, result: null };
+let _osnapCache = { wx: NaN, wy: NaN, nEntities: -1, drawRef: '', result: null };
 
 function findOsnap(wx, wy) {
   if (!S.osnapEnabled) return null;
@@ -2244,8 +2244,11 @@ function findOsnap(wx, wy) {
   // Optim 1 — seuil de déplacement : retourner le résultat mis en cache
   // si la souris n'a pas bougé de plus de 1.5 px écran et le dessin n'a pas changé.
   const pixThresh = 1.5 / S.zoom;
+  const _drawRef = (S.drawing && S.drawPoints.length > 0)
+    ? S.drawPoints[S.drawPoints.length - 1].join(',') : '';
   if (Math.hypot(wx - _osnapCache.wx, wy - _osnapCache.wy) < pixThresh &&
-      S.entities.length === _osnapCache.nEntities) {
+      S.entities.length === _osnapCache.nEntities &&
+      _drawRef === _osnapCache.drawRef) {
     return _osnapCache.result;
   }
 
@@ -2609,6 +2612,17 @@ function findOsnap(wx, wy) {
 
     // Lignes de tracking : directions selon Ortho/Polaire/libre
     // Les snaps de tracking ne s'activent que si aucun OSNAP standard n'a été trouvé
+
+    // AutoCAD OTRACK : quand Ortho/Polaire est actif pendant un tracé, utiliser la
+    // position contrainte comme référence pour le tracking (pas la souris brute).
+    // Ainsi V-depuis-B donne (Bx, baseY) au lieu de (Bx, mouseY).
+    let twx = wx, twy = wy;
+    if (!best && (S.ortho || S.polar) && S.drawing && S.drawPoints.length > 0) {
+      const p = S.drawPoints[S.drawPoints.length - 1];
+      if (S.ortho) [twx, twy] = applyOrtho(p[0], p[1], wx, wy);
+      else         [twx, twy] = applyPolar(p[0], p[1], wx, wy);
+    }
+
     const tracks = [];
     if (!best) {
       for (const acq of S.osnapAcquired) {
@@ -2619,11 +2633,17 @@ function findOsnap(wx, wy) {
     }
 
     // Snaps directs sur une ligne de tracking
+    // Si le point acquis coïncide avec drawPoints[last] (point de base du tracé), on saute
+    // le snap direct : la position contrainte est déjà sur ses lignes H/V → distance=0 partout,
+    // ce qui bloquerait les snaps d'intersection avec d'autres points acquis.
+    const _skipAcq = (twx !== wx || twy !== wy) && S.drawing && S.drawPoints.length > 0
+      ? S.drawPoints[S.drawPoints.length - 1] : null;
     for (const tr of tracks) {
-      const t = (wx - tr.acq.ax) * tr.dx + (wy - tr.acq.ay) * tr.dy;
+      if (_skipAcq && Math.hypot(tr.acq.ax - _skipAcq[0], tr.acq.ay - _skipAcq[1]) < 1e-6) continue;
+      const t = (twx - tr.acq.ax) * tr.dx + (twy - tr.acq.ay) * tr.dy;
       if (tr.isExt && t < 1e-6) continue;
       const snapX = tr.acq.ax + t * tr.dx, snapY = tr.acq.ay + t * tr.dy;
-      const perpD = Math.hypot(wx - snapX, wy - snapY);
+      const perpD = Math.hypot(twx - snapX, twy - snapY);
       if (perpD < extTol && perpD < bestDist) {
         bestDist = perpD;
         best = { x: snapX, y: snapY, type: 'extension', tr };
@@ -2643,7 +2663,7 @@ function findOsnap(wx, wy) {
         if (a.isExt && t < 1e-6) continue;
         if (b.isExt && s < 1e-6) continue;
         const ix = a.acq.ax + t * a.dx, iy = a.acq.ay + t * a.dy;
-        const d = Math.hypot(wx - ix, wy - iy);
+        const d = Math.hypot(twx - ix, twy - iy);
         if (d < extTol && d < bestDist) {
           bestDist = d;
           best = { x: ix, y: iy, type: 'extension', trA: a, trB: b };
@@ -2653,7 +2673,7 @@ function findOsnap(wx, wy) {
   }
 
   // Optim 1 — mettre le résultat en cache
-  _osnapCache = { wx, wy, nEntities: S.entities.length, result: best };
+  _osnapCache = { wx, wy, nEntities: S.entities.length, drawRef: _drawRef, result: best };
   return best;
 }
 
@@ -3881,14 +3901,25 @@ function _drawDynamicLayer() {
     }
     // Cas 3 : pas de snap — afficher la meilleure direction par point acquis
     else {
+      // Même contrainte Ortho/Polaire que dans findOsnap
+      let tmwx = mwx, tmwy = mwy;
+      if ((S.ortho || S.polar) && S.drawing && S.drawPoints.length > 0) {
+        const p = S.drawPoints[S.drawPoints.length - 1];
+        if (S.ortho) [tmwx, tmwy] = applyOrtho(p[0], p[1], mwx, mwy);
+        else         [tmwx, tmwy] = applyPolar(p[0], p[1], mwx, mwy);
+      }
+      const skipPos3 = (tmwx !== mwx || tmwy !== mwy) && S.drawing && S.drawPoints.length > 0
+        ? S.drawPoints[S.drawPoints.length - 1] : null;
       S.osnapAcquired.forEach(acq => {
+        // Masquer le trail depuis le point de base (déjà géré par ORTHO visuellement)
+        if (skipPos3 && Math.hypot(acq.ax - skipPos3[0], acq.ay - skipPos3[1]) < 1e-6) return;
         const dirs = getExtTrackDirs(acq);
         let bestDir = null, bestPerp = Infinity;
         for (const d of dirs) {
-          const t = (mwx - acq.ax) * d.dx + (mwy - acq.ay) * d.dy;
+          const t = (tmwx - acq.ax) * d.dx + (tmwy - acq.ay) * d.dy;
           if (d.isExt && t < 1e-6) continue;
           const snapX = acq.ax + t * d.dx, snapY = acq.ay + t * d.dy;
-          const perp = Math.hypot(mwx - snapX, mwy - snapY);
+          const perp = Math.hypot(tmwx - snapX, tmwy - snapY);
           if (perp < bestPerp) { bestPerp = perp; bestDir = { d, t, snapX, snapY }; }
         }
         if (!bestDir || bestPerp > dispTol) return;
@@ -10095,6 +10126,7 @@ function toggleOsnap() {
 function toggleOrtho() {
   S.ortho=!S.ortho;
   if (S.ortho) S.polar = false; // mutually exclusive
+  _osnapCache.wx = NaN; // invalide le cache OSNAP (twx/twy dépend de ortho)
   document.getElementById('ortho-label').className='snap-indicator'+(S.ortho?'':' off');
   document.getElementById('ortho-btn').classList.toggle('active',S.ortho);
   document.getElementById('polar-label').className='snap-indicator'+(S.polar?'':' off');
@@ -10106,6 +10138,7 @@ function toggleOrtho() {
 function togglePolar() {
   S.polar=!S.polar;
   if (S.polar) S.ortho = false; // mutually exclusive
+  _osnapCache.wx = NaN; // invalide le cache OSNAP
   document.getElementById('polar-label').className='snap-indicator'+(S.polar?'':' off');
   if(S.polar) document.getElementById('polar-label').style.color='var(--success)';
   document.getElementById('polar-btn').classList.toggle('active',S.polar);
