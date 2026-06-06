@@ -2293,6 +2293,16 @@ function findOsnap(wx, wy) {
   // Optim 3 — index pour éviter les paires dupliquées (A×B et B×A)
   const _nearbyIdx = new Map(_nearby.map((e, i) => [e, i]));
 
+  // Optim 5 — filtre INTERSECTION : un point d'intersection est sur la COURBE des entités.
+  // Pour un grand cercle, le curseur en plein milieu est loin du tracé (la bbox couvre
+  // tout le disque) → on l'exclut de la boucle O(k²) d'intersection. Évite le lag quand
+  // plusieurs grands cercles se chevauchent. (CENTER/QUADRANT continuent d'utiliser _nearby.)
+  const _nearbyX = _nearby.filter(e =>
+    (e.type === 'circle' || e.type === 'arc')
+      ? Math.abs(Math.hypot(wx - e.cx, wy - e.cy) - e.r) < tol
+      : true);
+  const _nearbyXIdx = new Map(_nearbyX.map((e, i) => [e, i]));
+
   for (const e of _nearby) {
     // ENDPOINT
     if (S.osnapModes.endpoint) {
@@ -2438,15 +2448,15 @@ function findOsnap(wx, wy) {
       check(e.cx + e.ry*sin,  e.cy - e.ry*cos,  'quadrant', e);
     }
 
-    // INTERSECTION (segment-segment + cercle)
-    if (S.osnapModes.intersection) {
+    // INTERSECTION (segment-segment + cercle) — restreint à _nearbyX (curseur près du tracé)
+    if (S.osnapModes.intersection && _nearbyXIdx.has(e)) {
       const isCircular = e.type === 'circle' || e.type === 'arc';
       const segsA = segsOf(e); // optim 4 : segments cachés
-      const eIdx  = _nearbyIdx.get(e);
+      const eIdx  = _nearbyXIdx.get(e);
 
-      for (const e2 of _nearby) {
+      for (const e2 of _nearbyX) {
         // Optim 3 — traiter chaque paire une seule fois (skip si e2 a déjà été traité en e)
-        if (_nearbyIdx.get(e2) <= eIdx) continue;
+        if (_nearbyXIdx.get(e2) <= eIdx) continue;
         const isCircular2 = e2.type === 'circle' || e2.type === 'arc';
 
         // Cercle / arc × cercle / arc
