@@ -10533,15 +10533,13 @@ function pushUndo() {
 
 function zoomExtents() {
   if(!S.entities.length){S.zoom=1;S.panX=0;S.panY=0;render();return;}
+  // getEntityBBox couvre tous les types (cercle, arc, ellipse, tube, BLOC récursif…)
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   S.entities.forEach(e=>{
-    const pts=[];
-    if(e.x1!==undefined){pts.push([e.x1,e.y1]);pts.push([e.x2,e.y2]);}
-    if(e.cx!==undefined && e.r!==undefined){pts.push([e.cx-e.r,e.cy-e.r]);pts.push([e.cx+e.r,e.cy+e.r]);}
-    if(e.x!==undefined&&e.x1===undefined)pts.push([e.x,e.y]);
-    if(e.points)e.points.forEach(p=>pts.push(p));
-    pts.forEach(([x,y])=>{minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);});
+    const bb=getEntityBBox(e);
+    if(bb){minX=Math.min(minX,bb.minX);minY=Math.min(minY,bb.minY);maxX=Math.max(maxX,bb.maxX);maxY=Math.max(maxY,bb.maxY);}
   });
+  if(minX===Infinity){S.zoom=1;S.panX=0;S.panY=0;render();return;}
   const w=maxX-minX||100,h=maxY-minY||100;
   S.zoom=Math.min((canvasW-80)/w,(canvasH-80)/h);
   S.panX=-(minX+maxX)/2*S.zoom; S.panY=(minY+maxY)/2*S.zoom;
@@ -11055,21 +11053,16 @@ function confirmArray() {
       }
     }
   }
-  // Remove originals, replace with block
+  // Remplacer les originaux par les copies SÉPARÉES (entités indépendantes, éditables)
   S.arraySourceIds.forEach(id => {
     const i = S.entities.findIndex(e => e.id === id);
     if (i !== -1) S.entities.splice(i, 1);
   });
-  const block = {
-    type: 'block', id: S.nextId++, layer: S.currentLayer,
-    name: 'Array ' + cols + '×' + rows,
-    entities: children
-  };
-  S.entities.push(block);
-  S.selected = [block.id];
+  children.forEach(c => S.entities.push(c));
+  S.selected = children.map(c => c.id);
   closeArrayDialog();
   updateSaveIndicator('modified'); autoSave(); render(); updateUI();
-  termPrint('Réseau ' + cols + '×' + rows + ' créé — ' + children.length + ' entités (bloc #' + block.id + ')', 'success');
+  termPrint('Réseau ' + cols + '×' + rows + ' créé — ' + children.length + ' entités', 'success');
 }
 
 function openPolarArrayDialog() {
@@ -11377,14 +11370,13 @@ function confirmPolarArray() {
       children.push(copy);
     }
   }
-  // Remplacer les originaux par un bloc
+  // Remplacer les originaux par les copies SÉPARÉES (entités indépendantes, éditables)
   S.polarArraySourceIds.forEach(id => { const i = S.entities.findIndex(e => e.id === id); if (i !== -1) S.entities.splice(i, 1); });
-  const block = { type:'block', id:S.nextId++, layer:S.currentLayer, name:'PolarArray ' + count + '×' + totalAngle + '°', entities:children };
-  S.entities.push(block);
-  S.selected = [block.id];
+  children.forEach(c => S.entities.push(c));
+  S.selected = children.map(c => c.id);
   closePolarArrayDialog();
   updateSaveIndicator('modified'); autoSave(); render(); updateUI();
-  termPrint('Réseau polaire ' + count + ' éléments / ' + totalAngle + '° — ' + children.length + ' entités (bloc #' + block.id + ')', 'success');
+  termPrint('Réseau polaire ' + count + ' éléments / ' + totalAngle + '° — ' + children.length + ' entités', 'success');
 }
 
 function getLayerLineDash(t) {
