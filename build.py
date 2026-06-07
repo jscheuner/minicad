@@ -49,6 +49,7 @@ INDEX_FILE  = os.path.join(LIB_DIR, 'index.json')
 HATCH_DIR   = os.path.join(BASE_DIR, 'hatches')
 HATCH_INDEX  = os.path.join(HATCH_DIR, 'index.json')
 DEMO_FILE    = os.path.join(BASE_DIR, 'demo', 'demo_sequence.js')
+ANIM_FILE    = os.path.join(BASE_DIR, 'animations', 'tool_anim.js')
 TRANS_DIR    = os.path.join(BASE_DIR, 'translations')
 
 
@@ -250,6 +251,8 @@ HATCH_MARKER_BEGIN = '// @@HATCH_BEGIN'
 HATCH_MARKER_END   = '// @@HATCH_END'
 DEMO_MARKER_BEGIN  = '// @@DEMO_BEGIN'
 DEMO_MARKER_END    = '// @@DEMO_END'
+ANIM_MARKER_BEGIN  = '// @@ANIM_BEGIN'
+ANIM_MARKER_END    = '// @@ANIM_END'
 
 
 def load_json(path):
@@ -361,6 +364,20 @@ def build_demo_js():
     )
 
 
+def build_anim_js():
+    """Construit le bloc JS des aperçus animés d'outils à injecter (tous les builds)."""
+    if not os.path.exists(ANIM_FILE):
+        sys.exit(f'Erreur : {ANIM_FILE} introuvable.')
+    with open(ANIM_FILE, 'r', encoding='utf-8') as f:
+        src = f.read().strip()
+    return (
+        f'{ANIM_MARKER_BEGIN} — Généré par build.py — ne pas éditer directement\n'
+        f'// Éditer animations/tool_anim.js puis relancer build.py\n'
+        f'{src}\n'
+        f'{ANIM_MARKER_END}'
+    )
+
+
 def inject_block(html, marker_begin, marker_end, block):
     """Remplace le contenu entre deux marqueurs."""
     pattern = re.compile(
@@ -462,10 +479,12 @@ def main():
     with open(HTML_SRC, 'r', encoding='utf-8') as f:
         html_src = f.read()
 
-    # ── Injecter bibliothèques + hachures (commun à tous les outputs) ─────
+    # ── Injecter bibliothèques + hachures + aperçus animés (commun à tous les outputs) ─────
     html_base = inject_block(html_src, MARKER_BEGIN, MARKER_END, lib_block)
     if HATCH_MARKER_BEGIN in html_base:
         html_base = inject_block(html_base, HATCH_MARKER_BEGIN, HATCH_MARKER_END, hatch_block)
+    if ANIM_MARKER_BEGIN in html_base:
+        html_base = inject_block(html_base, ANIM_MARKER_BEGIN, ANIM_MARKER_END, build_anim_js())
 
     # ── Génération des outputs par langue (Mode A) ────────────────────────
     for lang in target_langs:
