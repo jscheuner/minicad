@@ -2071,6 +2071,7 @@
       <span class="pd-label">Centre Y</span><input id="vpd-cy" type="number" step="1">
       <button class="pd-btn-sel" onclick="vpCenterOnDrawing()">Centrer</button>
     </div>
+    <div class="pd-row"><span class="pd-label">Fond opaque</span><input id="vpd-opaque" type="checkbox" style="flex:none"><span style="font-size:9px;color:#888">(masque ce qu'il y a derrière)</span></div>
     <div class="pd-row"><span class="pd-label">Verrouillée</span><input id="vpd-lock" type="checkbox" style="flex:none"></div>
   </div>
   <div class="pd-footer">
@@ -4638,7 +4639,7 @@ function _drawViewport(vp, p2s, Z, opts) {
   const vw = vp.wMm*Z, vh = vp.hMm*Z;
   ctx.save();
   ctx.beginPath(); ctx.rect(vx, vy, vw, vh); ctx.clip();
-  ctx.fillStyle = '#ffffff'; ctx.fillRect(vx, vy, vw, vh);
+  if (vp.opaque) { ctx.fillStyle = '#ffffff'; ctx.fillRect(vx, vy, vw, vh); } // sinon transparent
 
   const N = vp.scale || 100;
   const zoomVp = Z / N;
@@ -4789,6 +4790,7 @@ function openViewportDialog(vpId) {
   document.getElementById('vpd-cx').value = Math.round(vp.centerX);
   document.getElementById('vpd-cy').value = Math.round(vp.centerY);
   document.getElementById('vpd-lock').checked = !!vp.locked;
+  document.getElementById('vpd-opaque').checked = !!vp.opaque;
   document.getElementById('vp-dialog').style.display = 'block';
 }
 function closeViewportDialog() { document.getElementById('vp-dialog').style.display = 'none'; _vpDlgId = null; }
@@ -4822,6 +4824,7 @@ function applyViewportDialog() {
   vp.centerX = parseFloat(document.getElementById('vpd-cx').value) || 0;
   vp.centerY = parseFloat(document.getElementById('vpd-cy').value) || 0;
   vp.locked = document.getElementById('vpd-lock').checked;
+  vp.opaque = document.getElementById('vpd-opaque').checked;
   if (paperChanged) fitPaperView(layout);
   closeViewportDialog(); render(); autoSave();
 }
