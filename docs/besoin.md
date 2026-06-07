@@ -24,7 +24,7 @@
               └───────────────────────┘
 ```
 
-**À quoi ça sert ?** Permettre à un dessinateur de créer et éditer des plans techniques 2D directement dans un navigateur, sans installation, sans serveur, avec des outils proches d'AutoCAD.
+**À quoi ça sert ?** Permettre à un dessinateur de créer et éditer des plans techniques 2D directement dans un navigateur, sans installation, sans serveur, avec des outils proches des logiciels de CAO.
 
 **À qui ça sert ?** Étudiants en techno/BTS, techniciens, architectes en déplacement, tuyauteurs, toute personne qui a besoin d'un outil de dessin léger.
 
@@ -93,7 +93,7 @@
 
 - **Performance :** Rendu fluide jusqu'à ~2000 entités
 - **Précision :** Coordonnées en virgule flottante (double précision)
-- **Interopérabilité :** Lecture/écriture DXF AC1015 (AutoCAD 2000)
-- **UX :** Comportement proche d'AutoCAD LT (commandes texte, raccourcis clavier identiques)
+- **Interopérabilité :** Lecture/écriture DXF AC1015 (R2000)
+- **UX :** Comportement proche d'CAO 2D (commandes texte, raccourcis clavier identiques)
 - **Autonomie :** Fonctionne hors ligne, un seul fichier
 - **Tuyauterie :** Outil TUBE avec coudes par tangentes, référence EXT/AXE/INT, OSNAP sur parois

@@ -166,7 +166,7 @@
   "help.files": "═══ FILES ═══",
   "help.files.open": "  OPEN     — Open DXF / DWG / JSON (.mcad)",
   "help.files.save": "  SAVE     — Save as native JSON (.mcad)",
-  "help.files.dxf": "  EXPORT DXF — Export DXF (AutoCAD 2000)",
+  "help.files.dxf": "  EXPORT DXF — Export DXF (R2000)",
   "help.files.dwg": "  EXPORT DWG — Export DWG (via DXF)",
   "help.files.svg": "  EXPORT SVG — Export SVG",
   "help.files.shortcut": "  Ctrl+O / Ctrl+S — Open / Save",

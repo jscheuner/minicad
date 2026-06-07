@@ -2921,7 +2921,7 @@ function findOsnap(wx, wy) {
     // Lignes de tracking : directions selon Ortho/Polaire/libre
     // Les snaps de tracking ne s'activent que si aucun OSNAP standard n'a été trouvé
 
-    // AutoCAD OTRACK : quand Ortho/Polaire est actif pendant un tracé, utiliser la
+    // OTRACK : quand Ortho/Polaire est actif pendant un tracé, utiliser la
     // position contrainte comme référence pour le tracking (pas la souris brute).
     // Ainsi V-depuis-B donne (Bx, baseY) au lieu de (Bx, mouseY).
     let twx = wx, twy = wy;
@@ -3146,7 +3146,7 @@ function drawOsnapMarker(snap) {
       ctx.closePath();
       ctx.stroke();
       break;
-    case 'quadrant': // diamond (losange plein, plus petit — comme AutoCAD)
+    case 'quadrant': // diamond (losange plein, plus petit — comme un logiciel de CAO)
       ctx.beginPath();
       ctx.moveTo(sx, sy - sz);
       ctx.lineTo(sx + sz, sy);
@@ -3157,7 +3157,7 @@ function drawOsnapMarker(snap) {
       ctx.fill();
       ctx.stroke();
       break;
-    case 'extension': // tiret horizontal (comme AutoCAD)
+    case 'extension': // tiret horizontal (comme un logiciel de CAO)
       ctx.beginPath();
       ctx.moveTo(sx - sz, sy); ctx.lineTo(sx + sz, sy);
       ctx.stroke();
@@ -3166,7 +3166,7 @@ function drawOsnapMarker(snap) {
 }
 
 // ===== DISTANCE INPUT PARSER =====
-// With Dynamic Input ON (like AutoCAD):
+// With Dynamic Input ON (like CAO):
 //   "100<45"  → polaire (distance + angle)
 //   "@50,30"  → relatif explicite
 //   "50,30"   → RELATIF par défaut (Dynamic Input mode)
@@ -3246,8 +3246,8 @@ modules.electrical.commands = {
   CABLE: { desc: 'Câble électrique', exec() { termPrint('CÂBLE: Cliquez les points, Echap pour terminer', 'info'); setTool('cable'); }},
 };
 modules.dimensioning.commands = {
-  DIMLINEAR: { desc: 'Cote linéaire (H ou V)', exec() { termPrint('COTE LINÉAIRE: Cliquez deux points (mesure H ou V auto)', 'info'); setTool('dim_linear'); }},
-  DIMALIGNED: { alias: ['DIMPAR','DIMPARALLEL'], desc: 'Cote parallèle (alignée)', exec() { termPrint('COTE PARALLÈLE: Cliquez deux points', 'info'); setTool('dim_aligned'); }},
+  DIMLINEAR: { desc: 'Cote linéaire (H ou V)', exec() { setTool('dim_linear'); termPrint('COTE LINÉAIRE: cliquez deux points — ou Espace pour sélectionner une ligne', 'info'); }},
+  DIMALIGNED: { alias: ['DIMPAR','DIMPARALLEL'], desc: 'Cote parallèle (alignée)', exec() { setTool('dim_aligned'); termPrint('COTE PARALLÈLE: cliquez deux points — ou Espace pour sélectionner une ligne', 'info'); }},
   DIMANGULAR: { alias: ['DIMANG','ANGLE'], desc: 'Cote angulaire (cliquer ligne1, ligne2, puis placer)', exec() {
     S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null;
     S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null;
@@ -3727,29 +3727,26 @@ const CMD = {
         });
         termPrint('Rectangle → 4 lignes', 'success');
       } else {
-        // polyline / cable → lignes + arcs individuels (bulge → arc)
+        // polyline / cable → lignes + arcs individuels (bulge → arc) — même logique que le rendu
         const pts = ent.points;
         let nLines = 0, nArcs = 0;
-        for (let j = 0; j < pts.length - 1; j++) {
-          const [x1,y1] = pts[j], [x2,y2] = pts[j+1];
-          const bulge = pts[j][2] || 0;
-          if (bulge !== 0) {
-            const d = Math.hypot(x2-x1, y2-y1);
-            if (d > 1e-9) {
-              const b = bulge;
-              const r = d * (1 + b*b) / (4 * Math.abs(b));
-              const offset = Math.sqrt(Math.max(0, r*r - d*d/4));
-              const mx = (x1+x2)/2, my = (y1+y2)/2;
-              const pdx = -(y2-y1)/d, pdy = (x2-x1)/d;
-              const cx = mx + Math.sign(b)*pdx*offset;
-              const cy = my + Math.sign(b)*pdy*offset;
-              let sa = Math.atan2(y1-cy, x1-cx), ea = Math.atan2(y2-cy, x2-cx);
-              while(ea < sa) ea += Math.PI*2;
-              if(ea - sa > Math.PI){ const tmp=sa; sa=ea; ea=tmp; while(ea<sa) ea+=Math.PI*2; }
-              const arc = {type:'arc', cx, cy, r, startAngle:sa, endAngle:ea, id:S.nextId++, layer:ent.layer};
-              S.entities.push(arc); newIds.push(arc.id); nArcs++;
+        const segs = [];
+        for (let j = 0; j < pts.length - 1; j++) segs.push([pts[j], pts[j+1], pts[j][2] || 0]);
+        if (ent.closed && pts.length > 2) {  // segment de fermeture (last → first)
+          const fp = pts[0], lp = pts[pts.length-1];
+          if (Math.hypot(fp[0]-lp[0], fp[1]-lp[1]) > 1e-9) segs.push([lp, fp, lp[2] || 0]);
+        }
+        for (const [P1, P2, b] of segs) {
+          const x1=P1[0], y1=P1[1], x2=P2[0], y2=P2[1];
+          let madeArc = false;
+          if (b !== 0) {
+            const arc = bulgeToArc(x1, y1, x2, y2, b);
+            if (arc) {
+              S.entities.push({type:'arc', cx:arc.cx, cy:arc.cy, r:arc.r, startAngle:arc.sa, endAngle:arc.ea, id:S.nextId++, layer:ent.layer});
+              newIds.push(S.entities[S.entities.length-1].id); nArcs++; madeArc = true;
             }
-          } else {
+          }
+          if (!madeArc) {
             const line = {type:'line', id:S.nextId++, layer:ent.layer, x1, y1, x2, y2};
             S.entities.push(line); newIds.push(line.id); nLines++;
           }
@@ -3856,8 +3853,8 @@ function resolvePoint(wx, wy) {
 // ===== RENDER =====
 
 // Bounding box d'une entité en coordonnées monde (pour culling viewport)
-function getEntityBBox(e) {
-  const pad = 20;
+function getEntityBBox(e, tight) {
+  const pad = tight ? 0 : 20;  // tight=true → bbox géométrique exacte (sélection), sinon marge pour le culling
   switch (e.type) {
     case 'point':
       return { minX:e.x-pad, maxX:e.x+pad, minY:e.y-pad, maxY:e.y+pad };
@@ -3927,8 +3924,13 @@ function getEntityBBox(e) {
         } else if (seg.type === 'bend') {
           const { angle: phi, bendRadius: R, side } = seg;
           const bcx = cx - side*R*Math.sin(theta), bcy = cy + side*R*Math.cos(theta);
-          expand(bcx, bcy, R + tr); // bbox of full arc circle (over-approx)
-          const arcEnd = (theta - side*Math.PI/2) + side*phi;
+          const a0 = theta - side*Math.PI/2;
+          const steps = Math.max(2, Math.ceil(phi / (Math.PI/18))); // échantillon ~10°
+          for (let i = 0; i <= steps; i++) {
+            const a = a0 + side*phi*(i/steps);
+            expand(bcx + R*Math.cos(a), bcy + R*Math.sin(a), tr); // centerline + parois (±tr)
+          }
+          const arcEnd = a0 + side*phi;
           cx = bcx + R*Math.cos(arcEnd); cy = bcy + R*Math.sin(arcEnd);
           theta += side*phi;
         }
@@ -8450,7 +8452,7 @@ function cancelDrawing() {
   setTool('select');
 }
 
-// ===== CUSTOM CURSOR (AutoCAD style) =====
+// ===== CUSTOM CURSOR (style CAO) =====
 let mouseOnCanvas = false;
 
 // 'idle'    → réticule + carré  (aucune commande active, après ESC)
@@ -8472,6 +8474,7 @@ function getCursorMode() {
   if (t === 'fillet' || t === 'chamfer' || t === 'join' || t === 'hatch') return 'pick';
   if (t === 'offset') return 'draw';
   if (t === 'dim_angular' && !S._dimAngVtx) return 'pick';
+  if ((t === 'dim_linear' || t === 'dim_aligned') && S._dimPick) return 'pick';
   if ((t === 'dim_radius' || t === 'dim_diameter') && !S._dimCircle) return 'pick';
   if (t === 'divide_pick') return 'pick';
   if (t === 'point' || t === 'measure') return 'draw';
@@ -8574,8 +8577,12 @@ canvas.addEventListener('mousemove', (ev) => {
   // Hover entity for offset / fillet / chamfer selection highlight
   if ((S.tool === 'offset' && S.offsetTargetId === null) ||
       S.tool === 'fillet' || S.tool === 'chamfer' || S.tool === 'join' || S.tool === 'trim' || S.tool === 'extend' || S.tool === 'hatch' ||
+      (((S.tool === 'dim_linear' || S.tool === 'dim_aligned') && S._dimPick)) ||
       S.offsetPending) {
-    const hit = hitTest(wx, wy);
+    const _dimPickHover = (S.tool === 'dim_linear' || S.tool === 'dim_aligned') && S._dimPick;
+    const hit = _dimPickHover
+      ? hitTest(wx, wy, en => ['line','wall','polyline','cable','rect','tube'].includes(en.type))
+      : hitTest(wx, wy);
     S.hoverEntityId = hit ? hit.id : null;
   } else {
     S.hoverEntityId = null;
@@ -9050,6 +9057,19 @@ function _tubeNearestSegment(e, wx, wy) {
   return bx1 !== undefined ? { type:'line', x1:bx1, y1:by1, x2:bx2, y2:by2 } : null;
 }
 
+// Extrait un segment (2 extrémités) d'une entité cliquée, pour coter directement un objet
+function _dimPickSegment(hit, wx, wy) {
+  if (!hit) return null;
+  if (hit.type === 'rect') {
+    const { x1, y1, x2, y2 } = hit;
+    const edges = [[x1,y1,x2,y1],[x2,y1,x2,y2],[x2,y2,x1,y2],[x1,y2,x1,y1]];
+    let bestD = Infinity, b = null;
+    for (const e of edges) { const d = distPtSeg(wx,wy,e[0],e[1],e[2],e[3]); if (d < bestD) { bestD = d; b = e; } }
+    return b ? { x1:b[0], y1:b[1], x2:b[2], y2:b[3] } : null;
+  }
+  return _dimAngExtractLine(hit, wx, wy);
+}
+
 function _dimAngExtractLine(hit, wx, wy) {
   if (!hit) return null;
   if (hit.type === 'line' || hit.type === 'wall') return hit;
@@ -9270,8 +9290,19 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
   // DIMLINEAR / DIMALIGNED (3 clicks: P1, P2, placement offset)
   if (tool === 'dim_linear' || tool === 'dim_aligned') {
     if (!S.drawing) {
+      if (S._dimPick) {
+        // Sélectionner une ligne → ses 2 extrémités deviennent la cote
+        // (on ignore les cotes/textes déjà posés dessus pour atteindre la ligne)
+        const hit = hitTest(rawWx, rawWy, en => ['line','wall','polyline','cable','rect','tube'].includes(en.type));
+        const seg = _dimPickSegment(hit, rawWx, rawWy);
+        if (!seg) { termPrint('Cote: cliquez sur une ligne, polyligne ou rectangle', 'warning'); render(); return; }
+        S.drawPoints = [[seg.x1, seg.y1], [seg.x2, seg.y2]];
+        S.drawing = true; S.awaitingInput = false; S._dimPick = false; S.hoverEntityId = null;
+        termPrint('Objet coté — positionnez la cote et cliquez', 'warning');
+        render(); return;
+      }
       S.drawing = true; S.drawPoints = [[wx, wy]]; S.awaitingInput = true;
-      termPrint('Point 1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ') — Cliquez le 2ème point', 'info');
+      termPrint('Point 1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ') — Cliquez le 2ème point [Espace = sélectionner un objet]', 'info');
     } else if (S.drawPoints.length === 1) {
       let tx = wx, ty = wy;
       if (tool === 'dim_linear') [tx, ty] = applyConstraint(S.drawPoints[0][0], S.drawPoints[0][1], wx, wy);
@@ -10098,6 +10129,84 @@ function angleInArc(a,sa,ea) {
   return ang<=end+1e-9;
 }
 
+// Segment à bulge → arc {cx,cy,r,sa,ea} (intervalle CCW), identique au rendu (drawPolyArcSegToPath)
+function bulgeToArc(x1,y1,x2,y2,b){
+  const d=Math.hypot(x2-x1,y2-y1);
+  if(d<1e-9 || !b) return null;
+  const r=d*(1+b*b)/(4*Math.abs(b));
+  const offset=Math.sqrt(Math.max(0,r*r-d*d/4));
+  const mx=(x1+x2)/2, my=(y1+y2)/2, pdx=-(y2-y1)/d, pdy=(x2-x1)/d;
+  const cx=mx+Math.sign(b)*pdx*offset, cy=my+Math.sign(b)*pdy*offset;
+  const TAU=2*Math.PI, norm=a=>((a%TAU)+TAU)%TAU;
+  const saS=Math.atan2(-(y1-cy),x1-cx), eaS=Math.atan2(-(y2-cy),x2-cx);
+  const K=(b>0)!==(Math.abs(b)>1);                       // sens du ctx.arc du rendu
+  const midS=!K?saS+norm(eaS-saS)/2:saS-norm(saS-eaS)/2;
+  const midW=-midS, ax=cx+r*Math.cos(midW), ay=cy+r*Math.sin(midW); // apex réel
+  const aP1=Math.atan2(y1-cy,x1-cx), aP2=Math.atan2(y2-cy,x2-cx), aM=Math.atan2(ay-cy,ax-cx);
+  const d2=norm(aP2-aP1), dm=norm(aM-aP1);
+  let sa,ea;
+  if(dm<=d2){ sa=aP1; ea=aP1+d2; } else { sa=aP2; ea=aP2+norm(aP1-aP2); }
+  return {cx,cy,r,sa,ea};
+}
+
+// ── Helpers ellipse (pour TRIM / EXTEND) ──
+// Convention : point = centre + Rot(ang)·(rx·cos t, ry·sin t)
+function ellipsePoint(el, t) {
+  const a=el.ang||0, c=Math.cos(a), s=Math.sin(a);
+  const lx=(el.rx||1)*Math.cos(t), ly=(el.ry||1)*Math.sin(t);
+  return [el.cx + lx*c - ly*s, el.cy + lx*s + ly*c];
+}
+function ellipseParam(el, x, y) {
+  const a=el.ang||0, c=Math.cos(a), s=Math.sin(a), dx=x-el.cx, dy=y-el.cy;
+  return Math.atan2((-dx*s+dy*c)/(el.ry||1), (dx*c+dy*s)/(el.rx||1));
+}
+// Intersection segment (x1,y1)-(x2,y2) × ellipse → [{t,x,y}] ; inf=true : droite infinie
+function lineEllipseIntersect(x1,y1,x2,y2, el, inf) {
+  const a=el.ang||0, c=Math.cos(a), s=Math.sin(a), rx=el.rx||1, ry=el.ry||1;
+  const tr=(px,py)=>{ const dx=px-el.cx, dy=py-el.cy; return [(dx*c+dy*s)/rx, (-dx*s+dy*c)/ry]; };
+  const [ax,ay]=tr(x1,y1), [bx,by]=tr(x2,y2), ddx=bx-ax, ddy=by-ay;
+  const A=ddx*ddx+ddy*ddy; if(A<1e-12) return [];
+  const B=2*(ax*ddx+ay*ddy), C=ax*ax+ay*ay-1, disc=B*B-4*A*C;
+  if(disc<0) return [];
+  const sq=Math.sqrt(disc), res=[];
+  for(const tt of [(-B-sq)/(2*A),(-B+sq)/(2*A)])
+    if(inf || (tt>=-1e-9 && tt<=1+1e-9)) res.push({t:tt, x:x1+tt*(x2-x1), y:y1+tt*(y2-y1)});
+  return res;
+}
+function _arcSampleSegs(cx,cy,r,sa,ea,n) {
+  let s=(sa===undefined?0:sa), e=(ea===undefined?Math.PI*2:ea); while(e<s) e+=Math.PI*2;
+  const segs=[]; let prev=[cx+r*Math.cos(s),cy+r*Math.sin(s)];
+  for(let i=1;i<=n;i++){ const a=s+(e-s)*i/n, pt=[cx+r*Math.cos(a),cy+r*Math.sin(a)]; segs.push([prev[0],prev[1],pt[0],pt[1]]); prev=pt; }
+  return segs;
+}
+function ellipseSampleSegs(el, n) {
+  n=n||96; let s=(el.sa===undefined?0:el.sa), e=(el.ea===undefined?Math.PI*2:el.ea); while(e<s) e+=Math.PI*2;
+  const segs=[]; let prev=ellipsePoint(el,s);
+  for(let i=1;i<=n;i++){ const pt=ellipsePoint(el, s+(e-s)*i/n); segs.push([prev[0],prev[1],pt[0],pt[1]]); prev=pt; }
+  return segs;
+}
+// Segments approchant un cutter quelconque (pour intersecter avec une ellipse cible)
+function cutterSampleSegs(p) {
+  if(p.type==='seg') return [[p.x1,p.y1,p.x2,p.y2]];
+  if(p.type==='circle') return _arcSampleSegs(p.cx,p.cy,p.r,0,Math.PI*2,96);
+  if(p.type==='arc') return _arcSampleSegs(p.cx,p.cy,p.r,p.sa,p.ea,64);
+  if(p.type==='ellipse') return ellipseSampleSegs(p);
+  return [];
+}
+// Angles paramétriques où l'ellipse cible rencontre les cutters
+function getEllipseHitParams(el, prims, inf) {
+  const params=[];
+  for(const p of prims){
+    if(p.type==='seg'){
+      lineEllipseIntersect(p.x1,p.y1,p.x2,p.y2,el,inf).forEach(h=>params.push(ellipseParam(el,h.x,h.y)));
+    } else {
+      for(const sg of cutterSampleSegs(p))
+        lineEllipseIntersect(sg[0],sg[1],sg[2],sg[3],el).forEach(h=>params.push(ellipseParam(el,h.x,h.y)));
+    }
+  }
+  return params;
+}
+
 function getCutterPrimitives(e) {
   const p=[];
   if(e.type==='line'||e.type==='wall'||e.type==='leader') {
@@ -10106,6 +10215,8 @@ function getCutterPrimitives(e) {
     p.push({type:'circle',cx:e.cx,cy:e.cy,r:e.r});
   } else if(e.type==='arc') {
     p.push({type:'arc',cx:e.cx,cy:e.cy,r:e.r,sa:e.startAngle,ea:e.endAngle});
+  } else if(e.type==='ellipse') {
+    p.push({type:'ellipse',cx:e.cx,cy:e.cy,rx:e.rx,ry:e.ry,ang:e.angle||0,sa:e.startAngle,ea:e.endAngle});
   } else if(e.type==='rect') {
     const{x1,y1,x2,y2}=e;
     p.push({type:'seg',x1,y1,x2,y2:y1},{type:'seg',x1:x2,y1,x2:x2,y2});
@@ -10128,6 +10239,10 @@ function getTrimTsForLine(lx1,ly1,lx2,ly2,prims) {
     } else if(p.type==='arc') {
       lineCircleIntersect(lx1,ly1,lx2,ly2,p.cx,p.cy,p.r).forEach(h=>{
         if(angleInArc(Math.atan2(h.y-p.cy,h.x-p.cx),p.sa,p.ea)) ts.push(h.t);
+      });
+    } else if(p.type==='ellipse') {
+      lineEllipseIntersect(lx1,ly1,lx2,ly2,p).forEach(h=>{
+        if(p.sa===undefined || angleInArc(ellipseParam(p,h.x,h.y),p.sa,p.ea)) ts.push(h.t);
       });
     }
   }
@@ -10174,6 +10289,9 @@ function getTrimAnglesForArc(arcEnt, prims) {
       const mx=(p.cx-arcEnt.cx)/d, my=(p.cy-arcEnt.cy)/d;
       pts=[{x:arcEnt.cx+a*mx-h*my,y:arcEnt.cy+a*my+h*mx},{x:arcEnt.cx+a*mx+h*my,y:arcEnt.cy+a*my-h*mx}];
       if(p.type==='arc') pts=pts.filter(pt=>angleInArc(Math.atan2(pt.y-p.cy,pt.x-p.cx),p.sa,p.ea));
+    } else if(p.type==='ellipse') {
+      for(const sg of ellipseSampleSegs(p))
+        lineCircleIntersect(sg[0],sg[1],sg[2],sg[3],arcEnt.cx,arcEnt.cy,arcEnt.r).forEach(h=>pts.push({x:h.x,y:h.y}));
     }
     for(const pt of pts) {
       const angle=Math.atan2(pt.y-arcEnt.cy,pt.x-arcEnt.cx);
@@ -10356,16 +10474,49 @@ function applyTrimPolyline(ent, prims, clickWx, clickWy) {
   return true;
 }
 
+function applyTrimEllipse(ent, prims, clickWx, clickWy) {
+  const el={cx:ent.cx,cy:ent.cy,rx:ent.rx,ry:ent.ry,ang:ent.angle||0,sa:ent.startAngle,ea:ent.endAngle};
+  const raw=getEllipseHitParams(el, prims);
+  if(!raw.length) return false;
+  const TAU=Math.PI*2, norm=a=>((a%TAU)+TAU)%TAU;
+  const full = ent.startAngle===undefined || ent.endAngle===undefined;
+  const clickA=ellipseParam(el, clickWx, clickWy);
+  const mkArcs=(kept)=>{
+    if(!kept.length){ S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
+    ent.startAngle=kept[0][0]; ent.endAngle=kept[0][1];
+    for(let i=1;i<kept.length;i++){ const ne=JSON.parse(JSON.stringify(ent)); ne.id=S.nextId++; ne.startAngle=kept[i][0]; ne.endAngle=kept[i][1]; S.entities.push(ne); }
+    return true;
+  };
+  if(full){
+    let angs=raw.map(norm).sort((a,b)=>a-b).filter((a,i,arr)=> i===0 || a-arr[i-1]>1e-6);
+    if(angs.length<2) return false;
+    let ca=norm(clickA), remIdx=0;
+    for(let i=0;i<angs.length;i++){ const a1=angs[i], a2=(i+1<angs.length?angs[i+1]:angs[0]+TAU); let cc=ca; while(cc<a1-1e-9) cc+=TAU; if(cc>=a1-1e-9&&cc<=a2+1e-9){remIdx=i;break;} }
+    const kept=[];
+    for(let i=0;i<angs.length;i++) if(i!==remIdx){ const a1=angs[i], a2=(i+1<angs.length?angs[i+1]:angs[0]+TAU); kept.push([a1,a2]); }
+    return mkArcs(kept);
+  }
+  const sa=ent.startAngle; let ea=ent.endAngle; while(ea<sa) ea+=TAU;
+  const inside=raw.map(a=>{let b=a;while(b<sa)b+=TAU;return b;}).filter(a=>a>sa+1e-9&&a<ea-1e-9).sort((x,y)=>x-y);
+  if(!inside.length) return false;
+  let ca=clickA; while(ca<sa) ca+=TAU;
+  const breaks=[sa,...inside,ea]; let remIdx=0;
+  for(let i=0;i<breaks.length-1;i++){ if(ca>=breaks[i]-1e-9&&ca<=breaks[i+1]+1e-9){remIdx=i;break;} }
+  const kept=[]; for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  return mkArcs(kept);
+}
+
 function applyTrim(trimmedId, prims, clickWx, clickWy) {
   const ent=S.entities.find(e=>e.id===trimmedId);
   if(!ent) return;
-  const supported=['line','wall','arc','circle','polyline','cable','rect'];
+  const supported=['line','wall','arc','circle','polyline','cable','rect','ellipse'];
   if(!supported.includes(ent.type)){ termPrint('TRIM: non supporté pour '+ent.type,'warning'); return; }
   pushUndo();
   let ok=false;
   if(ent.type==='line'||ent.type==='wall')           ok=applyTrimLine(ent,prims,clickWx,clickWy);
   else if(ent.type==='arc')                           ok=applyTrimArc(ent,prims,clickWx,clickWy);
   else if(ent.type==='circle')                        ok=applyTrimCircle(ent,prims,clickWx,clickWy);
+  else if(ent.type==='ellipse')                       ok=applyTrimEllipse(ent,prims,clickWx,clickWy);
   else if(ent.type==='rect')                          ok=applyTrimRect(ent,prims,clickWx,clickWy);
   else if(ent.type==='polyline'||ent.type==='cable')  ok=applyTrimPolyline(ent,prims,clickWx,clickWy);
   if(!ok){ S.history.pop(); termPrint('TRIM: aucune intersection trouvée','warning'); return; }
@@ -10418,6 +10569,22 @@ function drawExtendPreview() {
       const t=cands.reduce((a,b)=>Math.abs(a-1)<Math.abs(b-1)?a:b);
       fromX=pts[N][0]; fromY=pts[N][1]; toX=pts[N-1][0]+t*dx; toY=pts[N-1][1]+t*dy;
     }
+  } else if (ent.type === 'arc') {
+    const g = JSON.parse(JSON.stringify(ent));
+    if (!applyExtendArc(g, prims, mx, my)) return;
+    ctx.save();
+    ctx.strokeStyle='#00d4ff'; ctx.lineWidth=1.5; ctx.globalAlpha=0.7; ctx.setLineDash([6,4]);
+    drawEntity(g);
+    ctx.restore();
+    return;
+  } else if (ent.type === 'ellipse') {
+    const g = JSON.parse(JSON.stringify(ent));
+    if (!applyExtendEllipse(g, prims, mx, my)) return;
+    ctx.save();
+    ctx.strokeStyle='#00d4ff'; ctx.lineWidth=1.5; ctx.globalAlpha=0.7; ctx.setLineDash([6,4]);
+    drawEntity(g);
+    ctx.restore();
+    return;
   } else { return; }
 
   const [sx1,sy1]=w2s(fromX,fromY), [sx2,sy2]=w2s(toX,toY);
@@ -10472,6 +10639,10 @@ function getExtendTsForLine(lx1,ly1,lx2,ly2, prims) {
       if(isFinite(t) && s>=-1e-9 && s<=1+1e-9) ts.push(t);
     } else if(p.type==='circle'||p.type==='arc') {
       lineCircleIntersectInf(lx1,ly1,lx2,ly2,p.cx,p.cy,p.r).forEach(t=>{ if(isFinite(t)) ts.push(t); });
+    } else if(p.type==='ellipse') {
+      lineEllipseIntersect(lx1,ly1,lx2,ly2,p,true).forEach(h=>{
+        if(p.sa===undefined || angleInArc(ellipseParam(p,h.x,h.y),p.sa,p.ea)) ts.push(h.t);
+      });
     }
   }
   return ts;
@@ -10528,15 +10699,76 @@ function applyExtendPolyline(ent, prims, clickWx, clickWy) {
   return true;
 }
 
+// Angles (sur le cercle de l'arc) où il rencontre les primitives limites
+function getCircleHitAngles(cx, cy, r, prims) {
+  const angs = [];
+  const add = (x,y) => angs.push(Math.atan2(y-cy, x-cx));
+  for (const p of prims) {
+    if (p.type === 'seg') {
+      lineCircleIntersect(p.x1,p.y1,p.x2,p.y2, cx,cy,r).forEach(h => add(h.x,h.y));
+    } else if (p.type === 'circle') {
+      circleCircleIntersect(cx,cy,r, p.cx,p.cy,p.r).forEach(h => add(h.x,h.y));
+    } else if (p.type === 'arc') {
+      circleCircleIntersect(cx,cy,r, p.cx,p.cy,p.r).forEach(h => {
+        if (angleInArc(Math.atan2(h.y-p.cy, h.x-p.cx), p.sa, p.ea)) add(h.x,h.y);
+      });
+    } else if (p.type === 'ellipse') {
+      for (const sg of ellipseSampleSegs(p))
+        lineCircleIntersect(sg[0],sg[1],sg[2],sg[3], cx,cy,r).forEach(h => add(h.x,h.y));
+    }
+  }
+  return angs;
+}
+
+function applyExtendArc(ent, prims, clickWx, clickWy) {
+  const cx = ent.cx, cy = ent.cy, r = ent.r, sa = ent.startAngle, ea = ent.endAngle;
+  if (!(r > 1e-9)) return false;
+  const TAU = Math.PI*2, norm = a => ((a % TAU) + TAU) % TAU;
+  const angs = getCircleHitAngles(cx, cy, r, prims);
+  if (!angs.length) return false;
+  const sx = cx + r*Math.cos(sa), sy = cy + r*Math.sin(sa);
+  const ex = cx + r*Math.cos(ea), ey = cy + r*Math.sin(ea);
+  const dStart = Math.hypot(clickWx-sx, clickWy-sy);
+  const dEnd   = Math.hypot(clickWx-ex, clickWy-ey);
+  let best = Infinity;
+  if (dEnd <= dStart) {                                   // prolonger la fin (CCW)
+    for (const c of angs) { const g = norm(c - ea); if (g > 1e-6 && g < TAU-1e-6 && g < best) best = g; }
+    if (!isFinite(best)) return false;
+    ent.endAngle = ea + best;
+  } else {                                                // prolonger le début (CW)
+    for (const c of angs) { const g = norm(sa - c); if (g > 1e-6 && g < TAU-1e-6 && g < best) best = g; }
+    if (!isFinite(best)) return false;
+    ent.startAngle = sa - best;
+  }
+  return true;
+}
+
+function applyExtendEllipse(ent, prims, clickWx, clickWy) {
+  if(ent.startAngle===undefined || ent.endAngle===undefined) return false; // ellipse complète : pas d'extrémité
+  const el={cx:ent.cx,cy:ent.cy,rx:ent.rx,ry:ent.ry,ang:ent.angle||0};
+  const raw=getEllipseHitParams(el, prims);
+  if(!raw.length) return false;
+  const TAU=Math.PI*2, norm=a=>((a%TAU)+TAU)%TAU;
+  const sa=ent.startAngle, ea=ent.endAngle;
+  const sp=ellipsePoint(el,sa), ep=ellipsePoint(el,ea);
+  const dS=Math.hypot(clickWx-sp[0],clickWy-sp[1]), dE=Math.hypot(clickWx-ep[0],clickWy-ep[1]);
+  let best=Infinity;
+  if(dE<=dS){ for(const c of raw){ const g=norm(c-ea); if(g>1e-6&&g<TAU-1e-6&&g<best) best=g; } if(!isFinite(best)) return false; ent.endAngle=ea+best; }
+  else { for(const c of raw){ const g=norm(sa-c); if(g>1e-6&&g<TAU-1e-6&&g<best) best=g; } if(!isFinite(best)) return false; ent.startAngle=sa-best; }
+  return true;
+}
+
 function applyExtend(extendedId, prims, clickWx, clickWy) {
   const ent=S.entities.find(e=>e.id===extendedId);
   if(!ent) return;
-  const supported=['line','wall','polyline','cable'];
+  const supported=['line','wall','polyline','cable','arc','ellipse'];
   if(!supported.includes(ent.type)){ termPrint('EXTEND: type non supporté ('+ent.type+')','warning'); return; }
   pushUndo();
   let ok=false;
   if(ent.type==='line'||ent.type==='wall')            ok=applyExtendLine(ent,prims,clickWx,clickWy);
   else if(ent.type==='polyline'||ent.type==='cable')  ok=applyExtendPolyline(ent,prims,clickWx,clickWy);
+  else if(ent.type==='arc')                            ok=applyExtendArc(ent,prims,clickWx,clickWy);
+  else if(ent.type==='ellipse')                        ok=applyExtendEllipse(ent,prims,clickWx,clickWy);
   if(!ok){ S.history.pop(); termPrint('EXTEND: pas d\'intersection trouvée sur cette extension','warning'); return; }
   termPrint('EXTEND — entité prolongée','success');
   updateSaveIndicator('modified'); autoSave(); render();
@@ -10992,7 +11224,7 @@ function closeSpline() {
   setTool('select');
 }
 
-function hitTest(wx,wy) {
+function hitTest(wx,wy,filter) {
   const tol=8/S.zoom;
   let best=null, bestDist=Infinity;
   // Record candidate only if closer than current best
@@ -11002,6 +11234,7 @@ function hitTest(wx,wy) {
     const e=S.entities[i];
     if(!S.layers[e.layer]?.visible) continue;
     if(e.isConstruction) continue;
+    if(filter && !filter(e)) continue;
 
     if(e.type==='point'){
       tryHit(e, Math.hypot(wx-e.x, wy-e.y));
@@ -11047,13 +11280,24 @@ function hitTest(wx,wy) {
       }
     }
     else if(e.type==='polyline'||e.type==='cable'){
+      const pts=e.points;
+      const segDist=(p1,p2)=>{
+        const b=p1[2]||0;
+        if(b!==0){
+          const arc=bulgeToArc(p1[0],p1[1],p2[0],p2[1],b);
+          if(arc){
+            const ang=Math.atan2(wy-arc.cy,wx-arc.cx);
+            if(angleInArc(ang,arc.sa,arc.ea)) return Math.abs(Math.hypot(wx-arc.cx,wy-arc.cy)-arc.r);
+            return Math.min(Math.hypot(wx-p1[0],wy-p1[1]), Math.hypot(wx-p2[0],wy-p2[1]));
+          }
+        }
+        return distToSeg(wx,wy,p1[0],p1[1],p2[0],p2[1]);
+      };
       let d=Infinity;
-      for(let j=0;j<e.points.length-1;j++)
-        d=Math.min(d, distToSeg(wx,wy,e.points[j][0],e.points[j][1],e.points[j+1][0],e.points[j+1][1]));
+      for(let j=0;j<pts.length-1;j++) d=Math.min(d, segDist(pts[j],pts[j+1]));
       // Segment de fermeture si fermée sans doublon du 1er point
-      const fp=e.points[0], lp=e.points[e.points.length-1];
-      if(e.closed && Math.hypot(fp[0]-lp[0],fp[1]-lp[1])>1e-9)
-        d=Math.min(d, distToSeg(wx,wy,lp[0],lp[1],fp[0],fp[1]));
+      const fp=pts[0], lp=pts[pts.length-1];
+      if(e.closed && Math.hypot(fp[0]-lp[0],fp[1]-lp[1])>1e-9) d=Math.min(d, segDist(lp,fp));
       tryHit(e,d);
     }
     else if(e.type==='spline'){
@@ -11116,7 +11360,11 @@ function hitTest(wx,wy) {
     else if(e.type==='dim_linear'||e.type==='dim_aligned'){
       let d=distToSeg(wx,wy,e.x1,e.y1,e.x2,e.y2);
       const pts=getDimLinePoints(e);
-      if(pts) d=Math.min(d, distToSeg(wx,wy,pts[0],pts[1],pts[2],pts[3]));
+      if(pts){
+        d=Math.min(d, distToSeg(wx,wy,pts[0],pts[1],pts[2],pts[3]));      // ligne de cote
+        d=Math.min(d, distToSeg(wx,wy,e.x1,e.y1,pts[0],pts[1]));          // ligne d'attache 1
+        d=Math.min(d, distToSeg(wx,wy,e.x2,e.y2,pts[2],pts[3]));          // ligne d'attache 2
+      }
       const _off=e.offset||30,_to=e.textOffset||0;
       let ttx,tty;
       if(e.type==='dim_linear'){
@@ -11125,7 +11373,7 @@ function hitTest(wx,wy) {
         else{ttx=(e.x1+e.x2)/2+_off;tty=(e.y1+e.y2)/2+_to;}
       } else {
         const dx=e.x2-e.x1,dy=e.y2-e.y1,len=Math.hypot(dx,dy)||1;
-        ttx=(e.x1+e.x2)/2+(-dy/len)*_off;tty=(e.y1+e.y2)/2+(dx/len)*_off;
+        ttx=(e.x1+e.x2)/2+(dy/len)*_off;tty=(e.y1+e.y2)/2+(-dx/len)*_off;
       }
       const td=Math.hypot(wx-ttx,wy-tty); if(td<tol*4) d=Math.min(d,td/4);
       tryHit(e,d);
@@ -11317,7 +11565,7 @@ function segIntersectsRect(x1,y1,x2,y2, rx1,ry1,rx2,ry2){
 }
 
 function entityInRect(e, minX, minY, maxX, maxY, windowMode) {
-  const bb = getEntityBBox(e);
+  const bb = getEntityBBox(e, true);  // bbox serrée (sans marge de culling)
   if (!bb) return false;
   if (windowMode) {
     // Fenêtre : entité entièrement à l'intérieur
@@ -11382,10 +11630,10 @@ function getDimLinePoints(e) {
       const dimX = (e.x1+e.x2)/2 + off;
       return [dimX, e.y1, dimX, e.y2];
     }
-  } else { // dim_aligned
+  } else { // dim_aligned — côté du rendu (perpendiculaire écran, Y inversé)
     const ldx=e.x2-e.x1, ldy=e.y2-e.y1, len=Math.hypot(ldx,ldy);
     if(len<0.001) return null;
-    const nx=-ldy/len*off, ny=ldx/len*off;
+    const nx=ldy/len*off, ny=-ldx/len*off;
     return [e.x1+nx, e.y1+ny, e.x2+nx, e.y2+ny];
   }
 }
@@ -11503,6 +11751,7 @@ function setTool(t) {
   S.tool=t; S.drawing=false; S.drawPoints=[]; S.awaitingInput=false;
   if(t !== 'tube') S.tubePoints=[];
   if(t !== 'dim_angular') { S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null; S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null; }
+  S._dimPick = false; // mode « sélection d'objet » des cotes linéaire/parallèle (Espace)
   if(t !== 'measure' && t !== 'select') { S.measurePt1=null; S.measureResult=null; }
   if(t === 'measure') { S.measurePt1=null; } // résultat précédent gardé jusqu'au 1er clic
   S.diLocked=false; S.diField='dist';
@@ -13862,6 +14111,15 @@ document.addEventListener('keydown',(ev)=>{
     termPrint('DÉPLACER — cliquez la destination', 'info');
     render(); return;
   }
+  // PRIORITAIRE: cote linéaire/parallèle + Espace → bascule sélection d'objet
+  // (avant le filtre de focus, sinon Espace tape dans le terminal après une cote)
+  if(ev.key===' ' && (S.tool==='dim_linear'||S.tool==='dim_aligned') && !S.drawing){
+    ev.preventDefault();
+    S._dimPick = !S._dimPick;
+    termPrint(S._dimPick ? 'Cote: sélectionnez une ligne (polyligne, rectangle) — Espace pour revenir au mode 2 points'
+                         : 'Cote: cliquez le 1er point', 'info');
+    render(); return;
+  }
   // ESC prioritaire : fermer le menu contextuel canvas si ouvert
   if(ev.key==='Escape'){
     const cm=document.getElementById('canvas-context');
@@ -14090,7 +14348,7 @@ document.addEventListener('keydown',(ev)=>{
     S.rotateStep=0; S.rotateBase=null; S.rotateIds=[]; setTool('select'); render(); return;
   }
 
-  // Auto-focus distance field when typing numbers while drawing or waiting for first point (AutoCAD behavior)
+  // Auto-focus distance field when typing numbers while drawing or waiting for first point (comportement CAO standard)
   const drawingTools2 = ['line','rect','circle','arc','wall','leader','polyline','cable','dim_linear','dim_aligned','dim_angular','tube'];
   const wantInput = (S.drawing && S.drawPoints.length > 0) || (S.tool==='tube' && S.drawing && S.tubePoints.length>0) || (!S.drawing && drawingTools2.includes(S.tool));
   if (wantInput && /^[0-9.\-@#]$/.test(ev.key)) {
@@ -14208,7 +14466,7 @@ async function exportDXF() {
   const w = (s) => dxf.push(s);
   const f = (n) => String(parseFloat(n.toFixed(6)));
 
-  // ── Handles (REQUIS par AC1015 : sans eux AutoCAD rejette « ID 0 déjà utilisé ») ──
+  // ── Handles (REQUIS par AC1015 : sans eux CAO rejette « ID 0 déjà utilisé ») ──
   let _h = 0x30;                                     // compteur de handles (hex)
   const nh = () => (_h++).toString(16).toUpperCase();// prochain handle unique
   let _handseedIdx = -1;                             // index du $HANDSEED à patcher en fin
@@ -14656,28 +14914,28 @@ async function exportDXF() {
 
   w('0'); w('EOF');
 
-  // $HANDSEED = handle suivant le plus grand utilisé (requis par AutoCAD)
+  // $HANDSEED = handle suivant le plus grand utilisé (requis par les logiciels de CAO)
   if (_handseedIdx >= 0) dxf[_handseedIdx] = (_h).toString(16).toUpperCase();
 
   const content = dxf.join('\n');
   const baseName = currentDrawingBaseName('minicad_export');
-  const fname = await saveWithPicker(content, baseName, 'dxf', 'application/dxf', 'AutoCAD DXF');
+  const fname = await saveWithPicker(content, baseName, 'dxf', 'application/dxf', 'CAO DXF');
   if (!fname) { termPrint('Export DXF annulé', 'info'); return; }
   const nEnt = S.entities.length;
-  termPrint('DXF exporté : '+fname+' — '+nEnt+' entité'+(nEnt>1?'s':'')+' — AC1015/AutoCAD 2000','success');
+  termPrint('DXF exporté : '+fname+' — '+nEnt+' entité'+(nEnt>1?'s':'')+' — AC1015 (R2000)','success');
 }
 
 function exportDWG() {
   // DWG is a proprietary binary format by Autodesk.
   // A true DWG writer requires an SDK (OpenDesign Alliance ODA / LibreDWG).
   // Strategy: export a DXF file with .dwg extension hint, or offer DXF.
-  // Most modern CAD apps (FreeCAD, LibreCAD, BricsCAD, AutoCAD) can open DXF natively.
+  // Most modern CAD apps (FreeCAD, LibreCAD, BricsCAD) can open DXF natively.
   // We'll export as DXF but also offer a .dwg file that is actually DXF content
   // (some tools auto-detect content regardless of extension).
 
   termPrint('⚠ Le format DWG natif nécessite un SDK propriétaire (Autodesk ODA).','warning');
-  termPrint('Export en DXF compatible AutoCAD 2000 avec extension .dwg...','info');
-  termPrint('→ Ce fichier est lisible par: AutoCAD, BricsCAD, FreeCAD, LibreCAD, DraftSight','info');
+  termPrint('Export en DXF compatible R2000 avec extension .dwg...','info');
+  termPrint('→ Ce fichier est lisible par: BricsCAD, FreeCAD, LibreCAD, DraftSight','info');
 
   // Build same DXF content
   const dxf = [];
@@ -15708,7 +15966,7 @@ canvas.addEventListener('contextmenu', (ev) => {
     S._polyCenter = null; S._polyStep = 0; setTool('select'); render(); return;
   }
 
-  // Outils avec confirmation → clic droit = Entrée (comme AutoCAD)
+  // Outils avec confirmation → clic droit = Entrée (comme un logiciel de CAO)
   if (S.tool === 'join') { applyJoin(); return; }
   if (S.tool === 'trim' && S.trimStep === 1) {
     S.trimStep=2;
@@ -15899,7 +16157,7 @@ loadFromLocalStorage();
 // Bouton téléchargement — affiché uniquement sur minicad.org
 if (['minicad.org','www.minicad.org'].includes(window.location.hostname)) {
   const dlBtn = document.createElement('a');
-  dlBtn.href = 'minicad.html';
+  dlBtn.href = 'index.html';
   dlBtn.download = 'minicad.html';
   dlBtn.title = 'Télécharger MiniCAD pour utilisation hors-ligne';
   dlBtn.style.cssText = [
@@ -15943,7 +16201,7 @@ termPrint('║  MiniCAD v3.1 — Dynamic Input+Polar  ║','info');
 termPrint('╚══════════════════════════════════════╝','info');
 termPrint('Tapez HELP pour la liste des commandes','info');
 termPrint('','');
-termPrint('★ SAISIE DYNAMIQUE (comme AutoCAD):','success');
+termPrint('★ SAISIE DYNAMIQUE (comme un logiciel de CAO):','success');
 termPrint('  • Infobulle Distance/Angle éditable près du curseur','info');
 termPrint('  • Tab = basculer entre Distance et Angle','info');
 termPrint('  • Entrez la valeur + Entrée pour confirmer','info');

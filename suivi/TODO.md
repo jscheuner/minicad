@@ -18,7 +18,7 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
   - Plan détaillé Phase 1 : voir [plan_presentations.md](plan_presentations.md) (≈ 600–700 lignes)
   - En cours : étape 1 (données + persistance) + étape 2 (onglets + feuille)
 
-- [ ] **OSNAP Extension** — prolongement de ligne/polyligne (EXT comme AutoCAD)
+- [ ] **OSNAP Extension** — prolongement de ligne/polyligne (EXT comme un logiciel de CAO)
   - Acquisition du point d'extrémité au survol (marqueur "+")
   - Ligne pointillée sur le prolongement, snap au croisement
   - Implémenté partiellement (v0.06) — ne fonctionne pas correctement, à reprendre
@@ -26,7 +26,7 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 - [ ] **HATCH V2 — Détection de frontière multi-entités**
   - Clic dans une zone délimitée par plusieurs lignes/arcs qui se croisent (pas une entité fermée unique)
   - Lancer de rayons depuis le point cliqué → trouver les intersections les plus proches → reconstruire le contour fermé
-  - Similaire au "Pick Points" d'AutoCAD
+  - Similaire au "Pick Points" de CAO
 
 - [ ] **TUBE preview EXT/INT à améliorer**
   - En mode multi-tronçons, le dernier point confirmé peut légèrement bouger lors du changement d'angle du tronçon suivant (bisectrice dynamique)
@@ -38,7 +38,7 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 - [ ] **5.5 — Tableaux** (grilles texte annotatives)
 - [ ] **6.4 — Import SVG** (parsing SVG → entités)
 - [ ] **6.5 — Fenêtres de présentation (Paper Space)**
-  - Concept AutoCAD : espace papier + espace modèle
+  - Concept CAO : espace papier + espace modèle
   - Plusieurs vues du dessin sur une même feuille, chacune avec sa propre échelle et calques
   - Cadres de fenêtres paramétrables (position, taille, échelle, rotation)
 
@@ -99,7 +99,7 @@ Voir [CHANGELOG.md](CHANGELOG.md) pour le détail.
 - ✅ Outils de base (ligne, rect, cercle, arc, polyligne)
 - ✅ Sélection, move, copy, erase, undo/redo
 - ✅ 4 calques + visibilité
-- ✅ Terminal de commandes AutoCAD-like
+- ✅ Terminal de commandes type CAO
 - ✅ OSNAP 7 modes + perpendiculaire + tangente (dont sur tube)
 - ✅ Ortho (F8) + Polaire (F10)
 - ✅ Dynamic Input (bulle D/A, tous tronçons TUBE inclus)
