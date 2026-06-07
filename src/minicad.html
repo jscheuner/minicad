@@ -962,8 +962,10 @@
     box-shadow: 0 8px 28px rgba(0,0,0,0.7); padding: 4px;
     font-family: 'JetBrains Mono', monospace; font-size: 11px; min-width: 200px;
   }
-  #ct-menu .ctm-item { padding: 6px 10px; cursor: pointer; border-radius: 4px; color: var(--text); white-space: nowrap; }
+  #ct-menu .ctm-item { padding: 6px 10px; cursor: pointer; border-radius: 4px; color: var(--text); white-space: nowrap; display: flex; align-items: center; }
   #ct-menu .ctm-item:hover { background: var(--accent-dim); color: var(--accent); }
+  #ct-menu .ctm-del { margin-left: auto; padding-left: 12px; color: #777; }
+  #ct-menu .ctm-del:hover { color: var(--error); }
   #ct-menu .ctm-sep { height: 1px; background: #ffffff14; margin: 4px 2px; }
   #ct-menu .ctm-title { padding: 4px 10px; color: var(--text-dim); font-size: 9px; letter-spacing: .5px; }
   #paper-tools {
@@ -4624,14 +4626,13 @@ function _renderSheetContent(layout, p2s, Z, opts) {
   // Fenêtres d'abord (le cadre/cartouche passe par-dessus)
   (layout.viewports || []).forEach(vp => _drawViewport(vp, p2s, Z, opts));
   if (layout.paperEntities && layout.paperEntities.length) {
-    _drawPaperTemplate(layout, p2s, Z, opts);   // modèle personnalisé
+    _drawPaperTemplate(layout, p2s, Z, opts);   // modèle personnalisé (cadre + cartouche)
   } else {
-    const m = layout.marginMm || 10;            // cadre + cartouche par défaut
+    const m = layout.marginMm || 10;            // présentation vierge : juste le cadre
     ctx.strokeStyle = opts.print ? '#000000' : '#bbbbbb';
     ctx.lineWidth = opts.print ? 0.3*Z : 1;
     const [mx,my] = p2s(m,m);
     ctx.strokeRect(mx, my, (pw-2*m)*Z, (ph-2*m)*Z);
-    _drawCartouche(layout, p2s, Z, pw, ph);
   }
 }
 
@@ -4913,8 +4914,7 @@ function _captureEntities() {
   });
 }
 
-function newPresentationFromTemplate(id) {
-  const tpl = allTemplates().find(t => t.id === id); if (!tpl) return;
+function _createLayoutFromTemplate(tpl) {
   const n = S.layouts.length + 1;
   const layout = {
     id: 'L' + Date.now().toString(36) + Math.floor(Math.random()*1000),
@@ -4929,6 +4929,9 @@ function newPresentationFromTemplate(id) {
                centerX:0, centerY:0, scale:50, locked:false };
   fitViewportToDrawing(vp); layout.viewports.push(vp);
   S.layouts.push(layout); setSpace(layout.id); autoSave();
+}
+function newPresentationFromTemplate(id) {
+  const tpl = allTemplates().find(t => t.id === id); if (tpl) _createLayoutFromTemplate(tpl);
 }
 
 // Dialogue « Enregistrer comme modèle »
@@ -4959,18 +4962,25 @@ function saveCartouche(exportFile) {
   termPrint('Modèle « ' + name + ' » enregistré' + (exportFile ? ' et exporté (.pcad)' : ''), 'success');
 }
 
-// Import .pcad
-function importCartoucheFile() { document.getElementById('ct-file-input').click(); }
+// Import .pcad — deux modes : 'library' (ajoute à la bibliothèque) ou 'presentation' (crée direct)
+let _ctImportMode = 'library';
+function importCartoucheFile() { _ctImportMode = 'library'; document.getElementById('ct-file-input').click(); }
 function _onCartoucheFile(ev) {
   const f = ev.target.files[0]; if (!f) return; ev.target.value = '';
+  const mode = _ctImportMode; _ctImportMode = 'library';
   const r = new FileReader();
   r.onload = () => {
     try {
       const t = JSON.parse(r.result);
       if (!t.entities) { termPrint('Fichier .pcad invalide', 'error'); return; }
-      t.id = 'ct'+Date.now().toString(36); t.builtin = false;
-      cartoucheTemplates.push(t); saveCartoucheLibrary();
-      termPrint('Modèle « ' + (t.name || 'importé') + ' » ajouté à la bibliothèque', 'success');
+      if (mode === 'presentation') {
+        _createLayoutFromTemplate(t);   // crée la présentation sans toucher la bibliothèque
+        termPrint('Présentation créée depuis « ' + f.name + ' »', 'success');
+      } else {
+        t.id = 'ct'+Date.now().toString(36); t.builtin = false;
+        cartoucheTemplates.push(t); saveCartoucheLibrary();
+        termPrint('Modèle « ' + (t.name || 'importé') + ' » ajouté à la bibliothèque', 'success');
+      }
     } catch(e) { termPrint('Lecture .pcad échouée : ' + e.message, 'error'); }
   };
   r.readAsText(f);
@@ -4995,18 +5005,22 @@ function applyCartoucheFields() {
 }
 
 // Menu « Nouvelle présentation » (vierge / depuis un modèle)
+let _ctMenuXY = [0,0];
 function _ctMenuFromEvent(ev) { openTemplateMenu(ev.clientX, ev.clientY); }
 function openTemplateMenu(x, y) {
+  _ctMenuXY = [x, y];
   const el = document.getElementById('ct-menu');
   let html = '<div class="ctm-title">NOUVELLE PRÉSENTATION</div>' +
-             '<div class="ctm-item" onclick="_ctMenuPick(\'\')">Vierge</div>' +
+             '<div class="ctm-item" onclick="_ctMenuPick(\'\')">Vierge (page + cadre)</div>' +
              '<div class="ctm-sep"></div><div class="ctm-title">DEPUIS UN MODÈLE</div>';
   allTemplates().forEach(t => {
     const fmt = t.paper === 'custom' ? 'perso' : t.paper;
+    const del = t.builtin ? '' :
+      '<span class="ctm-del" onclick="event.stopPropagation();_ctMenuDelete(\'' + t.id + '\')" title="Supprimer ce modèle">✕</span>';
     html += '<div class="ctm-item" onclick="_ctMenuPick(\'' + t.id + '\')">' + _esc(t.name) +
-            ' <span style="color:#666">(' + fmt + ')</span></div>';
+            ' <span style="color:#666">(' + fmt + ')</span>' + del + '</div>';
   });
-  html += '<div class="ctm-sep"></div><div class="ctm-item" onclick="_ctMenuImport()">Importer un modèle .pcad…</div>';
+  html += '<div class="ctm-sep"></div><div class="ctm-item" onclick="_ctMenuImport()">Importer un .pcad…</div>';
   el.innerHTML = html; el.style.display = 'block';
   const w = el.offsetWidth, h = el.offsetHeight;
   el.style.left = Math.min(x, window.innerWidth - w - 6) + 'px';
@@ -5014,7 +5028,13 @@ function openTemplateMenu(x, y) {
 }
 function closeTemplateMenu() { document.getElementById('ct-menu').style.display = 'none'; }
 function _ctMenuPick(id) { closeTemplateMenu(); if (id) newPresentationFromTemplate(id); else addLayout(); }
-function _ctMenuImport() { closeTemplateMenu(); importCartoucheFile(); }
+function _ctMenuImport() { closeTemplateMenu(); _ctImportMode = 'presentation'; document.getElementById('ct-file-input').click(); }
+function _ctMenuDelete(id) {
+  const i = cartoucheTemplates.findIndex(t => t.id === id); if (i < 0) return;
+  if (!confirm('Supprimer le modèle « ' + cartoucheTemplates[i].name + ' » de la bibliothèque ?')) return;
+  cartoucheTemplates.splice(i, 1); saveCartoucheLibrary();
+  openTemplateMenu(_ctMenuXY[0], _ctMenuXY[1]); // garder le menu ouvert
+}
 document.addEventListener('mousedown', (e) => {
   const m = document.getElementById('ct-menu');
   if (m && m.style.display === 'block' && !m.contains(e.target)) closeTemplateMenu();
