@@ -13303,6 +13303,12 @@ async function exportDXF() {
   const w = (s) => dxf.push(s);
   const f = (n) => String(parseFloat(n.toFixed(6)));
 
+  // ── Handles (REQUIS par AC1015 : sans eux AutoCAD rejette « ID 0 déjà utilisé ») ──
+  let _h = 0x30;                                     // compteur de handles (hex)
+  const nh = () => (_h++).toString(16).toUpperCase();// prochain handle unique
+  let _handseedIdx = -1;                             // index du $HANDSEED à patcher en fin
+  let hModelBR = '', hPaperBR = '';                  // handles BLOCK_RECORD Model/Paper Space
+
   // ── Compute drawing extents ──────────────────────────────────────────────────
   let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
   S.entities.forEach(e => {
@@ -13320,6 +13326,7 @@ async function exportDXF() {
   w('0'); w('SECTION');
   w('2'); w('HEADER');
   w('9'); w('$ACADVER'); w('1'); w('AC1015');
+  w('9'); w('$HANDSEED'); w('5'); _handseedIdx = dxf.length; w('FFFFF'); // patché en fin
   w('9'); w('$INSBASE'); w('10'); w('0.0'); w('20'); w('0.0'); w('30'); w('0.0');
   w('9'); w('$EXTMIN'); w('10'); w(f(minX)); w('20'); w(f(minY)); w('30'); w('0.0');
   w('9'); w('$EXTMAX'); w('10'); w(f(maxX)); w('20'); w(f(maxY)); w('30'); w('0.0');
@@ -13342,8 +13349,9 @@ async function exportDXF() {
   w('2'); w('TABLES');
 
   // VPORT table
-  w('0'); w('TABLE'); w('2'); w('VPORT'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
-  w('0'); w('VPORT'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbViewportTableRecord');
+  const hVportT = nh();
+  w('0'); w('TABLE'); w('2'); w('VPORT'); w('5'); w(hVportT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('VPORT'); w('5'); w(nh()); w('330'); w(hVportT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbViewportTableRecord');
   w('2'); w('*ACTIVE'); w('70'); w('0');
   w('10'); w('0.0'); w('20'); w('0.0'); w('11'); w('1.0'); w('21'); w('1.0');
   w('12'); w(f((minX+maxX)/2)); w('22'); w(f((minY+maxY)/2));
@@ -13357,17 +13365,19 @@ async function exportDXF() {
   w('0'); w('ENDTAB');
 
   // LTYPE table
-  w('0'); w('TABLE'); w('2'); w('LTYPE'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
-  w('0'); w('LTYPE'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLinetypeTableRecord');
+  const hLtypeT = nh();
+  w('0'); w('TABLE'); w('2'); w('LTYPE'); w('5'); w(hLtypeT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('LTYPE'); w('5'); w(nh()); w('330'); w(hLtypeT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLinetypeTableRecord');
   w('2'); w('CONTINUOUS'); w('70'); w('0'); w('3'); w('Solid line'); w('72'); w('65'); w('73'); w('0'); w('40'); w('0.0');
   w('0'); w('ENDTAB');
 
   // LAYER table
-  w('0'); w('TABLE'); w('2'); w('LAYER'); w('100'); w('AcDbSymbolTable');
+  const hLayerT = nh();
+  w('0'); w('TABLE'); w('2'); w('LAYER'); w('5'); w(hLayerT); w('330'); w('0'); w('100'); w('AcDbSymbolTable');
   w('70'); w(String(S.layers.length));
   S.layers.forEach(lay => {
     const ln = lay.name.replace(/[^a-zA-Z0-9_-]/g,'_');
-    w('0'); w('LAYER'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLayerTableRecord');
+    w('0'); w('LAYER'); w('5'); w(nh()); w('330'); w(hLayerT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLayerTableRecord');
     w('2'); w(ln);
     w('70'); w(lay.visible ? '0' : '1');
     w('62'); w(String(dxfColorIndex(lay.color)));
@@ -13376,33 +13386,39 @@ async function exportDXF() {
   w('0'); w('ENDTAB');
 
   // STYLE table
-  w('0'); w('TABLE'); w('2'); w('STYLE'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
-  w('0'); w('STYLE'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbTextStyleTableRecord');
+  const hStyleT = nh();
+  w('0'); w('TABLE'); w('2'); w('STYLE'); w('5'); w(hStyleT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('STYLE'); w('5'); w(nh()); w('330'); w(hStyleT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbTextStyleTableRecord');
   w('2'); w('STANDARD'); w('70'); w('0'); w('40'); w('0.0'); w('41'); w('1.0'); w('50'); w('0.0'); w('71'); w('0'); w('42'); w('0.2'); w('3'); w(''); w('4'); w('');
   w('0'); w('ENDTAB');
 
   // VIEW table (empty)
-  w('0'); w('TABLE'); w('2'); w('VIEW'); w('100'); w('AcDbSymbolTable'); w('70'); w('0'); w('0'); w('ENDTAB');
+  w('0'); w('TABLE'); w('2'); w('VIEW'); w('5'); w(nh()); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('0'); w('0'); w('ENDTAB');
 
   // UCS table (empty)
-  w('0'); w('TABLE'); w('2'); w('UCS'); w('100'); w('AcDbSymbolTable'); w('70'); w('0'); w('0'); w('ENDTAB');
+  w('0'); w('TABLE'); w('2'); w('UCS'); w('5'); w(nh()); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('0'); w('0'); w('ENDTAB');
 
   // APPID table
-  w('0'); w('TABLE'); w('2'); w('APPID'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
-  w('0'); w('APPID'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbRegAppTableRecord');
+  const hAppidT = nh();
+  w('0'); w('TABLE'); w('2'); w('APPID'); w('5'); w(hAppidT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('APPID'); w('5'); w(nh()); w('330'); w(hAppidT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbRegAppTableRecord');
   w('2'); w('ACAD'); w('70'); w('0');
   w('0'); w('ENDTAB');
 
-  // DIMSTYLE table
-  w('0'); w('TABLE'); w('2'); w('DIMSTYLE'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
-  w('0'); w('DIMSTYLE'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbDimStyleTableRecord');
+  // DIMSTYLE table (l'enregistrement utilise le code 105 pour son handle)
+  const hDimT = nh();
+  w('0'); w('TABLE'); w('2'); w('DIMSTYLE'); w('5'); w(hDimT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('DIMSTYLE'); w('105'); w(nh()); w('330'); w(hDimT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbDimStyleTableRecord');
   w('2'); w('STANDARD'); w('70'); w('0');
   w('0'); w('ENDTAB');
 
   // BLOCK_RECORD table (required by AC1015)
-  w('0'); w('TABLE'); w('2'); w('BLOCK_RECORD'); w('100'); w('AcDbSymbolTable'); w('70'); w('2');
-  w('0'); w('BLOCK_RECORD'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Model_Space');
-  w('0'); w('BLOCK_RECORD'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Paper_Space');
+  const hBlkRecT = nh();
+  w('0'); w('TABLE'); w('2'); w('BLOCK_RECORD'); w('5'); w(hBlkRecT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('2');
+  hModelBR = nh();
+  w('0'); w('BLOCK_RECORD'); w('5'); w(hModelBR); w('330'); w(hBlkRecT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Model_Space');
+  hPaperBR = nh();
+  w('0'); w('BLOCK_RECORD'); w('5'); w(hPaperBR); w('330'); w(hBlkRecT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Paper_Space');
   w('0'); w('ENDTAB');
 
   w('0'); w('ENDSEC');
@@ -13410,14 +13426,14 @@ async function exportDXF() {
   // ── BLOCKS (required by AC1015) ───────────────────────────────────────────────
   w('0'); w('SECTION');
   w('2'); w('BLOCKS');
-  w('0'); w('BLOCK'); w('100'); w('AcDbEntity'); w('8'); w('0');
+  w('0'); w('BLOCK'); w('5'); w(nh()); w('330'); w(hModelBR); w('100'); w('AcDbEntity'); w('8'); w('0');
   w('100'); w('AcDbBlockBegin'); w('2'); w('*Model_Space'); w('70'); w('0');
   w('10'); w('0.0'); w('20'); w('0.0'); w('30'); w('0.0'); w('3'); w('*Model_Space'); w('1'); w('');
-  w('0'); w('ENDBLK'); w('100'); w('AcDbEntity'); w('8'); w('0'); w('100'); w('AcDbBlockEnd');
-  w('0'); w('BLOCK'); w('100'); w('AcDbEntity'); w('8'); w('0');
+  w('0'); w('ENDBLK'); w('5'); w(nh()); w('330'); w(hModelBR); w('100'); w('AcDbEntity'); w('8'); w('0'); w('100'); w('AcDbBlockEnd');
+  w('0'); w('BLOCK'); w('5'); w(nh()); w('330'); w(hPaperBR); w('100'); w('AcDbEntity'); w('8'); w('0'); w('67'); w('1');
   w('100'); w('AcDbBlockBegin'); w('2'); w('*Paper_Space'); w('70'); w('0');
   w('10'); w('0.0'); w('20'); w('0.0'); w('30'); w('0.0'); w('3'); w('*Paper_Space'); w('1'); w('');
-  w('0'); w('ENDBLK'); w('100'); w('AcDbEntity'); w('8'); w('0'); w('100'); w('AcDbBlockEnd');
+  w('0'); w('ENDBLK'); w('5'); w(nh()); w('330'); w(hPaperBR); w('100'); w('AcDbEntity'); w('8'); w('0'); w('67'); w('1'); w('100'); w('AcDbBlockEnd');
   w('0'); w('ENDSEC');
 
   // ── ENTITIES ─────────────────────────────────────────────────────────────────
@@ -13425,6 +13441,7 @@ async function exportDXF() {
   w('2'); w('ENTITIES');
 
   function wEnt(layer, col) {
+    w('5'); w(nh()); w('330'); w(hModelBR); // handle + propriétaire (Model_Space)
     w('100'); w('AcDbEntity');
     w('8'); w(layer);
     w('62'); w(String(col));
@@ -13723,15 +13740,19 @@ async function exportDXF() {
 
   w('0'); w('ENDSEC');
 
-  // ── OBJECTS (required by AC1015) ──────────────────────────────────────────────
+  // ── OBJECTS (required by AC1015) — dictionnaire racine + ACAD_GROUP ────────────
   w('0'); w('SECTION');
   w('2'); w('OBJECTS');
-  w('0'); w('DICTIONARY');
-  w('100'); w('AcDbDictionary');
-  w('281'); w('1');
+  const hRootDict = nh(), hGroupDict = nh();
+  w('0'); w('DICTIONARY'); w('5'); w(hRootDict); w('330'); w('0'); w('100'); w('AcDbDictionary'); w('281'); w('1');
+  w('3'); w('ACAD_GROUP'); w('350'); w(hGroupDict);
+  w('0'); w('DICTIONARY'); w('5'); w(hGroupDict); w('330'); w(hRootDict); w('100'); w('AcDbDictionary'); w('281'); w('1');
   w('0'); w('ENDSEC');
 
   w('0'); w('EOF');
+
+  // $HANDSEED = handle suivant le plus grand utilisé (requis par AutoCAD)
+  if (_handseedIdx >= 0) dxf[_handseedIdx] = (_h).toString(16).toUpperCase();
 
   const content = dxf.join('\n');
   const baseName = currentDrawingBaseName('minicad_export');
