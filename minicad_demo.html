@@ -8582,7 +8582,10 @@ canvas.addEventListener('mousemove', (ev) => {
       S.tool === 'fillet' || S.tool === 'chamfer' || S.tool === 'join' || S.tool === 'trim' || S.tool === 'extend' || S.tool === 'hatch' ||
       (((S.tool === 'dim_linear' || S.tool === 'dim_aligned') && S._dimPick)) ||
       S.offsetPending) {
-    const hit = hitTest(wx, wy);
+    const _dimPickHover = (S.tool === 'dim_linear' || S.tool === 'dim_aligned') && S._dimPick;
+    const hit = _dimPickHover
+      ? hitTest(wx, wy, en => ['line','wall','polyline','cable','rect','tube'].includes(en.type))
+      : hitTest(wx, wy);
     S.hoverEntityId = hit ? hit.id : null;
   } else {
     S.hoverEntityId = null;
@@ -9291,8 +9294,9 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
   if (tool === 'dim_linear' || tool === 'dim_aligned') {
     if (!S.drawing) {
       if (S._dimPick) {
-        // Mode AutoCAD : sélectionner une ligne → ses 2 extrémités deviennent la cote
-        const hit = hitTest(rawWx, rawWy);
+        // Sélectionner une ligne → ses 2 extrémités deviennent la cote
+        // (on ignore les cotes/textes déjà posés dessus pour atteindre la ligne)
+        const hit = hitTest(rawWx, rawWy, en => ['line','wall','polyline','cable','rect','tube'].includes(en.type));
         const seg = _dimPickSegment(hit, rawWx, rawWy);
         if (!seg) { termPrint('Cote: cliquez sur une ligne, polyligne ou rectangle', 'warning'); render(); return; }
         S.drawPoints = [[seg.x1, seg.y1], [seg.x2, seg.y2]];
@@ -11072,7 +11076,7 @@ function closeSpline() {
   setTool('select');
 }
 
-function hitTest(wx,wy) {
+function hitTest(wx,wy,filter) {
   const tol=8/S.zoom;
   let best=null, bestDist=Infinity;
   // Record candidate only if closer than current best
@@ -11082,6 +11086,7 @@ function hitTest(wx,wy) {
     const e=S.entities[i];
     if(!S.layers[e.layer]?.visible) continue;
     if(e.isConstruction) continue;
+    if(filter && !filter(e)) continue;
 
     if(e.type==='point'){
       tryHit(e, Math.hypot(wx-e.x, wy-e.y));
@@ -11196,7 +11201,11 @@ function hitTest(wx,wy) {
     else if(e.type==='dim_linear'||e.type==='dim_aligned'){
       let d=distToSeg(wx,wy,e.x1,e.y1,e.x2,e.y2);
       const pts=getDimLinePoints(e);
-      if(pts) d=Math.min(d, distToSeg(wx,wy,pts[0],pts[1],pts[2],pts[3]));
+      if(pts){
+        d=Math.min(d, distToSeg(wx,wy,pts[0],pts[1],pts[2],pts[3]));      // ligne de cote
+        d=Math.min(d, distToSeg(wx,wy,e.x1,e.y1,pts[0],pts[1]));          // ligne d'attache 1
+        d=Math.min(d, distToSeg(wx,wy,e.x2,e.y2,pts[2],pts[3]));          // ligne d'attache 2
+      }
       const _off=e.offset||30,_to=e.textOffset||0;
       let ttx,tty;
       if(e.type==='dim_linear'){
@@ -14516,6 +14525,15 @@ document.addEventListener('keydown',(ev)=>{
     termPrint('DÉPLACER — cliquez la destination', 'info');
     render(); return;
   }
+  // PRIORITAIRE: cote linéaire/parallèle + Espace → bascule sélection d'objet
+  // (avant le filtre de focus, sinon Espace tape dans le terminal après une cote)
+  if(ev.key===' ' && (S.tool==='dim_linear'||S.tool==='dim_aligned') && !S.drawing){
+    ev.preventDefault();
+    S._dimPick = !S._dimPick;
+    termPrint(S._dimPick ? 'Cote: sélectionnez une ligne (polyligne, rectangle) — Espace pour revenir au mode 2 points'
+                         : 'Cote: cliquez le 1er point', 'info');
+    render(); return;
+  }
   // ESC prioritaire : fermer le menu contextuel canvas si ouvert
   if(ev.key==='Escape'){
     const cm=document.getElementById('canvas-context');
@@ -14809,12 +14827,7 @@ document.addEventListener('keydown',(ev)=>{
   if(ev.key==='F10'){ev.preventDefault();togglePolar();}
   if(ev.key===' '){
     ev.preventDefault();
-    if((S.tool==='dim_linear'||S.tool==='dim_aligned') && !S.drawing){
-      S._dimPick = !S._dimPick;
-      termPrint(S._dimPick ? 'Cote: sélectionnez une ligne (polyligne, rectangle) — Espace pour revenir au mode 2 points'
-                           : 'Cote: cliquez le 1er point', 'info');
-      render();
-    } else if(S.gripSelected && !S.gripEdit){
+    if(S.gripSelected && !S.gripEdit){
       const bx = S.gripSelected.origX, by = S.gripSelected.origY;
       S.gripSelected = null;
       setTool('move_obj');
