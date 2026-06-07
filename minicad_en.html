@@ -3856,8 +3856,8 @@ function resolvePoint(wx, wy) {
 // ===== RENDER =====
 
 // Bounding box d'une entité en coordonnées monde (pour culling viewport)
-function getEntityBBox(e) {
-  const pad = 20;
+function getEntityBBox(e, tight) {
+  const pad = tight ? 0 : 20;  // tight=true → bbox géométrique exacte (sélection), sinon marge pour le culling
   switch (e.type) {
     case 'point':
       return { minX:e.x-pad, maxX:e.x+pad, minY:e.y-pad, maxY:e.y+pad };
@@ -3927,8 +3927,13 @@ function getEntityBBox(e) {
         } else if (seg.type === 'bend') {
           const { angle: phi, bendRadius: R, side } = seg;
           const bcx = cx - side*R*Math.sin(theta), bcy = cy + side*R*Math.cos(theta);
-          expand(bcx, bcy, R + tr); // bbox of full arc circle (over-approx)
-          const arcEnd = (theta - side*Math.PI/2) + side*phi;
+          const a0 = theta - side*Math.PI/2;
+          const steps = Math.max(2, Math.ceil(phi / (Math.PI/18))); // échantillon ~10°
+          for (let i = 0; i <= steps; i++) {
+            const a = a0 + side*phi*(i/steps);
+            expand(bcx + R*Math.cos(a), bcy + R*Math.sin(a), tr); // centerline + parois (±tr)
+          }
+          const arcEnd = a0 + side*phi;
           cx = bcx + R*Math.cos(arcEnd); cy = bcy + R*Math.sin(arcEnd);
           theta += side*phi;
         }
@@ -11317,7 +11322,7 @@ function segIntersectsRect(x1,y1,x2,y2, rx1,ry1,rx2,ry2){
 }
 
 function entityInRect(e, minX, minY, maxX, maxY, windowMode) {
-  const bb = getEntityBBox(e);
+  const bb = getEntityBBox(e, true);  // bbox serrée (sans marge de culling)
   if (!bb) return false;
   if (windowMode) {
     // Fenêtre : entité entièrement à l'intérieur
