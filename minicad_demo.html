@@ -943,6 +943,28 @@
     box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     font-family: 'JetBrains Mono', monospace;
   }
+  #vp-dialog {
+    position: fixed; display: none;
+    top: 50%; left: 50%; transform: translate(-50%,-50%);
+    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    z-index: 960; width: 300px; box-shadow: 0 12px 48px rgba(0,0,0,0.8);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  #vp-dialog .pd-body input[type=number] {
+    background: #111827; border: 1px solid #ffffff22; color: #e0e0e0;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    border-radius: 4px; padding: 4px 7px; flex: 1; min-width: 0;
+  }
+  #paper-tools {
+    position: absolute; top: 8px; right: 8px; z-index: 5; display: none; gap: 4px;
+  }
+  #paper-tools button {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; cursor: pointer;
+    background: #00000088; backdrop-filter: blur(4px); color: var(--text);
+    border: 1px solid #ffffff20; border-radius: 4px; padding: 4px 10px;
+  }
+  #paper-tools button:hover { color: var(--accent); border-color: var(--accent); }
+
   .pd-header {
     display: flex; justify-content: space-between; align-items: center;
     padding: 10px 14px 9px; border-bottom: 1px solid #ffffff18;
@@ -1677,6 +1699,10 @@
   <div class="canvas-area" id="canvas-area">
     <canvas id="cad-canvas"></canvas>
     <div id="space-tabs"></div>
+    <div id="paper-tools">
+      <button onclick="addViewport()">+ Fenêtre</button>
+      <button onclick="openPrintDialog()">Imprimer PDF</button>
+    </div>
     <div class="canvas-overlay">
       <div class="overlay-badge" id="tool-badge">SELECT</div>
       <div class="overlay-badge" id="zoom-badge">1:1</div>
@@ -1983,6 +2009,35 @@
   <div class="pd-footer">
     <button onclick="closePrintDialog()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
     <button class="pd-btn-print" onclick="doPrint()">Télécharger PDF ↵</button>
+  </div>
+</div>
+
+<div id="vp-dialog">
+  <div class="pd-header">FENÊTRE
+    <span onclick="closeViewportDialog()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+  </div>
+  <div class="pd-body">
+    <div class="pd-row">
+      <span class="pd-label">Feuille</span>
+      <select id="vpd-paper"><option value="A4">A4</option><option value="A3">A3</option><option value="A5">A5</option><option value="Letter">Letter</option></select>
+      <select id="vpd-orient"><option value="portrait">Portrait</option><option value="landscape">Paysage</option></select>
+    </div>
+    <div class="pd-sep"></div>
+    <div class="pd-row">
+      <span class="pd-label">Échelle 1:</span>
+      <input id="vpd-scale" type="number" step="0.1" min="0.01">
+      <button class="pd-btn-sel" onclick="vpFitToDrawing()">Ajuster</button>
+    </div>
+    <div class="pd-row"><span class="pd-label">Centre X</span><input id="vpd-cx" type="number" step="1"></div>
+    <div class="pd-row">
+      <span class="pd-label">Centre Y</span><input id="vpd-cy" type="number" step="1">
+      <button class="pd-btn-sel" onclick="vpCenterOnDrawing()">Centrer</button>
+    </div>
+    <div class="pd-row"><span class="pd-label">Verrouillée</span><input id="vpd-lock" type="checkbox" style="flex:none"></div>
+  </div>
+  <div class="pd-footer">
+    <button onclick="closeViewportDialog()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button class="pd-btn-print" onclick="applyViewportDialog()">Appliquer ↵</button>
   </div>
 </div>
 
@@ -4347,6 +4402,7 @@ function _doRender() {
 // (même mécanisme que doPrint) pour rendre l'espace objet dans chaque fenêtre.
 
 const PAPER_SIZES = { A4:[210,297], A3:[297,420], A5:[148,210], Letter:[216,279] };
+const MM2PX96 = 96 / 25.4;   // px virtuels (96 DPI) par mm — base de drawEntity/impression
 
 function paperDims(l) {
   let [w,h] = PAPER_SIZES[l.paper] || [210,297];
@@ -4354,6 +4410,36 @@ function paperDims(l) {
   return [w,h];
 }
 function getActiveLayout() { return S.layouts.find(l => l.id === S.space) || null; }
+function s2p(sx, sy) { const Z = S.paperView.zoom; return [(sx - S.paperView.panX)/Z, (sy - S.paperView.panY)/Z]; }
+function _ptInVp(vp, mmx, mmy) { return mmx>=vp.xMm && mmx<=vp.xMm+vp.wMm && mmy>=vp.yMm && mmy<=vp.yMm+vp.hMm; }
+function _vpHandleAt(vp, sx, sy) {
+  const Z = S.paperView.zoom;
+  const vx = vp.xMm*Z + S.paperView.panX, vy = vp.yMm*Z + S.paperView.panY;
+  const pts = _vpHandlePts(vx, vy, vp.wMm*Z, vp.hMm*Z);
+  for (const k in pts) { const [x,y] = pts[k]; if (Math.abs(sx-x)<=6 && Math.abs(sy-y)<=6) return k; }
+  return null;
+}
+function _cursorForHandle(h) {
+  return { n:'ns-resize', s:'ns-resize', e:'ew-resize', w:'ew-resize',
+           ne:'nesw-resize', sw:'nesw-resize', nw:'nwse-resize', se:'nwse-resize' }[h] || 'default';
+}
+let _vpDrag = null; // { mode:'move'|'resize', vpId, handle, startMM:[x,y], orig:{xMm,yMm,wMm,hMm} }
+function _vpApplyDrag(sx, sy) {
+  const layout = getActiveLayout(); if (!layout || !_vpDrag) return;
+  const vp = layout.viewports.find(v => v.id === _vpDrag.vpId); if (!vp) return;
+  const [mmx,mmy] = s2p(sx, sy);
+  const dx = mmx - _vpDrag.startMM[0], dy = mmy - _vpDrag.startMM[1];
+  const o = _vpDrag.orig, MIN = 10;
+  if (_vpDrag.mode === 'move') { vp.xMm = o.xMm + dx; vp.yMm = o.yMm + dy; return; }
+  let x=o.xMm, y=o.yMm, w=o.wMm, h=o.hMm, hd = _vpDrag.handle;
+  if (hd.includes('e')) w = o.wMm + dx;
+  if (hd.includes('s')) h = o.hMm + dy;
+  if (hd.includes('w')) { x = o.xMm + dx; w = o.wMm - dx; }
+  if (hd.includes('n')) { y = o.yMm + dy; h = o.hMm - dy; }
+  if (w < MIN) { if (hd.includes('w')) x = o.xMm + o.wMm - MIN; w = MIN; }
+  if (h < MIN) { if (hd.includes('n')) y = o.yMm + o.hMm - MIN; h = MIN; }
+  vp.xMm=x; vp.yMm=y; vp.wMm=w; vp.hMm=h;
+}
 function _esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 // Sauve/écrase/restaure le repère monde le temps d'un rendu (extrait de doPrint)
@@ -4412,8 +4498,7 @@ function _drawPaperSpace(layout) {
   ctx = mainCtx;
   ctx.save(); ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
   ctx.clearRect(0, 0, canvasW, canvasH);
-  // Fond atelier
-  ctx.fillStyle = '#0c0f17'; ctx.fillRect(0, 0, canvasW, canvasH);
+  ctx.fillStyle = '#0c0f17'; ctx.fillRect(0, 0, canvasW, canvasH); // fond atelier
   if (!layout) { ctx.restore(); return; }
 
   const Z = S.paperView.zoom, PX = S.paperView.panX, PY = S.paperView.panY;
@@ -4421,26 +4506,28 @@ function _drawPaperSpace(layout) {
   const [pw,ph] = paperDims(layout);
   const [x0,y0] = p2s(0,0);
 
-  // Ombre + feuille blanche
-  ctx.fillStyle = '#00000055'; ctx.fillRect(x0+5, y0+5, pw*Z, ph*Z);
-  ctx.fillStyle = '#ffffff';   ctx.fillRect(x0, y0, pw*Z, ph*Z);
+  ctx.fillStyle = '#00000055'; ctx.fillRect(x0+5, y0+5, pw*Z, ph*Z); // ombre
+  ctx.fillStyle = '#ffffff';   ctx.fillRect(x0, y0, pw*Z, ph*Z);     // feuille
 
-  // Cadre de marge
-  const m = layout.marginMm || 10;
-  ctx.strokeStyle = '#bbbbbb'; ctx.lineWidth = 1;
-  const [mx,my] = p2s(m,m);
-  ctx.strokeRect(mx, my, (pw-2*m)*Z, (ph-2*m)*Z);
-
-  // Fenêtres
-  (layout.viewports || []).forEach(vp => _drawViewport(vp, p2s, Z));
-
-  // Cartouche
-  _drawCartouche(layout, p2s, Z, pw, ph);
-
+  _renderSheetContent(layout, p2s, Z, { print: false });
   ctx.restore();
 }
 
-function _drawViewport(vp, p2s, Z) {
+// Contenu de la feuille — partagé entre écran et impression (opts.print)
+function _renderSheetContent(layout, p2s, Z, opts) {
+  const [pw,ph] = paperDims(layout);
+  const m = layout.marginMm || 10;
+  // Cadre de marge
+  ctx.strokeStyle = opts.print ? '#000000' : '#bbbbbb';
+  ctx.lineWidth = opts.print ? 0.3*Z : 1;
+  const [mx,my] = p2s(m,m);
+  ctx.strokeRect(mx, my, (pw-2*m)*Z, (ph-2*m)*Z);
+  (layout.viewports || []).forEach(vp => _drawViewport(vp, p2s, Z, opts));
+  _drawCartouche(layout, p2s, Z, pw, ph);
+}
+
+function _drawViewport(vp, p2s, Z, opts) {
+  opts = opts || {};
   const [vx,vy] = p2s(vp.xMm, vp.yMm);
   const vw = vp.wMm*Z, vh = vp.hMm*Z;
   ctx.save();
@@ -4456,9 +4543,10 @@ function _drawViewport(vp, p2s, Z) {
     S.entities.forEach(e => {
       const lyr = S.layers[e.layer];
       if (!lyr || !lyr.visible) return;
-      const color = e.color || lyr.color || '#00d4ff';
+      const color = opts.print ? (lyr.printColor || '#000000') : (e.color || lyr.color || '#00d4ff');
       ctx.strokeStyle = color; ctx.fillStyle = color;
-      ctx.lineWidth = getLayerLineWidthPx(lyr.lineWidth);
+      ctx.lineWidth = opts.print ? Math.max(0.13*MM2PX96, (lyr.lineWidth || 0.25)*MM2PX96)
+                                 : getLayerLineWidthPx(lyr.lineWidth);
       ctx.setLineDash(e.dash || getLayerLineDash(lyr.lineType || 'solid'));
       try { drawEntity(e); } catch(err) {}
       ctx.setLineDash([]);
@@ -4466,10 +4554,54 @@ function _drawViewport(vp, p2s, Z) {
   });
   ctx.restore();
 
-  // Bordure de fenêtre
-  ctx.strokeStyle = (S._selVp === vp.id) ? '#00d4ff' : '#9aa7bd';
-  ctx.lineWidth = 1; ctx.setLineDash([4,3]);
-  ctx.strokeRect(vx, vy, vw, vh); ctx.setLineDash([]);
+  if (!opts.print) { // bordure + poignées seulement à l'écran
+    const sel = S._selVp === vp.id;
+    ctx.strokeStyle = sel ? '#00d4ff' : '#9aa7bd';
+    ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+    ctx.strokeRect(vx, vy, vw, vh); ctx.setLineDash([]);
+    if (sel) _drawVpHandles(vx, vy, vw, vh);
+  }
+}
+
+function _vpHandlePts(vx, vy, vw, vh) {
+  return { nw:[vx,vy], n:[vx+vw/2,vy], ne:[vx+vw,vy], e:[vx+vw,vy+vh/2],
+           se:[vx+vw,vy+vh], s:[vx+vw/2,vy+vh], sw:[vx,vy+vh], w:[vx,vy+vh/2] };
+}
+function _drawVpHandles(vx, vy, vw, vh) {
+  const pts = _vpHandlePts(vx, vy, vw, vh);
+  ctx.setLineDash([]); ctx.fillStyle = '#00d4ff'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
+  Object.values(pts).forEach(([x,y]) => { ctx.fillRect(x-3, y-3, 6, 6); ctx.strokeRect(x-3, y-3, 6, 6); });
+}
+
+// Impression d'une présentation : feuille → canvas 300 DPI → PDF (réutilise buildPrintPDF)
+function doPrintLayout(layout) {
+  const [pw,ph] = paperDims(layout);
+  const PX_MM = 300 / 25.4;
+  const pScale = PX_MM / MM2PX96;           // 300/96
+  const oc = document.createElement('canvas');
+  oc.width = Math.round(pw * PX_MM); oc.height = Math.round(ph * PX_MM);
+  const octx = oc.getContext('2d');
+  octx.scale(pScale, pScale);                // on dessine en px virtuels 96 DPI
+
+  // Bascule du contexte global (drawEntity/_drawViewport lisent ctx, canvasW, canvasH)
+  const savedCtx = ctx, savedCW = canvasW, savedCH = canvasH;
+  const savedPV = S.paperView, savedSel = S._selVp;
+  ctx = octx;
+  canvasW = pw * MM2PX96; canvasH = ph * MM2PX96;
+  S.paperView = { zoom: MM2PX96, panX: 0, panY: 0 };
+  S._selVp = null;
+
+  octx.fillStyle = '#ffffff'; octx.fillRect(0, 0, canvasW, canvasH);
+  const p2s = (x,y) => [x*MM2PX96, y*MM2PX96];
+  _renderSheetContent(layout, p2s, MM2PX96, { print: true });
+
+  // Restauration
+  ctx = savedCtx; canvasW = savedCW; canvasH = savedCH;
+  S.paperView = savedPV; S._selVp = savedSel;
+
+  const pdfBytes = buildPrintPDF(oc, pw, ph);
+  downloadBlob(pdfBytes, 'application/pdf', (layout.name || 'presentation').replace(/\s+/g,'_') + '.pdf');
+  termPrint('PDF 300 DPI — ' + (layout.name || 'présentation') + ' (' + layout.paper + ' ' + layout.orient + ')', 'success');
 }
 
 function _drawCartouche(layout, p2s, Z, pw, ph) {
@@ -4505,8 +4637,10 @@ function setSpace(id) {
   } else {
     canvas.style.cursor = 'default';
     if (badge) badge.textContent = 'PAPIER';
+    S._selVp = null;
     const l = getActiveLayout(); if (l) fitPaperView(l);
   }
+  const pt = document.getElementById('paper-tools'); if (pt) pt.style.display = id === 'model' ? 'none' : 'flex';
   renderSpaceTabs(); render();
 }
 function addLayout() { const l = createLayout(); setSpace(l.id); autoSave(); }
@@ -4515,12 +4649,71 @@ function renameLayout(id) {
   const n = prompt('Nom de la présentation', l.name);
   if (n && n.trim()) { l.name = n.trim(); renderSpaceTabs(); autoSave(); }
 }
+function deleteLayout(id) {
+  const i = S.layouts.findIndex(l => l.id === id); if (i < 0) return;
+  if (!confirm('Supprimer « ' + S.layouts[i].name + ' » ?')) return;
+  S.layouts.splice(i, 1);
+  if (S.space === id) setSpace('model'); else renderSpaceTabs();
+  autoSave();
+}
+function addViewport() {
+  const layout = getActiveLayout(); if (!layout) return;
+  const [pw,ph] = paperDims(layout), m = layout.marginMm || 10;
+  const w = Math.min(pw-2*m, 120), h = Math.min(ph-2*m, 90);
+  const vp = { id: 'V' + Date.now().toString(36) + Math.floor(Math.random()*100),
+               xMm:(pw-w)/2, yMm:(ph-h)/2, wMm:w, hMm:h, centerX:0, centerY:0, scale:50, locked:false };
+  fitViewportToDrawing(vp);
+  layout.viewports.push(vp); S._selVp = vp.id; render(); autoSave();
+}
+
+// ── Dialogue de réglage d'une fenêtre ──
+let _vpDlgId = null;
+function _vpDlgTarget() { const l = getActiveLayout(); return l ? l.viewports.find(v => v.id === _vpDlgId) : null; }
+function openViewportDialog(vpId) {
+  const layout = getActiveLayout(); if (!layout) return;
+  const vp = layout.viewports.find(v => v.id === vpId); if (!vp) return;
+  _vpDlgId = vpId;
+  document.getElementById('vpd-paper').value = layout.paper;
+  document.getElementById('vpd-orient').value = layout.orient;
+  document.getElementById('vpd-scale').value = vp.scale;
+  document.getElementById('vpd-cx').value = Math.round(vp.centerX);
+  document.getElementById('vpd-cy').value = Math.round(vp.centerY);
+  document.getElementById('vpd-lock').checked = !!vp.locked;
+  document.getElementById('vp-dialog').style.display = 'block';
+}
+function closeViewportDialog() { document.getElementById('vp-dialog').style.display = 'none'; _vpDlgId = null; }
+function vpCenterOnDrawing() {
+  const bb = drawingBBox(); if (!bb) return;
+  document.getElementById('vpd-cx').value = Math.round((bb.mnx+bb.mxx)/2);
+  document.getElementById('vpd-cy').value = Math.round((bb.mny+bb.mxy)/2);
+}
+function vpFitToDrawing() {
+  const vp = _vpDlgTarget(); if (!vp) return;
+  fitViewportToDrawing(vp);
+  document.getElementById('vpd-scale').value = vp.scale;
+  document.getElementById('vpd-cx').value = Math.round(vp.centerX);
+  document.getElementById('vpd-cy').value = Math.round(vp.centerY);
+}
+function applyViewportDialog() {
+  const layout = getActiveLayout(), vp = _vpDlgTarget(); if (!layout || !vp) return;
+  const newPaper = document.getElementById('vpd-paper').value;
+  const newOrient = document.getElementById('vpd-orient').value;
+  const paperChanged = newPaper !== layout.paper || newOrient !== layout.orient;
+  layout.paper = newPaper; layout.orient = newOrient;
+  vp.scale = Math.max(0.01, parseFloat(document.getElementById('vpd-scale').value) || vp.scale);
+  vp.centerX = parseFloat(document.getElementById('vpd-cx').value) || 0;
+  vp.centerY = parseFloat(document.getElementById('vpd-cy').value) || 0;
+  vp.locked = document.getElementById('vpd-lock').checked;
+  if (paperChanged) fitPaperView(layout);
+  closeViewportDialog(); render(); autoSave();
+}
 function renderSpaceTabs() {
   const el = document.getElementById('space-tabs'); if (!el) return;
   let html = '<div class="space-tab' + (S.space==='model'?' active':'') + '" onclick="setSpace(\'model\')">Objet</div>';
   S.layouts.forEach(l => {
     html += '<div class="space-tab' + (S.space===l.id?' active':'') + '" onclick="setSpace(\'' + l.id + '\')"' +
-            ' ondblclick="renameLayout(\'' + l.id + '\')" title="Double-clic : renommer">' + _esc(l.name) + '</div>';
+            ' ondblclick="renameLayout(\'' + l.id + '\')" oncontextmenu="event.preventDefault();deleteLayout(\'' + l.id + '\')"' +
+            ' title="Double-clic : renommer · Clic droit : supprimer">' + _esc(l.name) + '</div>';
   });
   html += '<div class="space-tab-add" onclick="addLayout()" title="Nouvelle présentation">+</div>';
   el.innerHTML = html;
@@ -7948,12 +8141,22 @@ canvas.addEventListener('mousemove', (ev) => {
   let [wx, wy] = s2w(sx, sy);
   S.mouseWorld = [wx, wy];
 
-  // Espace papier (Phase 1) : seul le pan de la feuille est actif
+  // Espace papier : drag de fenêtre, pan de feuille, ou curseur de survol
   if (S.space !== 'model') {
+    if (_vpDrag) { _vpApplyDrag(sx, sy); render(); return; }
     if (isPanning) {
       S.paperView.panX += ev.clientX - panStartX; S.paperView.panY += ev.clientY - panStartY;
-      panStartX = ev.clientX; panStartY = ev.clientY; render();
+      panStartX = ev.clientX; panStartY = ev.clientY; render(); return;
     }
+    const layout = getActiveLayout();
+    let cur = 'default';
+    if (layout) {
+      const selvp = layout.viewports.find(v => v.id === S._selVp);
+      const h = selvp && !selvp.locked ? _vpHandleAt(selvp, sx, sy) : null;
+      if (h) cur = _cursorForHandle(h);
+      else { const [mmx,mmy] = s2p(sx, sy); if (layout.viewports.some(v => _ptInVp(v, mmx, mmy))) cur = 'move'; }
+    }
+    canvas.style.cursor = cur;
     return;
   }
 
@@ -8005,11 +8208,30 @@ document.addEventListener('focusout', function(ev) {
 canvas.addEventListener('mousedown', (ev) => {
   if (ev.button === 2) { ev.preventDefault(); return; } // géré par contextmenu
 
-  // Espace papier (Phase 1) : glisser = pan de la feuille
+  // Espace papier : sélection/déplacement/redimension des fenêtres, sinon pan
   if (S.space !== 'model') {
+    const rect = canvas.getBoundingClientRect();
+    const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
+    const layout = getActiveLayout();
+    if (ev.button === 0 && layout) {
+      const [mmx,mmy] = s2p(sx, sy);
+      const selvp = layout.viewports.find(v => v.id === S._selVp);
+      if (selvp && !selvp.locked) {
+        const h = _vpHandleAt(selvp, sx, sy);
+        if (h) { _vpDrag = { mode:'resize', vpId:selvp.id, handle:h, startMM:[mmx,mmy],
+                             orig:{xMm:selvp.xMm,yMm:selvp.yMm,wMm:selvp.wMm,hMm:selvp.hMm} }; return; }
+      }
+      const vp = [...layout.viewports].reverse().find(v => _ptInVp(v, mmx, mmy));
+      if (vp) {
+        S._selVp = vp.id;
+        if (!vp.locked) _vpDrag = { mode:'move', vpId:vp.id, startMM:[mmx,mmy],
+                                    orig:{xMm:vp.xMm,yMm:vp.yMm,wMm:vp.wMm,hMm:vp.hMm} };
+        render(); return;
+      }
+      S._selVp = null; render();
+    }
     if (ev.button === 0 || ev.button === 1) {
-      isPanning = true; panStartX = ev.clientX; panStartY = ev.clientY;
-      canvas.style.cursor = 'grabbing';
+      isPanning = true; panStartX = ev.clientX; panStartY = ev.clientY; canvas.style.cursor = 'grabbing';
     }
     return;
   }
@@ -8221,6 +8443,7 @@ function smartFocus() {
 canvas.addEventListener('mouseup', (ev) => {
   if (ev.button === 2) { ev.preventDefault(); return; }
   if (isPanning) { isPanning = false; canvas.style.cursor = S.space === 'model' ? 'none' : 'default'; }
+  if (S.space !== 'model') { if (_vpDrag) { _vpDrag = null; autoSave(); } return; }
 
   // Print rubber-band finalise la zone d'impression
   if (ev.button === 0 && isPrintRb) {
@@ -12780,6 +13003,9 @@ function confirmDimTextDialog() {
 
 // ===== PRINT DIALOG =====
 function openPrintDialog() {
+  // En espace papier : on imprime directement la feuille telle quelle
+  const layout = getActiveLayout();
+  if (layout) { doPrintLayout(layout); return; }
   const dlg = document.getElementById('print-dialog');
   dlg.style.display = 'block';
   if (S._printArea) {
@@ -15496,7 +15722,14 @@ document.addEventListener('click', (ev) => {
 });
 
 canvas.addEventListener('dblclick', (ev) => {
-  if (S.space !== 'model') return;
+  if (S.space !== 'model') {
+    const layout = getActiveLayout(); if (!layout) return;
+    const rect = canvas.getBoundingClientRect();
+    const [mmx,mmy] = s2p(ev.clientX - rect.left, ev.clientY - rect.top);
+    const vp = [...layout.viewports].reverse().find(v => _ptInVp(v, mmx, mmy));
+    if (vp) { S._selVp = vp.id; render(); openViewportDialog(vp.id); }
+    return;
+  }
   if (S.drawing || S.gripEdit) return;
   const rect = canvas.getBoundingClientRect();
   const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
