@@ -287,7 +287,7 @@ minicad.html   (~12 000 lignes, un seul fichier)
     ├── État global S{}           zoom, pan, calques, outil actif, historique…
     ├── Moteur de rendu           drawEntity() → canvas 2D
     ├── OSNAP engine              findOsnap(), 8 modes
-    ├── Commandes CMD{}           objets exécutables, alias AutoCAD
+    ├── Commandes CMD{}           objets exécutables
     ├── Saisie dynamique          Dynamic Input (bulles D/A)
     ├── Grip editing              poignées bleues sur toutes les entités
     ├── Sélection                 clic, fenêtre, croisement
