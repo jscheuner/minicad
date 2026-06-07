@@ -14,6 +14,10 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## 🟡 Priorité moyenne
 
+- [ ] **Présentations (espace papier)** — onglets Objet/Présentation, fenêtres à l'échelle, cartouche, impression PDF
+  - Plan détaillé Phase 1 : voir [plan_presentations.md](plan_presentations.md) (≈ 600–700 lignes)
+  - En cours : étape 1 (données + persistance) + étape 2 (onglets + feuille)
+
 - [ ] **OSNAP Extension** — prolongement de ligne/polyligne (EXT comme AutoCAD)
   - Acquisition du point d'extrémité au survol (marqueur "+")
   - Ligne pointillée sur le prolongement, snap au croisement

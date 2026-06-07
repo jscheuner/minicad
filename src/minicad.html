@@ -702,6 +702,25 @@
 
   #cad-canvas { position: absolute; top: 0; left: 0; cursor: none; }
 
+  /* Onglets Objet / Présentations (espace papier) */
+  #space-tabs {
+    position: absolute; left: 6px; bottom: 6px; z-index: 5;
+    display: flex; gap: 2px; align-items: flex-end;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  }
+  .space-tab, .space-tab-add {
+    padding: 3px 10px; cursor: pointer; user-select: none;
+    background: #00000088; backdrop-filter: blur(4px);
+    color: var(--text-dim); border: 1px solid #ffffff10;
+    border-bottom: none; border-radius: 4px 4px 0 0;
+  }
+  .space-tab:hover, .space-tab-add:hover { color: var(--text-bright); }
+  .space-tab.active {
+    background: var(--accent-dim); color: var(--accent);
+    border-color: var(--accent); border-bottom: none;
+  }
+  .space-tab-add { padding: 3px 8px; font-weight: 700; }
+
   .canvas-overlay {
     position: absolute;
     top: 8px;
@@ -1657,6 +1676,7 @@
 
   <div class="canvas-area" id="canvas-area">
     <canvas id="cad-canvas"></canvas>
+    <div id="space-tabs"></div>
     <div class="canvas-overlay">
       <div class="overlay-badge" id="tool-badge">SELECT</div>
       <div class="overlay-badge" id="zoom-badge">1:1</div>
@@ -2258,6 +2278,11 @@ const S = {
   tubeRef: 'axe', // 'axe' | 'ext' | 'int'
   // PRINT
   _printArea: null,
+  // PRÉSENTATIONS (espace papier) — voir suivi/plan_presentations.md
+  space: 'model',          // 'model' ou id d'une présentation
+  layouts: [],             // [{ id, name, paper, orient, marginMm, cartouche, viewports[], paperEntities[] }]
+  paperView: { zoom: 1, panX: 0, panY: 0 }, // navigation de la feuille à l'écran
+  _selVp: null,            // id de la fenêtre sélectionnée (phase 2)
 };
 
 // ===== OSNAP ENGINE =====
@@ -4312,8 +4337,199 @@ function scheduleRender() {
 
 function _doRender() {
   _rafPending = false;
+  if (S.space !== 'model') { _drawPaperSpace(getActiveLayout()); return; }
   if (staticDirty) { _drawStaticLayer(); staticDirty=false; }
   _drawDynamicLayer();
+}
+
+// ===== PRÉSENTATIONS (espace papier) — Phase 1 =====
+// Voir suivi/plan_presentations.md. Réutilise drawEntity via withModelTransform
+// (même mécanisme que doPrint) pour rendre l'espace objet dans chaque fenêtre.
+
+const PAPER_SIZES = { A4:[210,297], A3:[297,420], A5:[148,210], Letter:[216,279] };
+
+function paperDims(l) {
+  let [w,h] = PAPER_SIZES[l.paper] || [210,297];
+  if (l.orient === 'landscape') [w,h] = [h,w];
+  return [w,h];
+}
+function getActiveLayout() { return S.layouts.find(l => l.id === S.space) || null; }
+function _esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Sauve/écrase/restaure le repère monde le temps d'un rendu (extrait de doPrint)
+function withModelTransform(zoom, panX, panY, fn) {
+  const sz = S.zoom, spx = S.panX, spy = S.panY;
+  S.zoom = zoom; S.panX = panX; S.panY = panY;
+  try { fn(); } finally { S.zoom = sz; S.panX = spx; S.panY = spy; }
+}
+
+function drawingBBox() {
+  let mnx=Infinity, mny=Infinity, mxx=-Infinity, mxy=-Infinity;
+  S.entities.forEach(e => getEntitySegments(e).forEach(([a,b,c,d]) => {
+    mnx=Math.min(mnx,a,c); mny=Math.min(mny,b,d); mxx=Math.max(mxx,a,c); mxy=Math.max(mxy,b,d);
+  }));
+  return isFinite(mnx) ? { mnx, mny, mxx, mxy } : null;
+}
+
+function fitViewportToDrawing(vp) {
+  const bb = drawingBBox();
+  if (!bb) { vp.centerX = 0; vp.centerY = 0; vp.scale = 10; return; }
+  const W = Math.max(1, bb.mxx-bb.mnx), H = Math.max(1, bb.mxy-bb.mny);
+  vp.centerX = (bb.mnx+bb.mxx)/2; vp.centerY = (bb.mny+bb.mxy)/2;
+  vp.scale = Math.max(0.01, Math.ceil(Math.max(W/(vp.wMm*0.9), H/(vp.hMm*0.9)) * 100) / 100);
+}
+
+function createLayout() {
+  const n = S.layouts.length + 1;
+  const layout = {
+    id: 'L' + Date.now().toString(36) + Math.floor(Math.random()*1000),
+    name: 'Présentation ' + n,
+    paper: 'A4', orient: 'landscape', marginMm: 10,
+    cartouche: { titre: '', echelle: '', date: new Date().toISOString().slice(0,10), auteur: '' },
+    viewports: [], paperEntities: []
+  };
+  const [pw,ph] = paperDims(layout);
+  const m = layout.marginMm;
+  // Fenêtre par défaut couvrant la feuille (en laissant la place au cartouche)
+  const vp = { id: 'V' + Date.now().toString(36), xMm: m, yMm: m, wMm: pw-2*m, hMm: ph-2*m-45,
+               centerX: 0, centerY: 0, scale: 50, locked: false };
+  fitViewportToDrawing(vp);
+  layout.viewports.push(vp);
+  S.layouts.push(layout);
+  return layout;
+}
+
+function fitPaperView(layout) {
+  const [pw,ph] = paperDims(layout);
+  const pad = 40;
+  const z = Math.min((canvasW - 2*pad) / pw, (canvasH - 2*pad) / ph);
+  S.paperView.zoom = z > 0 ? z : 1;
+  S.paperView.panX = (canvasW - pw*S.paperView.zoom) / 2;
+  S.paperView.panY = (canvasH - ph*S.paperView.zoom) / 2;
+}
+
+function _drawPaperSpace(layout) {
+  ctx = mainCtx;
+  ctx.save(); ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  ctx.clearRect(0, 0, canvasW, canvasH);
+  // Fond atelier
+  ctx.fillStyle = '#0c0f17'; ctx.fillRect(0, 0, canvasW, canvasH);
+  if (!layout) { ctx.restore(); return; }
+
+  const Z = S.paperView.zoom, PX = S.paperView.panX, PY = S.paperView.panY;
+  const p2s = (x,y) => [x*Z + PX, y*Z + PY];
+  const [pw,ph] = paperDims(layout);
+  const [x0,y0] = p2s(0,0);
+
+  // Ombre + feuille blanche
+  ctx.fillStyle = '#00000055'; ctx.fillRect(x0+5, y0+5, pw*Z, ph*Z);
+  ctx.fillStyle = '#ffffff';   ctx.fillRect(x0, y0, pw*Z, ph*Z);
+
+  // Cadre de marge
+  const m = layout.marginMm || 10;
+  ctx.strokeStyle = '#bbbbbb'; ctx.lineWidth = 1;
+  const [mx,my] = p2s(m,m);
+  ctx.strokeRect(mx, my, (pw-2*m)*Z, (ph-2*m)*Z);
+
+  // Fenêtres
+  (layout.viewports || []).forEach(vp => _drawViewport(vp, p2s, Z));
+
+  // Cartouche
+  _drawCartouche(layout, p2s, Z, pw, ph);
+
+  ctx.restore();
+}
+
+function _drawViewport(vp, p2s, Z) {
+  const [vx,vy] = p2s(vp.xMm, vp.yMm);
+  const vw = vp.wMm*Z, vh = vp.hMm*Z;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(vx, vy, vw, vh); ctx.clip();
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(vx, vy, vw, vh);
+
+  const N = vp.scale || 100;
+  const zoomVp = Z / N;
+  const vcx = vx + vw/2, vcy = vy + vh/2;
+  const panXm = vcx - vp.centerX*zoomVp - canvasW/2;
+  const panYm = vcy + vp.centerY*zoomVp - canvasH/2;
+  withModelTransform(zoomVp, panXm, panYm, () => {
+    S.entities.forEach(e => {
+      const lyr = S.layers[e.layer];
+      if (!lyr || !lyr.visible) return;
+      const color = e.color || lyr.color || '#00d4ff';
+      ctx.strokeStyle = color; ctx.fillStyle = color;
+      ctx.lineWidth = getLayerLineWidthPx(lyr.lineWidth);
+      ctx.setLineDash(e.dash || getLayerLineDash(lyr.lineType || 'solid'));
+      try { drawEntity(e); } catch(err) {}
+      ctx.setLineDash([]);
+    });
+  });
+  ctx.restore();
+
+  // Bordure de fenêtre
+  ctx.strokeStyle = (S._selVp === vp.id) ? '#00d4ff' : '#9aa7bd';
+  ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+  ctx.strokeRect(vx, vy, vw, vh); ctx.setLineDash([]);
+}
+
+function _drawCartouche(layout, p2s, Z, pw, ph) {
+  const m = layout.marginMm || 10, c = layout.cartouche || {};
+  const cw = 180, chh = 42;
+  const x = pw - m - cw, y = ph - m - chh;
+  if (x < m) return;
+  const [sx,sy] = p2s(x,y);
+  const W = cw*Z, Hh = chh*Z;
+  ctx.save();
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(sx, sy, W, Hh);
+  ctx.strokeStyle = '#333333'; ctx.lineWidth = 1; ctx.strokeRect(sx, sy, W, Hh);
+  ctx.beginPath(); ctx.moveTo(sx, sy+Hh*0.5); ctx.lineTo(sx+W, sy+Hh*0.5); ctx.stroke();
+  ctx.fillStyle = '#222222'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  ctx.font = 'bold ' + (5*Z).toFixed(1) + 'px sans-serif';
+  ctx.fillText(c.titre || layout.name || '', sx + 3*Z, sy + Hh*0.27);
+  ctx.font = (3*Z).toFixed(1) + 'px sans-serif';
+  const ech = c.echelle || (layout.viewports[0] ? ('1:' + layout.viewports[0].scale) : '');
+  ctx.fillText('Éch: ' + ech, sx + 3*Z, sy + Hh*0.74);
+  if (c.date)   ctx.fillText(c.date,   sx + W*0.55, sy + Hh*0.74);
+  if (c.auteur) ctx.fillText(c.auteur, sx + W*0.55, sy + Hh*0.27);
+  ctx.restore();
+}
+
+// ── Onglets d'espace (Objet / Présentations) ──
+function setSpace(id) {
+  if (id !== 'model' && !S.layouts.some(l => l.id === id)) return;
+  S.space = id;
+  const badge = document.getElementById('tool-badge');
+  if (id === 'model') {
+    canvas.style.cursor = 'none';
+    if (badge) badge.textContent = (S.tool || 'select').toUpperCase();
+  } else {
+    canvas.style.cursor = 'default';
+    if (badge) badge.textContent = 'PAPIER';
+    const l = getActiveLayout(); if (l) fitPaperView(l);
+  }
+  renderSpaceTabs(); render();
+}
+function addLayout() { const l = createLayout(); setSpace(l.id); autoSave(); }
+function renameLayout(id) {
+  const l = S.layouts.find(x => x.id === id); if (!l) return;
+  const n = prompt('Nom de la présentation', l.name);
+  if (n && n.trim()) { l.name = n.trim(); renderSpaceTabs(); autoSave(); }
+}
+function renderSpaceTabs() {
+  const el = document.getElementById('space-tabs'); if (!el) return;
+  let html = '<div class="space-tab' + (S.space==='model'?' active':'') + '" onclick="setSpace(\'model\')">Objet</div>';
+  S.layouts.forEach(l => {
+    html += '<div class="space-tab' + (S.space===l.id?' active':'') + '" onclick="setSpace(\'' + l.id + '\')"' +
+            ' ondblclick="renameLayout(\'' + l.id + '\')" title="Double-clic : renommer">' + _esc(l.name) + '</div>';
+  });
+  html += '<div class="space-tab-add" onclick="addLayout()" title="Nouvelle présentation">+</div>';
+  el.innerHTML = html;
+}
+function _restoreLayouts(data) {
+  S.layouts = Array.isArray(data.layouts) ? data.layouts : [];
+  S.space = (data.space && (data.space==='model' || S.layouts.some(l => l.id===data.space))) ? data.space : 'model';
+  renderSpaceTabs();
+  if (S.space !== 'model') { const l = getActiveLayout(); if (l) fitPaperView(l); }
 }
 
 function dimText(e, value) {
@@ -7732,6 +7948,15 @@ canvas.addEventListener('mousemove', (ev) => {
   let [wx, wy] = s2w(sx, sy);
   S.mouseWorld = [wx, wy];
 
+  // Espace papier (Phase 1) : seul le pan de la feuille est actif
+  if (S.space !== 'model') {
+    if (isPanning) {
+      S.paperView.panX += ev.clientX - panStartX; S.paperView.panY += ev.clientY - panStartY;
+      panStartX = ev.clientX; panStartY = ev.clientY; render();
+    }
+    return;
+  }
+
   // Display resolved coords
   const osnap = findOsnap(wx, wy);
   let dispX, dispY;
@@ -7779,6 +8004,15 @@ document.addEventListener('focusout', function(ev) {
 
 canvas.addEventListener('mousedown', (ev) => {
   if (ev.button === 2) { ev.preventDefault(); return; } // géré par contextmenu
+
+  // Espace papier (Phase 1) : glisser = pan de la feuille
+  if (S.space !== 'model') {
+    if (ev.button === 0 || ev.button === 1) {
+      isPanning = true; panStartX = ev.clientX; panStartY = ev.clientY;
+      canvas.style.cursor = 'grabbing';
+    }
+    return;
+  }
 
   // Placement IA : clic gauche pose les entités au point cliqué
   if (ev.button === 0 && S.aiPendingEntities && S.aiPendingCenter) {
@@ -7986,7 +8220,7 @@ function smartFocus() {
 
 canvas.addEventListener('mouseup', (ev) => {
   if (ev.button === 2) { ev.preventDefault(); return; }
-  if (isPanning) { isPanning = false; canvas.style.cursor = 'none'; }
+  if (isPanning) { isPanning = false; canvas.style.cursor = S.space === 'model' ? 'none' : 'default'; }
 
   // Print rubber-band finalise la zone d'impression
   if (ev.button === 0 && isPrintRb) {
@@ -8097,6 +8331,15 @@ canvas.addEventListener('wheel', (ev) => {
   ev.preventDefault();
   const rect = canvas.getBoundingClientRect();
   const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
+  if (S.space !== 'model') { // zoom de la feuille autour du curseur
+    const factor = ev.deltaY < 0 ? 1.15 : 0.87;
+    const Z = S.paperView.zoom;
+    const mmx = (sx - S.paperView.panX) / Z, mmy = (sy - S.paperView.panY) / Z;
+    S.paperView.zoom = Math.max(0.05, Math.min(40, Z * factor));
+    S.paperView.panX = sx - mmx * S.paperView.zoom;
+    S.paperView.panY = sy - mmy * S.paperView.zoom;
+    render(); return;
+  }
   const [wx,wy] = s2w(sx, sy);
   const factor = ev.deltaY < 0 ? 1.15 : 0.87;
   S.zoom *= factor;
@@ -11412,6 +11655,9 @@ function openPolarArrayDialog() {
   };
 
   // ── Init DOM ─────────────────────────────────────────────────────────────────
+  // @@ANIM_BEGIN
+  // @@ANIM_END
+
   document.addEventListener('DOMContentLoaded', () => {
     const dlg = document.getElementById('calc-dialog');
     const hdr = document.getElementById('calc-drag');
@@ -13917,7 +14163,7 @@ let _fileHandle = null; // File System Access API — handle fichier courant
 
 function buildSaveData(name) {
   return {
-    version: '0.09', app: 'MiniCAD',
+    version: '0.10', app: 'MiniCAD',
     name: name || (_fileHandle?.name?.replace(/\.mcad$/i,'')) || 'projet',
     date: new Date().toISOString(),
     layers: S.layers, entities: S.entities,
@@ -13925,6 +14171,7 @@ function buildSaveData(name) {
     modules: Object.fromEntries(Object.entries(modules).map(([k,m])=>[k,m.loaded])),
     gridSize: S.gridSize,
     dimStyles: S.dimStyles, currentDimStyle: S.currentDimStyle,
+    layouts: S.layouts, space: S.space,
   };
 }
 
@@ -14139,6 +14386,7 @@ function loadFromLocalStorage() {
     if (data.modules) Object.entries(data.modules).forEach(([k,l]) => { if(modules[k]) modules[k].loaded = l; });
     if (data.dimStyles && data.dimStyles.length && !_isOldIsoStyleSet(data.dimStyles)) S.dimStyles = data.dimStyles;
     if (data.currentDimStyle) S.currentDimStyle = _migrateDimStyle(data.currentDimStyle);
+    _restoreLayouts(data);
     termPrint('✓ Projet restauré (' + S.entities.length + ' objets) — Ctrl+S pour sauvegarder sur disque', 'success');
     updateUI(); syncUIState(); zoomExtents();
     updateSaveIndicator('modified');
@@ -14254,6 +14502,7 @@ function openJSON(content, filename) {
   }
   if (data.dimStyles && data.dimStyles.length && !_isOldIsoStyleSet(data.dimStyles)) S.dimStyles = data.dimStyles;
   if (data.currentDimStyle) S.currentDimStyle = _migrateDimStyle(data.currentDimStyle);
+  _restoreLayouts(data);
   termPrint('✓ Projet chargé: ' + S.entities.length + ' objets, ' + S.layers.length + ' calques', 'success');
   updateUI(); syncUIState(); zoomExtents();
 }
@@ -14674,6 +14923,7 @@ document.addEventListener('click', (ev) => {
 });
 
 canvas.addEventListener('dblclick', (ev) => {
+  if (S.space !== 'model') return;
   if (S.drawing || S.gripEdit) return;
   const rect = canvas.getBoundingClientRect();
   const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
@@ -14709,6 +14959,7 @@ canvas.addEventListener('dblclick', (ev) => {
 
 canvas.addEventListener('contextmenu', (ev) => {
   ev.preventDefault();
+  if (S.space !== 'model') return;
 
   // Pendant une saisie active → confirme comme Entrée
   if (S.drawing || S.gripEdit) {
@@ -14970,6 +15221,7 @@ function syncUIState() {
 resizeCanvas();
 setTool('select');
 updateUI();
+renderSpaceTabs();
 loadUserPrefs();
 syncUIState();
 window.addEventListener('beforeunload', autoSave);
