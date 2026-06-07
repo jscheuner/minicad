@@ -4862,7 +4862,14 @@ function _builtinCartouches() {
 function allTemplates() { return _builtinCartouches().concat(cartoucheTemplates); }
 
 function _fmtScale(n) { return (Math.round(n*100)/100).toString(); }
-function _subst(str, f) { return String(str).replace(/\{\{(\w+)\}\}/g, (_,k) => (k in f && f[k]!=null) ? f[k] : ''); }
+// Substitution des {{champs}} ; si vide → on affiche le libellé du champ (ex. {{titre}} → « Titre »)
+function _subst(str, f) {
+  return String(str).replace(/\{\{(\w+)\}\}/g, (_,k) => {
+    const v = f[k];
+    if (v != null && v !== '') return v;
+    return _CF_LABELS[k] || (k.charAt(0).toUpperCase() + k.slice(1));
+  });
+}
 // Champs calculés automatiquement (utilisés en repli si l'utilisateur n'a rien saisi)
 function _autoCartoucheFields(layout) {
   return {
