@@ -11335,7 +11335,7 @@ function hitTest(wx,wy,filter) {
         else{ttx=(e.x1+e.x2)/2+_off;tty=(e.y1+e.y2)/2+_to;}
       } else {
         const dx=e.x2-e.x1,dy=e.y2-e.y1,len=Math.hypot(dx,dy)||1;
-        ttx=(e.x1+e.x2)/2+(-dy/len)*_off;tty=(e.y1+e.y2)/2+(dx/len)*_off;
+        ttx=(e.x1+e.x2)/2+(dy/len)*_off;tty=(e.y1+e.y2)/2+(-dx/len)*_off;
       }
       const td=Math.hypot(wx-ttx,wy-tty); if(td<tol*4) d=Math.min(d,td/4);
       tryHit(e,d);
@@ -11592,10 +11592,10 @@ function getDimLinePoints(e) {
       const dimX = (e.x1+e.x2)/2 + off;
       return [dimX, e.y1, dimX, e.y2];
     }
-  } else { // dim_aligned
+  } else { // dim_aligned — côté du rendu (perpendiculaire écran, Y inversé)
     const ldx=e.x2-e.x1, ldy=e.y2-e.y1, len=Math.hypot(ldx,ldy);
     if(len<0.001) return null;
-    const nx=-ldy/len*off, ny=ldx/len*off;
+    const nx=ldy/len*off, ny=-ldx/len*off;
     return [e.x1+nx, e.y1+ny, e.x2+nx, e.y2+ny];
   }
 }
