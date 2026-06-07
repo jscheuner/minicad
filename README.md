@@ -155,7 +155,7 @@ Profilés de charpente insérables depuis le panneau ou via la commande `ipe 160
 | Format | Import | Export |
 |--------|:------:|:------:|
 | `.mcad` (JSON natif MiniCAD) | ✓ | ✓ |
-| `.dxf` AC1015 (AutoCAD 2000) | ✓ | ✓ |
+| `.dxf` (AC1015 / R2000) | ✓ | ✓ |
 | `.svg` | — | ✓ |
 | `.pdf` | — | ✓ |
 | `.pcad` (modèle de cartouche) | ✓ | ✓ |
@@ -167,7 +167,7 @@ Profilés de charpente insérables depuis le panneau ou via la commande `ipe 160
 
 ## Présentations (espace papier)
 
-Comme dans AutoCAD, on sépare le **dessin** (espace *Objet*, à l'échelle réelle) des **feuilles à imprimer** (espace *Présentation*). Des **onglets** en bas du canevas (`Objet │ Présentation 1 │ +`) permettent de basculer.
+On sépare le **dessin** (espace *Objet*, à l'échelle réelle) des **feuilles à imprimer** (espace *Présentation*). Des **onglets** en bas du canevas (`Objet │ Présentation 1 │ +`) permettent de basculer.
 
 ### Feuilles et fenêtres
 
@@ -353,7 +353,7 @@ minicad.html   (~20 000 lignes, un seul fichier autonome — généré par build
     ├── État global S{}           zoom, pan, calques, outil actif, historique…
     ├── Moteur de rendu           drawEntity() → canvas 2D
     ├── OSNAP engine              findOsnap(), 8 modes
-    ├── Commandes CMD{}           objets exécutables, alias AutoCAD
+    ├── Commandes CMD{}           objets exécutables, alias courants
     ├── Saisie dynamique          Dynamic Input (bulles D/A)
     ├── Grip editing              poignées bleues sur toutes les entités
     ├── Sélection                 clic, fenêtre, croisement
