@@ -3848,26 +3848,36 @@ const CMD = {
         });
         termPrint('Rectangle → 4 lignes', 'success');
       } else {
-        // polyline / cable → lignes + arcs individuels (bulge → arc)
+        // polyline / cable → lignes + arcs individuels (bulge → arc) — même logique que le rendu
         const pts = ent.points;
         let nLines = 0, nArcs = 0;
-        for (let j = 0; j < pts.length - 1; j++) {
-          const [x1,y1] = pts[j], [x2,y2] = pts[j+1];
-          const bulge = pts[j][2] || 0;
-          if (bulge !== 0) {
+        const segs = [];
+        for (let j = 0; j < pts.length - 1; j++) segs.push([pts[j], pts[j+1], pts[j][2] || 0]);
+        if (ent.closed && pts.length > 2) {  // segment de fermeture (last → first)
+          const fp = pts[0], lp = pts[pts.length-1];
+          if (Math.hypot(fp[0]-lp[0], fp[1]-lp[1]) > 1e-9) segs.push([lp, fp, lp[2] || 0]);
+        }
+        for (const [P1, P2, b] of segs) {
+          const x1=P1[0], y1=P1[1], x2=P2[0], y2=P2[1];
+          if (b !== 0) {
             const d = Math.hypot(x2-x1, y2-y1);
             if (d > 1e-9) {
-              const b = bulge;
               const r = d * (1 + b*b) / (4 * Math.abs(b));
               const offset = Math.sqrt(Math.max(0, r*r - d*d/4));
               const mx = (x1+x2)/2, my = (y1+y2)/2;
               const pdx = -(y2-y1)/d, pdy = (x2-x1)/d;
               const cx = mx + Math.sign(b)*pdx*offset;
               const cy = my + Math.sign(b)*pdy*offset;
-              let sa = Math.atan2(y1-cy, x1-cx), ea = Math.atan2(y2-cy, x2-cx);
-              while(ea < sa) ea += Math.PI*2;
-              if(ea - sa > Math.PI){ const tmp=sa; sa=ea; ea=tmp; while(ea<sa) ea+=Math.PI*2; }
-              const arc = {type:'arc', cx, cy, r, startAngle:sa, endAngle:ea, id:S.nextId++, layer:ent.layer};
+              // sens correct via dAngle signé (comme flattenPolyPoints), puis arc CCW équivalent
+              const sa = Math.atan2(y1-cy, x1-cx), ea = Math.atan2(y2-cy, x2-cx);
+              let dA = ea - sa;
+              if (b > 0 && dA <= 0) dA += 2*Math.PI;
+              if (b < 0 && dA >= 0) dA -= 2*Math.PI;
+              let startA, endA;
+              if (dA >= 0) { startA = sa; endA = sa + dA; }
+              else { startA = sa + dA; endA = sa; }
+              if (endA < startA) endA += 2*Math.PI;
+              const arc = {type:'arc', cx, cy, r, startAngle:startA, endAngle:endA, id:S.nextId++, layer:ent.layer};
               S.entities.push(arc); newIds.push(arc.id); nArcs++;
             }
           } else {
