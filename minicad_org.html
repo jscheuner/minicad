@@ -2458,7 +2458,8 @@ const S = {
   space: 'model',          // 'model' ou id d'une présentation
   layouts: [],             // [{ id, name, paper, orient, marginMm, cartouche, viewports[], paperEntities[] }]
   paperView: { zoom: 1, panX: 0, panY: 0 }, // navigation de la feuille à l'écran
-  _selVp: null,            // id de la fenêtre sélectionnée (phase 2)
+  _selVp: null,            // id de la fenêtre sélectionnée
+  _activeVp: null,         // id de la fenêtre activée (MSPACE — zoom/pan modèle dedans)
 };
 
 // ===== OSNAP ENGINE =====
@@ -4544,7 +4545,22 @@ function _cursorForHandle(h) {
   return { n:'ns-resize', s:'ns-resize', e:'ew-resize', w:'ew-resize',
            ne:'nesw-resize', sw:'nesw-resize', nw:'nwse-resize', se:'nwse-resize' }[h] || 'default';
 }
-let _vpDrag = null; // { mode:'move'|'resize', vpId, handle, startMM:[x,y], orig:{xMm,yMm,wMm,hMm} }
+let _vpDrag = null;     // { mode:'move'|'resize', vpId, handle, startMM:[x,y], orig:{...} }
+let _mspacePan = null;  // { vpId, lastX, lastY } — pan du modèle dans une fenêtre activée
+
+// Zoom du modèle dans une fenêtre activée, centré sur le curseur (MSPACE)
+function _vpZoomAt(vp, sx, sy, factor) {
+  const Z = S.paperView.zoom;
+  const vx = vp.xMm*Z + S.paperView.panX, vy = vp.yMm*Z + S.paperView.panY;
+  const vcx = vx + vp.wMm*Z/2, vcy = vy + vp.hMm*Z/2;
+  const zoomVp = Z / vp.scale;
+  const wx = vp.centerX + (sx - vcx)/zoomVp;
+  const wy = vp.centerY - (sy - vcy)/zoomVp;
+  vp.scale = Math.max(0.01, vp.scale / factor);
+  const nz = Z / vp.scale;
+  vp.centerX = wx - (sx - vcx)/nz;
+  vp.centerY = wy + (sy - vcy)/nz;
+}
 function _vpApplyDrag(sx, sy) {
   const layout = getActiveLayout(); if (!layout || !_vpDrag) return;
   const vp = layout.viewports.find(v => v.id === _vpDrag.vpId); if (!vp) return;
@@ -4676,11 +4692,12 @@ function _drawViewport(vp, p2s, Z, opts) {
   ctx.restore();
 
   if (!opts.print) { // bordure + poignées seulement à l'écran
-    const sel = S._selVp === vp.id;
-    ctx.strokeStyle = sel ? '#00d4ff' : '#9aa7bd';
-    ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+    const sel = S._selVp === vp.id, active = S._activeVp === vp.id;
+    ctx.strokeStyle = active ? '#00e676' : (sel ? '#00d4ff' : '#9aa7bd');
+    ctx.lineWidth = active ? 2 : 1;
+    ctx.setLineDash(active ? [] : [4,3]);
     ctx.strokeRect(vx, vy, vw, vh); ctx.setLineDash([]);
-    if (sel) _drawVpHandles(vx, vy, vw, vh);
+    if (sel && !active) _drawVpHandles(vx, vy, vw, vh);
   }
 }
 
@@ -4758,7 +4775,7 @@ function setSpace(id) {
   } else {
     canvas.style.cursor = 'default';
     if (badge) badge.textContent = 'PAPIER';
-    S._selVp = null;
+    S._selVp = null; S._activeVp = null;
     const l = getActiveLayout(); if (l) fitPaperView(l);
   }
   const pt = document.getElementById('paper-tools'); if (pt) pt.style.display = id === 'model' ? 'none' : 'flex';
@@ -8262,8 +8279,19 @@ canvas.addEventListener('mousemove', (ev) => {
   let [wx, wy] = s2w(sx, sy);
   S.mouseWorld = [wx, wy];
 
-  // Espace papier : drag de fenêtre, pan de feuille, ou curseur de survol
+  // Espace papier : pan modèle (MSPACE), drag de fenêtre, pan feuille, ou curseur
   if (S.space !== 'model') {
+    if (_mspacePan) {
+      const layout = getActiveLayout();
+      const vp = layout && layout.viewports.find(v => v.id === _mspacePan.vpId);
+      if (vp) {
+        const zoomVp = S.paperView.zoom / vp.scale;
+        vp.centerX -= (ev.clientX - _mspacePan.lastX) / zoomVp;
+        vp.centerY += (ev.clientY - _mspacePan.lastY) / zoomVp;
+        _mspacePan.lastX = ev.clientX; _mspacePan.lastY = ev.clientY; render();
+      }
+      return;
+    }
     if (_vpDrag) { _vpApplyDrag(sx, sy); render(); return; }
     if (isPanning) {
       S.paperView.panX += ev.clientX - panStartX; S.paperView.panY += ev.clientY - panStartY;
@@ -8271,7 +8299,10 @@ canvas.addEventListener('mousemove', (ev) => {
     }
     const layout = getActiveLayout();
     let cur = 'default';
-    if (layout) {
+    if (layout && S._activeVp) {
+      const avp = layout.viewports.find(v => v.id === S._activeVp);
+      if (avp && _ptInVp(avp, ...s2p(sx, sy))) cur = 'grab';
+    } else if (layout) {
       const selvp = layout.viewports.find(v => v.id === S._selVp);
       const h = selvp && !selvp.locked ? _vpHandleAt(selvp, sx, sy) : null;
       if (h) cur = _cursorForHandle(h);
@@ -8329,13 +8360,24 @@ document.addEventListener('focusout', function(ev) {
 canvas.addEventListener('mousedown', (ev) => {
   if (ev.button === 2) { ev.preventDefault(); return; } // géré par contextmenu
 
-  // Espace papier : sélection/déplacement/redimension des fenêtres, sinon pan
+  // Espace papier : MSPACE actif, sinon édition de fenêtres / pan feuille
   if (S.space !== 'model') {
     const rect = canvas.getBoundingClientRect();
     const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
     const layout = getActiveLayout();
-    if (ev.button === 0 && layout) {
-      const [mmx,mmy] = s2p(sx, sy);
+    const [mmx,mmy] = s2p(sx, sy);
+
+    // Fenêtre activée : pan du modèle dedans (clic gauche), pan feuille (clic milieu)
+    if (layout && S._activeVp) {
+      const avp = layout.viewports.find(v => v.id === S._activeVp);
+      if (ev.button === 1) { isPanning = true; panStartX = ev.clientX; panStartY = ev.clientY; canvas.style.cursor = 'grabbing'; return; }
+      if (ev.button === 0) {
+        if (avp && _ptInVp(avp, mmx, mmy)) { _mspacePan = { vpId:avp.id, lastX:ev.clientX, lastY:ev.clientY }; canvas.style.cursor = 'grabbing'; return; }
+        S._activeVp = null; render(); // clic hors de la fenêtre active → en sortir
+      }
+    }
+
+    if (ev.button === 0 && layout && !S._activeVp) {
       const selvp = layout.viewports.find(v => v.id === S._selVp);
       if (selvp && !selvp.locked) {
         const h = _vpHandleAt(selvp, sx, sy);
@@ -8564,7 +8606,11 @@ function smartFocus() {
 canvas.addEventListener('mouseup', (ev) => {
   if (ev.button === 2) { ev.preventDefault(); return; }
   if (isPanning) { isPanning = false; canvas.style.cursor = S.space === 'model' ? 'none' : 'default'; }
-  if (S.space !== 'model') { if (_vpDrag) { _vpDrag = null; autoSave(); } return; }
+  if (S.space !== 'model') {
+    if (_mspacePan) { _mspacePan = null; canvas.style.cursor = 'grab'; autoSave(); }
+    else if (_vpDrag) { _vpDrag = null; autoSave(); }
+    return;
+  }
 
   // Print rubber-band finalise la zone d'impression
   if (ev.button === 0 && isPrintRb) {
@@ -8675,8 +8721,15 @@ canvas.addEventListener('wheel', (ev) => {
   ev.preventDefault();
   const rect = canvas.getBoundingClientRect();
   const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
-  if (S.space !== 'model') { // zoom de la feuille autour du curseur
+  if (S.space !== 'model') {
     const factor = ev.deltaY < 0 ? 1.15 : 0.87;
+    const layout = getActiveLayout();
+    // Fenêtre activée : on zoome le modèle dedans (modifie l'échelle)
+    if (layout && S._activeVp) {
+      const avp = layout.viewports.find(v => v.id === S._activeVp);
+      if (avp && _ptInVp(avp, ...s2p(sx, sy))) { _vpZoomAt(avp, sx, sy, factor); autoSave(); render(); return; }
+    }
+    // Sinon : zoom de la feuille autour du curseur
     const Z = S.paperView.zoom;
     const mmx = (sx - S.paperView.panX) / Z, mmy = (sy - S.paperView.panY) / Z;
     S.paperView.zoom = Math.max(0.05, Math.min(40, Z * factor));
@@ -14069,6 +14122,7 @@ cmdInput.addEventListener('keydown',(ev)=>{
       CMD.ERASE.exec();
     }
   } else if(ev.key==='Escape'){
+    if(S.space!=='model' && S._activeVp){ S._activeVp=null; canvas.style.cursor='default'; render(); return; } // sortir de la fenêtre (MSPACE)
     if(isRubberBand){ isRubberBand=false; rbStart=null; rbEnd=null; render(); return; }
     if(S.mirrorAwaitDelete){ _confirmMirrorDelete(false); return; }
     if(S.copyPending){ S.copyPending=false; termPrint('Copie annulée','warning'); setTool('select'); return; }
@@ -15848,8 +15902,9 @@ canvas.addEventListener('dblclick', (ev) => {
     const rect = canvas.getBoundingClientRect();
     const [mmx,mmy] = s2p(ev.clientX - rect.left, ev.clientY - rect.top);
     const vp = [...layout.viewports].reverse().find(v => _ptInVp(v, mmx, mmy));
-    if (vp) { S._selVp = vp.id; render(); openViewportDialog(vp.id); }
-    return;
+    if (vp) { S._activeVp = vp.id; S._selVp = vp.id; }   // entrer dans la fenêtre (MSPACE)
+    else { S._activeVp = null; }                          // double-clic hors fenêtre → sortir
+    render(); return;
   }
   if (S.drawing || S.gripEdit) return;
   const rect = canvas.getBoundingClientRect();
@@ -15886,7 +15941,14 @@ canvas.addEventListener('dblclick', (ev) => {
 
 canvas.addEventListener('contextmenu', (ev) => {
   ev.preventDefault();
-  if (S.space !== 'model') return;
+  if (S.space !== 'model') {
+    const layout = getActiveLayout(); if (!layout) return;
+    const rect = canvas.getBoundingClientRect();
+    const [mmx,mmy] = s2p(ev.clientX - rect.left, ev.clientY - rect.top);
+    const vp = [...layout.viewports].reverse().find(v => _ptInVp(v, mmx, mmy));
+    if (vp) { S._selVp = vp.id; render(); openViewportDialog(vp.id); }
+    return;
+  }
 
   // Pendant une saisie active → confirme comme Entrée
   if (S.drawing || S.gripEdit) {
