@@ -3246,8 +3246,8 @@ modules.electrical.commands = {
   CABLE: { desc: 'Câble électrique', exec() { termPrint('CÂBLE: Cliquez les points, Echap pour terminer', 'info'); setTool('cable'); }},
 };
 modules.dimensioning.commands = {
-  DIMLINEAR: { desc: 'Cote linéaire (H ou V)', exec() { termPrint('COTE LINÉAIRE: Cliquez deux points (mesure H ou V auto)', 'info'); setTool('dim_linear'); }},
-  DIMALIGNED: { alias: ['DIMPAR','DIMPARALLEL'], desc: 'Cote parallèle (alignée)', exec() { termPrint('COTE PARALLÈLE: Cliquez deux points', 'info'); setTool('dim_aligned'); }},
+  DIMLINEAR: { desc: 'Cote linéaire (H ou V)', exec() { setTool('dim_linear'); termPrint('COTE LINÉAIRE: cliquez deux points — ou Espace pour sélectionner une ligne', 'info'); }},
+  DIMALIGNED: { alias: ['DIMPAR','DIMPARALLEL'], desc: 'Cote parallèle (alignée)', exec() { setTool('dim_aligned'); termPrint('COTE PARALLÈLE: cliquez deux points — ou Espace pour sélectionner une ligne', 'info'); }},
   DIMANGULAR: { alias: ['DIMANG','ANGLE'], desc: 'Cote angulaire (cliquer ligne1, ligne2, puis placer)', exec() {
     S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null;
     S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null;
@@ -8477,6 +8477,7 @@ function getCursorMode() {
   if (t === 'fillet' || t === 'chamfer' || t === 'join' || t === 'hatch') return 'pick';
   if (t === 'offset') return 'draw';
   if (t === 'dim_angular' && !S._dimAngVtx) return 'pick';
+  if ((t === 'dim_linear' || t === 'dim_aligned') && S._dimPick) return 'pick';
   if ((t === 'dim_radius' || t === 'dim_diameter') && !S._dimCircle) return 'pick';
   if (t === 'divide_pick') return 'pick';
   if (t === 'point' || t === 'measure') return 'draw';
@@ -8579,6 +8580,7 @@ canvas.addEventListener('mousemove', (ev) => {
   // Hover entity for offset / fillet / chamfer selection highlight
   if ((S.tool === 'offset' && S.offsetTargetId === null) ||
       S.tool === 'fillet' || S.tool === 'chamfer' || S.tool === 'join' || S.tool === 'trim' || S.tool === 'extend' || S.tool === 'hatch' ||
+      (((S.tool === 'dim_linear' || S.tool === 'dim_aligned') && S._dimPick)) ||
       S.offsetPending) {
     const hit = hitTest(wx, wy);
     S.hoverEntityId = hit ? hit.id : null;
@@ -9055,6 +9057,19 @@ function _tubeNearestSegment(e, wx, wy) {
   return bx1 !== undefined ? { type:'line', x1:bx1, y1:by1, x2:bx2, y2:by2 } : null;
 }
 
+// Extrait un segment (2 extrémités) d'une entité cliquée, pour coter directement un objet
+function _dimPickSegment(hit, wx, wy) {
+  if (!hit) return null;
+  if (hit.type === 'rect') {
+    const { x1, y1, x2, y2 } = hit;
+    const edges = [[x1,y1,x2,y1],[x2,y1,x2,y2],[x2,y2,x1,y2],[x1,y2,x1,y1]];
+    let bestD = Infinity, b = null;
+    for (const e of edges) { const d = distPtSeg(wx,wy,e[0],e[1],e[2],e[3]); if (d < bestD) { bestD = d; b = e; } }
+    return b ? { x1:b[0], y1:b[1], x2:b[2], y2:b[3] } : null;
+  }
+  return _dimAngExtractLine(hit, wx, wy);
+}
+
 function _dimAngExtractLine(hit, wx, wy) {
   if (!hit) return null;
   if (hit.type === 'line' || hit.type === 'wall') return hit;
@@ -9275,8 +9290,18 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
   // DIMLINEAR / DIMALIGNED (3 clicks: P1, P2, placement offset)
   if (tool === 'dim_linear' || tool === 'dim_aligned') {
     if (!S.drawing) {
+      if (S._dimPick) {
+        // Mode AutoCAD : sélectionner une ligne → ses 2 extrémités deviennent la cote
+        const hit = hitTest(rawWx, rawWy);
+        const seg = _dimPickSegment(hit, rawWx, rawWy);
+        if (!seg) { termPrint('Cote: cliquez sur une ligne, polyligne ou rectangle', 'warning'); render(); return; }
+        S.drawPoints = [[seg.x1, seg.y1], [seg.x2, seg.y2]];
+        S.drawing = true; S.awaitingInput = false; S._dimPick = false; S.hoverEntityId = null;
+        termPrint('Objet coté — positionnez la cote et cliquez', 'warning');
+        render(); return;
+      }
       S.drawing = true; S.drawPoints = [[wx, wy]]; S.awaitingInput = true;
-      termPrint('Point 1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ') — Cliquez le 2ème point', 'info');
+      termPrint('Point 1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ') — Cliquez le 2ème point [Espace = sélectionner un objet]', 'info');
     } else if (S.drawPoints.length === 1) {
       let tx = wx, ty = wy;
       if (tool === 'dim_linear') [tx, ty] = applyConstraint(S.drawPoints[0][0], S.drawPoints[0][1], wx, wy);
@@ -11558,6 +11583,7 @@ function setTool(t) {
   S.tool=t; S.drawing=false; S.drawPoints=[]; S.awaitingInput=false;
   if(t !== 'tube') S.tubePoints=[];
   if(t !== 'dim_angular') { S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null; S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null; }
+  S._dimPick = false; // mode « sélection d'objet » des cotes linéaire/parallèle (Espace)
   if(t !== 'measure' && t !== 'select') { S.measurePt1=null; S.measureResult=null; }
   if(t === 'measure') { S.measurePt1=null; } // résultat précédent gardé jusqu'au 1er clic
   S.diLocked=false; S.diField='dist';
@@ -14783,7 +14809,12 @@ document.addEventListener('keydown',(ev)=>{
   if(ev.key==='F10'){ev.preventDefault();togglePolar();}
   if(ev.key===' '){
     ev.preventDefault();
-    if(S.gripSelected && !S.gripEdit){
+    if((S.tool==='dim_linear'||S.tool==='dim_aligned') && !S.drawing){
+      S._dimPick = !S._dimPick;
+      termPrint(S._dimPick ? 'Cote: sélectionnez une ligne (polyligne, rectangle) — Espace pour revenir au mode 2 points'
+                           : 'Cote: cliquez le 1er point', 'info');
+      render();
+    } else if(S.gripSelected && !S.gripEdit){
       const bx = S.gripSelected.origX, by = S.gripSelected.origY;
       S.gripSelected = null;
       setTool('move_obj');
@@ -16527,7 +16558,7 @@ loadFromLocalStorage();
 // Bouton téléchargement — affiché uniquement sur minicad.org
 if (['minicad.org','www.minicad.org'].includes(window.location.hostname)) {
   const dlBtn = document.createElement('a');
-  dlBtn.href = 'minicad.html';
+  dlBtn.href = 'index.html';
   dlBtn.download = 'minicad.html';
   dlBtn.title = 'Télécharger MiniCAD pour utilisation hors-ligne';
   dlBtn.style.cssText = [
