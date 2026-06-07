@@ -7,7 +7,7 @@ Format : `## [YYYY-MM-DD] — Résumé court`
 
 ## [2026-05-30] — v0.09 : ARC multi-mode + système démo
 
-**Contexte :** Continuation depuis session compactée. Objectifs : améliorer l'outil ARC (comme AutoCAD) et finaliser le système de démo publique.
+**Contexte :** Continuation depuis session compactée. Objectifs : améliorer l'outil ARC (comme un logiciel de CAO) et finaliser le système de démo publique.
 
 **Réalisé :**
 - [x] **ARC multi-mode** — refonte complète de l'outil ARC

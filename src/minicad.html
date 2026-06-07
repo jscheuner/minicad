@@ -2921,7 +2921,7 @@ function findOsnap(wx, wy) {
     // Lignes de tracking : directions selon Ortho/Polaire/libre
     // Les snaps de tracking ne s'activent que si aucun OSNAP standard n'a été trouvé
 
-    // AutoCAD OTRACK : quand Ortho/Polaire est actif pendant un tracé, utiliser la
+    // OTRACK : quand Ortho/Polaire est actif pendant un tracé, utiliser la
     // position contrainte comme référence pour le tracking (pas la souris brute).
     // Ainsi V-depuis-B donne (Bx, baseY) au lieu de (Bx, mouseY).
     let twx = wx, twy = wy;
@@ -3146,7 +3146,7 @@ function drawOsnapMarker(snap) {
       ctx.closePath();
       ctx.stroke();
       break;
-    case 'quadrant': // diamond (losange plein, plus petit — comme AutoCAD)
+    case 'quadrant': // diamond (losange plein, plus petit — comme un logiciel de CAO)
       ctx.beginPath();
       ctx.moveTo(sx, sy - sz);
       ctx.lineTo(sx + sz, sy);
@@ -3157,7 +3157,7 @@ function drawOsnapMarker(snap) {
       ctx.fill();
       ctx.stroke();
       break;
-    case 'extension': // tiret horizontal (comme AutoCAD)
+    case 'extension': // tiret horizontal (comme un logiciel de CAO)
       ctx.beginPath();
       ctx.moveTo(sx - sz, sy); ctx.lineTo(sx + sz, sy);
       ctx.stroke();
@@ -3166,7 +3166,7 @@ function drawOsnapMarker(snap) {
 }
 
 // ===== DISTANCE INPUT PARSER =====
-// With Dynamic Input ON (like AutoCAD):
+// With Dynamic Input ON (like CAO):
 //   "100<45"  → polaire (distance + angle)
 //   "@50,30"  → relatif explicite
 //   "50,30"   → RELATIF par défaut (Dynamic Input mode)
@@ -8455,7 +8455,7 @@ function cancelDrawing() {
   setTool('select');
 }
 
-// ===== CUSTOM CURSOR (AutoCAD style) =====
+// ===== CUSTOM CURSOR (style CAO) =====
 let mouseOnCanvas = false;
 
 // 'idle'    → réticule + carré  (aucune commande active, après ESC)
@@ -14189,7 +14189,7 @@ document.addEventListener('keydown',(ev)=>{
     S.rotateStep=0; S.rotateBase=null; S.rotateIds=[]; setTool('select'); render(); return;
   }
 
-  // Auto-focus distance field when typing numbers while drawing or waiting for first point (AutoCAD behavior)
+  // Auto-focus distance field when typing numbers while drawing or waiting for first point (comportement CAO standard)
   const drawingTools2 = ['line','rect','circle','arc','wall','leader','polyline','cable','dim_linear','dim_aligned','dim_angular','tube'];
   const wantInput = (S.drawing && S.drawPoints.length > 0) || (S.tool==='tube' && S.drawing && S.tubePoints.length>0) || (!S.drawing && drawingTools2.includes(S.tool));
   if (wantInput && /^[0-9.\-@#]$/.test(ev.key)) {
@@ -14307,7 +14307,7 @@ async function exportDXF() {
   const w = (s) => dxf.push(s);
   const f = (n) => String(parseFloat(n.toFixed(6)));
 
-  // ── Handles (REQUIS par AC1015 : sans eux AutoCAD rejette « ID 0 déjà utilisé ») ──
+  // ── Handles (REQUIS par AC1015 : sans eux CAO rejette « ID 0 déjà utilisé ») ──
   let _h = 0x30;                                     // compteur de handles (hex)
   const nh = () => (_h++).toString(16).toUpperCase();// prochain handle unique
   let _handseedIdx = -1;                             // index du $HANDSEED à patcher en fin
@@ -14755,28 +14755,28 @@ async function exportDXF() {
 
   w('0'); w('EOF');
 
-  // $HANDSEED = handle suivant le plus grand utilisé (requis par AutoCAD)
+  // $HANDSEED = handle suivant le plus grand utilisé (requis par les logiciels de CAO)
   if (_handseedIdx >= 0) dxf[_handseedIdx] = (_h).toString(16).toUpperCase();
 
   const content = dxf.join('\n');
   const baseName = currentDrawingBaseName('minicad_export');
-  const fname = await saveWithPicker(content, baseName, 'dxf', 'application/dxf', 'AutoCAD DXF');
+  const fname = await saveWithPicker(content, baseName, 'dxf', 'application/dxf', 'CAO DXF');
   if (!fname) { termPrint('Export DXF annulé', 'info'); return; }
   const nEnt = S.entities.length;
-  termPrint('DXF exporté : '+fname+' — '+nEnt+' entité'+(nEnt>1?'s':'')+' — AC1015/AutoCAD 2000','success');
+  termPrint('DXF exporté : '+fname+' — '+nEnt+' entité'+(nEnt>1?'s':'')+' — AC1015 (R2000)','success');
 }
 
 function exportDWG() {
   // DWG is a proprietary binary format by Autodesk.
   // A true DWG writer requires an SDK (OpenDesign Alliance ODA / LibreDWG).
   // Strategy: export a DXF file with .dwg extension hint, or offer DXF.
-  // Most modern CAD apps (FreeCAD, LibreCAD, BricsCAD, AutoCAD) can open DXF natively.
+  // Most modern CAD apps (FreeCAD, LibreCAD, BricsCAD) can open DXF natively.
   // We'll export as DXF but also offer a .dwg file that is actually DXF content
   // (some tools auto-detect content regardless of extension).
 
   termPrint('⚠ Le format DWG natif nécessite un SDK propriétaire (Autodesk ODA).','warning');
-  termPrint('Export en DXF compatible AutoCAD 2000 avec extension .dwg...','info');
-  termPrint('→ Ce fichier est lisible par: AutoCAD, BricsCAD, FreeCAD, LibreCAD, DraftSight','info');
+  termPrint('Export en DXF compatible R2000 avec extension .dwg...','info');
+  termPrint('→ Ce fichier est lisible par: BricsCAD, FreeCAD, LibreCAD, DraftSight','info');
 
   // Build same DXF content
   const dxf = [];
@@ -15807,7 +15807,7 @@ canvas.addEventListener('contextmenu', (ev) => {
     S._polyCenter = null; S._polyStep = 0; setTool('select'); render(); return;
   }
 
-  // Outils avec confirmation → clic droit = Entrée (comme AutoCAD)
+  // Outils avec confirmation → clic droit = Entrée (comme un logiciel de CAO)
   if (S.tool === 'join') { applyJoin(); return; }
   if (S.tool === 'trim' && S.trimStep === 1) {
     S.trimStep=2;
@@ -16042,7 +16042,7 @@ termPrint('║  MiniCAD v3.1 — Dynamic Input+Polar  ║','info');
 termPrint('╚══════════════════════════════════════╝','info');
 termPrint('Tapez HELP pour la liste des commandes','info');
 termPrint('','');
-termPrint('★ SAISIE DYNAMIQUE (comme AutoCAD):','success');
+termPrint('★ SAISIE DYNAMIQUE (comme un logiciel de CAO):','success');
 termPrint('  • Infobulle Distance/Angle éditable près du curseur','info');
 termPrint('  • Tab = basculer entre Distance et Angle','info');
 termPrint('  • Entrez la valeur + Entrée pour confirmer','info');

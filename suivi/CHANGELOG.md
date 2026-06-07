@@ -36,7 +36,7 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.09] — 2026-05-30
 
 ### Ajouté
-- **ARC multi-mode** — commande ARC refaite comme AutoCAD, 4 modes de tracé
+- **ARC multi-mode** — commande ARC refaite comme un logiciel de CAO, 4 modes de tracé
   - **3P** (défaut) : 3 clics — P1 départ, P2 milieu, P3 fin (arc par circumcercle)
   - **S,C,E** : taper `C` après P1 — P1 départ → Centre → P3 fin (CCW)
   - **S,C,A** : taper `A` après le centre — angle inclus en degrés au clavier
@@ -64,7 +64,7 @@ Format : `[version] — YYYY-MM-DD — Description`
 ### Ajouté
 - **DXF Export — réécriture complète AC1015**
   - Sections requises : HEADER (extents réelles), CLASSES (vide), TABLES, BLOCKS, ENTITIES, OBJECTS
-  - Marqueurs `AcDb*` sur toutes les entités (requis AutoCAD 2000)
+  - Marqueurs `AcDb*` sur toutes les entités (requis DXF R2000)
   - DIMENSION : `dim_linear` → `AcDbRotatedDimension`, `dim_aligned` → `AcDbAlignedDimension`, `dim_angular` → `AcDb2LineAngularDimension`, `dim_radius` → `AcDbRadialDimension`, `dim_diameter` → `AcDbDiametricDimension`
   - LEADER + MTEXT (repère avec texte RTF)
   - Wall → LWPOLYLINE fermée (2 segments + fermeture)
@@ -86,7 +86,7 @@ Format : `[version] — YYYY-MM-DD — Description`
 - **Bibliothèque IPN** — profils IPN 80→600 (SN EN 10365:2017) avec fonction de dessin
 
 ### Corrigé
-- DXF export : sections BLOCKS et OBJECTS manquantes → rejet par AutoCAD/LibreCAD
+- DXF export : sections BLOCKS et OBJECTS manquantes → rejet par les logiciels de CAO
 
 ---
 
@@ -243,7 +243,7 @@ Format : `[version] — YYYY-MM-DD — Description`
 - **TRIM amélioré** — refonte complète du workflow
   - **Multi-limites** : sélection de plusieurs entités limites (tableau `S.trimCuttingIds[]`), toutes surlignées en orange
   - **Workflow 2 étapes** : étape 1 = sélection limites (clic toggle) → Entrée ou clic droit → étape 2 = coupe ; clic droit en étape 2 = quitter
-  - **Mode tout couper** : Entrée ou clic droit sans limite sélectionnée → toutes les entités visibles deviennent limites (comportement AutoCAD)
+  - **Mode tout couper** : Entrée ou clic droit sans limite sélectionnée → toutes les entités visibles deviennent limites (comportement CAO)
   - **Entités limites découpables** : une entité peut être à la fois limite et objet à couper (coupée par les autres limites)
   - **Cercle découpable** (`circle`) : découpe → remplace l'entité par un ou plusieurs `arc`
   - **Rectangle découpable** (`rect`) : découpe → converti en polyligne fermée puis découpé normalement
@@ -323,7 +323,7 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.02] — 2026-05-17
 
 ### Ajouté
-- **Gestionnaire de calques** (fenêtre dédiée style AutoCAD)
+- **Gestionnaire de calques** (fenêtre dédiée style CAO)
   - Panneau gauche simplifié : liste cliquable pour changer de calque actif
   - Bouton "⊞ Gérer les calques…" → dialogue complet avec couleur, nom, visibilité, épaisseur ISO (0.13→1.00 mm), type de ligne (5 types), suppression
   - `refreshLayerManager()` : mise à jour en temps réel sans fermer le dialogue
@@ -433,7 +433,7 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 #### Ajouté
 - **Grip editing complet** : poignées bleues sur tous les types d'entités
-- **Dynamic Input** type AutoCAD : bulle D/A éditable près du curseur
+- **Dynamic Input** type CAO : bulle D/A éditable près du curseur
 - **Polaire tracking** (F10) avec incrément configurable (`POLAR [angle]`)
 - **Export DXF AC1015** complet avec HEADER + TABLES + entités
 - **Import DXF** avec LWPOLYLINE, POLYLINE/VERTEX, SPLINE, ELLIPSE, DIMENSION
@@ -465,7 +465,7 @@ Format : `[version] — YYYY-MM-DD — Description`
 - Sélection, Déplacer, Copier, Supprimer
 - Undo/Redo (50 niveaux)
 - 4 calques avec couleur et visibilité
-- Terminal de commandes (alias AutoCAD)
+- Terminal de commandes (alias CAO standard)
 - Export SVG basique
 - Interface dark theme JetBrains Mono
 

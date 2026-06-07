@@ -24,7 +24,7 @@
 | 1.4 | Sélection + Déplacer + Copier + Supprimer | ✅ |
 | 1.5 | Undo/Redo (50 niveaux) | ✅ |
 | 1.6 | Calques (4, couleur, visibilité) | ✅ |
-| 1.7 | Terminal de commandes (type AutoCAD) | ✅ |
+| 1.7 | Terminal de commandes (type CAO) | ✅ |
 | 1.8 | Export SVG | ✅ |
 | 1.9 | Sauvegarde/Ouverture JSON (.mcad) | ✅ |
 

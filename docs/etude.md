@@ -6,17 +6,17 @@
 
 | Logiciel | Type | Avantages | Inconvénients pour ce projet |
 |----------|------|-----------|------------------------------|
-| AutoCAD LT | Bureau (payant) | Référence industrie, commandes puissantes | Payant, lourd, installation requise |
+| CAO 2D | Bureau (payant) | Référence industrie, commandes puissantes | Payant, lourd, installation requise |
 | FreeCAD | Bureau (libre) | Open-source, paramétrique | Complexe, pas web |
 | LibreCAD | Bureau (libre) | DXF natif, léger | Pas web |
-| DraftSight | Bureau | Proche AutoCAD | Freemium, installation |
-| AutoCAD Web | Web | Officiel Autodesk | Nécessite compte, pas offline |
+| DraftSight | Bureau | Proche logiciel CAO | Freemium, installation |
+| CAO en ligne | Web | Officiel Autodesk | Nécessite compte, pas offline |
 | Tinkercad | Web | Simple | 3D, pas 2D technique |
 | **MiniCAD** | **Web (ce projet)** | **Offline, 1 fichier HTML** | En développement |
 
-### Analyse des commandes AutoCAD cibles
+### Analyse des commandes CAO cibles
 
-Les commandes implémentées reprennent exactement les alias AutoCAD :
+Les commandes implémentées reprennent exactement les alias CAO standard :
 `L` (LINE), `R` (RECTANG), `C` (CIRCLE), `A` (ARC), `PL` (PLINE),
 `M` (MOVE), `CO` (COPY), `E` (ERASE), `U` (UNDO)
 
@@ -145,7 +145,7 @@ World:  (wx, wy) = ((sx - panX - W/2) / zoom, -(sy - panY - H/2) / zoom)
 ## 3. Points forts du code actuel (v0.03)
 
 - OSNAP complet et performant (7 modes, priorité sur snap grille)
-- Saisie dynamique type AutoCAD (Tab, Distance/Angle, relatif/polaire)
+- Saisie dynamique type CAO (Tab, Distance/Angle, relatif/polaire)
 - Grip editing fonctionnel pour tous les types d'entités
 - Export DXF AC1015 propre avec couches et couleurs ACI
 - Import DXF avec LWPOLYLINE, POLYLINE, SPLINE, ELLIPSE, DIMENSION

@@ -1,6 +1,6 @@
 # MiniCAD — Contexte projet pour Claude Code
 
-Logiciel de dessin technique 2D **dans un seul fichier HTML autonome**, façon AutoCAD LT.
+Logiciel de dessin technique 2D **dans un seul fichier HTML autonome**, façon CAO 2D.
 Le fichier final n'a aucune dépendance et aucun serveur : on l'ouvre et on dessine.
 
 ## Branche et fichier de travail
@@ -76,12 +76,12 @@ des dialogs (`.ar-input`) et dans `confirmDynamicInput`.
   - **Moteur de rendu** — `drawEntity()` → canvas 2D (staticCanvas + mainCanvas)
   - **OSNAP** — `findOsnap()`, 9 modes (extrémité, milieu, centre, intersection,
     perpendiculaire, tangente, plus proche, quadrant, extension)
-  - **Commandes `CMD{}`** — objets exécutables, alias AutoCAD (LINE/L, RECT/R…)
+  - **Commandes `CMD{}`** — objets exécutables, alias CAO standard (LINE/L, RECT/R…)
   - **Saisie dynamique** — bulles D/A près du curseur (Tab pour basculer Distance/Angle)
   - **Grip editing** — poignées sur toutes les entités
   - **Sélection** — clic, fenêtre (G→D), croisement (D→G)
   - **Outils de modification** — offset, mirror, fillet, chamfer, join, trim, extend
-  - **Import/Export** — DXF AC1015 (AutoCAD 2000), SVG, JSON `.mcad`
+  - **Import/Export** — DXF AC1015 (R2000), SVG, JSON `.mcad`
   - **Modules métier** — arch, elec, dim, annot (chargés à la demande via `LOAD`)
 
 ### Outils de dessin disponibles
@@ -110,7 +110,7 @@ MESURER (ME), DIST (DI), AREA, CALC (calculatrice popup)
 
 ## Conventions
 
-- Respecter les alias de commandes style AutoCAD existants.
+- Respecter les alias de commandes style CAO existants.
 - Les coordonnées acceptent : `100<45`, `@50,30`, `#x,y`, et expressions `105.3+35`.
 - Persistance : auto-save localStorage + File System Access API (Ctrl+S).
 - Voir `docs/methode.md` pour les conventions de développement détaillées.

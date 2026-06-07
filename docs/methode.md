@@ -106,7 +106,7 @@ Toutes les entités ont : `id` (entier auto-incrémenté), `layer` (index dans S
 - Ne pas sortir de la contrainte "1 fichier HTML"
 - Garder la compatibilité avec les fichiers `.mcad` sauvegardés
 - Toute nouvelle entité doit implémenter : `drawEntity`, `getGripPoints`, `hitTest`, `offsetEntity`, `exportDXF`
-- Les commandes texte suivent la convention AutoCAD (alias courts)
+- Les commandes texte suivent la convention CAO (alias courts)
 - Le panneau terminal doit toujours guider l'utilisateur avec des messages `info`/`warning`
 
 ## 5. Checklist pour une nouvelle entité
