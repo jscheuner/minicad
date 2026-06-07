@@ -3335,6 +3335,12 @@ const CMD = {
     S.entities.forEach(e => termPrint('#' + e.id + ' ' + e.type + ' [calque ' + e.layer + ']', 'info'));
   }},
   CLEAR: { alias: ['CLS','NOUVEAU'], desc: 'Tout effacer', exec: () => {
+    // Sécurité : prévenir avant de perdre un dessin non sauvegardé (statut MODIFIÉ)
+    if (S.entities.length && S._saveState === 'modified') {
+      if (!confirm('Le dessin actuel n\'est pas sauvegardé.\nLes modifications seront perdues.\n\nCréer un nouveau dessin quand même ?')) {
+        termPrint('Nouveau dessin annulé', 'info'); return;
+      }
+    }
     if (S.entities.length) pushUndo(); S.entities = []; S.selected = [];
     _fileHandle = null; localStorage.removeItem('minicad_autosave'); updateSaveIndicator('new');
     termPrint('Dessin effacé', 'success'); render();
@@ -14107,6 +14113,7 @@ function openPrefsDialog() {
 }
 
 function updateSaveIndicator(state) {
+  S._saveState = state; // mémorisé pour la sécurité « Nouveau » (données non sauvegardées)
   const el = document.getElementById('save-indicator');
   if (!el) return;
   if (state === 'saved') {
