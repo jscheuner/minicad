@@ -10132,6 +10132,64 @@ function angleInArc(a,sa,ea) {
   return ang<=end+1e-9;
 }
 
+// ── Helpers ellipse (pour TRIM / EXTEND) ──
+// Convention : point = centre + Rot(ang)·(rx·cos t, ry·sin t)
+function ellipsePoint(el, t) {
+  const a=el.ang||0, c=Math.cos(a), s=Math.sin(a);
+  const lx=(el.rx||1)*Math.cos(t), ly=(el.ry||1)*Math.sin(t);
+  return [el.cx + lx*c - ly*s, el.cy + lx*s + ly*c];
+}
+function ellipseParam(el, x, y) {
+  const a=el.ang||0, c=Math.cos(a), s=Math.sin(a), dx=x-el.cx, dy=y-el.cy;
+  return Math.atan2((-dx*s+dy*c)/(el.ry||1), (dx*c+dy*s)/(el.rx||1));
+}
+// Intersection segment (x1,y1)-(x2,y2) × ellipse → [{t,x,y}] ; inf=true : droite infinie
+function lineEllipseIntersect(x1,y1,x2,y2, el, inf) {
+  const a=el.ang||0, c=Math.cos(a), s=Math.sin(a), rx=el.rx||1, ry=el.ry||1;
+  const tr=(px,py)=>{ const dx=px-el.cx, dy=py-el.cy; return [(dx*c+dy*s)/rx, (-dx*s+dy*c)/ry]; };
+  const [ax,ay]=tr(x1,y1), [bx,by]=tr(x2,y2), ddx=bx-ax, ddy=by-ay;
+  const A=ddx*ddx+ddy*ddy; if(A<1e-12) return [];
+  const B=2*(ax*ddx+ay*ddy), C=ax*ax+ay*ay-1, disc=B*B-4*A*C;
+  if(disc<0) return [];
+  const sq=Math.sqrt(disc), res=[];
+  for(const tt of [(-B-sq)/(2*A),(-B+sq)/(2*A)])
+    if(inf || (tt>=-1e-9 && tt<=1+1e-9)) res.push({t:tt, x:x1+tt*(x2-x1), y:y1+tt*(y2-y1)});
+  return res;
+}
+function _arcSampleSegs(cx,cy,r,sa,ea,n) {
+  let s=(sa===undefined?0:sa), e=(ea===undefined?Math.PI*2:ea); while(e<s) e+=Math.PI*2;
+  const segs=[]; let prev=[cx+r*Math.cos(s),cy+r*Math.sin(s)];
+  for(let i=1;i<=n;i++){ const a=s+(e-s)*i/n, pt=[cx+r*Math.cos(a),cy+r*Math.sin(a)]; segs.push([prev[0],prev[1],pt[0],pt[1]]); prev=pt; }
+  return segs;
+}
+function ellipseSampleSegs(el, n) {
+  n=n||96; let s=(el.sa===undefined?0:el.sa), e=(el.ea===undefined?Math.PI*2:el.ea); while(e<s) e+=Math.PI*2;
+  const segs=[]; let prev=ellipsePoint(el,s);
+  for(let i=1;i<=n;i++){ const pt=ellipsePoint(el, s+(e-s)*i/n); segs.push([prev[0],prev[1],pt[0],pt[1]]); prev=pt; }
+  return segs;
+}
+// Segments approchant un cutter quelconque (pour intersecter avec une ellipse cible)
+function cutterSampleSegs(p) {
+  if(p.type==='seg') return [[p.x1,p.y1,p.x2,p.y2]];
+  if(p.type==='circle') return _arcSampleSegs(p.cx,p.cy,p.r,0,Math.PI*2,96);
+  if(p.type==='arc') return _arcSampleSegs(p.cx,p.cy,p.r,p.sa,p.ea,64);
+  if(p.type==='ellipse') return ellipseSampleSegs(p);
+  return [];
+}
+// Angles paramétriques où l'ellipse cible rencontre les cutters
+function getEllipseHitParams(el, prims, inf) {
+  const params=[];
+  for(const p of prims){
+    if(p.type==='seg'){
+      lineEllipseIntersect(p.x1,p.y1,p.x2,p.y2,el,inf).forEach(h=>params.push(ellipseParam(el,h.x,h.y)));
+    } else {
+      for(const sg of cutterSampleSegs(p))
+        lineEllipseIntersect(sg[0],sg[1],sg[2],sg[3],el).forEach(h=>params.push(ellipseParam(el,h.x,h.y)));
+    }
+  }
+  return params;
+}
+
 function getCutterPrimitives(e) {
   const p=[];
   if(e.type==='line'||e.type==='wall'||e.type==='leader') {
@@ -10140,6 +10198,8 @@ function getCutterPrimitives(e) {
     p.push({type:'circle',cx:e.cx,cy:e.cy,r:e.r});
   } else if(e.type==='arc') {
     p.push({type:'arc',cx:e.cx,cy:e.cy,r:e.r,sa:e.startAngle,ea:e.endAngle});
+  } else if(e.type==='ellipse') {
+    p.push({type:'ellipse',cx:e.cx,cy:e.cy,rx:e.rx,ry:e.ry,ang:e.angle||0,sa:e.startAngle,ea:e.endAngle});
   } else if(e.type==='rect') {
     const{x1,y1,x2,y2}=e;
     p.push({type:'seg',x1,y1,x2,y2:y1},{type:'seg',x1:x2,y1,x2:x2,y2});
@@ -10162,6 +10222,10 @@ function getTrimTsForLine(lx1,ly1,lx2,ly2,prims) {
     } else if(p.type==='arc') {
       lineCircleIntersect(lx1,ly1,lx2,ly2,p.cx,p.cy,p.r).forEach(h=>{
         if(angleInArc(Math.atan2(h.y-p.cy,h.x-p.cx),p.sa,p.ea)) ts.push(h.t);
+      });
+    } else if(p.type==='ellipse') {
+      lineEllipseIntersect(lx1,ly1,lx2,ly2,p).forEach(h=>{
+        if(p.sa===undefined || angleInArc(ellipseParam(p,h.x,h.y),p.sa,p.ea)) ts.push(h.t);
       });
     }
   }
@@ -10208,6 +10272,9 @@ function getTrimAnglesForArc(arcEnt, prims) {
       const mx=(p.cx-arcEnt.cx)/d, my=(p.cy-arcEnt.cy)/d;
       pts=[{x:arcEnt.cx+a*mx-h*my,y:arcEnt.cy+a*my+h*mx},{x:arcEnt.cx+a*mx+h*my,y:arcEnt.cy+a*my-h*mx}];
       if(p.type==='arc') pts=pts.filter(pt=>angleInArc(Math.atan2(pt.y-p.cy,pt.x-p.cx),p.sa,p.ea));
+    } else if(p.type==='ellipse') {
+      for(const sg of ellipseSampleSegs(p))
+        lineCircleIntersect(sg[0],sg[1],sg[2],sg[3],arcEnt.cx,arcEnt.cy,arcEnt.r).forEach(h=>pts.push({x:h.x,y:h.y}));
     }
     for(const pt of pts) {
       const angle=Math.atan2(pt.y-arcEnt.cy,pt.x-arcEnt.cx);
@@ -10390,16 +10457,49 @@ function applyTrimPolyline(ent, prims, clickWx, clickWy) {
   return true;
 }
 
+function applyTrimEllipse(ent, prims, clickWx, clickWy) {
+  const el={cx:ent.cx,cy:ent.cy,rx:ent.rx,ry:ent.ry,ang:ent.angle||0,sa:ent.startAngle,ea:ent.endAngle};
+  const raw=getEllipseHitParams(el, prims);
+  if(!raw.length) return false;
+  const TAU=Math.PI*2, norm=a=>((a%TAU)+TAU)%TAU;
+  const full = ent.startAngle===undefined || ent.endAngle===undefined;
+  const clickA=ellipseParam(el, clickWx, clickWy);
+  const mkArcs=(kept)=>{
+    if(!kept.length){ S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
+    ent.startAngle=kept[0][0]; ent.endAngle=kept[0][1];
+    for(let i=1;i<kept.length;i++){ const ne=JSON.parse(JSON.stringify(ent)); ne.id=S.nextId++; ne.startAngle=kept[i][0]; ne.endAngle=kept[i][1]; S.entities.push(ne); }
+    return true;
+  };
+  if(full){
+    let angs=raw.map(norm).sort((a,b)=>a-b).filter((a,i,arr)=> i===0 || a-arr[i-1]>1e-6);
+    if(angs.length<2) return false;
+    let ca=norm(clickA), remIdx=0;
+    for(let i=0;i<angs.length;i++){ const a1=angs[i], a2=(i+1<angs.length?angs[i+1]:angs[0]+TAU); let cc=ca; while(cc<a1-1e-9) cc+=TAU; if(cc>=a1-1e-9&&cc<=a2+1e-9){remIdx=i;break;} }
+    const kept=[];
+    for(let i=0;i<angs.length;i++) if(i!==remIdx){ const a1=angs[i], a2=(i+1<angs.length?angs[i+1]:angs[0]+TAU); kept.push([a1,a2]); }
+    return mkArcs(kept);
+  }
+  const sa=ent.startAngle; let ea=ent.endAngle; while(ea<sa) ea+=TAU;
+  const inside=raw.map(a=>{let b=a;while(b<sa)b+=TAU;return b;}).filter(a=>a>sa+1e-9&&a<ea-1e-9).sort((x,y)=>x-y);
+  if(!inside.length) return false;
+  let ca=clickA; while(ca<sa) ca+=TAU;
+  const breaks=[sa,...inside,ea]; let remIdx=0;
+  for(let i=0;i<breaks.length-1;i++){ if(ca>=breaks[i]-1e-9&&ca<=breaks[i+1]+1e-9){remIdx=i;break;} }
+  const kept=[]; for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  return mkArcs(kept);
+}
+
 function applyTrim(trimmedId, prims, clickWx, clickWy) {
   const ent=S.entities.find(e=>e.id===trimmedId);
   if(!ent) return;
-  const supported=['line','wall','arc','circle','polyline','cable','rect'];
+  const supported=['line','wall','arc','circle','polyline','cable','rect','ellipse'];
   if(!supported.includes(ent.type)){ termPrint('TRIM: non supporté pour '+ent.type,'warning'); return; }
   pushUndo();
   let ok=false;
   if(ent.type==='line'||ent.type==='wall')           ok=applyTrimLine(ent,prims,clickWx,clickWy);
   else if(ent.type==='arc')                           ok=applyTrimArc(ent,prims,clickWx,clickWy);
   else if(ent.type==='circle')                        ok=applyTrimCircle(ent,prims,clickWx,clickWy);
+  else if(ent.type==='ellipse')                       ok=applyTrimEllipse(ent,prims,clickWx,clickWy);
   else if(ent.type==='rect')                          ok=applyTrimRect(ent,prims,clickWx,clickWy);
   else if(ent.type==='polyline'||ent.type==='cable')  ok=applyTrimPolyline(ent,prims,clickWx,clickWy);
   if(!ok){ S.history.pop(); termPrint('TRIM: aucune intersection trouvée','warning'); return; }
@@ -10460,6 +10560,14 @@ function drawExtendPreview() {
     drawEntity(g);
     ctx.restore();
     return;
+  } else if (ent.type === 'ellipse') {
+    const g = JSON.parse(JSON.stringify(ent));
+    if (!applyExtendEllipse(g, prims, mx, my)) return;
+    ctx.save();
+    ctx.strokeStyle='#00d4ff'; ctx.lineWidth=1.5; ctx.globalAlpha=0.7; ctx.setLineDash([6,4]);
+    drawEntity(g);
+    ctx.restore();
+    return;
   } else { return; }
 
   const [sx1,sy1]=w2s(fromX,fromY), [sx2,sy2]=w2s(toX,toY);
@@ -10514,6 +10622,10 @@ function getExtendTsForLine(lx1,ly1,lx2,ly2, prims) {
       if(isFinite(t) && s>=-1e-9 && s<=1+1e-9) ts.push(t);
     } else if(p.type==='circle'||p.type==='arc') {
       lineCircleIntersectInf(lx1,ly1,lx2,ly2,p.cx,p.cy,p.r).forEach(t=>{ if(isFinite(t)) ts.push(t); });
+    } else if(p.type==='ellipse') {
+      lineEllipseIntersect(lx1,ly1,lx2,ly2,p,true).forEach(h=>{
+        if(p.sa===undefined || angleInArc(ellipseParam(p,h.x,h.y),p.sa,p.ea)) ts.push(h.t);
+      });
     }
   }
   return ts;
@@ -10583,6 +10695,9 @@ function getCircleHitAngles(cx, cy, r, prims) {
       circleCircleIntersect(cx,cy,r, p.cx,p.cy,p.r).forEach(h => {
         if (angleInArc(Math.atan2(h.y-p.cy, h.x-p.cx), p.sa, p.ea)) add(h.x,h.y);
       });
+    } else if (p.type === 'ellipse') {
+      for (const sg of ellipseSampleSegs(p))
+        lineCircleIntersect(sg[0],sg[1],sg[2],sg[3], cx,cy,r).forEach(h => add(h.x,h.y));
     }
   }
   return angs;
@@ -10611,16 +10726,32 @@ function applyExtendArc(ent, prims, clickWx, clickWy) {
   return true;
 }
 
+function applyExtendEllipse(ent, prims, clickWx, clickWy) {
+  if(ent.startAngle===undefined || ent.endAngle===undefined) return false; // ellipse complète : pas d'extrémité
+  const el={cx:ent.cx,cy:ent.cy,rx:ent.rx,ry:ent.ry,ang:ent.angle||0};
+  const raw=getEllipseHitParams(el, prims);
+  if(!raw.length) return false;
+  const TAU=Math.PI*2, norm=a=>((a%TAU)+TAU)%TAU;
+  const sa=ent.startAngle, ea=ent.endAngle;
+  const sp=ellipsePoint(el,sa), ep=ellipsePoint(el,ea);
+  const dS=Math.hypot(clickWx-sp[0],clickWy-sp[1]), dE=Math.hypot(clickWx-ep[0],clickWy-ep[1]);
+  let best=Infinity;
+  if(dE<=dS){ for(const c of raw){ const g=norm(c-ea); if(g>1e-6&&g<TAU-1e-6&&g<best) best=g; } if(!isFinite(best)) return false; ent.endAngle=ea+best; }
+  else { for(const c of raw){ const g=norm(sa-c); if(g>1e-6&&g<TAU-1e-6&&g<best) best=g; } if(!isFinite(best)) return false; ent.startAngle=sa-best; }
+  return true;
+}
+
 function applyExtend(extendedId, prims, clickWx, clickWy) {
   const ent=S.entities.find(e=>e.id===extendedId);
   if(!ent) return;
-  const supported=['line','wall','polyline','cable','arc'];
+  const supported=['line','wall','polyline','cable','arc','ellipse'];
   if(!supported.includes(ent.type)){ termPrint('EXTEND: type non supporté ('+ent.type+')','warning'); return; }
   pushUndo();
   let ok=false;
   if(ent.type==='line'||ent.type==='wall')            ok=applyExtendLine(ent,prims,clickWx,clickWy);
   else if(ent.type==='polyline'||ent.type==='cable')  ok=applyExtendPolyline(ent,prims,clickWx,clickWy);
   else if(ent.type==='arc')                            ok=applyExtendArc(ent,prims,clickWx,clickWy);
+  else if(ent.type==='ellipse')                        ok=applyExtendEllipse(ent,prims,clickWx,clickWy);
   if(!ok){ S.history.pop(); termPrint('EXTEND: pas d\'intersection trouvée sur cette extension','warning'); return; }
   termPrint('EXTEND — entité prolongée','success');
   updateSaveIndicator('modified'); autoSave(); render();
