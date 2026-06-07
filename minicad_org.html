@@ -2100,8 +2100,11 @@
     <div class="pd-row">
       <span class="pd-label">Format</span>
       <select id="pd-paper">
-        <option value="A4">A4 (210×297 mm)</option>
+        <option value="A0">A0 (841×1189 mm)</option>
+        <option value="A1">A1 (594×841 mm)</option>
+        <option value="A2">A2 (420×594 mm)</option>
         <option value="A3">A3 (297×420 mm)</option>
+        <option value="A4" selected>A4 (210×297 mm)</option>
         <option value="A5">A5 (148×210 mm)</option>
         <option value="Letter">Letter (216×279 mm)</option>
       </select>
@@ -2140,8 +2143,17 @@
   <div class="pd-body">
     <div class="pd-row">
       <span class="pd-label">Feuille</span>
-      <select id="vpd-paper"><option value="A4">A4</option><option value="A3">A3</option><option value="A5">A5</option><option value="Letter">Letter</option></select>
+      <select id="vpd-paper" onchange="vpdPaperChanged()">
+        <option value="A0">A0</option><option value="A1">A1</option><option value="A2">A2</option>
+        <option value="A3">A3</option><option value="A4">A4</option><option value="A5">A5</option>
+        <option value="Letter">Letter</option><option value="custom">Personnalisé…</option>
+      </select>
       <select id="vpd-orient"><option value="portrait">Portrait</option><option value="landscape">Paysage</option></select>
+    </div>
+    <div class="pd-row" id="vpd-custom-row" style="display:none">
+      <span class="pd-label">Dim. (mm)</span>
+      <input id="vpd-cw" type="number" step="1" min="10" placeholder="larg.">
+      <input id="vpd-ch" type="number" step="1" min="10" placeholder="haut.">
     </div>
     <div class="pd-sep"></div>
     <div class="pd-row">
@@ -4523,11 +4535,16 @@ function _doRender() {
 // Voir suivi/plan_presentations.md. Réutilise drawEntity via withModelTransform
 // (même mécanisme que doPrint) pour rendre l'espace objet dans chaque fenêtre.
 
-const PAPER_SIZES = { A4:[210,297], A3:[297,420], A5:[148,210], Letter:[216,279] };
+const PAPER_SIZES = {
+  A0:[841,1189], A1:[594,841], A2:[420,594], A3:[297,420], A4:[210,297], A5:[148,210],
+  Letter:[216,279]
+};
 const MM2PX96 = 96 / 25.4;   // px virtuels (96 DPI) par mm — base de drawEntity/impression
 
 function paperDims(l) {
-  let [w,h] = PAPER_SIZES[l.paper] || [210,297];
+  let [w,h] = l.paper === 'custom'
+    ? [l.customW || 210, l.customH || 297]
+    : (PAPER_SIZES[l.paper] || [210,297]);
   if (l.orient === 'landscape') [w,h] = [h,w];
   return [w,h];
 }
@@ -4813,6 +4830,9 @@ function openViewportDialog(vpId) {
   _vpDlgId = vpId;
   document.getElementById('vpd-paper').value = layout.paper;
   document.getElementById('vpd-orient').value = layout.orient;
+  document.getElementById('vpd-cw').value = layout.customW || 210;
+  document.getElementById('vpd-ch').value = layout.customH || 297;
+  vpdPaperChanged();
   document.getElementById('vpd-scale').value = vp.scale;
   document.getElementById('vpd-cx').value = Math.round(vp.centerX);
   document.getElementById('vpd-cy').value = Math.round(vp.centerY);
@@ -4820,6 +4840,10 @@ function openViewportDialog(vpId) {
   document.getElementById('vp-dialog').style.display = 'block';
 }
 function closeViewportDialog() { document.getElementById('vp-dialog').style.display = 'none'; _vpDlgId = null; }
+function vpdPaperChanged() {
+  document.getElementById('vpd-custom-row').style.display =
+    document.getElementById('vpd-paper').value === 'custom' ? 'flex' : 'none';
+}
 function vpCenterOnDrawing() {
   const bb = drawingBBox(); if (!bb) return;
   document.getElementById('vpd-cx').value = Math.round((bb.mnx+bb.mxx)/2);
@@ -4836,8 +4860,12 @@ function applyViewportDialog() {
   const layout = getActiveLayout(), vp = _vpDlgTarget(); if (!layout || !vp) return;
   const newPaper = document.getElementById('vpd-paper').value;
   const newOrient = document.getElementById('vpd-orient').value;
-  const paperChanged = newPaper !== layout.paper || newOrient !== layout.orient;
+  const newCW = Math.max(10, parseFloat(document.getElementById('vpd-cw').value) || 210);
+  const newCH = Math.max(10, parseFloat(document.getElementById('vpd-ch').value) || 297);
+  const paperChanged = newPaper !== layout.paper || newOrient !== layout.orient ||
+                       (newPaper === 'custom' && (newCW !== layout.customW || newCH !== layout.customH));
   layout.paper = newPaper; layout.orient = newOrient;
+  layout.customW = newCW; layout.customH = newCH;
   vp.scale = Math.max(0.01, parseFloat(document.getElementById('vpd-scale').value) || vp.scale);
   vp.centerX = parseFloat(document.getElementById('vpd-cx').value) || 0;
   vp.centerY = parseFloat(document.getElementById('vpd-cy').value) || 0;
