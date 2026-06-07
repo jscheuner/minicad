@@ -3860,28 +3860,12 @@ const CMD = {
         for (const [P1, P2, b] of segs) {
           const x1=P1[0], y1=P1[1], x2=P2[0], y2=P2[1];
           let madeArc = false;
-          const d = Math.hypot(x2-x1, y2-y1);
-          if (b !== 0 && d > 1e-9) {
-            // Réplique EXACTE du rendu (drawPolyArcSegToPath) : même centre + même sens
-            const r = d * (1 + b*b) / (4 * Math.abs(b));
-            const offset = Math.sqrt(Math.max(0, r*r - d*d/4));
-            const mx = (x1+x2)/2, my = (y1+y2)/2, pdx = -(y2-y1)/d, pdy = (x2-x1)/d;
-            const cx = mx + Math.sign(b)*pdx*offset, cy = my + Math.sign(b)*pdy*offset;
-            const TAU=2*Math.PI, norm=a=>((a%TAU)+TAU)%TAU;
-            // angles écran (Y inversé) + flag de sens identiques au rendu → apex au milieu du balayage
-            const saS = Math.atan2(-(y1-cy), x1-cx), eaS = Math.atan2(-(y2-cy), x2-cx);
-            const K = (b>0) !== (Math.abs(b)>1);   // counterclockwise du ctx.arc du rendu
-            const midS = !K ? saS + norm(eaS-saS)/2 : saS - norm(saS-eaS)/2;
-            const midW = -midS;                    // angle monde de l'apex
-            const apex = [cx + r*Math.cos(midW), cy + r*Math.sin(midW)];
-            // intervalle CCW [start,end] qui passe par l'apex (= arc réellement dessiné)
-            const aP1=Math.atan2(y1-cy,x1-cx), aP2=Math.atan2(y2-cy,x2-cx), aM=Math.atan2(apex[1]-cy,apex[0]-cx);
-            const d2=norm(aP2-aP1), dm=norm(aM-aP1);
-            let startA, endA;
-            if (dm <= d2) { startA=aP1; endA=aP1+d2; }
-            else          { startA=aP2; endA=aP2+norm(aP1-aP2); }
-            S.entities.push({type:'arc', cx, cy, r, startAngle:startA, endAngle:endA, id:S.nextId++, layer:ent.layer});
-            newIds.push(S.entities[S.entities.length-1].id); nArcs++; madeArc = true;
+          if (b !== 0) {
+            const arc = bulgeToArc(x1, y1, x2, y2, b);
+            if (arc) {
+              S.entities.push({type:'arc', cx:arc.cx, cy:arc.cy, r:arc.r, startAngle:arc.sa, endAngle:arc.ea, id:S.nextId++, layer:ent.layer});
+              newIds.push(S.entities[S.entities.length-1].id); nArcs++; madeArc = true;
+            }
           }
           if (!madeArc) {
             const line = {type:'line', id:S.nextId++, layer:ent.layer, x1, y1, x2, y2};
@@ -10266,6 +10250,26 @@ function angleInArc(a,sa,ea) {
   return ang<=end+1e-9;
 }
 
+// Segment à bulge → arc {cx,cy,r,sa,ea} (intervalle CCW), identique au rendu (drawPolyArcSegToPath)
+function bulgeToArc(x1,y1,x2,y2,b){
+  const d=Math.hypot(x2-x1,y2-y1);
+  if(d<1e-9 || !b) return null;
+  const r=d*(1+b*b)/(4*Math.abs(b));
+  const offset=Math.sqrt(Math.max(0,r*r-d*d/4));
+  const mx=(x1+x2)/2, my=(y1+y2)/2, pdx=-(y2-y1)/d, pdy=(x2-x1)/d;
+  const cx=mx+Math.sign(b)*pdx*offset, cy=my+Math.sign(b)*pdy*offset;
+  const TAU=2*Math.PI, norm=a=>((a%TAU)+TAU)%TAU;
+  const saS=Math.atan2(-(y1-cy),x1-cx), eaS=Math.atan2(-(y2-cy),x2-cx);
+  const K=(b>0)!==(Math.abs(b)>1);                       // sens du ctx.arc du rendu
+  const midS=!K?saS+norm(eaS-saS)/2:saS-norm(saS-eaS)/2;
+  const midW=-midS, ax=cx+r*Math.cos(midW), ay=cy+r*Math.sin(midW); // apex réel
+  const aP1=Math.atan2(y1-cy,x1-cx), aP2=Math.atan2(y2-cy,x2-cx), aM=Math.atan2(ay-cy,ax-cx);
+  const d2=norm(aP2-aP1), dm=norm(aM-aP1);
+  let sa,ea;
+  if(dm<=d2){ sa=aP1; ea=aP1+d2; } else { sa=aP2; ea=aP2+norm(aP1-aP2); }
+  return {cx,cy,r,sa,ea};
+}
+
 // ── Helpers ellipse (pour TRIM / EXTEND) ──
 // Convention : point = centre + Rot(ang)·(rx·cos t, ry·sin t)
 function ellipsePoint(el, t) {
@@ -11397,13 +11401,24 @@ function hitTest(wx,wy,filter) {
       }
     }
     else if(e.type==='polyline'||e.type==='cable'){
+      const pts=e.points;
+      const segDist=(p1,p2)=>{
+        const b=p1[2]||0;
+        if(b!==0){
+          const arc=bulgeToArc(p1[0],p1[1],p2[0],p2[1],b);
+          if(arc){
+            const ang=Math.atan2(wy-arc.cy,wx-arc.cx);
+            if(angleInArc(ang,arc.sa,arc.ea)) return Math.abs(Math.hypot(wx-arc.cx,wy-arc.cy)-arc.r);
+            return Math.min(Math.hypot(wx-p1[0],wy-p1[1]), Math.hypot(wx-p2[0],wy-p2[1]));
+          }
+        }
+        return distToSeg(wx,wy,p1[0],p1[1],p2[0],p2[1]);
+      };
       let d=Infinity;
-      for(let j=0;j<e.points.length-1;j++)
-        d=Math.min(d, distToSeg(wx,wy,e.points[j][0],e.points[j][1],e.points[j+1][0],e.points[j+1][1]));
+      for(let j=0;j<pts.length-1;j++) d=Math.min(d, segDist(pts[j],pts[j+1]));
       // Segment de fermeture si fermée sans doublon du 1er point
-      const fp=e.points[0], lp=e.points[e.points.length-1];
-      if(e.closed && Math.hypot(fp[0]-lp[0],fp[1]-lp[1])>1e-9)
-        d=Math.min(d, distToSeg(wx,wy,lp[0],lp[1],fp[0],fp[1]));
+      const fp=pts[0], lp=pts[pts.length-1];
+      if(e.closed && Math.hypot(fp[0]-lp[0],fp[1]-lp[1])>1e-9) d=Math.min(d, segDist(lp,fp));
       tryHit(e,d);
     }
     else if(e.type==='spline'){
