@@ -2229,16 +2229,7 @@
   <div class="pd-header">CARTOUCHE
     <span onclick="closeCartoucheFields()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
   </div>
-  <div class="pd-body">
-    <div class="pd-row"><span class="pd-label">Titre</span><input id="cf-titre" type="text"></div>
-    <div class="pd-row"><span class="pd-label">Sous-titre</span><input id="cf-soustitre" type="text"></div>
-    <div class="pd-row"><span class="pd-label">Auteur</span><input id="cf-auteur" type="text"></div>
-    <div class="pd-row"><span class="pd-label">Date</span><input id="cf-date" type="text"></div>
-    <div class="pd-row"><span class="pd-label">Indice</span><input id="cf-indice" type="text"></div>
-    <div class="pd-row"><span class="pd-label">N°</span><input id="cf-numero" type="text"></div>
-    <div class="pd-row"><span class="pd-label">Échelle</span><input id="cf-echelle" type="text" placeholder="(auto)"></div>
-    <div class="pd-row"><span class="pd-label">Page</span><input id="cf-page" type="text" placeholder="1/1"></div>
-  </div>
+  <div class="pd-body" id="cf-fields"></div>
   <div class="pd-footer">
     <button onclick="closeCartoucheFields()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
     <button class="pd-btn-print" onclick="applyCartoucheFields()">Appliquer ↵</button>
@@ -4988,18 +4979,23 @@ function allTemplates() { return _builtinCartouches().concat(cartoucheTemplates)
 
 function _fmtScale(n) { return (Math.round(n*100)/100).toString(); }
 function _subst(str, f) { return String(str).replace(/\{\{(\w+)\}\}/g, (_,k) => (k in f && f[k]!=null) ? f[k] : ''); }
+// Champs calculés automatiquement (utilisés en repli si l'utilisateur n'a rien saisi)
+function _autoCartoucheFields(layout) {
+  return {
+    date: new Date().toISOString().slice(0,10),
+    echelle: layout.viewports[0] ? '1:' + _fmtScale(layout.viewports[0].scale) : '',
+    format: layout.paper === 'custom'
+      ? Math.round(paperDims(layout)[0]) + '×' + Math.round(paperDims(layout)[1])
+      : layout.paper,
+    page: '1/1'
+  };
+}
 function _cartoucheFields(layout) {
   const cf = layout.cartoucheFields || {};
-  const fmt = layout.paper === 'custom'
-    ? Math.round(paperDims(layout)[0]) + '×' + Math.round(paperDims(layout)[1])
-    : layout.paper;
-  return {
-    titre: cf.titre || '', soustitre: cf.soustitre || '', auteur: cf.auteur || '',
-    date: cf.date || new Date().toISOString().slice(0,10),
-    indice: cf.indice || '', numero: cf.numero || '',
-    echelle: cf.echelle || (layout.viewports[0] ? '1:'+_fmtScale(layout.viewports[0].scale) : ''),
-    format: fmt, page: cf.page || '1/1'
-  };
+  const auto = _autoCartoucheFields(layout);
+  const out = { ...auto, ...cf };           // toute clé saisie est prise en compte
+  for (const k in auto) if (!cf[k]) out[k] = auto[k]; // repli auto si vide
+  return out;
 }
 // Rendu du modèle (cadre + cartouche) en espace papier, avec substitution des champs
 function _drawPaperTemplate(layout, p2s, Z, opts) {
@@ -5107,21 +5103,40 @@ function _onCartoucheFile(ev) {
   r.readAsText(f);
 }
 
-// Dialogue des champs du cartouche (valeurs de la présentation)
+// Balises {{…}} présentes dans le modèle de la présentation (ordre d'apparition, sans doublon)
+function _layoutPlaceholders(layout) {
+  const keys = [], re = /\{\{(\w+)\}\}/g;
+  (layout.paperEntities || []).forEach(e => {
+    if (e.type === 'text' && e.content) { let m; while ((m = re.exec(e.content))) if (!keys.includes(m[1])) keys.push(m[1]); }
+  });
+  return keys;
+}
+const _CF_LABELS = { titre:'Titre', soustitre:'Sous-titre', sous_titre:'Sous-titre', auteur:'Auteur',
+  date:'Date', indice:'Indice', numero:'N°', echelle:'Échelle', page:'Page', format:'Format' };
+const _CF_AUTO = ['date','echelle','format','page'];
+
+// Dialogue des champs du cartouche — généré d'après les {{…}} du modèle
 function openCartoucheFields() {
   const l = getActiveLayout(); if (!l) return;
-  const cf = l.cartoucheFields || {}, g = (id,v) => document.getElementById(id).value = v;
-  g('cf-titre', cf.titre||''); g('cf-soustitre', cf.soustitre||''); g('cf-auteur', cf.auteur||'');
-  g('cf-date', cf.date||new Date().toISOString().slice(0,10)); g('cf-indice', cf.indice||'');
-  g('cf-numero', cf.numero||''); g('cf-echelle', cf.echelle||''); g('cf-page', cf.page||'');
+  const keys = _layoutPlaceholders(l);
+  const cf = l.cartoucheFields || {}, auto = _autoCartoucheFields(l);
+  let html = '';
+  if (!keys.length) html = '<div style="font-size:10px;color:#888;padding:4px 2px">Ce cartouche ne contient aucun champ {{…}} éditable.</div>';
+  keys.forEach(k => {
+    const lab = _CF_LABELS[k] || (k.charAt(0).toUpperCase() + k.slice(1));
+    const ph = _CF_AUTO.includes(k) ? ' placeholder="' + _esc(auto[k] || '(auto)') + '"' : '';
+    html += '<div class="pd-row"><span class="pd-label">' + _esc(lab) + '</span>' +
+            '<input type="text" data-field="' + _esc(k) + '" value="' + _esc(cf[k] || '') + '"' + ph + '></div>';
+  });
+  document.getElementById('cf-fields').innerHTML = html;
   document.getElementById('cf-dialog').style.display = 'block';
 }
 function closeCartoucheFields() { document.getElementById('cf-dialog').style.display = 'none'; }
 function applyCartoucheFields() {
   const l = getActiveLayout(); if (!l) return;
-  const v = id => document.getElementById(id).value;
-  l.cartoucheFields = { titre:v('cf-titre'), soustitre:v('cf-soustitre'), auteur:v('cf-auteur'),
-    date:v('cf-date'), indice:v('cf-indice'), numero:v('cf-numero'), echelle:v('cf-echelle'), page:v('cf-page') };
+  const cf = { ...(l.cartoucheFields || {}) };
+  document.querySelectorAll('#cf-fields input[data-field]').forEach(inp => { cf[inp.dataset.field] = inp.value; });
+  l.cartoucheFields = cf;
   closeCartoucheFields(); render(); autoSave();
 }
 
