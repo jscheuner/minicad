@@ -943,18 +943,29 @@
     box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     font-family: 'JetBrains Mono', monospace;
   }
-  #vp-dialog {
+  #vp-dialog, #ct-dialog, #cf-dialog {
     position: fixed; display: none;
     top: 50%; left: 50%; transform: translate(-50%,-50%);
     background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
-    z-index: 960; width: 300px; box-shadow: 0 12px 48px rgba(0,0,0,0.8);
+    z-index: 960; width: 320px; box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     font-family: 'JetBrains Mono', monospace;
   }
-  #vp-dialog .pd-body input[type=number] {
+  #vp-dialog .pd-body input[type=number], #ct-dialog .pd-body input[type=number] {
     background: #111827; border: 1px solid #ffffff22; color: #e0e0e0;
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     border-radius: 4px; padding: 4px 7px; flex: 1; min-width: 0;
   }
+  /* Menu « Nouvelle présentation depuis un modèle » */
+  #ct-menu {
+    position: fixed; display: none; z-index: 1000;
+    background: #1a2133; border: 1px solid #ffffff22; border-radius: 6px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.7); padding: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; min-width: 200px;
+  }
+  #ct-menu .ctm-item { padding: 6px 10px; cursor: pointer; border-radius: 4px; color: var(--text); white-space: nowrap; }
+  #ct-menu .ctm-item:hover { background: var(--accent-dim); color: var(--accent); }
+  #ct-menu .ctm-sep { height: 1px; background: #ffffff14; margin: 4px 2px; }
+  #ct-menu .ctm-title { padding: 4px 10px; color: var(--text-dim); font-size: 9px; letter-spacing: .5px; }
   #paper-tools {
     position: absolute; top: 8px; right: 8px; z-index: 5; display: none; gap: 4px;
   }
@@ -1081,6 +1092,13 @@
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="exportDXF();closeMenus()">
           <span data-i18n="menu.file.export_dxf">{{menu.file.export_dxf}}</span>
+        </div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="openSaveCartoucheDialog();closeMenus()">
+          <span>Enregistrer comme modèle de cartouche…</span>
+        </div>
+        <div class="menu-dropdown-item" onclick="importCartoucheFile();closeMenus()">
+          <span>Importer un modèle de cartouche…</span>
         </div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="openPrintDialog();closeMenus()">
@@ -1701,6 +1719,7 @@
     <div id="space-tabs"></div>
     <div id="paper-tools">
       <button onclick="addViewport()">+ Fenêtre</button>
+      <button onclick="openCartoucheFields()">Cartouche</button>
       <button onclick="openPrintDialog()">Imprimer PDF</button>
     </div>
     <div class="canvas-overlay">
@@ -2052,6 +2071,59 @@
     <button class="pd-btn-print" onclick="applyViewportDialog()">Appliquer ↵</button>
   </div>
 </div>
+
+<div id="ct-dialog">
+  <div class="pd-header">ENREGISTRER LE MODÈLE
+    <span onclick="closeSaveCartoucheDialog()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+  </div>
+  <div class="pd-body">
+    <div class="pd-row"><span class="pd-label">Nom</span><input id="ct-name" type="text" placeholder="Mon cartouche"></div>
+    <div class="pd-row">
+      <span class="pd-label">Feuille</span>
+      <select id="ct-paper" onchange="ctPaperChanged()">
+        <option value="A0">A0</option><option value="A1">A1</option><option value="A2">A2</option>
+        <option value="A3">A3</option><option value="A4" selected>A4</option><option value="A5">A5</option>
+        <option value="Letter">Letter</option><option value="custom">Personnalisé…</option>
+      </select>
+      <select id="ct-orient"><option value="landscape">Paysage</option><option value="portrait">Portrait</option></select>
+    </div>
+    <div class="pd-row" id="ct-custom-row" style="display:none">
+      <span class="pd-label">Dim. (mm)</span>
+      <input id="ct-cw" type="number" step="1" min="10" placeholder="larg.">
+      <input id="ct-ch" type="number" step="1" min="10" placeholder="haut.">
+    </div>
+    <div class="pd-sep"></div>
+    <div style="font-size:9px;color:#888;line-height:1.5">Le dessin courant devient le modèle (cadre + cartouche).<br>Champs dynamiques dans les textes : {{titre}}, {{echelle}}, {{date}}, {{auteur}}, {{indice}}, {{numero}}, {{format}}, {{page}}.</div>
+  </div>
+  <div class="pd-footer">
+    <button onclick="closeSaveCartoucheDialog()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button class="pd-btn-sel" onclick="saveCartouche(false)">Ajouter à mes modèles</button>
+    <button class="pd-btn-print" onclick="saveCartouche(true)">Exporter .pcad ↵</button>
+  </div>
+</div>
+
+<div id="cf-dialog">
+  <div class="pd-header">CARTOUCHE
+    <span onclick="closeCartoucheFields()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+  </div>
+  <div class="pd-body">
+    <div class="pd-row"><span class="pd-label">Titre</span><input id="cf-titre" type="text"></div>
+    <div class="pd-row"><span class="pd-label">Sous-titre</span><input id="cf-soustitre" type="text"></div>
+    <div class="pd-row"><span class="pd-label">Auteur</span><input id="cf-auteur" type="text"></div>
+    <div class="pd-row"><span class="pd-label">Date</span><input id="cf-date" type="text"></div>
+    <div class="pd-row"><span class="pd-label">Indice</span><input id="cf-indice" type="text"></div>
+    <div class="pd-row"><span class="pd-label">N°</span><input id="cf-numero" type="text"></div>
+    <div class="pd-row"><span class="pd-label">Échelle</span><input id="cf-echelle" type="text" placeholder="(auto)"></div>
+    <div class="pd-row"><span class="pd-label">Page</span><input id="cf-page" type="text" placeholder="1/1"></div>
+  </div>
+  <div class="pd-footer">
+    <button onclick="closeCartoucheFields()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button class="pd-btn-print" onclick="applyCartoucheFields()">Appliquer ↵</button>
+  </div>
+</div>
+
+<input type="file" id="ct-file-input" accept=".pcad,.json" style="display:none" onchange="_onCartoucheFile(event)">
+<div id="ct-menu"></div>
 
 <div id="text-dialog" style="display:none">
   <div class="td-header">
@@ -4549,14 +4621,18 @@ function _drawPaperSpace(layout) {
 // Contenu de la feuille — partagé entre écran et impression (opts.print)
 function _renderSheetContent(layout, p2s, Z, opts) {
   const [pw,ph] = paperDims(layout);
-  const m = layout.marginMm || 10;
-  // Cadre de marge
-  ctx.strokeStyle = opts.print ? '#000000' : '#bbbbbb';
-  ctx.lineWidth = opts.print ? 0.3*Z : 1;
-  const [mx,my] = p2s(m,m);
-  ctx.strokeRect(mx, my, (pw-2*m)*Z, (ph-2*m)*Z);
+  // Fenêtres d'abord (le cadre/cartouche passe par-dessus)
   (layout.viewports || []).forEach(vp => _drawViewport(vp, p2s, Z, opts));
-  _drawCartouche(layout, p2s, Z, pw, ph);
+  if (layout.paperEntities && layout.paperEntities.length) {
+    _drawPaperTemplate(layout, p2s, Z, opts);   // modèle personnalisé
+  } else {
+    const m = layout.marginMm || 10;            // cadre + cartouche par défaut
+    ctx.strokeStyle = opts.print ? '#000000' : '#bbbbbb';
+    ctx.lineWidth = opts.print ? 0.3*Z : 1;
+    const [mx,my] = p2s(m,m);
+    ctx.strokeRect(mx, my, (pw-2*m)*Z, (ph-2*m)*Z);
+    _drawCartouche(layout, p2s, Z, pw, ph);
+  }
 }
 
 function _drawViewport(vp, p2s, Z, opts) {
@@ -4752,6 +4828,197 @@ function applyViewportDialog() {
   if (paperChanged) fitPaperView(layout);
   closeViewportDialog(); render(); autoSave();
 }
+
+// ===== MODÈLES DE CARTOUCHE (.pcad) =====
+let cartoucheTemplates = []; // modèles utilisateur (localStorage) — les built-ins sont régénérés
+function loadCartoucheLibrary() {
+  try { const s = localStorage.getItem('minicad_cartouches'); cartoucheTemplates = s ? JSON.parse(s) : []; }
+  catch(e) { cartoucheTemplates = []; }
+}
+function saveCartoucheLibrary() {
+  try { localStorage.setItem('minicad_cartouches', JSON.stringify(cartoucheTemplates)); } catch(e) {}
+}
+function _makeBuiltinCartouche(name, paper, orient) {
+  const base = PAPER_SIZES[paper] || [210,297];
+  const [pw,ph] = orient === 'landscape' ? [base[1],base[0]] : base;
+  const m = 10, E = [];
+  const L = (x1,y1,x2,y2,lw) => E.push({ type:'line', x1, y1, x2, y2, color:'#000', lw:lw||0.35 });
+  const T = (x,y,content,size,bold) => E.push({ type:'text', x, y, content, size:size||3.5, bold:!!bold, color:'#000' });
+  // Cadre
+  L(m,m,pw-m,m); L(pw-m,m,pw-m,ph-m); L(pw-m,ph-m,m,ph-m); L(m,ph-m,m,m);
+  // Cartouche bas-droite (modèle Y up : bas = m)
+  const cw = Math.min(175, pw-2*m), chh = 28, cx = pw-m-cw, cy = m;
+  L(cx,cy,cx+cw,cy,0.5); L(cx,cy+chh,cx+cw,cy+chh,0.5); L(cx,cy,cx,cy+chh,0.5); L(cx+cw,cy,cx+cw,cy+chh,0.5);
+  L(cx,cy+chh*0.5,cx+cw,cy+chh*0.5,0.25);
+  L(cx+cw*0.55,cy,cx+cw*0.55,cy+chh,0.25);
+  T(cx+3, cy+chh*0.60, '{{titre}}', 5, true);
+  T(cx+3, cy+chh*0.18, 'Éch. {{echelle}}', 3);
+  T(cx+cw*0.58, cy+chh*0.70, '{{auteur}}', 3);
+  T(cx+cw*0.58, cy+chh*0.40, '{{date}}', 3);
+  T(cx+cw*0.58, cy+chh*0.12, '{{format}}  Ind.{{indice}}  {{page}}', 2.6);
+  return { app:'MiniCAD-presentation', version:1, id:'builtin:'+name, name, paper, orient, marginMm:m, entities:E, builtin:true };
+}
+function _builtinCartouches() {
+  return [ _makeBuiltinCartouche('Cartouche A4','A4','landscape'),
+           _makeBuiltinCartouche('Cartouche A3','A3','landscape') ];
+}
+function allTemplates() { return _builtinCartouches().concat(cartoucheTemplates); }
+
+function _fmtScale(n) { return (Math.round(n*100)/100).toString(); }
+function _subst(str, f) { return String(str).replace(/\{\{(\w+)\}\}/g, (_,k) => (k in f && f[k]!=null) ? f[k] : ''); }
+function _cartoucheFields(layout) {
+  const cf = layout.cartoucheFields || {};
+  const fmt = layout.paper === 'custom'
+    ? Math.round(paperDims(layout)[0]) + '×' + Math.round(paperDims(layout)[1])
+    : layout.paper;
+  return {
+    titre: cf.titre || '', soustitre: cf.soustitre || '', auteur: cf.auteur || '',
+    date: cf.date || new Date().toISOString().slice(0,10),
+    indice: cf.indice || '', numero: cf.numero || '',
+    echelle: cf.echelle || (layout.viewports[0] ? '1:'+_fmtScale(layout.viewports[0].scale) : ''),
+    format: fmt, page: cf.page || '1/1'
+  };
+}
+// Rendu du modèle (cadre + cartouche) en espace papier, avec substitution des champs
+function _drawPaperTemplate(layout, p2s, Z, opts) {
+  const [pw,ph] = paperDims(layout);
+  const [PX,PY] = p2s(0,0);
+  const fields = _cartoucheFields(layout);
+  ctx.save(); ctx.lineJoin = ctx.lineCap = 'round';
+  withModelTransform(Z, PX - canvasW/2, ph*Z + PY - canvasH/2, () => {
+    (layout.paperEntities || []).forEach(e => {
+      let ent = e;
+      if (e.type === 'text' && e.content && e.content.indexOf('{{') >= 0) ent = { ...e, content:_subst(e.content, fields) };
+      const col = opts.print ? (e.printColor || e.color || '#000') : (e.color || '#222');
+      ctx.strokeStyle = col; ctx.fillStyle = col;
+      ctx.lineWidth = opts.print ? Math.max(0.13*MM2PX96, (e.lw || 0.3)*MM2PX96) : Math.max(0.6, (e.lw || 0.3)*3.5);
+      ctx.setLineDash(e.dash || []);
+      try { drawEntity(ent); } catch(err) {}
+      ctx.setLineDash([]);
+    });
+  });
+  ctx.restore();
+}
+
+function _captureEntities() {
+  const bb = drawingBBox(); // ancrage du modèle en bas-gauche (origine 0,0)
+  const dx = bb ? -bb.mnx : 0, dy = bb ? -bb.mny : 0;
+  return S.entities.map(e => {
+    const c = JSON.parse(JSON.stringify(e));
+    const lyr = S.layers[e.layer];
+    if (lyr) { c.color = e.color || lyr.color || '#000'; c.printColor = lyr.printColor || '#000'; c.lw = lyr.lineWidth || 0.3; }
+    delete c.id;
+    offsetEntity(c, dx, dy);
+    return c;
+  });
+}
+
+function newPresentationFromTemplate(id) {
+  const tpl = allTemplates().find(t => t.id === id); if (!tpl) return;
+  const n = S.layouts.length + 1;
+  const layout = {
+    id: 'L' + Date.now().toString(36) + Math.floor(Math.random()*1000),
+    name: 'Présentation ' + n, paper: tpl.paper, orient: tpl.orient,
+    customW: tpl.customW, customH: tpl.customH, marginMm: tpl.marginMm || 10,
+    cartoucheFields: { date: new Date().toISOString().slice(0,10) },
+    paperEntities: JSON.parse(JSON.stringify(tpl.entities || [])),
+    templateName: tpl.name, viewports: []
+  };
+  const [pw,ph] = paperDims(layout), m = layout.marginMm;
+  const vp = { id:'V'+Date.now().toString(36), xMm:m, yMm:m, wMm:pw-2*m, hMm:ph-2*m-40,
+               centerX:0, centerY:0, scale:50, locked:false };
+  fitViewportToDrawing(vp); layout.viewports.push(vp);
+  S.layouts.push(layout); setSpace(layout.id); autoSave();
+}
+
+// Dialogue « Enregistrer comme modèle »
+function openSaveCartoucheDialog() {
+  if (S.space !== 'model') { termPrint('Reviens en espace Objet pour enregistrer un modèle', 'warning'); return; }
+  if (!S.entities.length) { termPrint('Dessin vide — rien à enregistrer comme modèle', 'warning'); return; }
+  document.getElementById('ct-name').value = 'Mon cartouche';
+  document.getElementById('ct-dialog').style.display = 'block';
+  ctPaperChanged();
+}
+function closeSaveCartoucheDialog() { document.getElementById('ct-dialog').style.display = 'none'; }
+function ctPaperChanged() {
+  document.getElementById('ct-custom-row').style.display =
+    document.getElementById('ct-paper').value === 'custom' ? 'flex' : 'none';
+}
+function saveCartouche(exportFile) {
+  const name = (document.getElementById('ct-name').value || 'Cartouche').trim();
+  const paper = document.getElementById('ct-paper').value;
+  const orient = document.getElementById('ct-orient').value;
+  const tpl = { app:'MiniCAD-presentation', version:1, id:'ct'+Date.now().toString(36),
+    name, paper, orient,
+    customW: paper === 'custom' ? Math.max(10, parseFloat(document.getElementById('ct-cw').value) || 210) : undefined,
+    customH: paper === 'custom' ? Math.max(10, parseFloat(document.getElementById('ct-ch').value) || 297) : undefined,
+    marginMm: 10, entities: _captureEntities() };
+  cartoucheTemplates.push(tpl); saveCartoucheLibrary();
+  if (exportFile) downloadBlob(JSON.stringify(tpl, null, 1), 'application/json', name.replace(/\s+/g,'_') + '.pcad');
+  closeSaveCartoucheDialog();
+  termPrint('Modèle « ' + name + ' » enregistré' + (exportFile ? ' et exporté (.pcad)' : ''), 'success');
+}
+
+// Import .pcad
+function importCartoucheFile() { document.getElementById('ct-file-input').click(); }
+function _onCartoucheFile(ev) {
+  const f = ev.target.files[0]; if (!f) return; ev.target.value = '';
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const t = JSON.parse(r.result);
+      if (!t.entities) { termPrint('Fichier .pcad invalide', 'error'); return; }
+      t.id = 'ct'+Date.now().toString(36); t.builtin = false;
+      cartoucheTemplates.push(t); saveCartoucheLibrary();
+      termPrint('Modèle « ' + (t.name || 'importé') + ' » ajouté à la bibliothèque', 'success');
+    } catch(e) { termPrint('Lecture .pcad échouée : ' + e.message, 'error'); }
+  };
+  r.readAsText(f);
+}
+
+// Dialogue des champs du cartouche (valeurs de la présentation)
+function openCartoucheFields() {
+  const l = getActiveLayout(); if (!l) return;
+  const cf = l.cartoucheFields || {}, g = (id,v) => document.getElementById(id).value = v;
+  g('cf-titre', cf.titre||''); g('cf-soustitre', cf.soustitre||''); g('cf-auteur', cf.auteur||'');
+  g('cf-date', cf.date||new Date().toISOString().slice(0,10)); g('cf-indice', cf.indice||'');
+  g('cf-numero', cf.numero||''); g('cf-echelle', cf.echelle||''); g('cf-page', cf.page||'');
+  document.getElementById('cf-dialog').style.display = 'block';
+}
+function closeCartoucheFields() { document.getElementById('cf-dialog').style.display = 'none'; }
+function applyCartoucheFields() {
+  const l = getActiveLayout(); if (!l) return;
+  const v = id => document.getElementById(id).value;
+  l.cartoucheFields = { titre:v('cf-titre'), soustitre:v('cf-soustitre'), auteur:v('cf-auteur'),
+    date:v('cf-date'), indice:v('cf-indice'), numero:v('cf-numero'), echelle:v('cf-echelle'), page:v('cf-page') };
+  closeCartoucheFields(); render(); autoSave();
+}
+
+// Menu « Nouvelle présentation » (vierge / depuis un modèle)
+function _ctMenuFromEvent(ev) { openTemplateMenu(ev.clientX, ev.clientY); }
+function openTemplateMenu(x, y) {
+  const el = document.getElementById('ct-menu');
+  let html = '<div class="ctm-title">NOUVELLE PRÉSENTATION</div>' +
+             '<div class="ctm-item" onclick="_ctMenuPick(\'\')">Vierge</div>' +
+             '<div class="ctm-sep"></div><div class="ctm-title">DEPUIS UN MODÈLE</div>';
+  allTemplates().forEach(t => {
+    const fmt = t.paper === 'custom' ? 'perso' : t.paper;
+    html += '<div class="ctm-item" onclick="_ctMenuPick(\'' + t.id + '\')">' + _esc(t.name) +
+            ' <span style="color:#666">(' + fmt + ')</span></div>';
+  });
+  html += '<div class="ctm-sep"></div><div class="ctm-item" onclick="_ctMenuImport()">Importer un modèle .pcad…</div>';
+  el.innerHTML = html; el.style.display = 'block';
+  const w = el.offsetWidth, h = el.offsetHeight;
+  el.style.left = Math.min(x, window.innerWidth - w - 6) + 'px';
+  el.style.top = Math.max(6, y - h) + 'px';
+}
+function closeTemplateMenu() { document.getElementById('ct-menu').style.display = 'none'; }
+function _ctMenuPick(id) { closeTemplateMenu(); if (id) newPresentationFromTemplate(id); else addLayout(); }
+function _ctMenuImport() { closeTemplateMenu(); importCartoucheFile(); }
+document.addEventListener('mousedown', (e) => {
+  const m = document.getElementById('ct-menu');
+  if (m && m.style.display === 'block' && !m.contains(e.target)) closeTemplateMenu();
+}, true);
 function renderSpaceTabs() {
   const el = document.getElementById('space-tabs'); if (!el) return;
   let html = '<div class="space-tab' + (S.space==='model'?' active':'') + '" onclick="setSpace(\'model\')">Objet</div>';
@@ -4760,7 +5027,7 @@ function renderSpaceTabs() {
             ' ondblclick="renameLayout(\'' + l.id + '\')" oncontextmenu="event.preventDefault();deleteLayout(\'' + l.id + '\')"' +
             ' title="Double-clic : renommer · Clic droit : supprimer">' + _esc(l.name) + '</div>';
   });
-  html += '<div class="space-tab-add" onclick="addLayout()" title="Nouvelle présentation">+</div>';
+  html += '<div class="space-tab-add" onclick="_ctMenuFromEvent(event)" oncontextmenu="event.preventDefault();_ctMenuFromEvent(event)" title="Nouvelle présentation (vierge ou depuis un modèle)">+</div>';
   el.innerHTML = html;
 }
 function _restoreLayouts(data) {
@@ -15544,6 +15811,7 @@ function syncUIState() {
 resizeCanvas();
 setTool('select');
 updateUI();
+loadCartoucheLibrary();
 renderSpaceTabs();
 loadUserPrefs();
 syncUIState();
