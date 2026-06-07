@@ -13298,7 +13298,7 @@ function exportSVG() {
 }
 
 // ===== DXF EXPORT =====
-function exportDXF() {
+async function exportDXF() {
   const dxf = [];
   const w = (s) => dxf.push(s);
   const f = (n) => String(parseFloat(n.toFixed(6)));
@@ -13734,9 +13734,11 @@ function exportDXF() {
   w('0'); w('EOF');
 
   const content = dxf.join('\n');
-  downloadBlob(content, 'application/dxf', 'minicad_export.dxf');
+  const baseName = currentDrawingBaseName('minicad_export');
+  const fname = await saveWithPicker(content, baseName, 'dxf', 'application/dxf', 'AutoCAD DXF');
+  if (!fname) { termPrint('Export DXF annulé', 'info'); return; }
   const nEnt = S.entities.length;
-  termPrint('DXF exporté — '+nEnt+' entité'+(nEnt>1?'s':'')+' — AC1015/AutoCAD 2000','success');
+  termPrint('DXF exporté : '+fname+' — '+nEnt+' entité'+(nEnt>1?'s':'')+' — AC1015/AutoCAD 2000','success');
 }
 
 function exportDWG() {
@@ -13852,6 +13854,35 @@ function downloadBlob(content, mime, filename) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(a.href);
+}
+
+// Nom de base du dessin courant (issu du fichier .mcad enregistré, sinon défaut)
+function currentDrawingBaseName(fallback) {
+  return (_fileHandle?.name?.replace(/\.mcad$/i, '')) || fallback || 'minicad_export';
+}
+
+// Enregistre `content` via une fenêtre « Enregistrer sous » (showSaveFilePicker) :
+// nom proposé + choix de l'emplacement. Fallback Firefox/Safari : téléchargement direct.
+// Retourne le nom de fichier utilisé, ou null si l'utilisateur a annulé.
+async function saveWithPicker(content, baseName, ext, mime, description) {
+  const suggested = baseName + '.' + ext;
+  if ('showSaveFilePicker' in window) {
+    try {
+      const fh = await window.showSaveFilePicker({
+        suggestedName: suggested,
+        types: [{ description, accept: { [mime]: ['.' + ext] } }],
+      });
+      const writable = await fh.createWritable();
+      await writable.write(content);
+      await writable.close();
+      return fh.name;
+    } catch (e) {
+      if (e.name === 'AbortError') return null; // annulé par l'utilisateur
+      // sinon : fallback téléchargement
+    }
+  }
+  downloadBlob(content, mime, suggested);
+  return suggested;
 }
 
 // ===== PERSISTANCE =====
