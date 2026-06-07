@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MiniCAD v0.09</title>
+<title>MiniCAD v0.1</title>
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAADX0lEQVRYhe2XTWhUVxiGn3PunZkkM6kmaBInHTOa+NNAFRf1p2o1ENpEumiJ0EVXpSgB3aRm1S5a6DK4saHSElApFKURAlK1f1GHTlEihQTFamZEa2JyZxKCNQlx5t45XdhcHefOmMB1uvFdne97zz3ve79zvns5gqdQFd74DpJ2UNuAKkDgDjLAfYH6RUh5eDw2eH2eEADhcLhkVi7pAfWhS4KFkFaCzmR86AiABuCtrDteJHEATUCrv6I6MTNlXBXL6ze0CMW5Iok/jUdCV41aoKKmC1j/PxjQyQifBPXmQp8I+P14vd68vM/nI+D3L8ZEqw4sKzRj/doGPjm4n6a3tvNKeQCAu/dG6Dtznu5vjyGE4MD+j3j/3RZWhmoB+OfhNBciUQ5/9Q03h+OFln9VVK3eoPKxLc1N9HR34fF4HPnY7TtIKVkdXunIp1IpPj7Yyc+/XconofIaqA2uIHL+9GJLmoOH0zPsfPs9xoyEowHNX1H9hRPTcWAfO7ZutuM/rlzlu5O9DPw5SLguRHkg29jo2Dg9J77nQiSKruuEaoMA+Lxe0qZJJHrF0WDeCvx65hSvNz5ujlux2+ze04ZlZQB4bd0aLp7tffIaSrGrtc3eb13TuHjuNGvqVwHw160Yu1rbHCsgHW0BoeAKexy9PGCLA9y4OczI6JgdJycmsw6baVn0X/rdjhvqVyGls5RjtqyslKVLl9ix0/4ZiaQ9vj9uOPAT9ljXtJwtK2igtKQkK56be5QzJ22aBXnTsrJiXdcXbqCYeGngpYGco/mGX9K+PAVHPrdze+/ewFOt022Yz05330CdDyqlgi277VwyNsLOckl3bru7bwBg1JKwpcmO7/T9RL372vkNpNMmnZ99acepa9dzDHzdc4Levh8BSExM8Cwi0ctZa0zPzDoayPkZ7a2UbAtoHPo7bee2BiQdNTofxFLPeZ9FQzlWYKNf8mnwCRX0uHU9yIXO40uD3Y6Ds4ofJrO/45Om4t4DixeAjK5gVEBoPjM8pxiec7/dnKESUqDOFknNASIqkaoLcP10LUhecFQmYtfiQEfRxVHHjPhQvwYwM2UMlFVWTwlo5r/74osWX1aaaU8mk1ZWf9U0bGpUGfOQQjQDtS6ayYAyQESF4KgRH+qfJ/4FnbEd/FDgNcoAAAAASUVORK5CYII=">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=Oswald:wght@300;400;500&family=Share+Tech&display=swap');
@@ -702,6 +702,25 @@
 
   #cad-canvas { position: absolute; top: 0; left: 0; cursor: none; }
 
+  /* Onglets Objet / Présentations (espace papier) */
+  #space-tabs {
+    position: absolute; left: 6px; bottom: 6px; z-index: 5;
+    display: flex; gap: 2px; align-items: flex-end;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  }
+  .space-tab, .space-tab-add {
+    padding: 3px 10px; cursor: pointer; user-select: none;
+    background: #00000088; backdrop-filter: blur(4px);
+    color: var(--text-dim); border: 1px solid #ffffff10;
+    border-bottom: none; border-radius: 4px 4px 0 0;
+  }
+  .space-tab:hover, .space-tab-add:hover { color: var(--text-bright); }
+  .space-tab.active {
+    background: var(--accent-dim); color: var(--accent);
+    border-color: var(--accent); border-bottom: none;
+  }
+  .space-tab-add { padding: 3px 8px; font-weight: 700; }
+
   .canvas-overlay {
     position: absolute;
     top: 8px;
@@ -924,6 +943,43 @@
     box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     font-family: 'JetBrains Mono', monospace;
   }
+  #vp-dialog, #ct-dialog, #cf-dialog {
+    position: fixed; display: none;
+    top: 50%; left: 50%; transform: translate(-50%,-50%);
+    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    z-index: 960; width: 320px; box-shadow: 0 12px 48px rgba(0,0,0,0.8);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  #vp-dialog .pd-body input[type=number], #ct-dialog .pd-body input[type=number] {
+    background: #111827; border: 1px solid #ffffff22; color: #e0e0e0;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    border-radius: 4px; padding: 4px 7px; flex: 1; min-width: 0;
+  }
+  /* Menu « Nouvelle présentation depuis un modèle » */
+  #ct-menu {
+    position: fixed; display: none; z-index: 1000;
+    background: #1a2133; border: 1px solid #ffffff22; border-radius: 6px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.7); padding: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; min-width: 200px;
+  }
+  #ct-menu .ctm-item { padding: 6px 10px; cursor: pointer; border-radius: 4px; color: var(--text); white-space: nowrap; display: flex; align-items: center; }
+  #ct-menu .ctm-item:hover { background: var(--accent-dim); color: var(--accent); }
+  #ct-menu .ctm-edit { margin-left: auto; padding-left: 12px; color: #777; }
+  #ct-menu .ctm-edit:hover { color: var(--accent); }
+  #ct-menu .ctm-del { padding-left: 8px; color: #777; }
+  #ct-menu .ctm-del:hover { color: var(--error); }
+  #ct-menu .ctm-sep { height: 1px; background: #ffffff14; margin: 4px 2px; }
+  #ct-menu .ctm-title { padding: 4px 10px; color: var(--text-dim); font-size: 9px; letter-spacing: .5px; }
+  #paper-tools {
+    position: absolute; top: 8px; right: 8px; z-index: 5; display: none; gap: 4px;
+  }
+  #paper-tools button {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; cursor: pointer;
+    background: #00000088; backdrop-filter: blur(4px); color: var(--text);
+    border: 1px solid #ffffff20; border-radius: 4px; padding: 4px 10px;
+  }
+  #paper-tools button:hover { color: var(--accent); border-color: var(--accent); }
+
   .pd-header {
     display: flex; justify-content: space-between; align-items: center;
     padding: 10px 14px 9px; border-bottom: 1px solid #ffffff18;
@@ -1138,7 +1194,7 @@
 
 <!-- MENU BAR -->
 <div class="menubar">
-  <div class="topbar-logo"><svg width="176" height="44" style="vertical-align:middle" viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" aria-label="MiniCAD" style="display:block"><g transform="translate(6,10) scale(0.8)"><rect x="0" y="0" width="100" height="100" rx="20" fill="#16222E"/><path d="M24,70 L24,40 Q24,24 37,24 Q50,24 50,40 L50,70 M50,40 Q50,24 63,24 Q76,24 76,40 L76,70" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="butt" stroke-linejoin="round"/><rect x="16" y="62" width="16" height="16" fill="none" stroke="#FF5436" stroke-width="3"/></g><text x="104" y="63" style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',monospace;font-size:44px;font-weight:500;letter-spacing:0.5px"><tspan fill="#c8d6e5">mini</tspan><tspan fill="#FF5436">cad</tspan></text></svg><span style="font-size:10px;font-weight:300;color:var(--text-dim);vertical-align:middle;margin-left:6px;letter-spacing:0">v0.09</span></div>
+  <div class="topbar-logo"><svg width="176" height="44" style="vertical-align:middle" viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" aria-label="MiniCAD" style="display:block"><g transform="translate(6,10) scale(0.8)"><rect x="0" y="0" width="100" height="100" rx="20" fill="#16222E"/><path d="M24,70 L24,40 Q24,24 37,24 Q50,24 50,40 L50,70 M50,40 Q50,24 63,24 Q76,24 76,40 L76,70" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="butt" stroke-linejoin="round"/><rect x="16" y="62" width="16" height="16" fill="none" stroke="#FF5436" stroke-width="3"/></g><text x="104" y="63" style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',monospace;font-size:44px;font-weight:500;letter-spacing:0.5px"><tspan fill="#c8d6e5">mini</tspan><tspan fill="#FF5436">cad</tspan></text></svg><span style="font-size:10px;font-weight:300;color:var(--text-dim);vertical-align:middle;margin-left:6px;letter-spacing:0">v0.1</span></div>
   <div class="menu-items">
     <div class="menu-dropdown" id="menu-fichier">
       <div class="menu-item" id="menu-fichier-btn" onclick="toggleMenuDropdown('menu-fichier',event)" data-i18n="menu.file">Fichier</div>
@@ -1160,6 +1216,16 @@
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="exportDXF();closeMenus()">
           <span data-i18n="menu.file.export_dxf">Exporter DXF</span>
+        </div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="openSaveCartoucheDialog();closeMenus()">
+          <span>Enregistrer comme modèle de cartouche…</span>
+        </div>
+        <div class="menu-dropdown-item" onclick="importCartoucheFile();closeMenus()">
+          <span>Importer un modèle de cartouche…</span>
+        </div>
+        <div class="menu-dropdown-item" onclick="openCartoucheToEdit();closeMenus()">
+          <span>Ouvrir un modèle (.pcad) à modifier…</span>
         </div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="openPrintDialog();closeMenus()">
@@ -1778,6 +1844,12 @@
 
   <div class="canvas-area" id="canvas-area">
     <canvas id="cad-canvas"></canvas>
+    <div id="space-tabs"></div>
+    <div id="paper-tools">
+      <button onclick="addViewport()">+ Fenêtre</button>
+      <button onclick="openCartoucheFields()">Cartouche</button>
+      <button onclick="openPrintDialog()">Imprimer PDF</button>
+    </div>
     <div class="canvas-overlay">
       <div class="overlay-badge" id="tool-badge">SELECT</div>
       <div class="overlay-badge" id="zoom-badge">1:1</div>
@@ -2054,8 +2126,11 @@
     <div class="pd-row">
       <span class="pd-label">Format</span>
       <select id="pd-paper">
-        <option value="A4">A4 (210×297 mm)</option>
+        <option value="A0">A0 (841×1189 mm)</option>
+        <option value="A1">A1 (594×841 mm)</option>
+        <option value="A2">A2 (420×594 mm)</option>
         <option value="A3">A3 (297×420 mm)</option>
+        <option value="A4" selected>A4 (210×297 mm)</option>
         <option value="A5">A5 (148×210 mm)</option>
         <option value="Letter">Letter (216×279 mm)</option>
       </select>
@@ -2086,6 +2161,89 @@
     <button class="pd-btn-print" onclick="doPrint()">Télécharger PDF ↵</button>
   </div>
 </div>
+
+<div id="vp-dialog">
+  <div class="pd-header">FENÊTRE
+    <span onclick="closeViewportDialog()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+  </div>
+  <div class="pd-body">
+    <div class="pd-row">
+      <span class="pd-label">Feuille</span>
+      <select id="vpd-paper" onchange="vpdPaperChanged()">
+        <option value="A0">A0</option><option value="A1">A1</option><option value="A2">A2</option>
+        <option value="A3">A3</option><option value="A4">A4</option><option value="A5">A5</option>
+        <option value="Letter">Letter</option><option value="custom">Personnalisé…</option>
+      </select>
+      <select id="vpd-orient"><option value="portrait">Portrait</option><option value="landscape">Paysage</option></select>
+    </div>
+    <div class="pd-row" id="vpd-custom-row" style="display:none">
+      <span class="pd-label">Dim. (mm)</span>
+      <input id="vpd-cw" type="number" step="1" min="10" placeholder="larg.">
+      <input id="vpd-ch" type="number" step="1" min="10" placeholder="haut.">
+    </div>
+    <div class="pd-sep"></div>
+    <div class="pd-row">
+      <span class="pd-label">Échelle 1:</span>
+      <input id="vpd-scale" type="number" step="0.1" min="0.01">
+      <button class="pd-btn-sel" onclick="vpFitToDrawing()">Ajuster</button>
+    </div>
+    <div class="pd-row"><span class="pd-label">Centre X</span><input id="vpd-cx" type="number" step="1"></div>
+    <div class="pd-row">
+      <span class="pd-label">Centre Y</span><input id="vpd-cy" type="number" step="1">
+      <button class="pd-btn-sel" onclick="vpCenterOnDrawing()">Centrer</button>
+    </div>
+    <div class="pd-row"><span class="pd-label">Fond opaque</span><input id="vpd-opaque" type="checkbox" style="flex:none"><span style="font-size:9px;color:#888">(masque ce qu'il y a derrière)</span></div>
+    <div class="pd-row"><span class="pd-label">Verrouillée</span><input id="vpd-lock" type="checkbox" style="flex:none"></div>
+  </div>
+  <div class="pd-footer">
+    <button onclick="closeViewportDialog()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button class="pd-btn-print" onclick="applyViewportDialog()">Appliquer ↵</button>
+  </div>
+</div>
+
+<div id="ct-dialog">
+  <div class="pd-header">ENREGISTRER LE MODÈLE
+    <span onclick="closeSaveCartoucheDialog()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+  </div>
+  <div class="pd-body">
+    <div class="pd-row"><span class="pd-label">Nom</span><input id="ct-name" type="text" placeholder="Mon cartouche"></div>
+    <div class="pd-row">
+      <span class="pd-label">Feuille</span>
+      <select id="ct-paper" onchange="ctPaperChanged()">
+        <option value="A0">A0</option><option value="A1">A1</option><option value="A2">A2</option>
+        <option value="A3">A3</option><option value="A4" selected>A4</option><option value="A5">A5</option>
+        <option value="Letter">Letter</option><option value="custom">Personnalisé…</option>
+      </select>
+      <select id="ct-orient"><option value="landscape">Paysage</option><option value="portrait">Portrait</option></select>
+    </div>
+    <div class="pd-row" id="ct-custom-row" style="display:none">
+      <span class="pd-label">Dim. (mm)</span>
+      <input id="ct-cw" type="number" step="1" min="10" placeholder="larg.">
+      <input id="ct-ch" type="number" step="1" min="10" placeholder="haut.">
+    </div>
+    <div class="pd-sep"></div>
+    <div style="font-size:9px;color:#888;line-height:1.5">Le dessin courant devient le modèle (cadre + cartouche).<br>Champs dynamiques dans les textes : {{titre}}, {{echelle}}, {{date}}, {{auteur}}, {{indice}}, {{numero}}, {{format}}, {{page}}.</div>
+  </div>
+  <div class="pd-footer">
+    <button onclick="closeSaveCartoucheDialog()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button class="pd-btn-sel" onclick="saveCartouche(false)">Ajouter à mes modèles</button>
+    <button class="pd-btn-print" onclick="saveCartouche(true)">Exporter .pcad ↵</button>
+  </div>
+</div>
+
+<div id="cf-dialog">
+  <div class="pd-header">CARTOUCHE
+    <span onclick="closeCartoucheFields()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+  </div>
+  <div class="pd-body" id="cf-fields"></div>
+  <div class="pd-footer">
+    <button onclick="closeCartoucheFields()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button class="pd-btn-print" onclick="applyCartoucheFields()">Appliquer ↵</button>
+  </div>
+</div>
+
+<input type="file" id="ct-file-input" accept=".pcad,.json" style="display:none" onchange="_onCartoucheFile(event)">
+<div id="ct-menu"></div>
 
 <div id="text-dialog" style="display:none">
   <div class="td-header">
@@ -2379,6 +2537,12 @@ const S = {
   tubeRef: 'axe', // 'axe' | 'ext' | 'int'
   // PRINT
   _printArea: null,
+  // PRÉSENTATIONS (espace papier) — voir suivi/plan_presentations.md
+  space: 'model',          // 'model' ou id d'une présentation
+  layouts: [],             // [{ id, name, paper, orient, marginMm, cartouche, viewports[], paperEntities[] }]
+  paperView: { zoom: 1, panX: 0, panY: 0 }, // navigation de la feuille à l'écran
+  _selVp: null,            // id de la fenêtre sélectionnée
+  _activeVp: null,         // id de la fenêtre activée (MSPACE — zoom/pan modèle dedans)
 };
 
 // ===== OSNAP ENGINE =====
@@ -3456,6 +3620,12 @@ const CMD = {
     S.entities.forEach(e => termPrint('#' + e.id + ' ' + e.type + ' [calque ' + e.layer + ']', 'info'));
   }},
   CLEAR: { alias: ['CLS','NOUVEAU'], desc: 'Tout effacer', exec: () => {
+    // Sécurité : prévenir avant de perdre un dessin non sauvegardé (statut MODIFIÉ)
+    if (S.entities.length && S._saveState === 'modified') {
+      if (!confirm('Le dessin actuel n\'est pas sauvegardé.\nLes modifications seront perdues.\n\nCréer un nouveau dessin quand même ?')) {
+        termPrint('Nouveau dessin annulé', 'info'); return;
+      }
+    }
     if (S.entities.length) pushUndo(); S.entities = []; S.selected = [];
     _fileHandle = null; localStorage.removeItem('minicad_autosave'); updateSaveIndicator('new');
     termPrint('Dessin effacé', 'success'); render();
@@ -4427,8 +4597,643 @@ function scheduleRender() {
 
 function _doRender() {
   _rafPending = false;
+  if (S.space !== 'model') { _drawPaperSpace(getActiveLayout()); return; }
   if (staticDirty) { _drawStaticLayer(); staticDirty=false; }
   _drawDynamicLayer();
+}
+
+// ===== PRÉSENTATIONS (espace papier) — Phase 1 =====
+// Voir suivi/plan_presentations.md. Réutilise drawEntity via withModelTransform
+// (même mécanisme que doPrint) pour rendre l'espace objet dans chaque fenêtre.
+
+const PAPER_SIZES = {
+  A0:[841,1189], A1:[594,841], A2:[420,594], A3:[297,420], A4:[210,297], A5:[148,210],
+  Letter:[216,279]
+};
+const MM2PX96 = 96 / 25.4;   // px virtuels (96 DPI) par mm — base de drawEntity/impression
+
+function paperDims(l) {
+  let [w,h] = l.paper === 'custom'
+    ? [l.customW || 210, l.customH || 297]
+    : (PAPER_SIZES[l.paper] || [210,297]);
+  if (l.orient === 'landscape') [w,h] = [h,w];
+  return [w,h];
+}
+function getActiveLayout() { return S.layouts.find(l => l.id === S.space) || null; }
+function s2p(sx, sy) { const Z = S.paperView.zoom; return [(sx - S.paperView.panX)/Z, (sy - S.paperView.panY)/Z]; }
+function _ptInVp(vp, mmx, mmy) { return mmx>=vp.xMm && mmx<=vp.xMm+vp.wMm && mmy>=vp.yMm && mmy<=vp.yMm+vp.hMm; }
+function _vpHandleAt(vp, sx, sy) {
+  const Z = S.paperView.zoom;
+  const vx = vp.xMm*Z + S.paperView.panX, vy = vp.yMm*Z + S.paperView.panY;
+  const pts = _vpHandlePts(vx, vy, vp.wMm*Z, vp.hMm*Z);
+  for (const k in pts) { const [x,y] = pts[k]; if (Math.abs(sx-x)<=6 && Math.abs(sy-y)<=6) return k; }
+  return null;
+}
+function _cursorForHandle(h) {
+  return { n:'ns-resize', s:'ns-resize', e:'ew-resize', w:'ew-resize',
+           ne:'nesw-resize', sw:'nesw-resize', nw:'nwse-resize', se:'nwse-resize' }[h] || 'default';
+}
+let _vpDrag = null;     // { mode:'move'|'resize', vpId, handle, startMM:[x,y], orig:{...} }
+let _mspacePan = null;  // { vpId, lastX, lastY } — pan du modèle dans une fenêtre activée
+
+// Zoom du modèle dans une fenêtre activée, centré sur le curseur (MSPACE)
+function _vpZoomAt(vp, sx, sy, factor) {
+  const Z = S.paperView.zoom;
+  const vx = vp.xMm*Z + S.paperView.panX, vy = vp.yMm*Z + S.paperView.panY;
+  const vcx = vx + vp.wMm*Z/2, vcy = vy + vp.hMm*Z/2;
+  const zoomVp = Z / vp.scale;
+  const wx = vp.centerX + (sx - vcx)/zoomVp;
+  const wy = vp.centerY - (sy - vcy)/zoomVp;
+  vp.scale = Math.max(0.01, vp.scale / factor);
+  const nz = Z / vp.scale;
+  vp.centerX = wx - (sx - vcx)/nz;
+  vp.centerY = wy + (sy - vcy)/nz;
+}
+function _vpApplyDrag(sx, sy) {
+  const layout = getActiveLayout(); if (!layout || !_vpDrag) return;
+  const vp = layout.viewports.find(v => v.id === _vpDrag.vpId); if (!vp) return;
+  const [mmx,mmy] = s2p(sx, sy);
+  const dx = mmx - _vpDrag.startMM[0], dy = mmy - _vpDrag.startMM[1];
+  const o = _vpDrag.orig, MIN = 10;
+  if (_vpDrag.mode === 'move') { vp.xMm = o.xMm + dx; vp.yMm = o.yMm + dy; return; }
+  let x=o.xMm, y=o.yMm, w=o.wMm, h=o.hMm, hd = _vpDrag.handle;
+  if (hd.includes('e')) w = o.wMm + dx;
+  if (hd.includes('s')) h = o.hMm + dy;
+  if (hd.includes('w')) { x = o.xMm + dx; w = o.wMm - dx; }
+  if (hd.includes('n')) { y = o.yMm + dy; h = o.hMm - dy; }
+  if (w < MIN) { if (hd.includes('w')) x = o.xMm + o.wMm - MIN; w = MIN; }
+  if (h < MIN) { if (hd.includes('n')) y = o.yMm + o.hMm - MIN; h = MIN; }
+  vp.xMm=x; vp.yMm=y; vp.wMm=w; vp.hMm=h;
+}
+function _esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Sauve/écrase/restaure le repère monde le temps d'un rendu (extrait de doPrint)
+function withModelTransform(zoom, panX, panY, fn) {
+  const sz = S.zoom, spx = S.panX, spy = S.panY;
+  S.zoom = zoom; S.panX = panX; S.panY = panY;
+  try { fn(); } finally { S.zoom = sz; S.panX = spx; S.panY = spy; }
+}
+
+function drawingBBox() {
+  let mnx=Infinity, mny=Infinity, mxx=-Infinity, mxy=-Infinity;
+  S.entities.forEach(e => getEntitySegments(e).forEach(([a,b,c,d]) => {
+    mnx=Math.min(mnx,a,c); mny=Math.min(mny,b,d); mxx=Math.max(mxx,a,c); mxy=Math.max(mxy,b,d);
+  }));
+  return isFinite(mnx) ? { mnx, mny, mxx, mxy } : null;
+}
+
+function fitViewportToDrawing(vp) {
+  const bb = drawingBBox();
+  if (!bb) { vp.centerX = 0; vp.centerY = 0; vp.scale = 10; return; }
+  const W = Math.max(1, bb.mxx-bb.mnx), H = Math.max(1, bb.mxy-bb.mny);
+  vp.centerX = (bb.mnx+bb.mxx)/2; vp.centerY = (bb.mny+bb.mxy)/2;
+  vp.scale = Math.max(0.01, Math.ceil(Math.max(W/(vp.wMm*0.9), H/(vp.hMm*0.9)) * 100) / 100);
+}
+
+function createLayout() {
+  const n = S.layouts.length + 1;
+  const layout = {
+    id: 'L' + Date.now().toString(36) + Math.floor(Math.random()*1000),
+    name: 'Présentation ' + n,
+    paper: 'A4', orient: 'landscape', marginMm: 10,
+    cartouche: { titre: '', echelle: '', date: new Date().toISOString().slice(0,10), auteur: '' },
+    viewports: [], paperEntities: []
+  };
+  const [pw,ph] = paperDims(layout);
+  const m = layout.marginMm;
+  // Fenêtre par défaut couvrant la feuille (en laissant la place au cartouche)
+  const vp = { id: 'V' + Date.now().toString(36), xMm: m, yMm: m, wMm: pw-2*m, hMm: ph-2*m-45,
+               centerX: 0, centerY: 0, scale: 50, locked: false };
+  fitViewportToDrawing(vp);
+  layout.viewports.push(vp);
+  S.layouts.push(layout);
+  return layout;
+}
+
+function fitPaperView(layout) {
+  const [pw,ph] = paperDims(layout);
+  const pad = 40;
+  const z = Math.min((canvasW - 2*pad) / pw, (canvasH - 2*pad) / ph);
+  S.paperView.zoom = z > 0 ? z : 1;
+  S.paperView.panX = (canvasW - pw*S.paperView.zoom) / 2;
+  S.paperView.panY = (canvasH - ph*S.paperView.zoom) / 2;
+}
+
+function _drawPaperSpace(layout) {
+  ctx = mainCtx;
+  ctx.save(); ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  ctx.clearRect(0, 0, canvasW, canvasH);
+  ctx.fillStyle = '#0c0f17'; ctx.fillRect(0, 0, canvasW, canvasH); // fond atelier
+  if (!layout) { ctx.restore(); return; }
+
+  const Z = S.paperView.zoom, PX = S.paperView.panX, PY = S.paperView.panY;
+  const p2s = (x,y) => [x*Z + PX, y*Z + PY];
+  const [pw,ph] = paperDims(layout);
+  const [x0,y0] = p2s(0,0);
+
+  ctx.fillStyle = '#00000055'; ctx.fillRect(x0+5, y0+5, pw*Z, ph*Z); // ombre
+  ctx.fillStyle = '#ffffff';   ctx.fillRect(x0, y0, pw*Z, ph*Z);     // feuille
+
+  _renderSheetContent(layout, p2s, Z, { print: false });
+  ctx.restore();
+}
+
+// Contenu de la feuille — partagé entre écran et impression (opts.print)
+function _renderSheetContent(layout, p2s, Z, opts) {
+  const [pw,ph] = paperDims(layout);
+  // Fenêtres d'abord (le cadre/cartouche passe par-dessus)
+  (layout.viewports || []).forEach(vp => _drawViewport(vp, p2s, Z, opts));
+  if (layout.paperEntities && layout.paperEntities.length) {
+    _drawPaperTemplate(layout, p2s, Z, opts);   // modèle personnalisé (cadre + cartouche)
+  } else {
+    const m = layout.marginMm || 10;            // présentation vierge : juste le cadre
+    ctx.strokeStyle = opts.print ? '#000000' : '#bbbbbb';
+    ctx.lineWidth = opts.print ? 0.3*Z : 1;
+    const [mx,my] = p2s(m,m);
+    ctx.strokeRect(mx, my, (pw-2*m)*Z, (ph-2*m)*Z);
+  }
+}
+
+function _drawViewport(vp, p2s, Z, opts) {
+  opts = opts || {};
+  const [vx,vy] = p2s(vp.xMm, vp.yMm);
+  const vw = vp.wMm*Z, vh = vp.hMm*Z;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(vx, vy, vw, vh); ctx.clip();
+  if (vp.opaque) { ctx.fillStyle = '#ffffff'; ctx.fillRect(vx, vy, vw, vh); } // sinon transparent
+
+  const N = vp.scale || 100;
+  const zoomVp = Z / N;
+  const vcx = vx + vw/2, vcy = vy + vh/2;
+  const panXm = vcx - vp.centerX*zoomVp - canvasW/2;
+  const panYm = vcy + vp.centerY*zoomVp - canvasH/2;
+  withModelTransform(zoomVp, panXm, panYm, () => {
+    S.entities.forEach(e => {
+      const lyr = S.layers[e.layer];
+      if (!lyr || !lyr.visible) return;
+      const color = opts.print ? (lyr.printColor || '#000000') : (e.color || lyr.color || '#00d4ff');
+      ctx.strokeStyle = color; ctx.fillStyle = color;
+      ctx.lineWidth = opts.print ? Math.max(0.13*MM2PX96, (lyr.lineWidth || 0.25)*MM2PX96)
+                                 : getLayerLineWidthPx(lyr.lineWidth);
+      ctx.setLineDash(e.dash || getLayerLineDash(lyr.lineType || 'solid'));
+      try { drawEntity(e); } catch(err) {}
+      ctx.setLineDash([]);
+    });
+  });
+  ctx.restore();
+
+  if (!opts.print) { // bordure + poignées seulement à l'écran
+    const sel = S._selVp === vp.id, active = S._activeVp === vp.id;
+    ctx.strokeStyle = active ? '#00e676' : (sel ? '#00d4ff' : '#9aa7bd');
+    ctx.lineWidth = active ? 2 : 1;
+    ctx.setLineDash(active ? [] : [4,3]);
+    ctx.strokeRect(vx, vy, vw, vh); ctx.setLineDash([]);
+    if (sel && !active) _drawVpHandles(vx, vy, vw, vh);
+  }
+}
+
+function _vpHandlePts(vx, vy, vw, vh) {
+  return { nw:[vx,vy], n:[vx+vw/2,vy], ne:[vx+vw,vy], e:[vx+vw,vy+vh/2],
+           se:[vx+vw,vy+vh], s:[vx+vw/2,vy+vh], sw:[vx,vy+vh], w:[vx,vy+vh/2] };
+}
+function _drawVpHandles(vx, vy, vw, vh) {
+  const pts = _vpHandlePts(vx, vy, vw, vh);
+  ctx.setLineDash([]); ctx.fillStyle = '#00d4ff'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
+  Object.values(pts).forEach(([x,y]) => { ctx.fillRect(x-3, y-3, 6, 6); ctx.strokeRect(x-3, y-3, 6, 6); });
+}
+
+// Impression d'une présentation : feuille → canvas 300 DPI → PDF (réutilise buildPrintPDF)
+function doPrintLayout(layout) {
+  const [pw,ph] = paperDims(layout);
+  const PX_MM = 300 / 25.4;
+  const pScale = PX_MM / MM2PX96;           // 300/96
+  const oc = document.createElement('canvas');
+  oc.width = Math.round(pw * PX_MM); oc.height = Math.round(ph * PX_MM);
+  const octx = oc.getContext('2d');
+  octx.scale(pScale, pScale);                // on dessine en px virtuels 96 DPI
+
+  // Bascule du contexte global (drawEntity/_drawViewport lisent ctx, canvasW, canvasH)
+  const savedCtx = ctx, savedCW = canvasW, savedCH = canvasH;
+  const savedPV = S.paperView, savedSel = S._selVp;
+  ctx = octx;
+  canvasW = pw * MM2PX96; canvasH = ph * MM2PX96;
+  S.paperView = { zoom: MM2PX96, panX: 0, panY: 0 };
+  S._selVp = null;
+
+  octx.fillStyle = '#ffffff'; octx.fillRect(0, 0, canvasW, canvasH);
+  const p2s = (x,y) => [x*MM2PX96, y*MM2PX96];
+  _renderSheetContent(layout, p2s, MM2PX96, { print: true });
+
+  // Restauration
+  ctx = savedCtx; canvasW = savedCW; canvasH = savedCH;
+  S.paperView = savedPV; S._selVp = savedSel;
+
+  const pdfBytes = buildPrintPDF(oc, pw, ph);
+  downloadBlob(pdfBytes, 'application/pdf', (layout.name || 'presentation').replace(/\s+/g,'_') + '.pdf');
+  termPrint('PDF 300 DPI — ' + (layout.name || 'présentation') + ' (' + layout.paper + ' ' + layout.orient + ')', 'success');
+}
+
+function _drawCartouche(layout, p2s, Z, pw, ph) {
+  const m = layout.marginMm || 10, c = layout.cartouche || {};
+  const cw = 180, chh = 42;
+  const x = pw - m - cw, y = ph - m - chh;
+  if (x < m) return;
+  const [sx,sy] = p2s(x,y);
+  const W = cw*Z, Hh = chh*Z;
+  ctx.save();
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(sx, sy, W, Hh);
+  ctx.strokeStyle = '#333333'; ctx.lineWidth = 1; ctx.strokeRect(sx, sy, W, Hh);
+  ctx.beginPath(); ctx.moveTo(sx, sy+Hh*0.5); ctx.lineTo(sx+W, sy+Hh*0.5); ctx.stroke();
+  ctx.fillStyle = '#222222'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  ctx.font = 'bold ' + (5*Z).toFixed(1) + 'px sans-serif';
+  ctx.fillText(c.titre || layout.name || '', sx + 3*Z, sy + Hh*0.27);
+  ctx.font = (3*Z).toFixed(1) + 'px sans-serif';
+  const ech = c.echelle || (layout.viewports[0] ? ('1:' + layout.viewports[0].scale) : '');
+  ctx.fillText('Éch: ' + ech, sx + 3*Z, sy + Hh*0.74);
+  if (c.date)   ctx.fillText(c.date,   sx + W*0.55, sy + Hh*0.74);
+  if (c.auteur) ctx.fillText(c.auteur, sx + W*0.55, sy + Hh*0.27);
+  ctx.restore();
+}
+
+// ── Onglets d'espace (Objet / Présentations) ──
+function setSpace(id) {
+  if (id !== 'model' && !S.layouts.some(l => l.id === id)) return;
+  S.space = id;
+  const badge = document.getElementById('tool-badge');
+  if (id === 'model') {
+    canvas.style.cursor = 'none';
+    if (badge) badge.textContent = (S.tool || 'select').toUpperCase();
+  } else {
+    canvas.style.cursor = 'default';
+    if (badge) badge.textContent = 'PAPIER';
+    S._selVp = null; S._activeVp = null;
+    const l = getActiveLayout(); if (l) fitPaperView(l);
+  }
+  const pt = document.getElementById('paper-tools'); if (pt) pt.style.display = id === 'model' ? 'none' : 'flex';
+  renderSpaceTabs(); render();
+}
+function addLayout() { const l = createLayout(); setSpace(l.id); autoSave(); }
+function renameLayout(id) {
+  const l = S.layouts.find(x => x.id === id); if (!l) return;
+  const n = prompt('Nom de la présentation', l.name);
+  if (n && n.trim()) { l.name = n.trim(); renderSpaceTabs(); autoSave(); }
+}
+function deleteLayout(id) {
+  const i = S.layouts.findIndex(l => l.id === id); if (i < 0) return;
+  if (!confirm('Supprimer « ' + S.layouts[i].name + ' » ?')) return;
+  S.layouts.splice(i, 1);
+  if (S.space === id) setSpace('model'); else renderSpaceTabs();
+  autoSave();
+}
+function addViewport() {
+  const layout = getActiveLayout(); if (!layout) return;
+  const [pw,ph] = paperDims(layout), m = layout.marginMm || 10;
+  const w = Math.min(pw-2*m, 120), h = Math.min(ph-2*m, 90);
+  const vp = { id: 'V' + Date.now().toString(36) + Math.floor(Math.random()*100),
+               xMm:(pw-w)/2, yMm:(ph-h)/2, wMm:w, hMm:h, centerX:0, centerY:0, scale:50, locked:false };
+  fitViewportToDrawing(vp);
+  layout.viewports.push(vp); S._selVp = vp.id; render(); autoSave();
+}
+
+// ── Dialogue de réglage d'une fenêtre ──
+let _vpDlgId = null;
+function _vpDlgTarget() { const l = getActiveLayout(); return l ? l.viewports.find(v => v.id === _vpDlgId) : null; }
+function openViewportDialog(vpId) {
+  const layout = getActiveLayout(); if (!layout) return;
+  const vp = layout.viewports.find(v => v.id === vpId); if (!vp) return;
+  _vpDlgId = vpId;
+  document.getElementById('vpd-paper').value = layout.paper;
+  document.getElementById('vpd-orient').value = layout.orient;
+  document.getElementById('vpd-cw').value = layout.customW || 210;
+  document.getElementById('vpd-ch').value = layout.customH || 297;
+  vpdPaperChanged();
+  document.getElementById('vpd-scale').value = vp.scale;
+  document.getElementById('vpd-cx').value = Math.round(vp.centerX);
+  document.getElementById('vpd-cy').value = Math.round(vp.centerY);
+  document.getElementById('vpd-lock').checked = !!vp.locked;
+  document.getElementById('vpd-opaque').checked = !!vp.opaque;
+  document.getElementById('vp-dialog').style.display = 'block';
+}
+function closeViewportDialog() { document.getElementById('vp-dialog').style.display = 'none'; _vpDlgId = null; }
+function vpdPaperChanged() {
+  document.getElementById('vpd-custom-row').style.display =
+    document.getElementById('vpd-paper').value === 'custom' ? 'flex' : 'none';
+}
+function vpCenterOnDrawing() {
+  const bb = drawingBBox(); if (!bb) return;
+  document.getElementById('vpd-cx').value = Math.round((bb.mnx+bb.mxx)/2);
+  document.getElementById('vpd-cy').value = Math.round((bb.mny+bb.mxy)/2);
+}
+function vpFitToDrawing() {
+  const vp = _vpDlgTarget(); if (!vp) return;
+  fitViewportToDrawing(vp);
+  document.getElementById('vpd-scale').value = vp.scale;
+  document.getElementById('vpd-cx').value = Math.round(vp.centerX);
+  document.getElementById('vpd-cy').value = Math.round(vp.centerY);
+}
+function applyViewportDialog() {
+  const layout = getActiveLayout(), vp = _vpDlgTarget(); if (!layout || !vp) return;
+  const newPaper = document.getElementById('vpd-paper').value;
+  const newOrient = document.getElementById('vpd-orient').value;
+  const newCW = Math.max(10, parseFloat(document.getElementById('vpd-cw').value) || 210);
+  const newCH = Math.max(10, parseFloat(document.getElementById('vpd-ch').value) || 297);
+  const paperChanged = newPaper !== layout.paper || newOrient !== layout.orient ||
+                       (newPaper === 'custom' && (newCW !== layout.customW || newCH !== layout.customH));
+  layout.paper = newPaper; layout.orient = newOrient;
+  layout.customW = newCW; layout.customH = newCH;
+  vp.scale = Math.max(0.01, parseFloat(document.getElementById('vpd-scale').value) || vp.scale);
+  vp.centerX = parseFloat(document.getElementById('vpd-cx').value) || 0;
+  vp.centerY = parseFloat(document.getElementById('vpd-cy').value) || 0;
+  vp.locked = document.getElementById('vpd-lock').checked;
+  vp.opaque = document.getElementById('vpd-opaque').checked;
+  if (paperChanged) fitPaperView(layout);
+  closeViewportDialog(); render(); autoSave();
+}
+
+// ===== MODÈLES DE CARTOUCHE (.pcad) =====
+let cartoucheTemplates = []; // modèles utilisateur (localStorage) — les built-ins sont régénérés
+function loadCartoucheLibrary() {
+  try { const s = localStorage.getItem('minicad_cartouches'); cartoucheTemplates = s ? JSON.parse(s) : []; }
+  catch(e) { cartoucheTemplates = []; }
+}
+function saveCartoucheLibrary() {
+  try { localStorage.setItem('minicad_cartouches', JSON.stringify(cartoucheTemplates)); } catch(e) {}
+}
+function _makeBuiltinCartouche(name, paper, orient) {
+  const base = PAPER_SIZES[paper] || [210,297];
+  const [pw,ph] = orient === 'landscape' ? [base[1],base[0]] : base;
+  const m = 10, E = [];
+  const L = (x1,y1,x2,y2,lw) => E.push({ type:'line', x1, y1, x2, y2, color:'#000', lw:lw||0.35 });
+  const T = (x,y,content,size,bold) => E.push({ type:'text', x, y, content, size:size||3.5, bold:!!bold, color:'#000' });
+  // Cadre
+  L(m,m,pw-m,m); L(pw-m,m,pw-m,ph-m); L(pw-m,ph-m,m,ph-m); L(m,ph-m,m,m);
+  // Cartouche bas-droite (modèle Y up : bas = m)
+  const cw = Math.min(175, pw-2*m), chh = 28, cx = pw-m-cw, cy = m;
+  L(cx,cy,cx+cw,cy,0.5); L(cx,cy+chh,cx+cw,cy+chh,0.5); L(cx,cy,cx,cy+chh,0.5); L(cx+cw,cy,cx+cw,cy+chh,0.5);
+  L(cx,cy+chh*0.5,cx+cw,cy+chh*0.5,0.25);
+  L(cx+cw*0.55,cy,cx+cw*0.55,cy+chh,0.25);
+  T(cx+3, cy+chh*0.60, '{{titre}}', 5, true);
+  T(cx+3, cy+chh*0.18, 'Éch. {{echelle}}', 3);
+  T(cx+cw*0.58, cy+chh*0.70, '{{auteur}}', 3);
+  T(cx+cw*0.58, cy+chh*0.40, '{{date}}', 3);
+  T(cx+cw*0.58, cy+chh*0.12, '{{format}}  Ind.{{indice}}  {{page}}', 2.6);
+  return { app:'MiniCAD-presentation', version:1, id:'builtin:'+name, name, paper, orient, marginMm:m, entities:E, builtin:true };
+}
+function _builtinCartouches() {
+  return [ _makeBuiltinCartouche('Cartouche A4','A4','landscape'),
+           _makeBuiltinCartouche('Cartouche A3','A3','landscape') ];
+}
+function allTemplates() { return _builtinCartouches().concat(cartoucheTemplates); }
+
+function _fmtScale(n) { return (Math.round(n*100)/100).toString(); }
+// Substitution des {{champs}} ; si vide → on affiche le libellé du champ (ex. {{titre}} → « Titre »)
+function _subst(str, f) {
+  return String(str).replace(/\{\{(\w+)\}\}/g, (_,k) => {
+    const v = f[k];
+    if (v != null && v !== '') return v;
+    return _CF_LABELS[k] || (k.charAt(0).toUpperCase() + k.slice(1));
+  });
+}
+// Champs calculés automatiquement (utilisés en repli si l'utilisateur n'a rien saisi)
+function _autoCartoucheFields(layout) {
+  return {
+    date: new Date().toISOString().slice(0,10),
+    echelle: layout.viewports[0] ? '1:' + _fmtScale(layout.viewports[0].scale) : '',
+    format: layout.paper === 'custom'
+      ? Math.round(paperDims(layout)[0]) + '×' + Math.round(paperDims(layout)[1])
+      : layout.paper,
+    page: '1/1'
+  };
+}
+function _cartoucheFields(layout) {
+  const cf = layout.cartoucheFields || {};
+  const auto = _autoCartoucheFields(layout);
+  const out = { ...auto, ...cf };           // toute clé saisie est prise en compte
+  for (const k in auto) if (!cf[k]) out[k] = auto[k]; // repli auto si vide
+  return out;
+}
+// Rendu du modèle (cadre + cartouche) en espace papier, avec substitution des champs
+function _drawPaperTemplate(layout, p2s, Z, opts) {
+  const [pw,ph] = paperDims(layout);
+  const [PX,PY] = p2s(0,0);
+  const fields = _cartoucheFields(layout);
+  ctx.save(); ctx.lineJoin = ctx.lineCap = 'round';
+  withModelTransform(Z, PX - canvasW/2, ph*Z + PY - canvasH/2, () => {
+    (layout.paperEntities || []).forEach(e => {
+      let ent = e;
+      if (e.type === 'text' && e.content && e.content.indexOf('{{') >= 0) ent = { ...e, content:_subst(e.content, fields) };
+      const col = opts.print ? (e.printColor || e.color || '#000') : (e.color || '#222');
+      ctx.strokeStyle = col; ctx.fillStyle = col;
+      ctx.lineWidth = opts.print ? Math.max(0.13*MM2PX96, (e.lw || 0.3)*MM2PX96) : Math.max(0.6, (e.lw || 0.3)*3.5);
+      ctx.setLineDash(e.dash || []);
+      try { drawEntity(ent); } catch(err) {}
+      ctx.setLineDash([]);
+    });
+  });
+  ctx.restore();
+}
+
+function _captureEntities() {
+  const bb = drawingBBox(); // ancrage du modèle en bas-gauche (origine 0,0)
+  const dx = bb ? -bb.mnx : 0, dy = bb ? -bb.mny : 0;
+  return S.entities.map(e => {
+    const c = JSON.parse(JSON.stringify(e));
+    const lyr = S.layers[e.layer];
+    if (lyr) { c.color = e.color || lyr.color || '#000'; c.printColor = lyr.printColor || '#000'; c.lw = lyr.lineWidth || 0.3; }
+    delete c.id;
+    offsetEntity(c, dx, dy);
+    return c;
+  });
+}
+
+function _createLayoutFromTemplate(tpl) {
+  const n = S.layouts.length + 1;
+  const layout = {
+    id: 'L' + Date.now().toString(36) + Math.floor(Math.random()*1000),
+    name: 'Présentation ' + n, paper: tpl.paper, orient: tpl.orient,
+    customW: tpl.customW, customH: tpl.customH, marginMm: tpl.marginMm || 10,
+    cartoucheFields: { date: new Date().toISOString().slice(0,10) },
+    paperEntities: JSON.parse(JSON.stringify(tpl.entities || [])),
+    templateName: tpl.name, viewports: []
+  };
+  const [pw,ph] = paperDims(layout), m = layout.marginMm;
+  const vp = { id:'V'+Date.now().toString(36), xMm:m, yMm:m, wMm:pw-2*m, hMm:ph-2*m-40,
+               centerX:0, centerY:0, scale:50, locked:false };
+  fitViewportToDrawing(vp); layout.viewports.push(vp);
+  S.layouts.push(layout); setSpace(layout.id); autoSave();
+}
+function newPresentationFromTemplate(id) {
+  const tpl = allTemplates().find(t => t.id === id); if (tpl) _createLayoutFromTemplate(tpl);
+}
+
+// Ouvrir un modèle dans l'espace objet pour le modifier
+let _editingTemplate = null;
+function _loadTemplateForEdit(tpl) {
+  if (!tpl || !tpl.entities) { termPrint('Modèle invalide', 'error'); return; }
+  if (S.entities.length && S._saveState === 'modified') {
+    if (!confirm('Le dessin actuel n\'est pas sauvegardé.\nLes modifications seront perdues.\n\nOuvrir le modèle pour le modifier quand même ?')) {
+      termPrint('Ouverture annulée', 'info'); return;
+    }
+  }
+  pushUndo();
+  S.entities = (tpl.entities || []).map(e => { const c = JSON.parse(JSON.stringify(e)); c.id = S.nextId++; if (c.layer === undefined) c.layer = 0; return c; });
+  S.selected = [];
+  _editingTemplate = { name: tpl.name, paper: tpl.paper, orient: tpl.orient, customW: tpl.customW, customH: tpl.customH };
+  if (S.space !== 'model') setSpace('model');
+  updateUI(); render(); zoomExtents();
+  termPrint('Modèle « ' + (tpl.name || '?') + ' » ouvert — modifie puis Fichier ▸ Enregistrer comme modèle', 'info');
+}
+
+// Dialogue « Enregistrer comme modèle »
+function openSaveCartoucheDialog() {
+  if (S.space !== 'model') { termPrint('Reviens en espace Objet pour enregistrer un modèle', 'warning'); return; }
+  if (!S.entities.length) { termPrint('Dessin vide — rien à enregistrer comme modèle', 'warning'); return; }
+  const et = _editingTemplate;
+  document.getElementById('ct-name').value = et && et.name ? et.name : 'Mon cartouche';
+  document.getElementById('ct-paper').value = et && et.paper ? et.paper : 'A4';
+  document.getElementById('ct-orient').value = et && et.orient ? et.orient : 'landscape';
+  document.getElementById('ct-cw').value = et && et.customW ? et.customW : 210;
+  document.getElementById('ct-ch').value = et && et.customH ? et.customH : 297;
+  document.getElementById('ct-dialog').style.display = 'block';
+  ctPaperChanged();
+}
+function closeSaveCartoucheDialog() { document.getElementById('ct-dialog').style.display = 'none'; }
+function ctPaperChanged() {
+  document.getElementById('ct-custom-row').style.display =
+    document.getElementById('ct-paper').value === 'custom' ? 'flex' : 'none';
+}
+function saveCartouche(exportFile) {
+  const name = (document.getElementById('ct-name').value || 'Cartouche').trim();
+  const paper = document.getElementById('ct-paper').value;
+  const orient = document.getElementById('ct-orient').value;
+  const tpl = { app:'MiniCAD-presentation', version:1, id:'ct'+Date.now().toString(36),
+    name, paper, orient,
+    customW: paper === 'custom' ? Math.max(10, parseFloat(document.getElementById('ct-cw').value) || 210) : undefined,
+    customH: paper === 'custom' ? Math.max(10, parseFloat(document.getElementById('ct-ch').value) || 297) : undefined,
+    marginMm: 10, entities: _captureEntities() };
+  cartoucheTemplates.push(tpl); saveCartoucheLibrary();
+  if (exportFile) downloadBlob(JSON.stringify(tpl, null, 1), 'application/json', name.replace(/\s+/g,'_') + '.pcad');
+  closeSaveCartoucheDialog();
+  termPrint('Modèle « ' + name + ' » enregistré' + (exportFile ? ' et exporté (.pcad)' : ''), 'success');
+}
+
+// Import .pcad — deux modes : 'library' (ajoute à la bibliothèque) ou 'presentation' (crée direct)
+let _ctImportMode = 'library';
+function importCartoucheFile() { _ctImportMode = 'library'; document.getElementById('ct-file-input').click(); }
+function openCartoucheToEdit() { _ctImportMode = 'edit'; document.getElementById('ct-file-input').click(); }
+function _onCartoucheFile(ev) {
+  const f = ev.target.files[0]; if (!f) return; ev.target.value = '';
+  const mode = _ctImportMode; _ctImportMode = 'library';
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const t = JSON.parse(r.result);
+      if (!t.entities) { termPrint('Fichier .pcad invalide', 'error'); return; }
+      if (mode === 'presentation') {
+        _createLayoutFromTemplate(t);   // crée la présentation sans toucher la bibliothèque
+        termPrint('Présentation créée depuis « ' + f.name + ' »', 'success');
+      } else if (mode === 'edit') {
+        _loadTemplateForEdit(t);        // charge le modèle dans l'espace objet pour le modifier
+      } else {
+        t.id = 'ct'+Date.now().toString(36); t.builtin = false;
+        cartoucheTemplates.push(t); saveCartoucheLibrary();
+        termPrint('Modèle « ' + (t.name || 'importé') + ' » ajouté à la bibliothèque', 'success');
+      }
+    } catch(e) { termPrint('Lecture .pcad échouée : ' + e.message, 'error'); }
+  };
+  r.readAsText(f);
+}
+
+// Balises {{…}} présentes dans le modèle de la présentation (ordre d'apparition, sans doublon)
+function _layoutPlaceholders(layout) {
+  const keys = [], re = /\{\{(\w+)\}\}/g;
+  (layout.paperEntities || []).forEach(e => {
+    if (e.type === 'text' && e.content) { let m; while ((m = re.exec(e.content))) if (!keys.includes(m[1])) keys.push(m[1]); }
+  });
+  return keys;
+}
+const _CF_LABELS = { titre:'Titre', soustitre:'Sous-titre', sous_titre:'Sous-titre', auteur:'Auteur',
+  date:'Date', indice:'Indice', numero:'N°', echelle:'Échelle', page:'Page', format:'Format' };
+const _CF_AUTO = ['date','echelle','format','page'];
+
+// Dialogue des champs du cartouche — généré d'après les {{…}} du modèle
+function openCartoucheFields() {
+  const l = getActiveLayout(); if (!l) return;
+  const keys = _layoutPlaceholders(l);
+  const cf = l.cartoucheFields || {}, auto = _autoCartoucheFields(l);
+  let html = '';
+  if (!keys.length) html = '<div style="font-size:10px;color:#888;padding:4px 2px">Ce cartouche ne contient aucun champ {{…}} éditable.</div>';
+  keys.forEach(k => {
+    const lab = _CF_LABELS[k] || (k.charAt(0).toUpperCase() + k.slice(1));
+    const ph = _CF_AUTO.includes(k) ? ' placeholder="' + _esc(auto[k] || '(auto)') + '"' : '';
+    html += '<div class="pd-row"><span class="pd-label">' + _esc(lab) + '</span>' +
+            '<input type="text" data-field="' + _esc(k) + '" value="' + _esc(cf[k] || '') + '"' + ph + '></div>';
+  });
+  document.getElementById('cf-fields').innerHTML = html;
+  document.getElementById('cf-dialog').style.display = 'block';
+}
+function closeCartoucheFields() { document.getElementById('cf-dialog').style.display = 'none'; }
+function applyCartoucheFields() {
+  const l = getActiveLayout(); if (!l) return;
+  const cf = { ...(l.cartoucheFields || {}) };
+  document.querySelectorAll('#cf-fields input[data-field]').forEach(inp => { cf[inp.dataset.field] = inp.value; });
+  l.cartoucheFields = cf;
+  closeCartoucheFields(); render(); autoSave();
+}
+
+// Menu « Nouvelle présentation » (vierge / depuis un modèle)
+let _ctMenuXY = [0,0];
+function _ctMenuFromEvent(ev) { openTemplateMenu(ev.clientX, ev.clientY); }
+function openTemplateMenu(x, y) {
+  _ctMenuXY = [x, y];
+  const el = document.getElementById('ct-menu');
+  let html = '<div class="ctm-title">NOUVELLE PRÉSENTATION</div>' +
+             '<div class="ctm-item" onclick="_ctMenuPick(\'\')">Vierge (page + cadre)</div>' +
+             '<div class="ctm-sep"></div><div class="ctm-title">DEPUIS UN MODÈLE</div>';
+  allTemplates().forEach(t => {
+    const fmt = t.paper === 'custom' ? 'perso' : t.paper;
+    const edit = '<span class="ctm-edit" onclick="event.stopPropagation();_ctMenuEdit(\'' + t.id + '\')" title="Modifier ce modèle">✎</span>';
+    const del = t.builtin ? '' :
+      '<span class="ctm-del" onclick="event.stopPropagation();_ctMenuDelete(\'' + t.id + '\')" title="Supprimer ce modèle">✕</span>';
+    html += '<div class="ctm-item" onclick="_ctMenuPick(\'' + t.id + '\')">' + _esc(t.name) +
+            ' <span style="color:#666">(' + fmt + ')</span>' + edit + del + '</div>';
+  });
+  html += '<div class="ctm-sep"></div><div class="ctm-item" onclick="_ctMenuImport()">Importer un .pcad…</div>';
+  el.innerHTML = html; el.style.display = 'block';
+  const w = el.offsetWidth, h = el.offsetHeight;
+  el.style.left = Math.min(x, window.innerWidth - w - 6) + 'px';
+  el.style.top = Math.max(6, y - h) + 'px';
+}
+function closeTemplateMenu() { document.getElementById('ct-menu').style.display = 'none'; }
+function _ctMenuPick(id) { closeTemplateMenu(); if (id) newPresentationFromTemplate(id); else addLayout(); }
+function _ctMenuImport() { closeTemplateMenu(); _ctImportMode = 'presentation'; document.getElementById('ct-file-input').click(); }
+function _ctMenuEdit(id) { closeTemplateMenu(); const t = allTemplates().find(x => x.id === id); if (t) _loadTemplateForEdit(t); }
+function _ctMenuDelete(id) {
+  const i = cartoucheTemplates.findIndex(t => t.id === id); if (i < 0) return;
+  if (!confirm('Supprimer le modèle « ' + cartoucheTemplates[i].name + ' » de la bibliothèque ?')) return;
+  cartoucheTemplates.splice(i, 1); saveCartoucheLibrary();
+  openTemplateMenu(_ctMenuXY[0], _ctMenuXY[1]); // garder le menu ouvert
+}
+document.addEventListener('mousedown', (e) => {
+  const m = document.getElementById('ct-menu');
+  if (m && m.style.display === 'block' && !m.contains(e.target)) closeTemplateMenu();
+}, true);
+function renderSpaceTabs() {
+  const el = document.getElementById('space-tabs'); if (!el) return;
+  let html = '<div class="space-tab' + (S.space==='model'?' active':'') + '" onclick="setSpace(\'model\')">Objet</div>';
+  S.layouts.forEach(l => {
+    html += '<div class="space-tab' + (S.space===l.id?' active':'') + '" onclick="setSpace(\'' + l.id + '\')"' +
+            ' ondblclick="renameLayout(\'' + l.id + '\')" oncontextmenu="event.preventDefault();deleteLayout(\'' + l.id + '\')"' +
+            ' title="Double-clic : renommer · Clic droit : supprimer">' + _esc(l.name) + '</div>';
+  });
+  html += '<div class="space-tab-add" onclick="_ctMenuFromEvent(event)" oncontextmenu="event.preventDefault();_ctMenuFromEvent(event)" title="Nouvelle présentation (vierge ou depuis un modèle)">+</div>';
+  el.innerHTML = html;
+}
+function _restoreLayouts(data) {
+  S.layouts = Array.isArray(data.layouts) ? data.layouts : [];
+  S.space = (data.space && (data.space==='model' || S.layouts.some(l => l.id===data.space))) ? data.space : 'model';
+  renderSpaceTabs();
+  if (S.space !== 'model') { const l = getActiveLayout(); if (l) fitPaperView(l); }
 }
 
 function dimText(e, value) {
@@ -7847,6 +8652,39 @@ canvas.addEventListener('mousemove', (ev) => {
   let [wx, wy] = s2w(sx, sy);
   S.mouseWorld = [wx, wy];
 
+  // Espace papier : pan modèle (MSPACE), drag de fenêtre, pan feuille, ou curseur
+  if (S.space !== 'model') {
+    if (_mspacePan) {
+      const layout = getActiveLayout();
+      const vp = layout && layout.viewports.find(v => v.id === _mspacePan.vpId);
+      if (vp) {
+        const zoomVp = S.paperView.zoom / vp.scale;
+        vp.centerX -= (ev.clientX - _mspacePan.lastX) / zoomVp;
+        vp.centerY += (ev.clientY - _mspacePan.lastY) / zoomVp;
+        _mspacePan.lastX = ev.clientX; _mspacePan.lastY = ev.clientY; render();
+      }
+      return;
+    }
+    if (_vpDrag) { _vpApplyDrag(sx, sy); render(); return; }
+    if (isPanning) {
+      S.paperView.panX += ev.clientX - panStartX; S.paperView.panY += ev.clientY - panStartY;
+      panStartX = ev.clientX; panStartY = ev.clientY; render(); return;
+    }
+    const layout = getActiveLayout();
+    let cur = 'default';
+    if (layout && S._activeVp) {
+      const avp = layout.viewports.find(v => v.id === S._activeVp);
+      if (avp && _ptInVp(avp, ...s2p(sx, sy))) cur = 'grab';
+    } else if (layout) {
+      const selvp = layout.viewports.find(v => v.id === S._selVp);
+      const h = selvp && !selvp.locked ? _vpHandleAt(selvp, sx, sy) : null;
+      if (h) cur = _cursorForHandle(h);
+      else { const [mmx,mmy] = s2p(sx, sy); if (layout.viewports.some(v => _ptInVp(v, mmx, mmy))) cur = 'move'; }
+    }
+    canvas.style.cursor = cur;
+    return;
+  }
+
   // Display resolved coords
   const osnap = findOsnap(wx, wy);
   let dispX, dispY;
@@ -7894,6 +8732,45 @@ document.addEventListener('focusout', function(ev) {
 
 canvas.addEventListener('mousedown', (ev) => {
   if (ev.button === 2) { ev.preventDefault(); return; } // géré par contextmenu
+
+  // Espace papier : MSPACE actif, sinon édition de fenêtres / pan feuille
+  if (S.space !== 'model') {
+    const rect = canvas.getBoundingClientRect();
+    const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
+    const layout = getActiveLayout();
+    const [mmx,mmy] = s2p(sx, sy);
+
+    // Fenêtre activée : pan du modèle dedans (clic gauche), pan feuille (clic milieu)
+    if (layout && S._activeVp) {
+      const avp = layout.viewports.find(v => v.id === S._activeVp);
+      if (ev.button === 1) { isPanning = true; panStartX = ev.clientX; panStartY = ev.clientY; canvas.style.cursor = 'grabbing'; return; }
+      if (ev.button === 0) {
+        if (avp && _ptInVp(avp, mmx, mmy)) { _mspacePan = { vpId:avp.id, lastX:ev.clientX, lastY:ev.clientY }; canvas.style.cursor = 'grabbing'; return; }
+        S._activeVp = null; render(); // clic hors de la fenêtre active → en sortir
+      }
+    }
+
+    if (ev.button === 0 && layout && !S._activeVp) {
+      const selvp = layout.viewports.find(v => v.id === S._selVp);
+      if (selvp && !selvp.locked) {
+        const h = _vpHandleAt(selvp, sx, sy);
+        if (h) { _vpDrag = { mode:'resize', vpId:selvp.id, handle:h, startMM:[mmx,mmy],
+                             orig:{xMm:selvp.xMm,yMm:selvp.yMm,wMm:selvp.wMm,hMm:selvp.hMm} }; return; }
+      }
+      const vp = [...layout.viewports].reverse().find(v => _ptInVp(v, mmx, mmy));
+      if (vp) {
+        S._selVp = vp.id;
+        if (!vp.locked) _vpDrag = { mode:'move', vpId:vp.id, startMM:[mmx,mmy],
+                                    orig:{xMm:vp.xMm,yMm:vp.yMm,wMm:vp.wMm,hMm:vp.hMm} };
+        render(); return;
+      }
+      S._selVp = null; render();
+    }
+    if (ev.button === 0 || ev.button === 1) {
+      isPanning = true; panStartX = ev.clientX; panStartY = ev.clientY; canvas.style.cursor = 'grabbing';
+    }
+    return;
+  }
 
   // Placement IA : clic gauche pose les entités au point cliqué
   if (ev.button === 0 && S.aiPendingEntities && S.aiPendingCenter) {
@@ -8101,7 +8978,12 @@ function smartFocus() {
 
 canvas.addEventListener('mouseup', (ev) => {
   if (ev.button === 2) { ev.preventDefault(); return; }
-  if (isPanning) { isPanning = false; canvas.style.cursor = 'none'; }
+  if (isPanning) { isPanning = false; canvas.style.cursor = S.space === 'model' ? 'none' : 'default'; }
+  if (S.space !== 'model') {
+    if (_mspacePan) { _mspacePan = null; canvas.style.cursor = 'grab'; autoSave(); }
+    else if (_vpDrag) { _vpDrag = null; autoSave(); }
+    return;
+  }
 
   // Print rubber-band finalise la zone d'impression
   if (ev.button === 0 && isPrintRb) {
@@ -8212,6 +9094,22 @@ canvas.addEventListener('wheel', (ev) => {
   ev.preventDefault();
   const rect = canvas.getBoundingClientRect();
   const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
+  if (S.space !== 'model') {
+    const factor = ev.deltaY < 0 ? 1.15 : 0.87;
+    const layout = getActiveLayout();
+    // Fenêtre activée : on zoome le modèle dedans (modifie l'échelle)
+    if (layout && S._activeVp) {
+      const avp = layout.viewports.find(v => v.id === S._activeVp);
+      if (avp && _ptInVp(avp, ...s2p(sx, sy))) { _vpZoomAt(avp, sx, sy, factor); autoSave(); render(); return; }
+    }
+    // Sinon : zoom de la feuille autour du curseur
+    const Z = S.paperView.zoom;
+    const mmx = (sx - S.paperView.panX) / Z, mmy = (sy - S.paperView.panY) / Z;
+    S.paperView.zoom = Math.max(0.05, Math.min(40, Z * factor));
+    S.paperView.panX = sx - mmx * S.paperView.zoom;
+    S.paperView.panY = sy - mmy * S.paperView.zoom;
+    render(); return;
+  }
   const [wx,wy] = s2w(sx, sy);
   const factor = ev.deltaY < 0 ? 1.15 : 0.87;
   S.zoom *= factor;
@@ -11527,6 +12425,582 @@ function openPolarArrayDialog() {
   };
 
   // ── Init DOM ─────────────────────────────────────────────────────────────────
+  // @@ANIM_BEGIN — Généré par build.py — ne pas éditer directement
+// Éditer animations/tool_anim.js puis relancer build.py
+// animations/tool_anim.js — Aperçus animés au survol des outils (MiniCAD)
+// Injecté par build.py entre les marqueurs @@ANIM_BEGIN / @@ANIM_END (TOUS les builds).
+// Source de vérité : ÉDITER CE FICHIER puis relancer build.py — ne jamais éditer le bloc généré.
+//
+// Au survol d'un bouton .tool-btn connu, une petite fenêtre s'ouvre sous l'icône et rejoue
+// le geste sur un mini-canvas (curseur fléché + clics + élastique), pour aider l'utilisateur
+// qui ne connaît pas le dessin DAO.
+//
+// Deux familles de scénarios :
+//   • création  : { kind, pts:[...] }      → le curseur clique les points, la forme se construit
+//   • modif.    : { type:'modify', kind }  → une forme existante, puis l'opération avant→après
+
+(function () {
+  'use strict';
+
+  const ANIM = {
+    // ── Dessin ──────────────────────────────────────────────────────────────
+    line:        { kind: 'line',    pts: [[.16, .78], [.84, .26]] },
+    rect:        { kind: 'rect',    pts: [[.20, .74], [.80, .26]] },
+    rectcenter:  { kind: 'rectc',   pts: [[.50, .50], [.82, .26]] },
+    polygon:     { kind: 'polygon', n: 6, pts: [[.50, .54], [.50, .20]] },
+    circle:      { kind: 'circle',  pts: [[.50, .54], [.82, .54]] },
+    ellipse:     { kind: 'ellipse', pts: [[.50, .52], [.84, .52], [.50, .22]] },
+    arc:         { kind: 'arc3',    pts: [[.16, .70], [.50, .20], [.84, .70]] },
+    polyline:    { kind: 'poly',    pts: [[.14, .74], [.38, .34], [.60, .62], [.86, .26]] },
+    spline:      { kind: 'spline',  pts: [[.14, .72], [.36, .32], [.60, .68], [.86, .30]] },
+    xline:       { kind: 'xline',   pts: [[.32, .64], [.66, .36]] },
+    ray:         { kind: 'ray',     pts: [[.24, .70], [.62, .40]] },
+    ray_rev:     { kind: 'ray',     pts: [[.76, .40], [.38, .70]] },
+    point:       { kind: 'point',   pts: [[.50, .50]] },
+    hatch:       { kind: 'hatch',   pts: [[.50, .52]] },
+    tube:        { kind: 'tube',    pts: [[.16, .62], [.84, .42]] },
+    text_place:  { kind: 'text',    pts: [[.24, .58]] },
+    leader:      { kind: 'leader',  pts: [[.24, .72], [.74, .34]] },
+    // ── Architecture ─────────────────────────────────────────────────────────
+    wall:        { kind: 'wall',    pts: [[.16, .64], [.84, .40]] },
+    door:        { kind: 'door',    pts: [[.32, .76], [.32, .30]] },
+    window_place:{ kind: 'window',  pts: [[.18, .50], [.82, .50]] },
+    // ── Électricité ────────────────────────────────────────────────────────
+    outlet:      { kind: 'outlet',  pts: [[.50, .52]] },
+    switch_place:{ kind: 'switch',  pts: [[.50, .52]] },
+    cable:       { kind: 'cable',   pts: [[.14, .40], [.38, .66], [.62, .36], [.86, .62]] },
+    // ── Cotation / mesure ────────────────────────────────────────────────────
+    measure:     { kind: 'measure', pts: [[.18, .64], [.82, .64]] },
+    // ── Modification (forme existante → opération) ────────────────────────────
+    move_obj:    { type: 'modify', kind: 'move' },
+    mirror:      { type: 'modify', kind: 'mirror' },
+    offset:      { type: 'modify', kind: 'offset' },
+    trim:        { type: 'modify', kind: 'trim' },
+    extend:      { type: 'modify', kind: 'extend' },
+    fillet:      { type: 'modify', kind: 'fillet',  clicks: [[.58, .70], [.30, .46]] },
+    chamfer:     { type: 'modify', kind: 'chamfer', clicks: [[.58, .70], [.30, .46]] },
+    scale:       { type: 'modify', kind: 'scale' },
+    stretch:     { type: 'modify', kind: 'stretch' },
+    rotate:      { type: 'modify', kind: 'rotate' },
+    join:        { type: 'modify', kind: 'join' },
+    divide_pick: { type: 'modify', kind: 'divide' },
+    copy:        { type: 'modify', kind: 'copy' },
+    array:       { type: 'modify', kind: 'array' },
+    array_polar: { type: 'modify', kind: 'array_polar' },
+    explode:     { type: 'modify', kind: 'explode' },
+    group:       { type: 'modify', kind: 'group' },
+    ungroup:     { type: 'modify', kind: 'ungroup' },
+    erase:       { type: 'modify', kind: 'erase' },
+    // ── Cotation ──────────────────────────────────────────────────────────────
+    dimlinear:   { kind: 'dimlin',   pts: [[.18, .64], [.82, .64]] },
+    dimaligned:  { kind: 'dimalign', pts: [[.20, .76], [.80, .34]] },
+    dimangular:  { type: 'modify', kind: 'dimangular' },
+    dimradius:   { type: 'modify', kind: 'dimradius' },
+    dimdiameter: { type: 'modify', kind: 'dimdiameter' }
+  };
+
+  // Boutons sans data-tool (COPY, ARRAY, dim…) → résolution via leur onclick
+  const CMD_KEY = {
+    COPY: 'copy', ARRAY: 'array', ARRAY_POLAR: 'array_polar', EXPLODE: 'explode',
+    GROUP: 'group', UNGROUP: 'ungroup', ERASE: 'erase',
+    DIMLINEAR: 'dimlinear', DIMALIGNED: 'dimaligned', DIMANGULAR: 'dimangular',
+    DIMRADIUS: 'dimradius', DIMDIAMETER: 'dimdiameter'
+  };
+  function keyOf(btn) {
+    const dt = btn.dataset.tool;
+    if (dt && ANIM[dt]) return dt;
+    const oc = btn.getAttribute('onclick') || '';
+    let m, re = /executeCommand\('([A-Za-z_ ]+)'\)/g, found = [];
+    while ((m = re.exec(oc))) found.push(m[1].trim());
+    re = /CMD\.([A-Z_]+)\.exec/g;
+    while ((m = re.exec(oc))) found.push(m[1]);
+    for (const c of found) if (CMD_KEY[c]) return CMD_KEY[c];
+    return null;
+  }
+
+  // ── Réglages ──────────────────────────────────────────────────────────────
+  const W = 120, H = 120, PAD = 18;
+  const OPEN_DELAY = 350, CLICK_DUR = 420, HOLD_DUR = 1100;
+  const OP_DUR = 1150, MHOLD0 = 650, MHOLD1 = 950;
+
+  let ACCENT = '#00d4ff';
+  const RUBBER = 'rgba(0,212,255,0.55)';
+  const GHOST  = 'rgba(0,212,255,0.30)';
+  const FILL   = 'rgba(0,212,255,0.10)';
+  const CUR_FILL = '#f4f8ff', CUR_STROKE = '#0a0f1a';
+
+  let el = null, cv = null, ctx = null, label = null;
+  let timer = null, curBtn = null;
+  let raf = null, scn = null, timeline = [], segI = 0, segStart = 0;
+
+  // ── Helpers de base ─────────────────────────────────────────────────────────
+  const X = nx => PAD + nx * (W - 2 * PAD);
+  const Y = ny => PAD + ny * (H - 2 * PAD);
+  const DX = d => d * (W - 2 * PAD);
+  const DY = d => d * (H - 2 * PAD);
+  const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const lerp2 = (a, b, e) => [a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e];
+  const dist = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]);
+
+  function seg(a, b) { ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+  function dot(P, r) { ctx.beginPath(); ctx.arc(P[0], P[1], r || 2.4, 0, 2 * Math.PI); ctx.fill(); }
+  function cross(P, s) { s = s || 4; seg([P[0] - s, P[1]], [P[0] + s, P[1]]); seg([P[0], P[1] - s], [P[0], P[1] + s]); }
+
+  function setSolid()  { ctx.setLineDash([]);     ctx.strokeStyle = ACCENT;  ctx.fillStyle = FILL; ctx.lineWidth = 2; }
+  function setRubber() { ctx.setLineDash([4, 3]);  ctx.strokeStyle = RUBBER;  ctx.fillStyle = FILL; ctx.lineWidth = 1.4; }
+  function setGhost()  { ctx.setLineDash([3, 3]);  ctx.strokeStyle = GHOST;   ctx.lineWidth = 1.3; }
+
+  function arrowHead(tip, from, s) {
+    s = s || 6; const a = Math.atan2(tip[1] - from[1], tip[0] - from[0]);
+    ctx.beginPath(); ctx.moveTo(tip[0], tip[1]);
+    ctx.lineTo(tip[0] - s * Math.cos(a - .4), tip[1] - s * Math.sin(a - .4));
+    ctx.lineTo(tip[0] - s * Math.cos(a + .4), tip[1] - s * Math.sin(a + .4));
+    ctx.closePath(); ctx.fill();
+  }
+  function parallel(a, b, off) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1;
+    const nx = -dy / L * off, ny = dx / L * off;
+    return [[[a[0] + nx, a[1] + ny], [b[0] + nx, b[1] + ny]], [[a[0] - nx, a[1] - ny], [b[0] - nx, b[1] - ny]]];
+  }
+  function smooth(P) {
+    if (P.length < 3) { if (P.length === 2) seg(P[0], P[1]); return; }
+    ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]);
+    for (let i = 0; i < P.length - 1; i++) {
+      const p0 = P[i - 1] || P[i], p1 = P[i], p2 = P[i + 1], p3 = P[i + 2] || P[i + 1];
+      ctx.bezierCurveTo(p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6,
+                        p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6, p2[0], p2[1]);
+    }
+    ctx.stroke();
+  }
+  function regularPoly(c, v, n) {
+    const R = dist(c, v), a0 = Math.atan2(v[1] - c[1], v[0] - c[0]);
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const a = a0 + i * 2 * Math.PI / n, x = c[0] + R * Math.cos(a), y = c[1] + R * Math.sin(a);
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+  function infinite(a, b, both) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1, BIG = 260;
+    const ux = dx / L, uy = dy / L;
+    const p1 = both ? [a[0] - ux * BIG, a[1] - uy * BIG] : a;
+    seg(p1, [b[0] + ux * BIG, b[1] + uy * BIG]);
+  }
+  const circle3 = (P0, P1, P2) => {
+    const ax = P0[0], ay = P0[1], bx = P1[0], by = P1[1], cx = P2[0], cy = P2[1];
+    const d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+    if (Math.abs(d) < 1e-6) return null;
+    const a2 = ax * ax + ay * ay, b2 = bx * bx + by * by, c2 = cx * cx + cy * cy;
+    const ux = (a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / d;
+    const uy = (a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / d;
+    return { cx: ux, cy: uy, r: Math.hypot(ax - ux, ay - uy) };
+  };
+  const norm = a => { a %= 2 * Math.PI; return a < 0 ? a + 2 * Math.PI : a; };
+  function strokeArc3(P0, P1, P2) {
+    const c = circle3(P0, P1, P2);
+    if (!c) { ctx.beginPath(); ctx.moveTo(P0[0], P0[1]); ctx.lineTo(P1[0], P1[1]); ctx.lineTo(P2[0], P2[1]); ctx.stroke(); return; }
+    const a0 = Math.atan2(P0[1] - c.cy, P0[0] - c.cx), a1 = Math.atan2(P1[1] - c.cy, P1[0] - c.cx), a2 = Math.atan2(P2[1] - c.cy, P2[0] - c.cx);
+    ctx.beginPath(); ctx.arc(c.cx, c.cy, c.r, a0, a2, norm(a1 - a0) > norm(a2 - a0)); ctx.stroke();
+  }
+
+  // Symboles métier ─────────────────────────────────────────────────────────
+  function wallSym(a, b, off) { const [l, r] = parallel(a, b, off || 4.5); seg(l[0], l[1]); seg(r[0], r[1]); seg(l[0], r[0]); seg(l[1], r[1]); }
+  function tubeSym(a, b) { const [l, r] = parallel(a, b, 4.5); seg(l[0], l[1]); seg(r[0], r[1]); ctx.save(); ctx.setLineDash([4, 3]); ctx.lineWidth = 1; seg(a, b); ctx.restore(); }
+  function doorSym(h, e) { seg(h, e); const r = dist(h, e), a0 = Math.atan2(e[1] - h[1], e[0] - h[0]); ctx.save(); ctx.setLineDash([3, 3]); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(h[0], h[1], r, a0, a0 + Math.PI / 2); ctx.stroke(); ctx.restore(); }
+  function outletSym(p) { ctx.beginPath(); ctx.arc(p[0], p[1], 9, 0, 2 * Math.PI); ctx.stroke(); seg([p[0] - 3.5, p[1] - 4], [p[0] - 3.5, p[1] + 4]); seg([p[0] + 3.5, p[1] - 4], [p[0] + 3.5, p[1] + 4]); seg([p[0], p[1] + 9], [p[0], p[1] + 15]); }
+  function switchSym(p) { ctx.fillStyle = ACCENT; dot([p[0] - 7, p[1] + 7], 2.6); ctx.fillStyle = FILL; seg([p[0] - 7, p[1] + 7], [p[0] + 7, p[1] - 7]); seg([p[0] + 7, p[1] - 7], [p[0] + 12, p[1] - 7]); }
+  function dimSym(a, b) {
+    const yL = Math.min(a[1], b[1]) - 16;
+    ctx.save(); ctx.lineWidth = 1;
+    seg([a[0], a[1]], [a[0], yL - 2]); seg([b[0], b[1]], [b[0], yL - 2]);
+    ctx.restore();
+    seg([a[0], yL], [b[0], yL]);
+    ctx.fillStyle = ACCENT; arrowHead([a[0], yL], [b[0], yL], 5); arrowHead([b[0], yL], [a[0], yL], 5);
+    ctx.save(); ctx.fillStyle = ACCENT; ctx.font = '10px "JetBrains Mono",monospace'; ctx.textAlign = 'center';
+    ctx.fillText(Math.round(dist(a, b)) || '120', (a[0] + b[0]) / 2, yL - 3); ctx.restore();
+  }
+  function dimAligned(a, b) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1, off = 16;
+    const nx = -dy / L * off, ny = dx / L * off;
+    const a2 = [a[0] + nx, a[1] + ny], b2 = [b[0] + nx, b[1] + ny];
+    ctx.save(); ctx.lineWidth = 1; seg(a, a2); seg(b, b2); ctx.restore();
+    seg(a2, b2);
+    ctx.fillStyle = ACCENT; arrowHead(a2, b2, 5); arrowHead(b2, a2, 5);
+    ctx.save(); ctx.fillStyle = ACCENT; ctx.font = '10px "JetBrains Mono",monospace'; ctx.textAlign = 'center';
+    ctx.translate((a2[0] + b2[0]) / 2, (a2[1] + b2[1]) / 2); ctx.rotate(Math.atan2(dy, dx));
+    ctx.fillText(Math.round(L) || '120', 0, -3); ctx.restore();
+  }
+
+  // ── Rendu CRÉATION ──────────────────────────────────────────────────────────
+  function render(placed, cursor) {
+    ctx.clearRect(0, 0, W, H);
+    const pts = scn.pts, P = pts.map(p => [X(p[0]), Y(p[1])]);
+    const C = cursor ? [X(cursor[0]), Y(cursor[1])] : null;
+    ctx.lineJoin = ctx.lineCap = 'round';
+    setSolid(); drawCommitted(P, placed);
+    if (C && placed >= 1 && placed < pts.length) { setRubber(); drawRubber(P, placed, C); }
+    ctx.setLineDash([]); ctx.fillStyle = ACCENT;
+    if (scn.kind !== 'point' && scn.kind !== 'text' && scn.kind !== 'outlet' && scn.kind !== 'switch')
+      for (let i = 0; i < placed; i++) dot(P[i]);
+  }
+
+  function drawCommitted(P, placed) {
+    const k = scn.kind;
+    if (k === 'hatch') { // contour toujours visible (contexte)
+      const bx = X(.22), by = Y(.28), bw = X(.78) - X(.22), bh = Y(.76) - Y(.28);
+      ctx.strokeRect(bx, by, bw, bh);
+      if (placed >= 1) { ctx.save(); ctx.beginPath(); ctx.rect(bx, by, bw, bh); ctx.clip(); ctx.lineWidth = 1; for (let x = bx - bh; x < bx + bw; x += 7) seg([x, by + bh], [x + bh, by]); ctx.restore(); }
+      return;
+    }
+    switch (k) {
+      case 'line':    if (placed >= 2) seg(P[0], P[1]); break;
+      case 'rect':    if (placed >= 2) { ctx.beginPath(); ctx.rect(P[0][0], P[0][1], P[1][0] - P[0][0], P[1][1] - P[0][1]); ctx.fill(); ctx.stroke(); } break;
+      case 'rectc':   if (placed >= 2) { const c = P[0], q = P[1]; ctx.beginPath(); ctx.rect(2 * c[0] - q[0], 2 * c[1] - q[1], 2 * (q[0] - c[0]), 2 * (q[1] - c[1])); ctx.fill(); ctx.stroke(); cross(c); } break;
+      case 'polygon': if (placed >= 2) regularPoly(P[0], P[1], scn.n || 6); break;
+      case 'circle':  if (placed >= 2) { ctx.beginPath(); ctx.arc(P[0][0], P[0][1], dist(P[0], P[1]), 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); } break;
+      case 'ellipse': if (placed >= 3) { ctx.beginPath(); ctx.ellipse(P[0][0], P[0][1], Math.abs(P[1][0] - P[0][0]), Math.abs(P[2][1] - P[0][1]), 0, 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); cross(P[0]); } break;
+      case 'arc3':    if (placed >= 3) strokeArc3(P[0], P[1], P[2]); break;
+      case 'poly':    if (placed >= 2) { ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < placed; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.stroke(); } break;
+      case 'spline':
+      case 'cable':   if (placed >= 2) smooth(P.slice(0, placed)); break;
+      case 'xline':   if (placed >= 2) infinite(P[0], P[1], true); break;
+      case 'ray':     if (placed >= 2) infinite(P[0], P[1], false); break;
+      case 'point':   if (placed >= 1) { ctx.fillStyle = ACCENT; cross(P[0], 7); } break;
+      case 'tube':    if (placed >= 2) tubeSym(P[0], P[1]); break;
+      case 'text':    if (placed >= 1) { ctx.save(); ctx.fillStyle = ACCENT; ctx.font = 'italic bold 18px serif'; ctx.fillText('Abc', P[0][0], P[0][1]); ctx.restore(); } break;
+      case 'leader':  if (placed >= 2) { seg(P[0], P[1]); ctx.fillStyle = ACCENT; arrowHead(P[0], P[1], 6); ctx.save(); ctx.fillStyle = ACCENT; ctx.font = '10px "JetBrains Mono",monospace'; ctx.fillText('Ø', P[1][0] + 3, P[1][1] - 2); ctx.restore(); } break;
+      case 'wall':    if (placed >= 2) wallSym(P[0], P[1]); break;
+      case 'door':    if (placed >= 2) doorSym(P[0], P[1]); break;
+      case 'window':  if (placed >= 2) wallSym(P[0], P[1], 3); break;
+      case 'outlet':  if (placed >= 1) outletSym(P[0]); break;
+      case 'switch':  if (placed >= 1) switchSym(P[0]); break;
+      case 'measure':
+      case 'dimlin':  if (placed >= 2) dimSym(P[0], P[1]); break;
+      case 'dimalign':if (placed >= 2) dimAligned(P[0], P[1]); break;
+    }
+  }
+
+  function drawRubber(P, placed, C) {
+    switch (scn.kind) {
+      case 'line':    seg(P[0], C); break;
+      case 'rect':    ctx.beginPath(); ctx.rect(P[0][0], P[0][1], C[0] - P[0][0], C[1] - P[0][1]); ctx.fill(); ctx.stroke(); break;
+      case 'rectc':   { const c = P[0]; ctx.beginPath(); ctx.rect(2 * c[0] - C[0], 2 * c[1] - C[1], 2 * (C[0] - c[0]), 2 * (C[1] - c[1])); ctx.fill(); ctx.stroke(); } break;
+      case 'polygon': regularPoly(P[0], C, scn.n || 6); break;
+      case 'circle':  { ctx.beginPath(); ctx.arc(P[0][0], P[0][1], dist(P[0], C), 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); seg(P[0], C); } break;
+      case 'ellipse': if (placed === 1) seg(P[0], C); else if (placed === 2) { ctx.beginPath(); ctx.ellipse(P[0][0], P[0][1], Math.abs(P[1][0] - P[0][0]), Math.abs(C[1] - P[0][1]), 0, 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); } break;
+      case 'poly':    seg(P[placed - 1], C); break;
+      case 'spline':
+      case 'cable':   smooth(P.slice(0, placed).concat([C])); break;
+      case 'xline':   infinite(P[0], C, true); break;
+      case 'ray':     infinite(P[0], C, false); break;
+      case 'tube':    tubeSym(P[0], C); break;
+      case 'wall':    wallSym(P[0], C); break;
+      case 'window':  wallSym(P[0], C, 3); break;
+      case 'door':    doorSym(P[0], C); break;
+      case 'leader':  seg(P[0], C); ctx.fillStyle = ACCENT; arrowHead(P[0], C, 6); break;
+      case 'measure':
+      case 'dimlin':  dimSym(P[0], C); break;
+      case 'dimalign':dimAligned(P[0], C); break;
+      case 'arc3':    if (placed === 1) seg(P[0], C); else if (placed === 2) strokeArc3(P[0], P[1], C); break;
+    }
+  }
+
+  // ── Rendu MODIFICATION (forme existante → opération, progression p ∈ [0,1]) ──
+  function renderModify(kind, p, cursorOut) {
+    ctx.lineJoin = ctx.lineCap = 'round';
+    let cur = null;
+    switch (kind) {
+      case 'move': {
+        const x = X(.12), y = Y(.34), w = DX(.34), h = DY(.30);
+        setGhost(); ctx.strokeRect(x, y, w, h);
+        const ox = x + DX(.42) * p, oy = y + DY(.18) * p;
+        setSolid(); ctx.beginPath(); ctx.rect(ox, oy, w, h); ctx.fill(); ctx.stroke();
+        cur = [ox + w / 2, oy + h / 2]; break;
+      }
+      case 'scale': {
+        const c = [X(.5), Y(.52)], w = DX(.30), h = DY(.28), f = 1 + .55 * p;
+        setGhost(); ctx.strokeRect(c[0] - w / 2, c[1] - h / 2, w, h);
+        setSolid(); ctx.beginPath(); ctx.rect(c[0] - w * f / 2, c[1] - h * f / 2, w * f, h * f); ctx.fill(); ctx.stroke();
+        cur = [c[0] + w * f / 2, c[1] + h * f / 2]; break;
+      }
+      case 'rotate': {
+        const piv = [X(.30), Y(.72)], w = DX(.40), h = DY(.26);
+        setGhost(); ctx.strokeRect(piv[0], piv[1] - h, w, h);
+        ctx.save(); ctx.translate(piv[0], piv[1]); ctx.rotate(-p * 1.1);
+        setSolid(); ctx.beginPath(); ctx.rect(0, -h, w, h); ctx.fill(); ctx.stroke(); ctx.restore();
+        ctx.fillStyle = ACCENT; dot(piv, 2.6);
+        cur = [piv[0] + Math.cos(-p * 1.1) * w, piv[1] + Math.sin(-p * 1.1) * w]; break;
+      }
+      case 'mirror': {
+        const ax = X(.5);
+        setSolid(); const tri = o => { ctx.beginPath(); ctx.moveTo(X(.30) + o, Y(.30)); ctx.lineTo(X(.30) + o, Y(.72)); ctx.lineTo(X(.44) + o, Y(.72)); ctx.closePath(); ctx.fill(); ctx.stroke(); };
+        tri(0);
+        ctx.save(); ctx.setLineDash([4, 3]); ctx.strokeStyle = RUBBER; ctx.lineWidth = 1.2; seg([ax, Y(.18)], [ax, Y(.84)]); ctx.restore();
+        ctx.save(); ctx.globalAlpha = p; setSolid();
+        ctx.beginPath(); ctx.moveTo(X(.70), Y(.30)); ctx.lineTo(X(.70), Y(.72)); ctx.lineTo(X(.56), Y(.72)); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+        break;
+      }
+      case 'offset': {
+        const x = X(.16), y = Y(.30), w = DX(.50), h = DY(.44), d = DX(.11) * p;
+        setSolid(); ctx.strokeRect(x, y, w, h);                 // original
+        if (p > .02) { setSolid(); ctx.strokeRect(x + d, y + d, w - 2 * d, h - 2 * d); } // ligne décalée (pleine)
+        cur = [x + w, y + h / 2]; break;
+      }
+      case 'trim': {
+        const i = [X(.5), Y(.52)], e1 = [X(.84), Y(.78)];
+        setSolid(); seg([X(.18), Y(.74)], [X(.82), Y(.30)]);      // ligne coupante
+        seg([X(.16), Y(.26)], i);                                 // partie conservée
+        ctx.save(); ctx.globalAlpha = 1 - p; setSolid(); seg(i, e1); ctx.restore(); // tronçon retiré
+        cur = lerp2(i, e1, .5); break;
+      }
+      case 'extend': {
+        const y = Y(.5), x0 = X(.18), xb = X(.80);
+        ctx.save(); ctx.setLineDash([4, 3]); ctx.lineWidth = 1.4; ctx.strokeStyle = RUBBER; seg([xb, Y(.22)], [xb, Y(.78)]); ctx.restore(); // limite
+        setSolid(); seg([x0, y], [x0 + (xb - x0) * (.45 + .55 * p), y]); // le trait se prolonge seul (pas de curseur)
+        break;
+      }
+      case 'fillet':
+      case 'chamfer': {
+        const cx = X(.30), cy = Y(.70), r = DX(.16) * p;
+        setSolid();
+        seg([cx + r, cy], [X(.84), cy]);              // horizontale rognée
+        seg([cx, cy - r], [cx, Y(.22)]);              // verticale rognée
+        if (kind === 'fillet') { ctx.beginPath(); ctx.arc(cx + r, cy - r, r, Math.PI / 2, Math.PI); ctx.stroke(); }
+        else seg([cx + r, cy], [cx, cy - r]);
+        break;                                         // curseur géré par les clics (pré-phase)
+      }
+      case 'stretch': {
+        const x = X(.16), y = Y(.34), w = DX(.40), h = DY(.32), ext = DX(.24) * p;
+        setSolid(); ctx.beginPath(); ctx.rect(x, y, w + ext, h); ctx.fill(); ctx.stroke();
+        cur = [x + w + ext, y + h / 2]; break;
+      }
+      case 'join': {
+        const y = Y(.5);
+        setSolid(); seg([X(.16), y], [X(.40), y]); seg([X(.60), y], [X(.84), y]);
+        ctx.save(); ctx.strokeStyle = RUBBER; setRubber(); if (p > .02) seg([X(.40), y], [X(.40) + DX(.20) * p, y]); ctx.restore();
+        break;
+      }
+      case 'divide': {
+        const a = [X(.16), Y(.5)], b = [X(.84), Y(.5)], n = 5;
+        setSolid(); seg(a, b); ctx.fillStyle = ACCENT;
+        for (let i = 1; i < n; i++) if (p > i / n) { const q = lerp2(a, b, i / n); dot([q[0], q[1]], 2.6); seg([q[0], q[1] - 4], [q[0], q[1] + 4]); }
+        break;
+      }
+      case 'copy': {
+        const x = X(.12), y = Y(.36), w = DX(.32), h = DY(.30);
+        setSolid(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.fill(); ctx.stroke();   // original conservé
+        const ox = x + DX(.44) * p, oy = y + DY(.18) * p;
+        ctx.save(); ctx.globalAlpha = .45 + .55 * p; setSolid(); ctx.beginPath(); ctx.rect(ox, oy, w, h); ctx.fill(); ctx.stroke(); ctx.restore();
+        cur = [ox + w / 2, oy + h / 2]; break;
+      }
+      case 'array': {
+        const w = DX(.18), h = DY(.18), gx = DX(.26), gy = DY(.32), x0 = X(.12), y0 = Y(.12), cols = 3, rows = 2, tot = cols * rows;
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+          const i = r * cols + c; if (i > 0 && p * tot < i) continue;
+          ctx.save(); if (i > 0) ctx.globalAlpha = Math.min(1, p * tot - i + 1);
+          setSolid(); ctx.beginPath(); ctx.rect(x0 + c * gx, y0 + r * gy, w, h); ctx.fill(); ctx.stroke(); ctx.restore();
+        }
+        break;
+      }
+      case 'array_polar': {
+        const C = [X(.5), Y(.54)], R = DX(.30), n = 6, s = DX(.075);
+        ctx.save(); ctx.setLineDash([3, 3]); ctx.strokeStyle = GHOST; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(C[0], C[1], R, 0, 2 * Math.PI); ctx.stroke(); ctx.restore();
+        ctx.fillStyle = ACCENT; dot(C, 2.4);
+        for (let i = 0; i < n; i++) {
+          if (i > 0 && p * n < i) continue;
+          const a = -Math.PI / 2 + i * 2 * Math.PI / n, px = C[0] + R * Math.cos(a), py = C[1] + R * Math.sin(a);
+          ctx.save(); if (i > 0) ctx.globalAlpha = Math.min(1, p * n - i + 1);
+          setSolid(); ctx.beginPath(); ctx.rect(px - s, py - s, 2 * s, 2 * s); ctx.fill(); ctx.stroke(); ctx.restore();
+        }
+        break;
+      }
+      case 'explode': {
+        const x = X(.26), y = Y(.30), w = DX(.48), h = DY(.40), d = DX(.10) * p;
+        setSolid();
+        seg([x, y - d], [x + w, y - d]);              // haut
+        seg([x, y + h + d], [x + w, y + h + d]);       // bas
+        seg([x - d, y], [x - d, y + h]);              // gauche
+        seg([x + w + d, y], [x + w + d, y + h]);       // droite
+        break;
+      }
+      case 'group':
+      case 'ungroup': {
+        const ug = kind === 'ungroup', o = ug ? DX(.06) * p : 0;
+        setSolid();
+        ctx.beginPath(); ctx.rect(X(.18) - o, Y(.28) - o, DX(.18), DY(.16)); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(X(.66) + o, Y(.40) - o, DX(.10), 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(X(.40), Y(.80) + o); ctx.lineTo(X(.58), Y(.80) + o); ctx.lineTo(X(.49), Y(.60) + o); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.save(); ctx.globalAlpha = ug ? 1 - p : p; ctx.setLineDash([5, 3]); ctx.strokeStyle = RUBBER; ctx.lineWidth = 1.4;
+        ctx.strokeRect(X(.12), Y(.20), DX(.64), DY(.68)); ctx.restore();
+        break;
+      }
+      case 'erase': {
+        const x = X(.20), y = Y(.30), w = DX(.50), h = DY(.40);
+        ctx.save(); ctx.globalAlpha = 1 - p; setSolid(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.fill(); ctx.stroke(); ctx.restore();
+        cur = [x + w / 2, y + h / 2]; break;
+      }
+      case 'dimangular': {
+        const V = [X(.20), Y(.82)], r1 = [X(.88), Y(.66)], r2 = [X(.50), Y(.16)];
+        setSolid(); seg(V, r1); seg(V, r2);
+        const a1 = Math.atan2(r1[1] - V[1], r1[0] - V[0]), a2 = Math.atan2(r2[1] - V[1], r2[0] - V[0]), R = DX(.34);
+        if (p > .02) { ctx.beginPath(); ctx.arc(V[0], V[1], R, a1, a1 + (a2 - a1) * p, (a2 - a1) < 0); ctx.stroke(); }
+        if (p > .85) { ctx.save(); ctx.fillStyle = ACCENT; ctx.font = '10px "JetBrains Mono",monospace'; ctx.textAlign = 'center'; const am = (a1 + a2) / 2; ctx.fillText('45°', V[0] + (R + 13) * Math.cos(am), V[1] + (R + 13) * Math.sin(am)); ctx.restore(); }
+        break;
+      }
+      case 'dimradius': {
+        const c = [X(.48), Y(.56)], R = DX(.30), e = [c[0] + R * Math.cos(-.6), c[1] + R * Math.sin(-.6)];
+        setSolid(); ctx.beginPath(); ctx.arc(c[0], c[1], R, 0, 2 * Math.PI); ctx.stroke();
+        if (p > .02) seg(c, lerp2(c, e, p));
+        if (p > .6) { ctx.fillStyle = ACCENT; arrowHead(e, c, 5); }
+        if (p > .85) { ctx.save(); ctx.fillStyle = ACCENT; ctx.font = '10px "JetBrains Mono",monospace'; ctx.fillText('R' + Math.round(R), c[0] + 5, c[1] - 4); ctx.restore(); }
+        break;
+      }
+      case 'dimdiameter': {
+        const c = [X(.48), Y(.56)], R = DX(.30), ang = -.6;
+        const e1 = [c[0] + R * Math.cos(ang), c[1] + R * Math.sin(ang)], e2 = [c[0] - R * Math.cos(ang), c[1] - R * Math.sin(ang)];
+        setSolid(); ctx.beginPath(); ctx.arc(c[0], c[1], R, 0, 2 * Math.PI); ctx.stroke();
+        if (p > .02) seg(lerp2(c, e2, p), lerp2(c, e1, p));
+        if (p > .6) { ctx.fillStyle = ACCENT; arrowHead(e1, c, 5); arrowHead(e2, c, 5); }
+        if (p > .85) { ctx.save(); ctx.fillStyle = ACCENT; ctx.font = '10px "JetBrains Mono",monospace'; ctx.textAlign = 'center'; ctx.fillText('Ø' + Math.round(2 * R), c[0], c[1] - 4); ctx.restore(); }
+        break;
+      }
+    }
+    if (cursorOut && cur) cursorOut.p = cur;
+  }
+
+  // ── Curseur + pulse ─────────────────────────────────────────────────────────
+  function drawCursorPx(x, y, pressed) {
+    const s = pressed ? .82 : .92;
+    ctx.save(); ctx.setLineDash([]); ctx.translate(x, y); ctx.scale(s, s);
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(0, 15); ctx.lineTo(4, 11.5);
+    ctx.lineTo(6.6, 17.5); ctx.lineTo(9, 16.4); ctx.lineTo(6.2, 10.6); ctx.lineTo(11, 10.6); ctx.closePath();
+    ctx.fillStyle = CUR_FILL; ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = CUR_STROKE; ctx.stroke();
+    ctx.restore();
+  }
+  function drawClickPulse(at, t) {
+    ctx.save(); ctx.setLineDash([]); ctx.globalAlpha = Math.max(0, 1 - t);
+    ctx.beginPath(); ctx.arc(X(at[0]), Y(at[1]), 3 + 11 * t, 0, 2 * Math.PI);
+    ctx.strokeStyle = ACCENT; ctx.lineWidth = 1.6; ctx.stroke(); ctx.restore();
+  }
+
+  // ── Timelines & boucle ──────────────────────────────────────────────────────
+  const moveDur = (a, b) => Math.max(280, Math.min(280 + dist(a, b) * 820, 820));
+  function buildCreateTimeline(s) {
+    const pts = s.pts, segs = []; let prev = [1.12, 1.18];
+    for (let i = 0; i < pts.length; i++) {
+      segs.push({ type: 'move', from: prev, to: pts[i], placed: i, dur: moveDur(prev, pts[i]) });
+      segs.push({ type: 'click', at: pts[i], placed: i + 1, dur: CLICK_DUR });
+      prev = pts[i];
+    }
+    segs.push({ type: 'hold', at: prev, placed: pts.length, dur: HOLD_DUR });
+    return segs;
+  }
+  function buildModifyTimeline(s) {
+    const segs = [];
+    if (s.clicks) {
+      let prev = [1.12, 1.18];
+      s.clicks.forEach(c => {
+        segs.push({ type: 'mmove', from: prev, to: c, dur: moveDur(prev, c) });
+        segs.push({ type: 'mclick', at: c, dur: CLICK_DUR });
+        prev = c;
+      });
+    }
+    segs.push({ type: 'mhold', p: 0, dur: MHOLD0 });
+    segs.push({ type: 'op', dur: OP_DUR });
+    segs.push({ type: 'mhold', p: 1, dur: MHOLD1 });
+    return segs;
+  }
+
+  function loop() {
+    const now = performance.now();
+    let seg = timeline[segI];
+    let t = (now - segStart) / seg.dur;
+    if (t >= 1) { segI = (segI + 1) % timeline.length; segStart = now; seg = timeline[segI]; t = 0; }
+    t = Math.min(t, 1);
+
+    if (scn.type === 'modify') {
+      ctx.clearRect(0, 0, W, H);
+      let p, cursor = null, pulse = 0;
+      if (seg.type === 'op') p = easeInOut(t);
+      else if (seg.type === 'mhold') p = seg.p;
+      else { p = 0; cursor = seg.type === 'mmove' ? lerp2(seg.from, seg.to, easeInOut(t)) : seg.at; if (seg.type === 'mclick') pulse = t; }
+      const out = {}; renderModify(scn.kind, p, out);
+      if (cursor) { if (seg.type === 'mclick') drawClickPulse(seg.at, pulse); drawCursorPx(X(cursor[0]), Y(cursor[1]), seg.type === 'mclick' && t < .3); }
+      else if (out.p) drawCursorPx(out.p[0], out.p[1], seg.type === 'op');
+    } else {
+      let cursor, pulse = 0;
+      if (seg.type === 'move') cursor = lerp2(seg.from, seg.to, easeInOut(t));
+      else if (seg.type === 'click') { cursor = seg.at; pulse = t; }
+      else cursor = seg.at;
+      render(seg.placed, cursor);
+      if (seg.type === 'click') drawClickPulse(seg.at, pulse);
+      drawCursorPx(X(cursor[0]), Y(cursor[1]), seg.type === 'click' && t < .3);
+    }
+    raf = requestAnimationFrame(loop);
+  }
+
+  function play(s) { scn = s; timeline = s.type === 'modify' ? buildModifyTimeline(s) : buildCreateTimeline(s); segI = 0; segStart = performance.now(); loop(); }
+  function stop() { if (raf) cancelAnimationFrame(raf); raf = null; }
+
+  // ── Fenêtre + survol ─────────────────────────────────────────────────────────
+  function injectStyle() {
+    const css = `
+.tool-preview{position:fixed;z-index:10000;pointer-events:none;background:var(--bg-panel,#16213e);
+  border:1px solid #ffffff20;border-radius:8px;padding:8px 8px 6px;box-shadow:0 6px 20px #000a;
+  display:flex;flex-direction:column;align-items:center;gap:5px;opacity:0;
+  transform:translateY(-4px) scale(.96);transition:opacity .14s ease,transform .14s ease;}
+.tool-preview.show{opacity:1;transform:none;}
+.tool-preview canvas{display:block;}
+.tool-preview .tp-label{font:10px/1 'JetBrains Mono',monospace;color:var(--text-dim,#576a80);
+  letter-spacing:.3px;max-width:130px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}`;
+    const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+  }
+  function ensureEl() {
+    if (el) return;
+    const a = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+    if (a) ACCENT = a;
+    el = document.createElement('div'); el.className = 'tool-preview';
+    cv = document.createElement('canvas');
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+    label = document.createElement('div'); label.className = 'tp-label';
+    el.appendChild(cv); el.appendChild(label); document.body.appendChild(el);
+  }
+  function show(btn) {
+    const s = ANIM[keyOf(btn)]; if (!s) return;
+    ensureEl(); label.textContent = btn.getAttribute('title') || '';
+    el.classList.add('show');
+    const r = btn.getBoundingClientRect(), pw = el.offsetWidth, ph = el.offsetHeight;
+    let left = Math.max(6, Math.min(r.left + r.width / 2 - pw / 2, window.innerWidth - pw - 6));
+    let top = r.bottom + 6; if (top + ph > window.innerHeight - 6) top = r.top - ph - 6;
+    el.style.left = left + 'px'; el.style.top = top + 'px';
+    play(s);
+  }
+  function hide() { clearTimeout(timer); timer = null; curBtn = null; stop(); if (el) el.classList.remove('show'); }
+
+  function setup() {
+    injectStyle();
+    document.addEventListener('mouseover', e => {
+      const btn = e.target.closest && e.target.closest('.tool-btn');
+      if (!btn || !keyOf(btn) || btn === curBtn) return;
+      hide(); curBtn = btn; timer = setTimeout(() => { if (curBtn === btn) show(btn); }, OPEN_DELAY);
+    }, true);
+    document.addEventListener('mouseout', e => {
+      const btn = e.target.closest && e.target.closest('.tool-btn');
+      if (btn && btn === curBtn) { const to = e.relatedTarget; if (!to || !to.closest || to.closest('.tool-btn') !== btn) hide(); }
+    }, true);
+    document.addEventListener('mousedown', hide, true);
+    document.addEventListener('wheel', hide, true);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup);
+  else setup();
+})();
+// @@ANIM_END
+
   document.addEventListener('DOMContentLoaded', () => {
     const dlg = document.getElementById('calc-dialog');
     const hdr = document.getElementById('calc-drag');
@@ -12076,6 +13550,9 @@ function confirmDimTextDialog() {
 
 // ===== PRINT DIALOG =====
 function openPrintDialog() {
+  // En espace papier : on imprime directement la feuille telle quelle
+  const layout = getActiveLayout();
+  if (layout) { doPrintLayout(layout); return; }
   const dlg = document.getElementById('print-dialog');
   dlg.style.display = 'block';
   if (S._printArea) {
@@ -13018,6 +14495,7 @@ cmdInput.addEventListener('keydown',(ev)=>{
       CMD.ERASE.exec();
     }
   } else if(ev.key==='Escape'){
+    if(S.space!=='model' && S._activeVp){ S._activeVp=null; canvas.style.cursor='default'; render(); return; } // sortir de la fenêtre (MSPACE)
     if(isRubberBand){ isRubberBand=false; rbStart=null; rbEnd=null; render(); return; }
     if(S.mirrorAwaitDelete){ _confirmMirrorDelete(false); return; }
     if(S.copyPending){ S.copyPending=false; termPrint('Copie annulée','warning'); setTool('select'); return; }
@@ -13419,10 +14897,16 @@ function exportSVG() {
 }
 
 // ===== DXF EXPORT =====
-function exportDXF() {
+async function exportDXF() {
   const dxf = [];
   const w = (s) => dxf.push(s);
   const f = (n) => String(parseFloat(n.toFixed(6)));
+
+  // ── Handles (REQUIS par AC1015 : sans eux AutoCAD rejette « ID 0 déjà utilisé ») ──
+  let _h = 0x30;                                     // compteur de handles (hex)
+  const nh = () => (_h++).toString(16).toUpperCase();// prochain handle unique
+  let _handseedIdx = -1;                             // index du $HANDSEED à patcher en fin
+  let hModelBR = '', hPaperBR = '';                  // handles BLOCK_RECORD Model/Paper Space
 
   // ── Compute drawing extents ──────────────────────────────────────────────────
   let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
@@ -13441,6 +14925,7 @@ function exportDXF() {
   w('0'); w('SECTION');
   w('2'); w('HEADER');
   w('9'); w('$ACADVER'); w('1'); w('AC1015');
+  w('9'); w('$HANDSEED'); w('5'); _handseedIdx = dxf.length; w('FFFFF'); // patché en fin
   w('9'); w('$INSBASE'); w('10'); w('0.0'); w('20'); w('0.0'); w('30'); w('0.0');
   w('9'); w('$EXTMIN'); w('10'); w(f(minX)); w('20'); w(f(minY)); w('30'); w('0.0');
   w('9'); w('$EXTMAX'); w('10'); w(f(maxX)); w('20'); w(f(maxY)); w('30'); w('0.0');
@@ -13463,8 +14948,9 @@ function exportDXF() {
   w('2'); w('TABLES');
 
   // VPORT table
-  w('0'); w('TABLE'); w('2'); w('VPORT'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
-  w('0'); w('VPORT'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbViewportTableRecord');
+  const hVportT = nh();
+  w('0'); w('TABLE'); w('2'); w('VPORT'); w('5'); w(hVportT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('VPORT'); w('5'); w(nh()); w('330'); w(hVportT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbViewportTableRecord');
   w('2'); w('*ACTIVE'); w('70'); w('0');
   w('10'); w('0.0'); w('20'); w('0.0'); w('11'); w('1.0'); w('21'); w('1.0');
   w('12'); w(f((minX+maxX)/2)); w('22'); w(f((minY+maxY)/2));
@@ -13478,17 +14964,19 @@ function exportDXF() {
   w('0'); w('ENDTAB');
 
   // LTYPE table
-  w('0'); w('TABLE'); w('2'); w('LTYPE'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
-  w('0'); w('LTYPE'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLinetypeTableRecord');
+  const hLtypeT = nh();
+  w('0'); w('TABLE'); w('2'); w('LTYPE'); w('5'); w(hLtypeT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('LTYPE'); w('5'); w(nh()); w('330'); w(hLtypeT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLinetypeTableRecord');
   w('2'); w('CONTINUOUS'); w('70'); w('0'); w('3'); w('Solid line'); w('72'); w('65'); w('73'); w('0'); w('40'); w('0.0');
   w('0'); w('ENDTAB');
 
   // LAYER table
-  w('0'); w('TABLE'); w('2'); w('LAYER'); w('100'); w('AcDbSymbolTable');
+  const hLayerT = nh();
+  w('0'); w('TABLE'); w('2'); w('LAYER'); w('5'); w(hLayerT); w('330'); w('0'); w('100'); w('AcDbSymbolTable');
   w('70'); w(String(S.layers.length));
   S.layers.forEach(lay => {
     const ln = lay.name.replace(/[^a-zA-Z0-9_-]/g,'_');
-    w('0'); w('LAYER'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLayerTableRecord');
+    w('0'); w('LAYER'); w('5'); w(nh()); w('330'); w(hLayerT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLayerTableRecord');
     w('2'); w(ln);
     w('70'); w(lay.visible ? '0' : '1');
     w('62'); w(String(dxfColorIndex(lay.color)));
@@ -13497,33 +14985,39 @@ function exportDXF() {
   w('0'); w('ENDTAB');
 
   // STYLE table
-  w('0'); w('TABLE'); w('2'); w('STYLE'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
-  w('0'); w('STYLE'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbTextStyleTableRecord');
+  const hStyleT = nh();
+  w('0'); w('TABLE'); w('2'); w('STYLE'); w('5'); w(hStyleT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('STYLE'); w('5'); w(nh()); w('330'); w(hStyleT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbTextStyleTableRecord');
   w('2'); w('STANDARD'); w('70'); w('0'); w('40'); w('0.0'); w('41'); w('1.0'); w('50'); w('0.0'); w('71'); w('0'); w('42'); w('0.2'); w('3'); w(''); w('4'); w('');
   w('0'); w('ENDTAB');
 
   // VIEW table (empty)
-  w('0'); w('TABLE'); w('2'); w('VIEW'); w('100'); w('AcDbSymbolTable'); w('70'); w('0'); w('0'); w('ENDTAB');
+  w('0'); w('TABLE'); w('2'); w('VIEW'); w('5'); w(nh()); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('0'); w('0'); w('ENDTAB');
 
   // UCS table (empty)
-  w('0'); w('TABLE'); w('2'); w('UCS'); w('100'); w('AcDbSymbolTable'); w('70'); w('0'); w('0'); w('ENDTAB');
+  w('0'); w('TABLE'); w('2'); w('UCS'); w('5'); w(nh()); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('0'); w('0'); w('ENDTAB');
 
   // APPID table
-  w('0'); w('TABLE'); w('2'); w('APPID'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
-  w('0'); w('APPID'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbRegAppTableRecord');
+  const hAppidT = nh();
+  w('0'); w('TABLE'); w('2'); w('APPID'); w('5'); w(hAppidT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('APPID'); w('5'); w(nh()); w('330'); w(hAppidT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbRegAppTableRecord');
   w('2'); w('ACAD'); w('70'); w('0');
   w('0'); w('ENDTAB');
 
-  // DIMSTYLE table
-  w('0'); w('TABLE'); w('2'); w('DIMSTYLE'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
-  w('0'); w('DIMSTYLE'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbDimStyleTableRecord');
+  // DIMSTYLE table (l'enregistrement utilise le code 105 pour son handle)
+  const hDimT = nh();
+  w('0'); w('TABLE'); w('2'); w('DIMSTYLE'); w('5'); w(hDimT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('DIMSTYLE'); w('105'); w(nh()); w('330'); w(hDimT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbDimStyleTableRecord');
   w('2'); w('STANDARD'); w('70'); w('0');
   w('0'); w('ENDTAB');
 
   // BLOCK_RECORD table (required by AC1015)
-  w('0'); w('TABLE'); w('2'); w('BLOCK_RECORD'); w('100'); w('AcDbSymbolTable'); w('70'); w('2');
-  w('0'); w('BLOCK_RECORD'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Model_Space');
-  w('0'); w('BLOCK_RECORD'); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Paper_Space');
+  const hBlkRecT = nh();
+  w('0'); w('TABLE'); w('2'); w('BLOCK_RECORD'); w('5'); w(hBlkRecT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('2');
+  hModelBR = nh();
+  w('0'); w('BLOCK_RECORD'); w('5'); w(hModelBR); w('330'); w(hBlkRecT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Model_Space');
+  hPaperBR = nh();
+  w('0'); w('BLOCK_RECORD'); w('5'); w(hPaperBR); w('330'); w(hBlkRecT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Paper_Space');
   w('0'); w('ENDTAB');
 
   w('0'); w('ENDSEC');
@@ -13531,14 +15025,14 @@ function exportDXF() {
   // ── BLOCKS (required by AC1015) ───────────────────────────────────────────────
   w('0'); w('SECTION');
   w('2'); w('BLOCKS');
-  w('0'); w('BLOCK'); w('100'); w('AcDbEntity'); w('8'); w('0');
+  w('0'); w('BLOCK'); w('5'); w(nh()); w('330'); w(hModelBR); w('100'); w('AcDbEntity'); w('8'); w('0');
   w('100'); w('AcDbBlockBegin'); w('2'); w('*Model_Space'); w('70'); w('0');
   w('10'); w('0.0'); w('20'); w('0.0'); w('30'); w('0.0'); w('3'); w('*Model_Space'); w('1'); w('');
-  w('0'); w('ENDBLK'); w('100'); w('AcDbEntity'); w('8'); w('0'); w('100'); w('AcDbBlockEnd');
-  w('0'); w('BLOCK'); w('100'); w('AcDbEntity'); w('8'); w('0');
+  w('0'); w('ENDBLK'); w('5'); w(nh()); w('330'); w(hModelBR); w('100'); w('AcDbEntity'); w('8'); w('0'); w('100'); w('AcDbBlockEnd');
+  w('0'); w('BLOCK'); w('5'); w(nh()); w('330'); w(hPaperBR); w('100'); w('AcDbEntity'); w('8'); w('0'); w('67'); w('1');
   w('100'); w('AcDbBlockBegin'); w('2'); w('*Paper_Space'); w('70'); w('0');
   w('10'); w('0.0'); w('20'); w('0.0'); w('30'); w('0.0'); w('3'); w('*Paper_Space'); w('1'); w('');
-  w('0'); w('ENDBLK'); w('100'); w('AcDbEntity'); w('8'); w('0'); w('100'); w('AcDbBlockEnd');
+  w('0'); w('ENDBLK'); w('5'); w(nh()); w('330'); w(hPaperBR); w('100'); w('AcDbEntity'); w('8'); w('0'); w('67'); w('1'); w('100'); w('AcDbBlockEnd');
   w('0'); w('ENDSEC');
 
   // ── ENTITIES ─────────────────────────────────────────────────────────────────
@@ -13546,6 +15040,7 @@ function exportDXF() {
   w('2'); w('ENTITIES');
 
   function wEnt(layer, col) {
+    w('5'); w(nh()); w('330'); w(hModelBR); // handle + propriétaire (Model_Space)
     w('100'); w('AcDbEntity');
     w('8'); w(layer);
     w('62'); w(String(col));
@@ -13844,20 +15339,26 @@ function exportDXF() {
 
   w('0'); w('ENDSEC');
 
-  // ── OBJECTS (required by AC1015) ──────────────────────────────────────────────
+  // ── OBJECTS (required by AC1015) — dictionnaire racine + ACAD_GROUP ────────────
   w('0'); w('SECTION');
   w('2'); w('OBJECTS');
-  w('0'); w('DICTIONARY');
-  w('100'); w('AcDbDictionary');
-  w('281'); w('1');
+  const hRootDict = nh(), hGroupDict = nh();
+  w('0'); w('DICTIONARY'); w('5'); w(hRootDict); w('330'); w('0'); w('100'); w('AcDbDictionary'); w('281'); w('1');
+  w('3'); w('ACAD_GROUP'); w('350'); w(hGroupDict);
+  w('0'); w('DICTIONARY'); w('5'); w(hGroupDict); w('330'); w(hRootDict); w('100'); w('AcDbDictionary'); w('281'); w('1');
   w('0'); w('ENDSEC');
 
   w('0'); w('EOF');
 
+  // $HANDSEED = handle suivant le plus grand utilisé (requis par AutoCAD)
+  if (_handseedIdx >= 0) dxf[_handseedIdx] = (_h).toString(16).toUpperCase();
+
   const content = dxf.join('\n');
-  downloadBlob(content, 'application/dxf', 'minicad_export.dxf');
+  const baseName = currentDrawingBaseName('minicad_export');
+  const fname = await saveWithPicker(content, baseName, 'dxf', 'application/dxf', 'AutoCAD DXF');
+  if (!fname) { termPrint('Export DXF annulé', 'info'); return; }
   const nEnt = S.entities.length;
-  termPrint('DXF exporté — '+nEnt+' entité'+(nEnt>1?'s':'')+' — AC1015/AutoCAD 2000','success');
+  termPrint('DXF exporté : '+fname+' — '+nEnt+' entité'+(nEnt>1?'s':'')+' — AC1015/AutoCAD 2000','success');
 }
 
 function exportDWG() {
@@ -13975,12 +15476,41 @@ function downloadBlob(content, mime, filename) {
   URL.revokeObjectURL(a.href);
 }
 
+// Nom de base du dessin courant (issu du fichier .mcad enregistré, sinon défaut)
+function currentDrawingBaseName(fallback) {
+  return (_fileHandle?.name?.replace(/\.mcad$/i, '')) || fallback || 'minicad_export';
+}
+
+// Enregistre `content` via une fenêtre « Enregistrer sous » (showSaveFilePicker) :
+// nom proposé + choix de l'emplacement. Fallback Firefox/Safari : téléchargement direct.
+// Retourne le nom de fichier utilisé, ou null si l'utilisateur a annulé.
+async function saveWithPicker(content, baseName, ext, mime, description) {
+  const suggested = baseName + '.' + ext;
+  if ('showSaveFilePicker' in window) {
+    try {
+      const fh = await window.showSaveFilePicker({
+        suggestedName: suggested,
+        types: [{ description, accept: { [mime]: ['.' + ext] } }],
+      });
+      const writable = await fh.createWritable();
+      await writable.write(content);
+      await writable.close();
+      return fh.name;
+    } catch (e) {
+      if (e.name === 'AbortError') return null; // annulé par l'utilisateur
+      // sinon : fallback téléchargement
+    }
+  }
+  downloadBlob(content, mime, suggested);
+  return suggested;
+}
+
 // ===== PERSISTANCE =====
 let _fileHandle = null; // File System Access API — handle fichier courant
 
 function buildSaveData(name) {
   return {
-    version: '0.09', app: 'MiniCAD',
+    version: '0.1', app: 'MiniCAD',
     name: name || (_fileHandle?.name?.replace(/\.mcad$/i,'')) || 'projet',
     date: new Date().toISOString(),
     layers: S.layers, entities: S.entities,
@@ -13988,6 +15518,7 @@ function buildSaveData(name) {
     modules: Object.fromEntries(Object.entries(modules).map(([k,m])=>[k,m.loaded])),
     gridSize: S.gridSize,
     dimStyles: S.dimStyles, currentDimStyle: S.currentDimStyle,
+    layouts: S.layouts, space: S.space,
   };
 }
 
@@ -14176,6 +15707,7 @@ function openPrefsDialog() {
 }
 
 function updateSaveIndicator(state) {
+  S._saveState = state; // mémorisé pour la sécurité « Nouveau » (données non sauvegardées)
   const el = document.getElementById('save-indicator');
   if (!el) return;
   if (state === 'saved') {
@@ -14201,6 +15733,7 @@ function loadFromLocalStorage() {
     if (data.modules) Object.entries(data.modules).forEach(([k,l]) => { if(modules[k]) modules[k].loaded = l; });
     if (data.dimStyles && data.dimStyles.length && !_isOldIsoStyleSet(data.dimStyles)) S.dimStyles = data.dimStyles;
     if (data.currentDimStyle) S.currentDimStyle = _migrateDimStyle(data.currentDimStyle);
+    _restoreLayouts(data);
     termPrint('✓ Projet restauré (' + S.entities.length + ' objets) — Ctrl+S pour sauvegarder sur disque', 'success');
     updateUI(); syncUIState(); zoomExtents();
     updateSaveIndicator('modified');
@@ -14316,6 +15849,7 @@ function openJSON(content, filename) {
   }
   if (data.dimStyles && data.dimStyles.length && !_isOldIsoStyleSet(data.dimStyles)) S.dimStyles = data.dimStyles;
   if (data.currentDimStyle) S.currentDimStyle = _migrateDimStyle(data.currentDimStyle);
+  _restoreLayouts(data);
   termPrint('✓ Projet chargé: ' + S.entities.length + ' objets, ' + S.layers.length + ' calques', 'success');
   updateUI(); syncUIState(); zoomExtents();
 }
@@ -14736,6 +16270,15 @@ document.addEventListener('click', (ev) => {
 });
 
 canvas.addEventListener('dblclick', (ev) => {
+  if (S.space !== 'model') {
+    const layout = getActiveLayout(); if (!layout) return;
+    const rect = canvas.getBoundingClientRect();
+    const [mmx,mmy] = s2p(ev.clientX - rect.left, ev.clientY - rect.top);
+    const vp = [...layout.viewports].reverse().find(v => _ptInVp(v, mmx, mmy));
+    if (vp) { S._activeVp = vp.id; S._selVp = vp.id; }   // entrer dans la fenêtre (MSPACE)
+    else { S._activeVp = null; }                          // double-clic hors fenêtre → sortir
+    render(); return;
+  }
   if (S.drawing || S.gripEdit) return;
   const rect = canvas.getBoundingClientRect();
   const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
@@ -14771,6 +16314,14 @@ canvas.addEventListener('dblclick', (ev) => {
 
 canvas.addEventListener('contextmenu', (ev) => {
   ev.preventDefault();
+  if (S.space !== 'model') {
+    const layout = getActiveLayout(); if (!layout) return;
+    const rect = canvas.getBoundingClientRect();
+    const [mmx,mmy] = s2p(ev.clientX - rect.left, ev.clientY - rect.top);
+    const vp = [...layout.viewports].reverse().find(v => _ptInVp(v, mmx, mmy));
+    if (vp) { S._selVp = vp.id; render(); openViewportDialog(vp.id); }
+    return;
+  }
 
   // Pendant une saisie active → confirme comme Entrée
   if (S.drawing || S.gripEdit) {
@@ -15032,6 +16583,8 @@ function syncUIState() {
 resizeCanvas();
 setTool('select');
 updateUI();
+loadCartoucheLibrary();
+renderSpaceTabs();
 loadUserPrefs();
 syncUIState();
 window.addEventListener('beforeunload', autoSave);
@@ -19399,7 +20952,7 @@ initLibrary();
 
     termPrint('TEXT', 'info');
     await clickWorld(-205, 118, 1400);
-    addEnt({ type:'text', x:-205, y:118, content:'MiniCAD v0.09', size:14 });
+    addEnt({ type:'text', x:-205, y:118, content:'MiniCAD v0.1', size:14 });
     await sleep(800);
 
     if (!_demoRunning) return;

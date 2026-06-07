@@ -4,7 +4,36 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [0.09] — 2026-05-30 — Version courante
+## [0.1] — 2026-06-07 — Version courante
+
+### Ajouté
+- **Présentations (espace papier)** — onglets *Objet / Présentation*
+  - Feuilles aux formats **A0, A1, A2, A3, A4, A5, Letter** + **personnalisé** (mm)
+  - **Fenêtres** (viewports) montrant le dessin à une échelle fixe ; création,
+    déplacement, redimensionnement (poignées)
+  - **Mode fenêtre active (MSPACE)** : double-clic pour entrer (molette = zoom,
+    glisser = pan du modèle), `Échap` / double-clic dehors pour sortir
+  - Fenêtres **transparentes** par défaut (option « fond opaque »)
+  - **Impression PDF 300 DPI** de la feuille (`Ctrl+P`)
+- **Cartouches — modèles `.pcad`**
+  - Modèle = JSON réutilisable, **définit le format de papier**
+  - **Champs dynamiques** `{{titre}}`, `{{echelle}}`, `{{date}}`, `{{auteur}}`,
+    `{{indice}}`, `{{numero}}`, `{{format}}`, `{{page}}` (+ champs libres)
+  - Créer (Fichier ▸ Enregistrer comme modèle), utiliser (menu `+`), **modifier**
+    (✎ / ouvrir un `.pcad`), **import/export `.pcad`**, bibliothèque locale
+  - Dialogue de cartouche **généré dynamiquement** d'après les champs du modèle ;
+    champ vide → affiche son libellé
+- **Aperçus animés au survol des outils** (curseur + clics + élastique) — 46 outils
+  - Fichier externe `animations/tool_anim.js` injecté au build
+
+### Modifié
+- Format de sauvegarde `.mcad` : version `0.1`
+- README mis à jour (Présentations, commandes manquantes : RECTCENTER, POLYGON,
+  ELLIPSE, ARRAY_POLAR, GROUP/UNGROUP, AREA, MESURER, CALC, LIST, LOAD…)
+
+---
+
+## [0.09] — 2026-05-30
 
 ### Ajouté
 - **ARC multi-mode** — commande ARC refaite comme AutoCAD, 4 modes de tracé

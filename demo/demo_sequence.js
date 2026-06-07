@@ -432,7 +432,7 @@
 
     termPrint('TEXT', 'info');
     await clickWorld(-205, 118, 1400);
-    addEnt({ type:'text', x:-205, y:118, content:'MiniCAD v0.09', size:14 });
+    addEnt({ type:'text', x:-205, y:118, content:'MiniCAD v0.1', size:14 });
     await sleep(800);
 
     if (!_demoRunning) return;

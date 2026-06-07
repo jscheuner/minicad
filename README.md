@@ -44,7 +44,10 @@ Aucun npm, aucun build, aucune connexion internet requise (version locale).
 |----------|-------|-------------|
 | `LINE` | `L` | Ligne |
 | `RECT` | `R`, `REC` | Rectangle |
+| `RECTCENTER` | `RC`, `RECTCENTRE` | Rectangle par le centre |
+| `POLYGON` | `POL`, `POLYGONE` | Polygone régulier (inscrit / circonscrit) |
 | `CIRCLE` | `C` | Cercle |
+| `ELLIPSE` | `EL` | Ellipse ou arc elliptique |
 | `ARC` | `A` | Arc (centre, rayon, angles) |
 | `POLYLINE` | `PL` | Polyligne (segments droits + arcs, bulge DXF) |
 | `SPLINE` | `SPL` | Spline Catmull-Rom (C = clore) |
@@ -86,15 +89,28 @@ Aucun npm, aucun build, aucune connexion internet requise (version locale).
 | `CHAMFER` | `CHA` | Chanfrein entre deux segments |
 | `JOIN` | `J` | Fusionner des lignes en polyligne |
 | `ARRAY` | `AR` | Réseau rectangulaire (dialogue) |
+| `ARRAY_POLAR` | `APO`, `RÉSEAU POLAIRE` | Réseau polaire (copies en cercle) |
 | `EXPLODE` | `X` | Éclater un bloc/polyligne en primitives |
+| `GROUP` | `GR`, `GROUPE` | Grouper des entités en un bloc |
+| `UNGROUP` | `DÉGROUPER` | Dégrouper |
 | `DIVIDE` | `DIV` | Diviser en N segments égaux (points) |
-| `DIST` | `DI` | Mesurer une distance entre deux points |
 | `TUBED [Ø]` | — | Diamètre du tube actif (défaut 40) |
 | `TUBEBR [R]` | — | Rayon de coude tube (défaut 67) |
 | `TUBREF` | — | Référence tracé : `AXE` / `EXT` / `INT` |
 | `TUBELBL` | — | Afficher/masquer la nomenclature tube |
 
 Grip editing sur toutes les entités : cliquer un objet sélectionné pour déplacer ses extrémités.
+
+### Mesure et utilitaires
+
+| Commande | Alias | Description |
+|----------|-------|-------------|
+| `DIST` | `DI` | Mesurer une distance entre deux points |
+| `MESURER` | `ME`, `RÈGLE` | Mesure visuelle réutilisable entre deux points |
+| `AREA` | `AIRE`, `SURFACE` | Surface et périmètre d'un contour |
+| `CALC` | `CALCULATRICE` | Calculatrice flottante |
+| `LIST` | `LS` | Lister les objets du dessin |
+| `LOAD` / `UNLOAD` | `MODULE` | Charger / décharger un module (`arch`, `elec`, `dim`, `annot`) |
 
 ### Précision
 
@@ -142,9 +158,48 @@ Profilés de charpente insérables depuis le panneau ou via la commande `ipe 160
 | `.dxf` AC1015 (AutoCAD 2000) | ✓ | ✓ |
 | `.svg` | — | ✓ |
 | `.pdf` | — | ✓ |
+| `.pcad` (modèle de cartouche) | ✓ | ✓ |
 
 - **Auto-save** localStorage — restauration automatique au rechargement
 - **File System Access API** (Chrome/Edge) — `Ctrl+S` écrit dans le fichier ouvert directement
+
+---
+
+## Présentations (espace papier)
+
+Comme dans AutoCAD, on sépare le **dessin** (espace *Objet*, à l'échelle réelle) des **feuilles à imprimer** (espace *Présentation*). Des **onglets** en bas du canevas (`Objet │ Présentation 1 │ +`) permettent de basculer.
+
+### Feuilles et fenêtres
+
+- **Formats** : A0, A1, A2, A3, A4, A5, Letter, ou **personnalisé** (largeur × hauteur en mm).
+- **Fenêtres** (*viewports*) : zones qui affichent le dessin à une **échelle fixe** (1:50, 1:100…).
+  - Clic gauche : sélectionner ; glisser : déplacer ; **poignées** : redimensionner.
+  - **Double-clic dans une fenêtre** → on « entre » dedans (bordure verte) : la **molette zoome** et le **glisser déplace** le modèle dans la fenêtre. `Échap` ou double-clic dehors pour sortir.
+  - **Clic droit** → propriétés : échelle, centre, **fond opaque** (sinon transparent, on voit à travers), verrouillage.
+  - Bouton **« + Fenêtre »** pour en ajouter.
+- **Navigation feuille** : molette = zoom, glisser (ou clic du milieu) = déplacement.
+
+### Cartouches (modèles `.pcad`)
+
+Un **cartouche** (cadre + bloc de titre) est un **modèle réutilisable** au format `.pcad` (JSON) qui **définit aussi le format de papier**.
+
+**Créer un modèle :** dans l'espace Objet, dessiner le cadre et le bloc de titre. Dans les textes, insérer des **champs dynamiques** entre doubles accolades :
+
+`{{titre}}` · `{{auteur}}` · `{{date}}` · `{{indice}}` · `{{numero}}` · `{{echelle}}` · `{{format}}` · `{{page}}` (et tout champ libre, ex. `{{client}}`).
+
+Puis **Fichier ▸ Enregistrer comme modèle de cartouche…** (choix du format, nom) → ajout à la bibliothèque locale et/ou export `.pcad`.
+
+**Utiliser un modèle :** clic (ou clic droit) sur l'onglet **`+`** → menu **Vierge** (page + cadre seul) / **Depuis un modèle** / **Importer un `.pcad`…**. Le modèle impose son format papier et crée une fenêtre cadrée sur le dessin.
+
+**Remplir le cartouche :** bouton **« Cartouche »** → le dialogue liste automatiquement les champs `{{…}}` présents dans le modèle. Un champ laissé vide affiche son libellé (ex. « Titre »), et `date`/`echelle`/`format`/`page` se remplissent automatiquement.
+
+**Modifier / gérer un modèle :** icône ✎ dans le menu `+` (ou Fichier ▸ Ouvrir un modèle `.pcad` à modifier) pour le recharger dans le dessin ; icône ✕ pour supprimer un modèle de la bibliothèque.
+
+> La bibliothèque de modèles est stockée dans le navigateur (localStorage) ; le cartouche d'une présentation, lui, est enregistré **dans le `.mcad`**.
+
+### Impression
+
+En espace Présentation, **`Ctrl+P`** (ou le bouton **« Imprimer PDF »**) exporte la **feuille entière** (fenêtres à l'échelle + cartouche) en **PDF 300 DPI**.
 
 ---
 
@@ -213,7 +268,10 @@ Taper dans le champ en bas de l'interface (insensible à la casse) :
 |----------|-------------|
 | `LINE` / `L` | Ligne |
 | `RECT` / `R` | Rectangle |
+| `RECTCENTER` / `RC` | Rectangle par le centre |
+| `POLYGON` / `POL` | Polygone régulier |
 | `CIRCLE` / `C` | Cercle |
+| `ELLIPSE` / `EL` | Ellipse |
 | `ARC` / `A` | Arc |
 | `PL` | Polyligne |
 | `SPL` | Spline |
@@ -252,9 +310,17 @@ Taper dans le champ en bas de l'interface (insensible à la casse) :
 | `CHAMFER` / `CHA [d1] [d2]` | Chanfrein |
 | `JOIN` / `J` | Fusionner en polyligne |
 | `ARRAY` / `AR` | Réseau rectangulaire |
+| `ARRAY_POLAR` / `APO` | Réseau polaire |
 | `EXPLODE` / `X` | Éclater |
+| `GROUP` / `GR` · `UNGROUP` / `DÉGROUPER` | Grouper / dégrouper |
 | `DIVIDE` / `DIV` | Diviser en N points |
 | `DIST` / `DI` | Mesurer distance |
+| `PREVIOUS` / `PREV` | Resélectionner la dernière sélection |
+| `MESURER` / `ME` | Mesure visuelle réutilisable |
+| `AREA` / `AIRE` | Surface et périmètre |
+| `CALC` / `CALCULATRICE` | Calculatrice |
+| `LIST` / `LS` | Lister les objets |
+| `LOAD` / `UNLOAD` | Charger / décharger un module |
 | `UNDO` / `U` | Annuler |
 | `REDO` | Refaire |
 | `ZOOM` / `Z [E\|n]` | Zoom étendue ou facteur |
@@ -279,10 +345,10 @@ Taper dans le champ en bas de l'interface (insensible à la casse) :
 ## Architecture technique
 
 ```
-minicad.html   (~12 000 lignes, un seul fichier)
+minicad.html   (~20 000 lignes, un seul fichier autonome — généré par build.py)
 │
 ├── CSS         dark theme, barres d'outils, dialogues
-├── HTML        canvas + sidebar + terminal
+├── HTML        canvas + sidebar + terminal + onglets de présentation
 └── JavaScript
     ├── État global S{}           zoom, pan, calques, outil actif, historique…
     ├── Moteur de rendu           drawEntity() → canvas 2D
@@ -292,12 +358,14 @@ minicad.html   (~12 000 lignes, un seul fichier)
     ├── Grip editing              poignées bleues sur toutes les entités
     ├── Sélection                 clic, fenêtre, croisement
     ├── Outils de modification    offset, mirror, fillet, chamfer, trim, extend…
+    ├── Présentations             espace papier, fenêtres à l'échelle, cartouches .pcad
     ├── Import/Export             DXF AC1015, SVG, PDF, JSON .mcad
     ├── Bibliothèques             profilés injectés via build.py
     └── Assistant IA              Ollama local (insertion depuis langage naturel)
 ```
 
-**Contrainte fondamentale :** tout reste dans un seul fichier HTML. Pas de npm, pas de bundler, pas de framework.
+**Contrainte fondamentale :** le fichier livré reste un **unique HTML autonome**. Pas de npm, pas de bundler, pas de framework.
+Le développement se fait dans `src/minicad.html` ; `python build.py` génère les fichiers livrés (`minicad.html`, `minicad_en.html`, etc.).
 
 ---
 
@@ -305,19 +373,19 @@ minicad.html   (~12 000 lignes, un seul fichier)
 
 ```
 minicad/
-├── minicad.html          # Application complète (source unique)
+├── minicad.html          # Application livrée FR (GÉNÉRÉE — ne pas éditer)
+├── minicad_en.html       # Version EN générée
+├── build.py              # Génère les fichiers livrés depuis src/
+├── src/
+│   └── minicad.html      # SOURCE de développement (marqueurs @@ + i18n {{clé}})
+├── translations/         # fr.json, en.json
+├── libraries/            # Profilés (IPE, HEA…) injectés au build
+├── hatches/              # Motifs de hachures injectés au build
+├── animations/           # Aperçus animés des outils (tool_anim.js)
 ├── README.md
-├── docs/
-│   ├── besoin.md         # Analyse du besoin (fonctions de service)
-│   ├── etude.md          # Architecture technique, modèle de données
-│   ├── methode.md        # Conventions de développement
-│   ├── action.md         # Roadmap
-│   └── documentation.md  # API interne, format .mcad
-├── suivi/
-│   ├── CHANGELOG.md      # Historique des versions
-│   └── TODO.md           # Tâches priorisées
-└── tests/
-    └── scenarios.md      # Scénarios de recette
+├── docs/                 # besoin, etude, methode, action, documentation
+├── suivi/                # CHANGELOG.md, TODO.md, plan_presentations.md
+└── tests/                # scenarios.md
 ```
 
 ---
@@ -334,7 +402,7 @@ minicad/
 
 ## Version
 
-**v0.09** — Voir [suivi/CHANGELOG.md](suivi/CHANGELOG.md) pour l'historique complet.
+**v0.1** — Voir [suivi/CHANGELOG.md](suivi/CHANGELOG.md) pour l'historique complet.
 
 ---
 
