@@ -964,7 +964,9 @@
   }
   #ct-menu .ctm-item { padding: 6px 10px; cursor: pointer; border-radius: 4px; color: var(--text); white-space: nowrap; display: flex; align-items: center; }
   #ct-menu .ctm-item:hover { background: var(--accent-dim); color: var(--accent); }
-  #ct-menu .ctm-del { margin-left: auto; padding-left: 12px; color: #777; }
+  #ct-menu .ctm-edit { margin-left: auto; padding-left: 12px; color: #777; }
+  #ct-menu .ctm-edit:hover { color: var(--accent); }
+  #ct-menu .ctm-del { padding-left: 8px; color: #777; }
   #ct-menu .ctm-del:hover { color: var(--error); }
   #ct-menu .ctm-sep { height: 1px; background: #ffffff14; margin: 4px 2px; }
   #ct-menu .ctm-title { padding: 4px 10px; color: var(--text-dim); font-size: 9px; letter-spacing: .5px; }
@@ -1101,6 +1103,9 @@
         </div>
         <div class="menu-dropdown-item" onclick="importCartoucheFile();closeMenus()">
           <span>Importer un modèle de cartouche…</span>
+        </div>
+        <div class="menu-dropdown-item" onclick="openCartoucheToEdit();closeMenus()">
+          <span>Ouvrir un modèle (.pcad) à modifier…</span>
         </div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="openPrintDialog();closeMenus()">
@@ -4930,11 +4935,34 @@ function newPresentationFromTemplate(id) {
   const tpl = allTemplates().find(t => t.id === id); if (tpl) _createLayoutFromTemplate(tpl);
 }
 
+// Ouvrir un modèle dans l'espace objet pour le modifier
+let _editingTemplate = null;
+function _loadTemplateForEdit(tpl) {
+  if (!tpl || !tpl.entities) { termPrint('Modèle invalide', 'error'); return; }
+  if (S.entities.length && S._saveState === 'modified') {
+    if (!confirm('Le dessin actuel n\'est pas sauvegardé.\nLes modifications seront perdues.\n\nOuvrir le modèle pour le modifier quand même ?')) {
+      termPrint('Ouverture annulée', 'info'); return;
+    }
+  }
+  pushUndo();
+  S.entities = (tpl.entities || []).map(e => { const c = JSON.parse(JSON.stringify(e)); c.id = S.nextId++; if (c.layer === undefined) c.layer = 0; return c; });
+  S.selected = [];
+  _editingTemplate = { name: tpl.name, paper: tpl.paper, orient: tpl.orient, customW: tpl.customW, customH: tpl.customH };
+  if (S.space !== 'model') setSpace('model');
+  updateUI(); render(); zoomExtents();
+  termPrint('Modèle « ' + (tpl.name || '?') + ' » ouvert — modifie puis Fichier ▸ Enregistrer comme modèle', 'info');
+}
+
 // Dialogue « Enregistrer comme modèle »
 function openSaveCartoucheDialog() {
   if (S.space !== 'model') { termPrint('Reviens en espace Objet pour enregistrer un modèle', 'warning'); return; }
   if (!S.entities.length) { termPrint('Dessin vide — rien à enregistrer comme modèle', 'warning'); return; }
-  document.getElementById('ct-name').value = 'Mon cartouche';
+  const et = _editingTemplate;
+  document.getElementById('ct-name').value = et && et.name ? et.name : 'Mon cartouche';
+  document.getElementById('ct-paper').value = et && et.paper ? et.paper : 'A4';
+  document.getElementById('ct-orient').value = et && et.orient ? et.orient : 'landscape';
+  document.getElementById('ct-cw').value = et && et.customW ? et.customW : 210;
+  document.getElementById('ct-ch').value = et && et.customH ? et.customH : 297;
   document.getElementById('ct-dialog').style.display = 'block';
   ctPaperChanged();
 }
@@ -4961,6 +4989,7 @@ function saveCartouche(exportFile) {
 // Import .pcad — deux modes : 'library' (ajoute à la bibliothèque) ou 'presentation' (crée direct)
 let _ctImportMode = 'library';
 function importCartoucheFile() { _ctImportMode = 'library'; document.getElementById('ct-file-input').click(); }
+function openCartoucheToEdit() { _ctImportMode = 'edit'; document.getElementById('ct-file-input').click(); }
 function _onCartoucheFile(ev) {
   const f = ev.target.files[0]; if (!f) return; ev.target.value = '';
   const mode = _ctImportMode; _ctImportMode = 'library';
@@ -4972,6 +5001,8 @@ function _onCartoucheFile(ev) {
       if (mode === 'presentation') {
         _createLayoutFromTemplate(t);   // crée la présentation sans toucher la bibliothèque
         termPrint('Présentation créée depuis « ' + f.name + ' »', 'success');
+      } else if (mode === 'edit') {
+        _loadTemplateForEdit(t);        // charge le modèle dans l'espace objet pour le modifier
       } else {
         t.id = 'ct'+Date.now().toString(36); t.builtin = false;
         cartoucheTemplates.push(t); saveCartoucheLibrary();
@@ -5030,10 +5061,11 @@ function openTemplateMenu(x, y) {
              '<div class="ctm-sep"></div><div class="ctm-title">DEPUIS UN MODÈLE</div>';
   allTemplates().forEach(t => {
     const fmt = t.paper === 'custom' ? 'perso' : t.paper;
+    const edit = '<span class="ctm-edit" onclick="event.stopPropagation();_ctMenuEdit(\'' + t.id + '\')" title="Modifier ce modèle">✎</span>';
     const del = t.builtin ? '' :
       '<span class="ctm-del" onclick="event.stopPropagation();_ctMenuDelete(\'' + t.id + '\')" title="Supprimer ce modèle">✕</span>';
     html += '<div class="ctm-item" onclick="_ctMenuPick(\'' + t.id + '\')">' + _esc(t.name) +
-            ' <span style="color:#666">(' + fmt + ')</span>' + del + '</div>';
+            ' <span style="color:#666">(' + fmt + ')</span>' + edit + del + '</div>';
   });
   html += '<div class="ctm-sep"></div><div class="ctm-item" onclick="_ctMenuImport()">Importer un .pcad…</div>';
   el.innerHTML = html; el.style.display = 'block';
@@ -5044,6 +5076,7 @@ function openTemplateMenu(x, y) {
 function closeTemplateMenu() { document.getElementById('ct-menu').style.display = 'none'; }
 function _ctMenuPick(id) { closeTemplateMenu(); if (id) newPresentationFromTemplate(id); else addLayout(); }
 function _ctMenuImport() { closeTemplateMenu(); _ctImportMode = 'presentation'; document.getElementById('ct-file-input').click(); }
+function _ctMenuEdit(id) { closeTemplateMenu(); const t = allTemplates().find(x => x.id === id); if (t) _loadTemplateForEdit(t); }
 function _ctMenuDelete(id) {
   const i = cartoucheTemplates.findIndex(t => t.id === id); if (i < 0) return;
   if (!confirm('Supprimer le modèle « ' + cartoucheTemplates[i].name + ' » de la bibliothèque ?')) return;
