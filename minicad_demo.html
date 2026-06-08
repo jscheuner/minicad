@@ -1361,13 +1361,6 @@
           <path d="M14,9 Q16,6 15,18" fill="none" stroke-dasharray="2,2"/>
         </svg>
       </button>
-      <button class="tool-btn" data-tool="matchprop" title="Copier les propriétés (MA)" onclick="executeCommand('MATCHPROP')">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M16 3l5 5-8.5 8.5-5-5L16 3z"/>
-          <line x1="9" y1="8.5" x2="15.5" y2="15"/>
-          <path d="M6.5 15.5c-1.7 0-2.8 1.3-2.8 3.1 0 .6-.5 1.1-1.7 1.3.9.9 2.3 1.4 3.6 1.4 2 0 3.4-1.4 3.4-3.3 0-1.6-1.1-2.5-2.5-3.5z" fill="currentColor" stroke="none"/>
-        </svg>
-      </button>
       <!-- Réseau -->
       <button class="tool-btn" title="Réseau rectangulaire (AR)" onclick="executeCommand('ARRAY')">
         <svg viewBox="0 0 24 24">
@@ -1583,6 +1576,13 @@
           <rect x="7" y="5" width="10" height="4" rx="1"/>
           <circle cx="8"  cy="14" r="1.2"/><circle cx="12" cy="14" r="1.2"/><circle cx="16" cy="14" r="1.2"/>
           <circle cx="8"  cy="18" r="1.2"/><circle cx="12" cy="18" r="1.2"/><circle cx="16" cy="18" r="1.2"/>
+        </svg>
+      </button>
+      <button class="tool-btn" data-tool="matchprop" title="Copier les propriétés (MA)" onclick="executeCommand('MATCHPROP')">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M16 3l5 5-8.5 8.5-5-5L16 3z"/>
+          <line x1="9" y1="8.5" x2="15.5" y2="15"/>
+          <path d="M6.5 15.5c-1.7 0-2.8 1.3-2.8 3.1 0 .6-.5 1.1-1.7 1.3.9.9 2.3 1.4 3.6 1.4 2 0 3.4-1.4 3.4-3.3 0-1.6-1.1-2.5-2.5-3.5z" fill="currentColor" stroke="none"/>
         </svg>
       </button>
     </div>
@@ -8530,9 +8530,19 @@ function drawCursor() {
   }
 
   if (mode === 'idle' || mode === 'pick') {
-    // Carré de sélection
-    ctx.strokeStyle = '#ffffffcc';
+    // Carré de sélection — vert + marque pinceau quand des propriétés sont prêtes à coller
+    const matchPaste = S.tool === 'matchprop' && S.matchSource;
+    ctx.strokeStyle = matchPaste ? '#00e676' : '#ffffffcc';
     ctx.strokeRect(sx - pickHalf, sy - pickHalf, pickHalf * 2, pickHalf * 2);
+    if (matchPaste) {
+      ctx.fillStyle = '#00e676';
+      ctx.fillRect(sx + pickHalf + 3, sy - pickHalf - 3, 5, 5);            // pastille « peinture »
+      ctx.strokeStyle = '#00e676';
+      ctx.beginPath();
+      ctx.moveTo(sx + pickHalf + 7, sy - pickHalf - 1);
+      ctx.lineTo(sx + pickHalf + 12, sy - pickHalf - 7);                   // manche du pinceau
+      ctx.stroke();
+    }
   }
 
   ctx.restore();
