@@ -16032,7 +16032,7 @@ async function kdriveTest() {
 }
 
 // --- Navigateur de fichiers ---
-function kdriveOpenBrowser(mode) {
+async function kdriveOpenBrowser(mode) {
   if (!_kdReady()) { openKdriveConnect(); termPrint('Configure d\'abord la connexion kDrive', 'warning'); return; }
   _kdMode = mode; _kdNav = [{ id:1, name:'kDrive' }];
   document.getElementById('kd-br-title').textContent = mode === 'save' ? 'ENREGISTRER SUR kDRIVE' : 'OUVRIR DEPUIS kDRIVE';
@@ -16040,6 +16040,13 @@ function kdriveOpenBrowser(mode) {
   document.getElementById('kd-save-btn').style.display = mode === 'save' ? '' : 'none';
   if (mode === 'save') document.getElementById('kd-fname').value = currentDrawingBaseName('dessin') + '.mcad';
   document.getElementById('kd-browser').style.display = 'block';
+  // Entrer directement dans l'espace « Private » (la racine virtuelle id 1 n'est pas un dossier de travail)
+  try {
+    const j = await _kdJson('/3/drive/' + _kdrive.driveId + '/files/1/files');
+    const priv = (j.data || []).find(f => f.type === 'dir' && f.visibility === 'is_private_space')
+              || (j.data || []).find(f => f.type === 'dir' && /private/i.test(f.name));
+    if (priv) _kdNav.push({ id: priv.id, name: priv.name });
+  } catch(e) {}
   _kdRenderList();
 }
 function closeKdriveBrowser() { document.getElementById('kd-browser').style.display = 'none'; }
