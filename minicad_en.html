@@ -838,6 +838,17 @@
     width: 90px;
   }
   .prop-select:focus { outline: none; border-color: var(--accent); }
+  .prop-color {
+    width: 30px; height: 18px; padding: 0; border: 1px solid #ffffff20;
+    border-radius: 3px; background: var(--bg-dark); cursor: pointer; vertical-align: middle;
+  }
+  .prop-mini {
+    background: var(--bg-dark); border: 1px solid #ffffff20; border-radius: 3px;
+    color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    padding: 1px 5px; cursor: pointer; vertical-align: middle;
+  }
+  .prop-mini:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+  .prop-mini:disabled { opacity: 0.4; cursor: default; }
 
   .terminal {
     height: 160px;
@@ -1161,6 +1172,7 @@
         <div class="menu-dropdown-item" onclick="executeCommand('DIVIDE');closeMenus()"><span>Divide (DIV)</span></div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="executeCommand('EXPLODE');closeMenus()"><span>Explode (X)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('MATCHPROP');closeMenus()"><span>Copier les propriétés</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('GROUP');closeMenus()"><span>Group (GROUP)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('UNGROUP');closeMenus()"><span>Ungroup (UNGROUP)</span></div>
         <div class="menu-dropdown-sep"></div>
@@ -1575,6 +1587,13 @@
           <rect x="7" y="5" width="10" height="4" rx="1"/>
           <circle cx="8"  cy="14" r="1.2"/><circle cx="12" cy="14" r="1.2"/><circle cx="16" cy="14" r="1.2"/>
           <circle cx="8"  cy="18" r="1.2"/><circle cx="12" cy="18" r="1.2"/><circle cx="16" cy="18" r="1.2"/>
+        </svg>
+      </button>
+      <button class="tool-btn" data-tool="matchprop" title="Copier les propriétés (MA)" onclick="executeCommand('MATCHPROP')">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M16 3l5 5-8.5 8.5-5-5L16 3z"/>
+          <line x1="9" y1="8.5" x2="15.5" y2="15"/>
+          <path d="M6.5 15.5c-1.7 0-2.8 1.3-2.8 3.1 0 .6-.5 1.1-1.7 1.3.9.9 2.3 1.4 3.6 1.4 2 0 3.4-1.4 3.4-3.3 0-1.6-1.1-2.5-2.5-3.5z" fill="currentColor" stroke="none"/>
         </svg>
       </button>
     </div>
@@ -2397,6 +2416,8 @@ const S = {
   filletClickPos1: null,
   // JOIN
   joinSelection: [],
+  // MATCHPROP (copier les propriétés)
+  matchSource: null,
   // AI ASSISTANT
   aiHistory: [],
   aiModel: 'qwen3-coder:30b-opt',
@@ -2506,6 +2527,15 @@ let _osnapCache = { wx: NaN, wy: NaN, nEntities: -1, drawRef: '', result: null }
 let _acqPending = null; // { ax, ay, dx, dy } — candidat en attente
 let _acqTimer   = null; // handle setTimeout
 
+// Vrai si le point est sur l'arc VISIBLE de l'ellipse (plage paramétrique) — sinon ignore l'intersection
+function _ptOnEllipseArc(e, px, py) {
+  if (e.type !== 'ellipse') return true;
+  if (e.startAngle === undefined || e.endAngle === undefined) return true; // ellipse complète
+  if (Math.abs((e.endAngle - e.startAngle) - Math.PI*2) < 1e-9) return true; // pleine
+  const t = ellipseParam({ cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0 }, px, py);
+  return angleInArc(t, e.startAngle, e.endAngle);
+}
+
 function findOsnap(wx, wy) {
   if (!S.osnapEnabled) return null;
   if (S._tanFromCircle) S._tanResolvedP1 = null; // réinitialise à chaque frame
@@ -2601,6 +2631,11 @@ function findOsnap(wx, wy) {
         check(e.cx + e.r * Math.cos(e.startAngle), e.cy + e.r * Math.sin(e.startAngle), 'endpoint', e);
         check(e.cx + e.r * Math.cos(e.endAngle),   e.cy + e.r * Math.sin(e.endAngle),   'endpoint', e);
       }
+      if (e.type === 'ellipse' && e.startAngle !== undefined && e.endAngle !== undefined) {
+        const el = { cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0 };
+        const p1 = ellipsePoint(el, e.startAngle), p2 = ellipsePoint(el, e.endAngle);
+        check(p1[0], p1[1], 'endpoint', e); check(p2[0], p2[1], 'endpoint', e);
+      }
       if (e.type === 'tube') {
         for (const p of getTubeSnapPoints(e)) check(p.x, p.y, 'endpoint', e);
       }
@@ -2625,6 +2660,12 @@ function findOsnap(wx, wy) {
         for (let i = 0; i < e.points.length - 1; i++) {
           check((e.points[i][0] + e.points[i + 1][0]) / 2, (e.points[i][1] + e.points[i + 1][1]) / 2, 'midpoint', e);
         }
+      }
+      if (e.type === 'ellipse' && e.startAngle !== undefined && e.endAngle !== undefined) {
+        const el = { cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0 };
+        let sa=e.startAngle, ea=e.endAngle; while(ea<sa) ea+=Math.PI*2;
+        const m = ellipsePoint(el, (sa+ea)/2);
+        check(m[0], m[1], 'midpoint', e);
       }
       if (e.type === 'tube') {
         _tubeWalkStraights(e, (x1,y1,x2,y2,theta) => {
@@ -2676,6 +2717,13 @@ function findOsnap(wx, wy) {
         const a = Math.atan2(wy - e.cy, wx - e.cx);
         check(e.cx + e.r * Math.cos(a), e.cy + e.r * Math.sin(a), 'nearest', e);
       }
+      if (e.type === 'ellipse') {
+        const el = { cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0, sa:e.startAngle, ea:e.endAngle };
+        for (const sg of ellipseSampleSegs(el, 96)) {
+          const p = projectOnSeg(wx, wy, sg[0], sg[1], sg[2], sg[3]);
+          if (p) check(p[0], p[1], 'nearest', e);
+        }
+      }
       if (e.type === 'tube') {
         const tr = e.tubeRadius || 20;
         _tubeWalkStraights(e, (x1, y1, x2, y2, theta) => {
@@ -2724,6 +2772,8 @@ function findOsnap(wx, wy) {
         // Optim 3 — traiter chaque paire une seule fois (skip si e2 a déjà été traité en e)
         if (_nearbyXIdx.get(e2) <= eIdx) continue;
         const isCircular2 = e2.type === 'circle' || e2.type === 'arc';
+        // Filet : ne garder l'intersection que si le point est sur l'arc VISIBLE des ellipses
+        const chkX = (px, py) => { if (_ptOnEllipseArc(e, px, py) && _ptOnEllipseArc(e2, px, py)) check(px, py, 'intersection', e); };
 
         // Cercle / arc × cercle / arc
         if (isCircular && isCircular2) {
@@ -2738,7 +2788,7 @@ function findOsnap(wx, wy) {
             const a2 = Math.atan2(py - e2.cy, px - e2.cx);
             if (e.type  === 'arc' && !angleInArc(a1, e.startAngle,  e.endAngle))  continue;
             if (e2.type === 'arc' && !angleInArc(a2, e2.startAngle, e2.endAngle)) continue;
-            check(px, py, 'intersection', e);
+            chkX(px, py);
           }
           continue;
         }
@@ -2752,7 +2802,7 @@ function findOsnap(wx, wy) {
                 const a2 = Math.atan2(py - e2.cy, px - e2.cx);
                 if (!angleInArc(a2, e2.startAngle, e2.endAngle)) continue;
               }
-              check(px, py, 'intersection', e);
+              chkX(px, py);
             }
           }
           continue;
@@ -2767,7 +2817,7 @@ function findOsnap(wx, wy) {
                 const a1 = Math.atan2(py - e.cy, px - e.cx);
                 if (!angleInArc(a1, e.startAngle, e.endAngle)) continue;
               }
-              check(px, py, 'intersection', e);
+              chkX(px, py);
             }
           }
           continue;
@@ -2778,7 +2828,7 @@ function findOsnap(wx, wy) {
           for (const a of segsA) {
             for (const b of segsOf(e2)) { // optim 4
               const pt = segSegIntersect(a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3]);
-              if (pt) check(pt[0], pt[1], 'intersection', e);
+              if (pt) chkX(pt[0], pt[1]);
             }
           }
         }
@@ -3067,6 +3117,10 @@ function getEntitySegments(e) {
   if (e.type === 'polyline' || e.type === 'cable' || e.type === 'spline') {
     const sPts = e.type === 'spline' ? catmullRom(e.points, e.closed, 16) : e.points;
     for (let i = 0; i < sPts.length - 1; i++) segs.push([sPts[i][0], sPts[i][1], sPts[i+1][0], sPts[i+1][1]]);
+  }
+  if (e.type === 'ellipse') {
+    const el = { cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0, sa:e.startAngle, ea:e.endAngle };
+    for (const sg of ellipseSampleSegs(el, 64)) segs.push(sg);
   }
   // Ligne de cote (segment entre les deux flèches) — pour intersection
   if (e.type === 'dim_linear' || e.type === 'dim_aligned') {
@@ -3433,6 +3487,11 @@ const CMD = {
     S.joinSelection=[]; S.selected=[];
     setTool('join');
     termPrint('JOIN — Cliquer les entités à joindre, Entrée pour confirmer (Echap=fin)','info');
+    setTimeout(smartFocus,0);
+  }},
+  MATCHPROP: { alias: ['MA','MATCH','COPIERPROP','COPIERPROPRIETES','PINCEAU'], desc: 'Copier les propriétés d\'un objet vers d\'autres', exec() {
+    S.matchSource=null; setTool('matchprop');
+    termPrint('COPIER PROPRIÉTÉS — cliquez l\'objet source','info');
     setTimeout(smartFocus,0);
   }},
   FILLET: { alias: ['F','RACCORD','RACCORDER'], desc: 'Raccord arrondi — FILLET [rayon]', exec(args) {
@@ -4000,8 +4059,8 @@ function _drawStaticLayer() {
     const layer = S.layers[e.layer];
     const color = e.color || layer?.color || '#00d4ff';
     ctx.strokeStyle = color; ctx.fillStyle = color;
-    ctx.lineWidth = getLayerLineWidthPx(layer?.lineWidth);
-    ctx.setLineDash(e.dash || getLayerLineDash(layer?.lineType || 'solid'));
+    ctx.lineWidth = getLayerLineWidthPx(e.lineWidth ?? layer?.lineWidth);
+    ctx.setLineDash(e.dash || getLayerLineDash(e.lineType || layer?.lineType || 'solid'));
     try { drawEntity(e); } catch(err) { console.warn('drawEntity #'+e.id+' '+e.type, err.message); }
     ctx.setLineDash([]);
   });
@@ -4654,9 +4713,10 @@ function _drawViewport(vp, p2s, Z, opts) {
       if (!lyr || !lyr.visible) return;
       const color = opts.print ? (lyr.printColor || '#000000') : (e.color || lyr.color || '#00d4ff');
       ctx.strokeStyle = color; ctx.fillStyle = color;
-      ctx.lineWidth = opts.print ? Math.max(0.13*MM2PX96, (lyr.lineWidth || 0.25)*MM2PX96)
-                                 : getLayerLineWidthPx(lyr.lineWidth);
-      ctx.setLineDash(e.dash || getLayerLineDash(lyr.lineType || 'solid'));
+      const _lw = e.lineWidth ?? lyr.lineWidth;
+      ctx.lineWidth = opts.print ? Math.max(0.13*MM2PX96, (_lw || 0.25)*MM2PX96)
+                                 : getLayerLineWidthPx(_lw);
+      ctx.setLineDash(e.dash || getLayerLineDash(e.lineType || lyr.lineType || 'solid'));
       try { drawEntity(e); } catch(err) {}
       ctx.setLineDash([]);
     });
@@ -6496,10 +6556,10 @@ function drawEntity(e) {
       const savedStroke = ctx.strokeStyle, savedFill = ctx.fillStyle, savedLW = ctx.lineWidth;
       for (const child of e.entities) {
         const layer = S.layers[child.layer] || S.layers[S.currentLayer];
-        ctx.strokeStyle = layer?.color || '#00d4ff';
+        ctx.strokeStyle = child.color || layer?.color || '#00d4ff';
         ctx.fillStyle = ctx.strokeStyle;
-        ctx.lineWidth = getLayerLineWidthPx(layer?.lineWidth);
-        ctx.setLineDash(child.dash || getLayerLineDash(layer?.lineType || 'solid'));
+        ctx.lineWidth = getLayerLineWidthPx(child.lineWidth ?? layer?.lineWidth);
+        ctx.setLineDash(child.dash || getLayerLineDash(child.lineType || layer?.lineType || 'solid'));
         drawEntity(child);
         ctx.setLineDash([]);
       }
@@ -8477,6 +8537,7 @@ function getCursorMode() {
   if ((t === 'dim_linear' || t === 'dim_aligned') && S._dimPick) return 'pick';
   if ((t === 'dim_radius' || t === 'dim_diameter') && !S._dimCircle) return 'pick';
   if (t === 'divide_pick') return 'pick';
+  if (t === 'matchprop') return 'pick';
   if (t === 'point' || t === 'measure') return 'draw';
   return 'draw';
 }
@@ -8514,9 +8575,19 @@ function drawCursor() {
   }
 
   if (mode === 'idle' || mode === 'pick') {
-    // Carré de sélection
-    ctx.strokeStyle = '#ffffffcc';
+    // Carré de sélection — vert + marque pinceau quand des propriétés sont prêtes à coller
+    const matchPaste = S.tool === 'matchprop' && S.matchSource;
+    ctx.strokeStyle = matchPaste ? '#00e676' : '#ffffffcc';
     ctx.strokeRect(sx - pickHalf, sy - pickHalf, pickHalf * 2, pickHalf * 2);
+    if (matchPaste) {
+      ctx.fillStyle = '#00e676';
+      ctx.fillRect(sx + pickHalf + 3, sy - pickHalf - 3, 5, 5);            // pastille « peinture »
+      ctx.strokeStyle = '#00e676';
+      ctx.beginPath();
+      ctx.moveTo(sx + pickHalf + 7, sy - pickHalf - 1);
+      ctx.lineTo(sx + pickHalf + 12, sy - pickHalf - 7);                   // manche du pinceau
+      ctx.stroke();
+    }
   }
 
   ctx.restore();
@@ -8576,7 +8647,7 @@ canvas.addEventListener('mousemove', (ev) => {
 
   // Hover entity for offset / fillet / chamfer selection highlight
   if ((S.tool === 'offset' && S.offsetTargetId === null) ||
-      S.tool === 'fillet' || S.tool === 'chamfer' || S.tool === 'join' || S.tool === 'trim' || S.tool === 'extend' || S.tool === 'hatch' ||
+      S.tool === 'fillet' || S.tool === 'chamfer' || S.tool === 'join' || S.tool === 'trim' || S.tool === 'extend' || S.tool === 'hatch' || S.tool === 'matchprop' ||
       (((S.tool === 'dim_linear' || S.tool === 'dim_aligned') && S._dimPick)) ||
       S.offsetPending) {
     const _dimPickHover = (S.tool === 'dim_linear' || S.tool === 'dim_aligned') && S._dimPick;
@@ -9283,6 +9354,22 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
         if (tool === 'circle') S.circleDiamMode = false;
         S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
       }
+    }
+    render(); return;
+  }
+
+  // MATCHPROP — copier les propriétés : 1er clic = source, clics suivants = cibles
+  if (tool === 'matchprop') {
+    const hit = hitTest(rawWx, rawWy);
+    if (!hit) { termPrint('Copier propriétés : cliquez un objet', 'warning'); render(); return; }
+    if (!S.matchSource) {
+      S.matchSource = captureMatchProps(hit);
+      termPrint('Source : #' + hit.id + ' — cliquez les objets cibles (Échap pour finir)', 'info');
+    } else {
+      pushUndo();
+      applyMatchProps(hit, S.matchSource);
+      updateSaveIndicator('modified'); autoSave(); updateUI();
+      termPrint('Propriétés appliquées à #' + hit.id, 'success');
     }
     render(); return;
   }
@@ -10127,6 +10214,25 @@ function angleInArc(a,sa,ea) {
   let end=ea; while(end<sa) end+=Math.PI*2;
   let ang=a;  while(ang<sa) ang+=Math.PI*2;
   return ang<=end+1e-9;
+}
+
+// ── Copier les propriétés (MATCHPROP) ──
+function captureMatchProps(e){
+  const p = { layer: e.layer, color: (e.color !== undefined ? e.color : null), dash: (e.dash || null),
+              lineType: (e.lineType !== undefined ? e.lineType : null),
+              lineWidth: (e.lineWidth !== undefined ? e.lineWidth : null) };
+  if (e.type === 'text') p.text = { size:e.size, font:e.font, bold:!!e.bold, italic:!!e.italic };
+  if (e.dimStyle !== undefined) p.dimStyle = e.dimStyle;
+  return p;
+}
+function applyMatchProps(t, p){
+  if (p.layer !== undefined) t.layer = p.layer;
+  if (p.color) t.color = p.color; else delete t.color;       // couleur d'objet ou héritée du calque
+  if (p.dash) t.dash = p.dash; else delete t.dash;
+  if (p.lineType != null) t.lineType = p.lineType; else delete t.lineType;
+  if (p.lineWidth != null) t.lineWidth = p.lineWidth; else delete t.lineWidth;
+  if (t.type === 'text' && p.text){ t.size = p.text.size; t.font = p.text.font; t.bold = p.text.bold; t.italic = p.text.italic; }
+  if (p.dimStyle !== undefined && t.dimStyle !== undefined) t.dimStyle = p.dimStyle;
 }
 
 // Segment à bulge → arc {cx,cy,r,sa,ea} (intervalle CCW), identique au rendu (drawPolyArcSegToPath)
@@ -11752,6 +11858,7 @@ function setTool(t) {
   if(t !== 'tube') S.tubePoints=[];
   if(t !== 'dim_angular') { S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null; S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null; }
   S._dimPick = false; // mode « sélection d'objet » des cotes linéaire/parallèle (Espace)
+  if(t !== 'matchprop') S.matchSource = null;
   if(t !== 'measure' && t !== 'select') { S.measurePt1=null; S.measureResult=null; }
   if(t === 'measure') { S.measurePt1=null; } // résultat précédent gardé jusqu'au 1er clic
   S.diLocked=false; S.diField='dist';
@@ -11922,6 +12029,37 @@ function _propChangeLayer(id, layerIdx) {
   render(); autoSave(); updateProperties();
 }
 
+// ── Propriétés d'apparence par objet (couleur / type de ligne / épaisseur) ──
+// « Du calque » = pas d'override (l'objet hérite du calque)
+function _applyProp(ids, fn) {
+  const list = ids.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+  if (!list.length) return;
+  pushUndo();
+  list.forEach(fn);
+  updateSaveIndicator('modified'); autoSave(); render(); updateProperties();
+}
+function _setColor(ids, v)     { _applyProp(ids, e => { if (v === 'bylayer') delete e.color; else e.color = v; }); }
+function _setLineType(ids, v)  { _applyProp(ids, e => { if (v === 'bylayer') delete e.lineType; else e.lineType = v; delete e.dash; }); }
+function _setLineWidth(ids, v) { _applyProp(ids, e => { if (v === 'bylayer') delete e.lineWidth; else e.lineWidth = parseFloat(v); }); }
+
+// Génère les 3 lignes (Couleur / Type ligne / Épaisseur). target = expression JS ('[12]' ou 'S.selected')
+function _propStyleRows(target, effColor, hasColorOverride, lineType, lineWidth) {
+  const row = (l,c) => '<div class="prop-row"><span class="prop-label">'+l+'</span>'+c+'</div>';
+  let h = row('Couleur',
+    '<input type="color" class="prop-color" value="'+(effColor||'#00d4ff')+'" onchange="_setColor('+target+',this.value)"> '+
+    '<button class="prop-mini"'+(hasColorOverride?'':' disabled')+' onclick="_setColor('+target+',\'bylayer\')">calque</button>');
+  const ltOpts=[['bylayer','Du calque'],['solid','Continu'],['dashed','Tirets'],['dotted','Pointillés'],['dashdot','Tiret-point'],['center','Axe']];
+  const ltVal = lineType || 'bylayer';
+  h += row('Type ligne', '<select class="prop-select" onchange="_setLineType('+target+',this.value)">'+
+    ltOpts.map(([v,l])=>'<option value="'+v+'"'+(ltVal===v?' selected':'')+'>'+l+'</option>').join('')+'</select>');
+  const lwVals=[0.05,0.1,0.13,0.18,0.25,0.35,0.5,0.7,1.0,1.4,2.0];
+  const lwVal = (lineWidth===undefined||lineWidth===null) ? 'bylayer' : String(lineWidth);
+  h += row('Épaisseur', '<select class="prop-select" onchange="_setLineWidth('+target+',this.value)">'+
+    '<option value="bylayer"'+(lwVal==='bylayer'?' selected':'')+'>Du calque</option>'+
+    lwVals.map(v=>'<option value="'+v+'"'+(lwVal===String(v)?' selected':'')+'>'+v.toFixed(2)+' mm</option>').join('')+'</select>');
+  return h;
+}
+
 // Applique un changement de champ à TOUTES les entités sélectionnées
 function _propChangeMulti(field, val, isText) {
   const ents = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
@@ -11983,6 +12121,7 @@ function _updatePropertiesSingle(e) {
     S.layers.map((l,i)=>'<option value="'+i+'"'+(e.layer===i?' selected':'')+'>'+l.name+'</option>').join('')+
     '</select>';
   h += row('Calque', layerSel);
+  h += _propStyleRows('['+id+']', e.color || S.layers[e.layer]?.color || '#00d4ff', e.color !== undefined, e.lineType, e.lineWidth);
   if (e.x1 !== undefined) {
     h += row('X1', inp('x1', e.x1.toFixed(2)));
     h += row('Y1', inp('y1', e.y1.toFixed(2)));
@@ -12090,6 +12229,10 @@ function _updatePropertiesMulti(ents) {
     S.layers.map((l,i)=>'<option value="'+i+'"'+(layerVal===i?' selected':'')+'>'+l.name+'</option>').join('')+
     '</select>';
   h += row('Calque', layerSel);
+  const _cCommon = common('color');
+  h += _propStyleRows('S.selected',
+    (_cCommon && _cCommon !== null) ? _cCommon : (S.layers[ents[0].layer]?.color || '#00d4ff'),
+    ents.some(e => e.color !== undefined), common('lineType'), common('lineWidth'));
 
   if (allSameType) {
     // Coordonnées X1/Y1/X2/Y2
@@ -13805,10 +13948,10 @@ function doPrint() {
     if (!lyr || !lyr.visible) return;
     const pc = lyr.printColor || '#000000';
     // lineWidth en px virtuels → ×pScale sur canvas → mm physiques corrects
-    const lw = Math.max(0.13 * VPX_MM, (lyr.lineWidth || 0.25) * VPX_MM);
+    const lw = Math.max(0.13 * VPX_MM, ((e.lineWidth ?? lyr.lineWidth) || 0.25) * VPX_MM);
     ctx.strokeStyle = pc; ctx.fillStyle = pc;
     ctx.lineWidth = lw;
-    ctx.setLineDash(e.dash || getLayerLineDash(lyr.lineType || 'solid'));
+    ctx.setLineDash(e.dash || getLayerLineDash(e.lineType || lyr.lineType || 'solid'));
     drawEntity(e);
     ctx.setLineDash([]);
   });
@@ -14630,6 +14773,7 @@ cmdInput.addEventListener('keydown',(ev)=>{
     if(S.offsetAwaitDist){ S.offsetAwaitDist=false; termPrint('Décalage annulé','warning'); setTool('select'); return; }
     if(S.tool==='offset'){ S.offsetTargetId=null; S.drawing=false; termPrint('Décalage terminé','info'); setTool('select'); render(); return; }
     if(S.tool==='fillet'||S.tool==='chamfer'){ S.filletFirstId=null; S.filletFirstSeg=null; S.filletClickPos1=null; S.filletAwaitRadius=false; S._chamferAwaitD=0; S.selected=[]; setTool('select'); render(); return; }
+    if(S.tool==='matchprop'){ S.matchSource=null; setTool('select'); termPrint('Copier propriétés terminé','info'); render(); return; }
     if(S.tool==='text_place'||S.tool==='text_edit'){ S._textLivePreview=null; S._textEditId=null; document.getElementById('text-dialog').style.display='none'; setTool('select'); render(); return; }
     if(S.drawing){
       if(['polyline','cable'].includes(S.tool))finishPolyline(S.tool);
