@@ -82,12 +82,13 @@ Aucun npm, aucun build, aucune connexion internet requise (version locale).
 | `SCALE` | `SC` | Mise à l'échelle avec point de base |
 | `MIRROR` | `MI` | Symétrie axiale |
 | `OFFSET` | `O` | Décaler parallèle (`OFFSET [dist]`) |
-| `TRIM` | `TR` | Couper au croisement |
-| `EXTEND` | `EX` | Prolonger jusqu'à une limite |
+| `TRIM` | `TR` | Couper au croisement (ligne, arc, cercle, **ellipse**, polyligne…) |
+| `EXTEND` | `EX` | Prolonger jusqu'à une limite (ligne, arc, **ellipse**, polyligne) |
 | `STRETCH` | `ET` | Étirer (fenêtre croisante) |
 | `FILLET` | `F` | Raccord arrondi entre deux segments |
 | `CHAMFER` | `CHA` | Chanfrein entre deux segments |
 | `JOIN` | `J` | Fusionner des lignes en polyligne |
+| `MATCHPROP` | `MA` | Copier les propriétés d'un objet vers d'autres (pinceau) |
 | `ARRAY` | `AR` | Réseau rectangulaire (dialogue) |
 | `ARRAY_POLAR` | `APO`, `RÉSEAU POLAIRE` | Réseau polaire (copies en cercle) |
 | `EXPLODE` | `X` | Éclater un bloc/polyligne en primitives |
@@ -116,7 +117,7 @@ Grip editing sur toutes les entités : cliquer un objet sélectionné pour dépl
 
 | Mode | Touche | Description |
 |------|--------|-------------|
-| **OSNAP** | `F4` | 8 modes : extrémité, milieu, centre, intersection, perpendiculaire, tangente, proche, quadrant |
+| **OSNAP** | `F4` | extrémité, milieu, centre, intersection, perpendiculaire, tangente, proche, quadrant — sur lignes, arcs, cercles, **ellipses**, polylignes… |
 | **Ortho** | `F8` | Contraint à 0° / 90° |
 | **Polaire** | `F10` | Snap angulaire (`POLAR [angle]`) |
 | **Saisie dynamique** | — | Bulle D / A éditable, `Tab` pour basculer |
@@ -150,6 +151,16 @@ Profilés de charpente insérables depuis le panneau ou via la commande `ipe 160
 - Sélection par clic, fenêtre (gauche→droite) ou croisement (droite→gauche)
 - `Shift+clic` pour sélection additive, `Ctrl+A` pour tout sélectionner
 
+### Propriétés des objets
+
+Panneau **Propriétés** (sélection simple ou multiple) :
+- **Couleur**, **type de ligne** (continu, tirets, pointillés, tiret-point, axe) et
+  **épaisseur** (0.05 → 2 mm) **par objet** — ou « Du calque » (hérité).
+- **Mesures calculées** : longueur, périmètre, circonférence, et **aire** (cercle,
+  rectangle, ellipse, polyligne fermée, polygone) ; totaux cumulés en sélection multiple.
+- **Copier les propriétés** (`MATCHPROP` / pinceau) : applique calque, couleur, type/épaisseur
+  de ligne (et style de texte/cote) d'un objet source vers d'autres.
+
 ### Fichiers
 
 | Format | Import | Export |
@@ -162,6 +173,18 @@ Profilés de charpente insérables depuis le panneau ou via la commande `ipe 160
 
 - **Auto-save** localStorage — restauration automatique au rechargement
 - **File System Access API** (Chrome/Edge) — `Ctrl+S` écrit dans le fichier ouvert directement
+
+### Cloud — kDrive (Infomaniak)
+
+Sur **[minicad.org](https://minicad.org)**, ouverture/enregistrement des `.mcad` directement sur **kDrive** :
+- **Fichier → Connexion kDrive** : proxy (Worker), token API (scope *Drive*), Drive ID — stockés
+  uniquement dans le navigateur.
+- **Ouvrir / Enregistrer sur kDrive** : navigateur de dossiers (création de dossier, renommage),
+  démarre dans l'espace *Private*.
+- Après ouverture/enregistrement cloud, **`Ctrl+S` ré-enregistre sur kDrive** (nouvelle version).
+
+> Les appels passent par un petit **proxy** (Cloudflare Worker) car l'API kDrive n'autorise pas
+> les requêtes navigateur directes (CORS). Voir [suivi/plan_cloud_kdrive.md](suivi/plan_cloud_kdrive.md).
 
 ---
 
@@ -309,6 +332,7 @@ Taper dans le champ en bas de l'interface (insensible à la casse) :
 | `FILLET` / `F [r]` | Raccord arrondi |
 | `CHAMFER` / `CHA [d1] [d2]` | Chanfrein |
 | `JOIN` / `J` | Fusionner en polyligne |
+| `MATCHPROP` / `MA` | Copier les propriétés (pinceau) |
 | `ARRAY` / `AR` | Réseau rectangulaire |
 | `ARRAY_POLAR` / `APO` | Réseau polaire |
 | `EXPLODE` / `X` | Éclater |

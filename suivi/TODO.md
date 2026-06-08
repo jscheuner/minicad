@@ -14,9 +14,10 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## 🟡 Priorité moyenne
 
-- [ ] **Connexion cloud kDrive (Infomaniak)** — ouvrir/enregistrer les `.mcad` sur kDrive
-  - Plan + test CORS : voir [plan_cloud_kdrive.md](plan_cloud_kdrive.md)
-  - **Étape 0 d'abord** : valider le CORS (décide client direct vs mini-proxy)
+- [x] **Connexion cloud kDrive (Infomaniak)** — ouvrir/enregistrer les `.mcad` sur kDrive ✅ (MVP)
+  - CORS bloqué → proxy **Cloudflare Worker** ; auth par token API (scope Drive)
+  - Ouvrir/enregistrer, navigateur (créer/renommer dossier), `Ctrl+S` → kDrive
+  - Plan : [plan_cloud_kdrive.md](plan_cloud_kdrive.md). À faire plus tard : OAuth2 PKCE, conflits d'édition
 
 - [ ] **Présentations (espace papier)** — onglets Objet/Présentation, fenêtres à l'échelle, cartouche, impression PDF
   - Plan détaillé Phase 1 : voir [plan_presentations.md](plan_presentations.md) (≈ 600–700 lignes)

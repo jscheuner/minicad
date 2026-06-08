@@ -25,11 +25,28 @@ Format : `[version] — YYYY-MM-DD — Description`
     champ vide → affiche son libellé
 - **Aperçus animés au survol des outils** (curseur + clics + élastique) — 46 outils
   - Fichier externe `animations/tool_anim.js` injecté au build
+- **Copier les propriétés** (`MATCHPROP` / `MA`) — pinceau : applique calque, couleur,
+  type/épaisseur de ligne, style de texte/cote d'un objet vers d'autres (curseur dédié)
+- **Propriétés d'apparence par objet** : couleur, type de ligne, épaisseur (ou « Du calque »)
+  — sélection simple et multiple ; respectées à l'écran, en présentation et à l'impression
+- **Propriétés calculées** dans le panneau : longueur / périmètre / circonférence + **aire**
+  (cercle, rectangle, ellipse, polyligne fermée, polygone) ; totaux en sélection multiple
+- **TRIM / EXTEND sur l'ellipse** (cible et limite) ; EXTEND sur l'arc
+- **OSNAP sur l'ellipse** : intersection, proche, extrémité/milieu (+ filtre arc visible)
+- **Cloud kDrive (Infomaniak)** : ouvrir/enregistrer les `.mcad` sur kDrive via proxy
+  (Cloudflare Worker, CORS), navigateur de dossiers (créer/renommer), `Ctrl+S` → kDrive
+
+### Corrigé
+- Sélection fenêtre (G→D) : bbox serrée (la marge de culling faussait l'inclusion)
+- Sélection d'une polyligne en cliquant sur un **arc** (bulge)
+- **EXPLODE** : arcs de polyligne qui s'inversaient (sens de bulge)
+- Cotes : sélection d'objet (Espace) pour DIMLINEAR/DIMALIGNED ; hit-test des cotes alignées
 
 ### Modifié
 - Format de sauvegarde `.mcad` : version `0.1`
-- README mis à jour (Présentations, commandes manquantes : RECTCENTER, POLYGON,
-  ELLIPSE, ARRAY_POLAR, GROUP/UNGROUP, AREA, MESURER, CALC, LIST, LOAD…)
+- README mis à jour (Présentations, propriétés objet/calculées, OSNAP ellipse, cloud kDrive,
+  commandes : RECTCENTER, POLYGON, ELLIPSE, ARRAY_POLAR, GROUP/UNGROUP, AREA, MESURER,
+  CALC, LIST, LOAD, MATCHPROP…)
 
 ---
 
