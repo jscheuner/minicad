@@ -954,18 +954,26 @@
     box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     font-family: 'JetBrains Mono', monospace;
   }
-  #vp-dialog, #ct-dialog, #cf-dialog {
+  #vp-dialog, #ct-dialog, #cf-dialog, #kd-dialog, #kd-browser {
     position: fixed; display: none;
     top: 50%; left: 50%; transform: translate(-50%,-50%);
     background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
     z-index: 960; width: 320px; box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     font-family: 'JetBrains Mono', monospace;
   }
-  #vp-dialog .pd-body input[type=number], #ct-dialog .pd-body input[type=number] {
+  #kd-browser { width: 400px; }
+  #vp-dialog .pd-body input[type=number], #ct-dialog .pd-body input[type=number],
+  #kd-dialog .pd-body input, #kd-browser .pd-body input {
     background: #111827; border: 1px solid #ffffff22; color: #e0e0e0;
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     border-radius: 4px; padding: 4px 7px; flex: 1; min-width: 0;
   }
+  .kd-breadcrumb { font-size: 10px; color: var(--text-dim); padding: 2px 2px 6px; }
+  .kd-breadcrumb a { color: var(--accent); cursor: pointer; }
+  .kd-list { max-height: 300px; overflow-y: auto; border: 1px solid #ffffff14; border-radius: 4px; }
+  .kd-item { padding: 5px 8px; cursor: pointer; font-size: 11px; color: var(--text);
+    border-bottom: 1px solid #ffffff08; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kd-item:hover { background: var(--accent-dim); color: var(--accent); }
   /* Menu « Nouvelle présentation depuis un modèle » */
   #ct-menu {
     position: fixed; display: none; z-index: 1000;
@@ -1238,6 +1246,10 @@
         <div class="menu-dropdown-item" onclick="openCartoucheToEdit();closeMenus()">
           <span>Ouvrir un modèle (.pcad) à modifier…</span>
         </div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="kdriveOpenBrowser('open');closeMenus()"><span>☁ Ouvrir depuis kDrive…</span></div>
+        <div class="menu-dropdown-item" onclick="kdriveOpenBrowser('save');closeMenus()"><span>☁ Enregistrer sur kDrive…</span></div>
+        <div class="menu-dropdown-item" onclick="openKdriveConnect();closeMenus()"><span>Connexion kDrive…</span></div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="openPrintDialog();closeMenus()">
           <span data-i18n="menu.file.print">Imprimer / Export PDF</span><span class="item-shortcut">Ctrl+P</span>
@@ -2263,6 +2275,39 @@
 
 <input type="file" id="ct-file-input" accept=".pcad,.json" style="display:none" onchange="_onCartoucheFile(event)">
 <div id="ct-menu"></div>
+
+<div id="kd-dialog">
+  <div class="pd-header">CONNEXION kDRIVE
+    <span onclick="closeKdriveConnect()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+  </div>
+  <div class="pd-body">
+    <div class="pd-row"><span class="pd-label">Proxy (Worker)</span><input id="kd-worker" type="text"></div>
+    <div class="pd-row"><span class="pd-label">Token API</span><input id="kd-token" type="password" autocomplete="off"></div>
+    <div class="pd-row"><span class="pd-label">Drive ID</span><input id="kd-drive" type="text"></div>
+    <div style="font-size:9px;color:#888;padding:2px 2px;line-height:1.5">Token avec le scope « Drive » (manager Infomaniak). Stocké uniquement dans CE navigateur.</div>
+    <div class="pd-row"><span class="pd-label"></span><button class="pd-btn-sel" onclick="kdriveTest()">Tester</button> <span id="kd-status" style="font-size:10px;margin-left:6px"></span></div>
+  </div>
+  <div class="pd-footer">
+    <button onclick="kdriveForget()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Oublier</button>
+    <button onclick="closeKdriveConnect()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Fermer</button>
+    <button class="pd-btn-print" onclick="kdriveSaveConn()">Enregistrer ↵</button>
+  </div>
+</div>
+
+<div id="kd-browser">
+  <div class="pd-header"><span id="kd-br-title">kDRIVE</span>
+    <span onclick="closeKdriveBrowser()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+  </div>
+  <div class="pd-body">
+    <div id="kd-breadcrumb" class="kd-breadcrumb"></div>
+    <div id="kd-list" class="kd-list"></div>
+    <div class="pd-row" id="kd-save-row" style="display:none"><span class="pd-label">Nom</span><input id="kd-fname" type="text" placeholder="dessin.mcad"></div>
+  </div>
+  <div class="pd-footer">
+    <button onclick="closeKdriveBrowser()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button id="kd-save-btn" class="pd-btn-print" style="display:none" onclick="kdriveDoSave()">Enregistrer ici</button>
+  </div>
+</div>
 
 <div id="text-dialog" style="display:none">
   <div class="td-header">
@@ -15921,6 +15966,122 @@ function downloadBlob(content, mime, filename) {
 // Nom de base du dessin courant (issu du fichier .mcad enregistré, sinon défaut)
 function currentDrawingBaseName(fallback) {
   return (_fileHandle?.name?.replace(/\.mcad$/i, '')) || fallback || 'minicad_export';
+}
+
+// ===== CLOUD kDrive (Infomaniak) via proxy Worker (CORS) =====
+const KDRIVE_DEFAULT_WORKER = 'https://kdrive.floral-mouse-5d29.workers.dev';
+let _kdrive = { worker:'', token:'', driveId:'' };
+try { Object.assign(_kdrive, JSON.parse(localStorage.getItem('minicad_kdrive') || '{}')); } catch(e) {}
+let _kdNav = [{ id:1, name:'kDrive' }];   // pile de navigation (fil d'Ariane)
+let _kdItems = [];                         // éléments du dossier courant
+let _kdMode = 'open';
+
+function _kdReady() { return !!(_kdrive.worker && _kdrive.token && _kdrive.driveId); }
+async function _kdRaw(path, opts={}) {
+  const base = (_kdrive.worker || '').replace(/\/+$/, '');
+  const headers = Object.assign({ Authorization: 'Bearer ' + _kdrive.token }, opts.headers || {});
+  return fetch(base + path, Object.assign({}, opts, { headers }));
+}
+async function _kdJson(path, opts) {
+  const r = await _kdRaw(path, opts);
+  const t = await r.text();
+  let j = null; try { j = JSON.parse(t); } catch(e) {}
+  if (!r.ok || (j && j.result === 'error'))
+    throw new Error((j && j.error && j.error.description) || ('HTTP ' + r.status));
+  return j;
+}
+
+// --- Dialogue connexion ---
+function openKdriveConnect() {
+  document.getElementById('kd-worker').value = _kdrive.worker || KDRIVE_DEFAULT_WORKER;
+  document.getElementById('kd-token').value  = _kdrive.token || '';
+  document.getElementById('kd-drive').value  = _kdrive.driveId || '';
+  document.getElementById('kd-status').textContent = '';
+  document.getElementById('kd-dialog').style.display = 'block';
+}
+function closeKdriveConnect() { document.getElementById('kd-dialog').style.display = 'none'; }
+function _kdReadConn() {
+  _kdrive.worker  = document.getElementById('kd-worker').value.trim();
+  _kdrive.token   = document.getElementById('kd-token').value.trim();
+  _kdrive.driveId = document.getElementById('kd-drive').value.trim();
+}
+function kdriveSaveConn() {
+  _kdReadConn();
+  try { localStorage.setItem('minicad_kdrive', JSON.stringify(_kdrive)); } catch(e) {}
+  closeKdriveConnect(); termPrint('kDrive : connexion enregistrée', 'success');
+}
+function kdriveForget() {
+  _kdrive = { worker:'', token:'', driveId:'' };
+  localStorage.removeItem('minicad_kdrive');
+  openKdriveConnect(); termPrint('kDrive : identifiants oubliés', 'info');
+}
+async function kdriveTest() {
+  _kdReadConn();
+  const s = document.getElementById('kd-status');
+  s.textContent = '…'; s.style.color = 'var(--text-dim)';
+  try {
+    const j = await _kdJson('/3/drive/' + _kdrive.driveId + '/files/1/files');
+    s.textContent = '✓ OK (' + (j.data ? j.data.length : 0) + ' éléments)'; s.style.color = 'var(--success)';
+  } catch(e) { s.textContent = '✗ ' + e.message; s.style.color = 'var(--error)'; }
+}
+
+// --- Navigateur de fichiers ---
+function kdriveOpenBrowser(mode) {
+  if (!_kdReady()) { openKdriveConnect(); termPrint('Configure d\'abord la connexion kDrive', 'warning'); return; }
+  _kdMode = mode; _kdNav = [{ id:1, name:'kDrive' }];
+  document.getElementById('kd-br-title').textContent = mode === 'save' ? 'ENREGISTRER SUR kDRIVE' : 'OUVRIR DEPUIS kDRIVE';
+  document.getElementById('kd-save-row').style.display = mode === 'save' ? 'flex' : 'none';
+  document.getElementById('kd-save-btn').style.display = mode === 'save' ? '' : 'none';
+  if (mode === 'save') document.getElementById('kd-fname').value = currentDrawingBaseName('dessin') + '.mcad';
+  document.getElementById('kd-browser').style.display = 'block';
+  _kdRenderList();
+}
+function closeKdriveBrowser() { document.getElementById('kd-browser').style.display = 'none'; }
+function _kdCurrentFolder() { return _kdNav[_kdNav.length - 1].id; }
+function _kdNavTo(i) { _kdNav = _kdNav.slice(0, i + 1); _kdRenderList(); }
+async function _kdRenderList() {
+  const list = document.getElementById('kd-list'), bc = document.getElementById('kd-breadcrumb');
+  bc.innerHTML = _kdNav.map((n,i) => i < _kdNav.length-1
+    ? '<a onclick="_kdNavTo(' + i + ')">' + _esc(n.name) + '</a> / '
+    : '<b>' + _esc(n.name) + '</b>').join('');
+  list.innerHTML = '<div class="kd-item" style="color:var(--text-dim)">Chargement…</div>';
+  try {
+    const j = await _kdJson('/3/drive/' + _kdrive.driveId + '/files/' + _kdCurrentFolder() + '/files');
+    _kdItems = (j.data || []).filter(f => f.type === 'dir' || /\.mcad$/i.test(f.name));
+    _kdItems.sort((a,b) => (a.type === b.type) ? a.name.localeCompare(b.name) : (a.type === 'dir' ? -1 : 1));
+    if (!_kdItems.length) { list.innerHTML = '<div class="kd-item" style="color:var(--text-dim)">(aucun dossier ni .mcad)</div>'; return; }
+    list.innerHTML = _kdItems.map((f,idx) =>
+      '<div class="kd-item" onclick="_kdItemClick(' + idx + ')">' + (f.type === 'dir' ? '📁 ' : '📄 ') + _esc(f.name) + '</div>').join('');
+  } catch(e) { list.innerHTML = '<div class="kd-item" style="color:var(--error)">Erreur : ' + _esc(e.message) + '</div>'; }
+}
+async function _kdItemClick(idx) {
+  const f = _kdItems[idx]; if (!f) return;
+  if (f.type === 'dir') { _kdNav.push({ id:f.id, name:f.name }); _kdRenderList(); return; }
+  if (_kdMode === 'save') { document.getElementById('kd-fname').value = f.name; return; } // écraser ce fichier
+  try {
+    const r = await _kdRaw('/2/drive/' + _kdrive.driveId + '/files/' + f.id + '/download');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const txt = await r.text();
+    openJSON(txt, f.name);
+    closeKdriveBrowser();
+    termPrint('Ouvert depuis kDrive : ' + f.name, 'success');
+  } catch(e) { termPrint('kDrive — ouverture : ' + e.message, 'error'); }
+}
+async function kdriveDoSave() {
+  let name = document.getElementById('kd-fname').value.trim();
+  if (!name) { termPrint('Nom de fichier requis', 'warning'); return; }
+  if (!/\.mcad$/i.test(name)) name += '.mcad';
+  const content = JSON.stringify(buildSaveData(name.replace(/\.mcad$/i, '')));
+  const bytes = new Blob([content]).size;
+  const q = '?directory_id=' + _kdCurrentFolder() + '&file_name=' + encodeURIComponent(name) +
+            '&conflict=version&total_size=' + bytes;
+  try {
+    await _kdJson('/3/drive/' + _kdrive.driveId + '/upload' + q,
+      { method:'POST', headers:{ 'Content-Type':'application/octet-stream' }, body: content });
+    closeKdriveBrowser();
+    termPrint('Enregistré sur kDrive : ' + name, 'success');
+    updateSaveIndicator('saved');
+  } catch(e) { termPrint('kDrive — enregistrement : ' + e.message, 'error'); }
 }
 
 // Enregistre `content` via une fenêtre « Enregistrer sous » (showSaveFilePicker) :
