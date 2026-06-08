@@ -4,6 +4,18 @@ Statut : **proposé** (non démarré). But : ouvrir/enregistrer les `.mcad` sur 
 Contrainte MiniCAD : le fichier livré reste un **HTML autonome** (seul `fetch()` natif,
 aucune dépendance runtime).
 
+## DÉCISION (2026-06-08) — CORS bloqué → proxy same-origin PHP
+Test étape 0 sur `https://minicad.org` : `fetch` vers `api.infomaniak.com` →
+**`TypeError: Failed to fetch`** ⇒ l'API n'envoie pas les en-têtes CORS ⇒
+**connecteur pur-client impossible**.
+minicad.org est déployé par FTP dans `web/` (hébergement web Infomaniak, PHP dispo)
+⇒ solution retenue : **petit proxy PHP `web/kdrive.php` same-origin**.
+- Le navigateur appelle `/kdrive.php` (même origine → **aucun CORS**).
+- Le PHP relaie vers `api.infomaniak.com` (serveur→serveur, pas de CORS) avec le token.
+- MVP : **token kDrive collé** par l'utilisateur, transmis au proxy (HTTPS, même origine),
+  jamais journalisé. OAuth2 PKCE possible plus tard (le proxy garderait le secret).
+- Limite : le cloud ne marche que sur **minicad.org** (pas en `file://`) — acceptable.
+
 ---
 
 ## Le verrou : CORS
