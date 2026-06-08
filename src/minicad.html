@@ -971,9 +971,12 @@
   .kd-breadcrumb { font-size: 10px; color: var(--text-dim); padding: 2px 2px 6px; }
   .kd-breadcrumb a { color: var(--accent); cursor: pointer; }
   .kd-list { max-height: 300px; overflow-y: auto; border: 1px solid #ffffff14; border-radius: 4px; }
-  .kd-item { padding: 5px 8px; cursor: pointer; font-size: 11px; color: var(--text);
-    border-bottom: 1px solid #ffffff08; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kd-item { display: flex; align-items: center; gap: 4px; padding: 5px 8px; cursor: pointer;
+    font-size: 11px; color: var(--text); border-bottom: 1px solid #ffffff08; }
+  .kd-item .kd-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kd-item:hover { background: var(--accent-dim); color: var(--accent); }
+  .kd-ren { color: #777; padding: 0 4px; }
+  .kd-ren:hover { color: var(--accent); }
   /* Menu « Nouvelle présentation depuis un modèle » */
   #ct-menu {
     position: fixed; display: none; z-index: 1000;
@@ -2178,7 +2181,10 @@
     <span onclick="closeKdriveBrowser()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
   </div>
   <div class="pd-body">
-    <div id="kd-breadcrumb" class="kd-breadcrumb"></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div id="kd-breadcrumb" class="kd-breadcrumb" style="flex:1"></div>
+      <button class="pd-btn-sel" onclick="kdriveNewFolder()" title="Créer un dossier ici">+ Dossier</button>
+    </div>
     <div id="kd-list" class="kd-list"></div>
     <div class="pd-row" id="kd-save-row" style="display:none"><span class="pd-label">Nom</span><input id="kd-fname" type="text" placeholder="dessin.mcad"></div>
   </div>
@@ -15357,7 +15363,10 @@ async function _kdRenderList() {
     _kdItems.sort((a,b) => (a.type === b.type) ? a.name.localeCompare(b.name) : (a.type === 'dir' ? -1 : 1));
     if (!_kdItems.length) { list.innerHTML = '<div class="kd-item" style="color:var(--text-dim)">(aucun dossier ni .mcad)</div>'; return; }
     list.innerHTML = _kdItems.map((f,idx) =>
-      '<div class="kd-item" onclick="_kdItemClick(' + idx + ')">' + (f.type === 'dir' ? '📁 ' : '📄 ') + _esc(f.name) + '</div>').join('');
+      '<div class="kd-item" onclick="_kdItemClick(' + idx + ')">' +
+        '<span class="kd-name">' + (f.type === 'dir' ? '📁 ' : '📄 ') + _esc(f.name) + '</span>' +
+        '<span class="kd-ren" onclick="event.stopPropagation();kdriveRename(' + idx + ')" title="Renommer">✎</span>' +
+      '</div>').join('');
   } catch(e) { list.innerHTML = '<div class="kd-item" style="color:var(--error)">Erreur : ' + _esc(e.message) + '</div>'; }
 }
 async function _kdItemClick(idx) {
@@ -15372,6 +15381,25 @@ async function _kdItemClick(idx) {
     closeKdriveBrowser();
     termPrint('Ouvert depuis kDrive : ' + f.name, 'success');
   } catch(e) { termPrint('kDrive — ouverture : ' + e.message, 'error'); }
+}
+async function kdriveNewFolder() {
+  const name = prompt('Nom du nouveau dossier :');
+  if (!name || !name.trim()) return;
+  try {
+    await _kdJson('/2/drive/' + _kdrive.driveId + '/files/' + _kdCurrentFolder() + '/directory',
+      { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ name: name.trim() }) });
+    termPrint('Dossier créé : ' + name.trim(), 'success'); _kdRenderList();
+  } catch(e) { termPrint('kDrive — créer dossier : ' + e.message, 'error'); }
+}
+async function kdriveRename(idx) {
+  const f = _kdItems[idx]; if (!f) return;
+  const nn = prompt('Renommer en :', f.name);
+  if (!nn || !nn.trim() || nn.trim() === f.name) return;
+  try {
+    await _kdJson('/2/drive/' + _kdrive.driveId + '/files/' + f.id + '/rename',
+      { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ name: nn.trim() }) });
+    termPrint('Renommé : ' + f.name + ' → ' + nn.trim(), 'success'); _kdRenderList();
+  } catch(e) { termPrint('kDrive — renommer : ' + e.message, 'error'); }
 }
 async function kdriveDoSave() {
   let name = document.getElementById('kd-fname').value.trim();
