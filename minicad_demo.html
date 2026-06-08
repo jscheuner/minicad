@@ -838,6 +838,17 @@
     width: 90px;
   }
   .prop-select:focus { outline: none; border-color: var(--accent); }
+  .prop-color {
+    width: 30px; height: 18px; padding: 0; border: 1px solid #ffffff20;
+    border-radius: 3px; background: var(--bg-dark); cursor: pointer; vertical-align: middle;
+  }
+  .prop-mini {
+    background: var(--bg-dark); border: 1px solid #ffffff20; border-radius: 3px;
+    color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    padding: 1px 5px; cursor: pointer; vertical-align: middle;
+  }
+  .prop-mini:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+  .prop-mini:disabled { opacity: 0.4; cursor: default; }
 
   .terminal {
     height: 160px;
@@ -4015,8 +4026,8 @@ function _drawStaticLayer() {
     const layer = S.layers[e.layer];
     const color = e.color || layer?.color || '#00d4ff';
     ctx.strokeStyle = color; ctx.fillStyle = color;
-    ctx.lineWidth = getLayerLineWidthPx(layer?.lineWidth);
-    ctx.setLineDash(e.dash || getLayerLineDash(layer?.lineType || 'solid'));
+    ctx.lineWidth = getLayerLineWidthPx(e.lineWidth ?? layer?.lineWidth);
+    ctx.setLineDash(e.dash || getLayerLineDash(e.lineType || layer?.lineType || 'solid'));
     try { drawEntity(e); } catch(err) { console.warn('drawEntity #'+e.id+' '+e.type, err.message); }
     ctx.setLineDash([]);
   });
@@ -4669,9 +4680,10 @@ function _drawViewport(vp, p2s, Z, opts) {
       if (!lyr || !lyr.visible) return;
       const color = opts.print ? (lyr.printColor || '#000000') : (e.color || lyr.color || '#00d4ff');
       ctx.strokeStyle = color; ctx.fillStyle = color;
-      ctx.lineWidth = opts.print ? Math.max(0.13*MM2PX96, (lyr.lineWidth || 0.25)*MM2PX96)
-                                 : getLayerLineWidthPx(lyr.lineWidth);
-      ctx.setLineDash(e.dash || getLayerLineDash(lyr.lineType || 'solid'));
+      const _lw = e.lineWidth ?? lyr.lineWidth;
+      ctx.lineWidth = opts.print ? Math.max(0.13*MM2PX96, (_lw || 0.25)*MM2PX96)
+                                 : getLayerLineWidthPx(_lw);
+      ctx.setLineDash(e.dash || getLayerLineDash(e.lineType || lyr.lineType || 'solid'));
       try { drawEntity(e); } catch(err) {}
       ctx.setLineDash([]);
     });
@@ -6511,10 +6523,10 @@ function drawEntity(e) {
       const savedStroke = ctx.strokeStyle, savedFill = ctx.fillStyle, savedLW = ctx.lineWidth;
       for (const child of e.entities) {
         const layer = S.layers[child.layer] || S.layers[S.currentLayer];
-        ctx.strokeStyle = layer?.color || '#00d4ff';
+        ctx.strokeStyle = child.color || layer?.color || '#00d4ff';
         ctx.fillStyle = ctx.strokeStyle;
-        ctx.lineWidth = getLayerLineWidthPx(layer?.lineWidth);
-        ctx.setLineDash(child.dash || getLayerLineDash(layer?.lineType || 'solid'));
+        ctx.lineWidth = getLayerLineWidthPx(child.lineWidth ?? layer?.lineWidth);
+        ctx.setLineDash(child.dash || getLayerLineDash(child.lineType || layer?.lineType || 'solid'));
         drawEntity(child);
         ctx.setLineDash([]);
       }
@@ -10173,7 +10185,9 @@ function angleInArc(a,sa,ea) {
 
 // ── Copier les propriétés (MATCHPROP) ──
 function captureMatchProps(e){
-  const p = { layer: e.layer, color: (e.color !== undefined ? e.color : null), dash: (e.dash || null) };
+  const p = { layer: e.layer, color: (e.color !== undefined ? e.color : null), dash: (e.dash || null),
+              lineType: (e.lineType !== undefined ? e.lineType : null),
+              lineWidth: (e.lineWidth !== undefined ? e.lineWidth : null) };
   if (e.type === 'text') p.text = { size:e.size, font:e.font, bold:!!e.bold, italic:!!e.italic };
   if (e.dimStyle !== undefined) p.dimStyle = e.dimStyle;
   return p;
@@ -10182,6 +10196,8 @@ function applyMatchProps(t, p){
   if (p.layer !== undefined) t.layer = p.layer;
   if (p.color) t.color = p.color; else delete t.color;       // couleur d'objet ou héritée du calque
   if (p.dash) t.dash = p.dash; else delete t.dash;
+  if (p.lineType != null) t.lineType = p.lineType; else delete t.lineType;
+  if (p.lineWidth != null) t.lineWidth = p.lineWidth; else delete t.lineWidth;
   if (t.type === 'text' && p.text){ t.size = p.text.size; t.font = p.text.font; t.bold = p.text.bold; t.italic = p.text.italic; }
   if (p.dimStyle !== undefined && t.dimStyle !== undefined) t.dimStyle = p.dimStyle;
 }
@@ -11980,6 +11996,37 @@ function _propChangeLayer(id, layerIdx) {
   render(); autoSave(); updateProperties();
 }
 
+// ── Propriétés d'apparence par objet (couleur / type de ligne / épaisseur) ──
+// « Du calque » = pas d'override (l'objet hérite du calque)
+function _applyProp(ids, fn) {
+  const list = ids.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+  if (!list.length) return;
+  pushUndo();
+  list.forEach(fn);
+  updateSaveIndicator('modified'); autoSave(); render(); updateProperties();
+}
+function _setColor(ids, v)     { _applyProp(ids, e => { if (v === 'bylayer') delete e.color; else e.color = v; }); }
+function _setLineType(ids, v)  { _applyProp(ids, e => { if (v === 'bylayer') delete e.lineType; else e.lineType = v; delete e.dash; }); }
+function _setLineWidth(ids, v) { _applyProp(ids, e => { if (v === 'bylayer') delete e.lineWidth; else e.lineWidth = parseFloat(v); }); }
+
+// Génère les 3 lignes (Couleur / Type ligne / Épaisseur). target = expression JS ('[12]' ou 'S.selected')
+function _propStyleRows(target, effColor, hasColorOverride, lineType, lineWidth) {
+  const row = (l,c) => '<div class="prop-row"><span class="prop-label">'+l+'</span>'+c+'</div>';
+  let h = row('Couleur',
+    '<input type="color" class="prop-color" value="'+(effColor||'#00d4ff')+'" onchange="_setColor('+target+',this.value)"> '+
+    '<button class="prop-mini"'+(hasColorOverride?'':' disabled')+' onclick="_setColor('+target+',\'bylayer\')">calque</button>');
+  const ltOpts=[['bylayer','Du calque'],['solid','Continu'],['dashed','Tirets'],['dotted','Pointillés'],['dashdot','Tiret-point'],['center','Axe']];
+  const ltVal = lineType || 'bylayer';
+  h += row('Type ligne', '<select class="prop-select" onchange="_setLineType('+target+',this.value)">'+
+    ltOpts.map(([v,l])=>'<option value="'+v+'"'+(ltVal===v?' selected':'')+'>'+l+'</option>').join('')+'</select>');
+  const lwVals=[0.05,0.1,0.13,0.18,0.25,0.35,0.5,0.7,1.0,1.4,2.0];
+  const lwVal = (lineWidth===undefined||lineWidth===null) ? 'bylayer' : String(lineWidth);
+  h += row('Épaisseur', '<select class="prop-select" onchange="_setLineWidth('+target+',this.value)">'+
+    '<option value="bylayer"'+(lwVal==='bylayer'?' selected':'')+'>Du calque</option>'+
+    lwVals.map(v=>'<option value="'+v+'"'+(lwVal===String(v)?' selected':'')+'>'+v.toFixed(2)+' mm</option>').join('')+'</select>');
+  return h;
+}
+
 // Applique un changement de champ à TOUTES les entités sélectionnées
 function _propChangeMulti(field, val, isText) {
   const ents = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
@@ -12041,6 +12088,7 @@ function _updatePropertiesSingle(e) {
     S.layers.map((l,i)=>'<option value="'+i+'"'+(e.layer===i?' selected':'')+'>'+l.name+'</option>').join('')+
     '</select>';
   h += row('Calque', layerSel);
+  h += _propStyleRows('['+id+']', e.color || S.layers[e.layer]?.color || '#00d4ff', e.color !== undefined, e.lineType, e.lineWidth);
   if (e.x1 !== undefined) {
     h += row('X1', inp('x1', e.x1.toFixed(2)));
     h += row('Y1', inp('y1', e.y1.toFixed(2)));
@@ -12148,6 +12196,10 @@ function _updatePropertiesMulti(ents) {
     S.layers.map((l,i)=>'<option value="'+i+'"'+(layerVal===i?' selected':'')+'>'+l.name+'</option>').join('')+
     '</select>';
   h += row('Calque', layerSel);
+  const _cCommon = common('color');
+  h += _propStyleRows('S.selected',
+    (_cCommon && _cCommon !== null) ? _cCommon : (S.layers[ents[0].layer]?.color || '#00d4ff'),
+    ents.some(e => e.color !== undefined), common('lineType'), common('lineWidth'));
 
   if (allSameType) {
     // Coordonnées X1/Y1/X2/Y2
@@ -13863,10 +13915,10 @@ function doPrint() {
     if (!lyr || !lyr.visible) return;
     const pc = lyr.printColor || '#000000';
     // lineWidth en px virtuels → ×pScale sur canvas → mm physiques corrects
-    const lw = Math.max(0.13 * VPX_MM, (lyr.lineWidth || 0.25) * VPX_MM);
+    const lw = Math.max(0.13 * VPX_MM, ((e.lineWidth ?? lyr.lineWidth) || 0.25) * VPX_MM);
     ctx.strokeStyle = pc; ctx.fillStyle = pc;
     ctx.lineWidth = lw;
-    ctx.setLineDash(e.dash || getLayerLineDash(lyr.lineType || 'solid'));
+    ctx.setLineDash(e.dash || getLayerLineDash(e.lineType || lyr.lineType || 'solid'));
     drawEntity(e);
     ctx.setLineDash([]);
   });
