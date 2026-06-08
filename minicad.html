@@ -2622,6 +2622,11 @@ function findOsnap(wx, wy) {
         check(e.cx + e.r * Math.cos(e.startAngle), e.cy + e.r * Math.sin(e.startAngle), 'endpoint', e);
         check(e.cx + e.r * Math.cos(e.endAngle),   e.cy + e.r * Math.sin(e.endAngle),   'endpoint', e);
       }
+      if (e.type === 'ellipse' && e.startAngle !== undefined && e.endAngle !== undefined) {
+        const el = { cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0 };
+        const p1 = ellipsePoint(el, e.startAngle), p2 = ellipsePoint(el, e.endAngle);
+        check(p1[0], p1[1], 'endpoint', e); check(p2[0], p2[1], 'endpoint', e);
+      }
       if (e.type === 'tube') {
         for (const p of getTubeSnapPoints(e)) check(p.x, p.y, 'endpoint', e);
       }
@@ -2646,6 +2651,12 @@ function findOsnap(wx, wy) {
         for (let i = 0; i < e.points.length - 1; i++) {
           check((e.points[i][0] + e.points[i + 1][0]) / 2, (e.points[i][1] + e.points[i + 1][1]) / 2, 'midpoint', e);
         }
+      }
+      if (e.type === 'ellipse' && e.startAngle !== undefined && e.endAngle !== undefined) {
+        const el = { cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0 };
+        let sa=e.startAngle, ea=e.endAngle; while(ea<sa) ea+=Math.PI*2;
+        const m = ellipsePoint(el, (sa+ea)/2);
+        check(m[0], m[1], 'midpoint', e);
       }
       if (e.type === 'tube') {
         _tubeWalkStraights(e, (x1,y1,x2,y2,theta) => {
@@ -2696,6 +2707,13 @@ function findOsnap(wx, wy) {
       if (e.type === 'circle') {
         const a = Math.atan2(wy - e.cy, wx - e.cx);
         check(e.cx + e.r * Math.cos(a), e.cy + e.r * Math.sin(a), 'nearest', e);
+      }
+      if (e.type === 'ellipse') {
+        const el = { cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0, sa:e.startAngle, ea:e.endAngle };
+        for (const sg of ellipseSampleSegs(el, 96)) {
+          const p = projectOnSeg(wx, wy, sg[0], sg[1], sg[2], sg[3]);
+          if (p) check(p[0], p[1], 'nearest', e);
+        }
       }
       if (e.type === 'tube') {
         const tr = e.tubeRadius || 20;
@@ -3088,6 +3106,10 @@ function getEntitySegments(e) {
   if (e.type === 'polyline' || e.type === 'cable' || e.type === 'spline') {
     const sPts = e.type === 'spline' ? catmullRom(e.points, e.closed, 16) : e.points;
     for (let i = 0; i < sPts.length - 1; i++) segs.push([sPts[i][0], sPts[i][1], sPts[i+1][0], sPts[i+1][1]]);
+  }
+  if (e.type === 'ellipse') {
+    const el = { cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0, sa:e.startAngle, ea:e.endAngle };
+    for (const sg of ellipseSampleSegs(el, 64)) segs.push(sg);
   }
   // Ligne de cote (segment entre les deux flèches) — pour intersection
   if (e.type === 'dim_linear' || e.type === 'dim_aligned') {
