@@ -2648,6 +2648,15 @@ let _osnapCache = { wx: NaN, wy: NaN, nEntities: -1, drawRef: '', result: null }
 let _acqPending = null; // { ax, ay, dx, dy } — candidat en attente
 let _acqTimer   = null; // handle setTimeout
 
+// Vrai si le point est sur l'arc VISIBLE de l'ellipse (plage paramétrique) — sinon ignore l'intersection
+function _ptOnEllipseArc(e, px, py) {
+  if (e.type !== 'ellipse') return true;
+  if (e.startAngle === undefined || e.endAngle === undefined) return true; // ellipse complète
+  if (Math.abs((e.endAngle - e.startAngle) - Math.PI*2) < 1e-9) return true; // pleine
+  const t = ellipseParam({ cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0 }, px, py);
+  return angleInArc(t, e.startAngle, e.endAngle);
+}
+
 function findOsnap(wx, wy) {
   if (!S.osnapEnabled) return null;
   if (S._tanFromCircle) S._tanResolvedP1 = null; // réinitialise à chaque frame
@@ -2884,6 +2893,8 @@ function findOsnap(wx, wy) {
         // Optim 3 — traiter chaque paire une seule fois (skip si e2 a déjà été traité en e)
         if (_nearbyXIdx.get(e2) <= eIdx) continue;
         const isCircular2 = e2.type === 'circle' || e2.type === 'arc';
+        // Filet : ne garder l'intersection que si le point est sur l'arc VISIBLE des ellipses
+        const chkX = (px, py) => { if (_ptOnEllipseArc(e, px, py) && _ptOnEllipseArc(e2, px, py)) check(px, py, 'intersection', e); };
 
         // Cercle / arc × cercle / arc
         if (isCircular && isCircular2) {
@@ -2898,7 +2909,7 @@ function findOsnap(wx, wy) {
             const a2 = Math.atan2(py - e2.cy, px - e2.cx);
             if (e.type  === 'arc' && !angleInArc(a1, e.startAngle,  e.endAngle))  continue;
             if (e2.type === 'arc' && !angleInArc(a2, e2.startAngle, e2.endAngle)) continue;
-            check(px, py, 'intersection', e);
+            chkX(px, py);
           }
           continue;
         }
@@ -2912,7 +2923,7 @@ function findOsnap(wx, wy) {
                 const a2 = Math.atan2(py - e2.cy, px - e2.cx);
                 if (!angleInArc(a2, e2.startAngle, e2.endAngle)) continue;
               }
-              check(px, py, 'intersection', e);
+              chkX(px, py);
             }
           }
           continue;
@@ -2927,7 +2938,7 @@ function findOsnap(wx, wy) {
                 const a1 = Math.atan2(py - e.cy, px - e.cx);
                 if (!angleInArc(a1, e.startAngle, e.endAngle)) continue;
               }
-              check(px, py, 'intersection', e);
+              chkX(px, py);
             }
           }
           continue;
@@ -2938,7 +2949,7 @@ function findOsnap(wx, wy) {
           for (const a of segsA) {
             for (const b of segsOf(e2)) { // optim 4
               const pt = segSegIntersect(a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3]);
-              if (pt) check(pt[0], pt[1], 'intersection', e);
+              if (pt) chkX(pt[0], pt[1]);
             }
           }
         }
