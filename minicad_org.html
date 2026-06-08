@@ -10168,14 +10168,35 @@ function _shoelace(pts) {
 function computeEntityArea(e) {
   if (e.type === 'circle') return Math.PI * e.r * e.r;
   if (e.type === 'rect')   return Math.abs(e.x2 - e.x1) * Math.abs(e.y2 - e.y1);
+  if (e.type === 'ellipse') {
+    const full = e.startAngle === undefined || Math.abs((e.endAngle - e.startAngle) - Math.PI*2) < 1e-9;
+    return full ? Math.PI * e.rx * e.ry : null;   // pas d'aire pour un arc d'ellipse
+  }
   if (['polyline','cable','hatch'].includes(e.type) && e.points?.length >= 3)
     return _shoelace(flattenPolyPoints(e.points));
   return null;
 }
 
+function _measLengthLabel(e) {
+  if (e.type === 'circle') return 'Circonférence';
+  if (e.type === 'ellipse') { const full = e.startAngle === undefined || Math.abs((e.endAngle-e.startAngle)-Math.PI*2) < 1e-9; return full ? 'Circonférence' : 'Longueur'; }
+  if (e.type === 'arc') return 'Longueur';
+  if (e.type === 'rect') return 'Périmètre';
+  if (['polyline','cable','hatch'].includes(e.type)) {
+    const p = e.points, dup = p && p.length > 2 && Math.hypot(p[0][0]-p[p.length-1][0], p[0][1]-p[p.length-1][1]) < 1e-9;
+    return (e.closed === true || dup) ? 'Périmètre' : 'Longueur';
+  }
+  return 'Longueur';
+}
 function computeEntityPerimeter(e) {
+  if (e.type === 'line' || e.type === 'wall') return Math.hypot(e.x2-e.x1, e.y2-e.y1);
   if (e.type === 'circle') return 2 * Math.PI * e.r;
   if (e.type === 'rect') return 2 * (Math.abs(e.x2 - e.x1) + Math.abs(e.y2 - e.y1));
+  if (e.type === 'arc') { let ea = e.endAngle; while (ea < e.startAngle) ea += Math.PI*2; return e.r * (ea - e.startAngle); }
+  if (e.type === 'ellipse') {
+    const el = { cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0, sa:e.startAngle, ea:e.endAngle };
+    let L = 0; for (const s of ellipseSampleSegs(el, 128)) L += Math.hypot(s[2]-s[0], s[3]-s[1]); return L;
+  }
   if (['polyline','cable','hatch'].includes(e.type) && e.points?.length >= 2) {
     const pts = flattenPolyPoints(e.points);
     let p = 0;
@@ -12303,6 +12324,14 @@ function _updatePropertiesSingle(e) {
     if (e.profileStandard) h += row('Norme', '<span class="prop-value">'+e.profileStandard+'</span>');
     if (e.profileG != null) h += row('Poids/m', '<span class="prop-value">'+e.profileG+' kg/m</span>');
   }
+  // Mesures calculées (longueur/périmètre/circonférence + aire)
+  const _len = computeEntityPerimeter(e);
+  if (_len != null && e.type !== 'line' && e.type !== 'wall')   // ligne/mur ont déjà « Longueur »
+    h += row(_measLengthLabel(e), '<span class="prop-value">'+_len.toFixed(2)+' mm</span>');
+  const _area = computeEntityArea(e);
+  const _closed = ['circle','ellipse','rect'].includes(e.type) || _measLengthLabel(e) === 'Périmètre';
+  if (_area != null && _closed)
+    h += row('Aire', '<span class="prop-value">'+_area.toFixed(2)+' mm²</span>');
   c.innerHTML = h;
 }
 
@@ -12401,6 +12430,17 @@ function _updatePropertiesMulti(ents) {
       h += row('Style cote', dsSel);
     }
   }
+
+  // Totaux (longueur cumulée + aire cumulée des objets sélectionnés)
+  let totLen = 0, totArea = 0, anyLen = false, anyArea = false;
+  ents.forEach(e => {
+    const l = computeEntityPerimeter(e); if (l != null) { totLen += l; anyLen = true; }
+    const a = computeEntityArea(e);
+    const closed = ['circle','ellipse','rect'].includes(e.type) || _measLengthLabel(e) === 'Périmètre';
+    if (a != null && closed) { totArea += a; anyArea = true; }
+  });
+  if (anyLen)  h += row('Longueur tot.', '<span class="prop-value">'+totLen.toFixed(2)+' mm</span>');
+  if (anyArea) h += row('Aire tot.',     '<span class="prop-value">'+totArea.toFixed(2)+' mm²</span>');
 
   c.innerHTML = h;
 }
