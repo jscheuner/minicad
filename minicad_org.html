@@ -3737,7 +3737,7 @@ const CMD = {
       }
     }
     if (S.entities.length) pushUndo(); S.entities = []; S.selected = [];
-    _fileHandle = null; localStorage.removeItem('minicad_autosave'); updateSaveIndicator('new');
+    _fileHandle = null; _kdFile = null; localStorage.removeItem('minicad_autosave'); updateSaveIndicator('new');
     termPrint('Dessin effacé', 'success'); render();
   }},
   GRID: { alias: ['GRILLE'], desc: 'Taille grille (GRID [n])', exec: (args) => {
@@ -15981,6 +15981,7 @@ try { Object.assign(_kdrive, JSON.parse(localStorage.getItem('minicad_kdrive') |
 let _kdNav = [{ id:1, name:'kDrive' }];   // pile de navigation (fil d'Ariane)
 let _kdItems = [];                         // éléments du dossier courant
 let _kdMode = 'open';
+let _kdFile = null;                        // fichier kDrive courant { dirId, name, fileId } → Ctrl+S ré-enregistre dessus
 
 function _kdReady() { return !!(_kdrive.worker && _kdrive.token && _kdrive.driveId); }
 async function _kdRaw(path, opts={}) {
@@ -16079,10 +16080,31 @@ async function _kdItemClick(idx) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const txt = await r.text();
     openJSON(txt, f.name);
+    _kdFile = { dirId: _kdCurrentFolder(), name: f.name, fileId: f.id }; // Ctrl+S → kDrive
+    _fileHandle = null;
+    updateSaveIndicator('saved');
     closeKdriveBrowser();
-    termPrint('Ouvert depuis kDrive : ' + f.name, 'success');
+    termPrint('☁ Ouvert depuis kDrive : ' + f.name + ' — Ctrl+S ré-enregistre ici', 'success');
   } catch(e) { termPrint('kDrive — ouverture : ' + e.message, 'error'); }
 }
+// Ré-enregistre le dessin sur le fichier kDrive courant (appelé par Ctrl+S)
+async function kdriveSaveCurrent() {
+  if (!_kdFile || !_kdReady()) return false;
+  const name = _kdFile.name;
+  const content = JSON.stringify(buildSaveData(name.replace(/\.mcad$/i, '')));
+  const bytes = new Blob([content]).size;
+  const q = '?directory_id=' + _kdFile.dirId + '&file_name=' + encodeURIComponent(name) +
+            '&conflict=version&total_size=' + bytes;
+  try {
+    await _kdJson('/3/drive/' + _kdrive.driveId + '/upload' + q,
+      { method:'POST', headers:{ 'Content-Type':'application/octet-stream' }, body: content });
+    try { localStorage.setItem('minicad_autosave', content); } catch(e) {}
+    updateSaveIndicator('saved');
+    termPrint('☁ Sauvegardé sur kDrive : ' + name, 'success');
+    return true;
+  } catch(e) { termPrint('kDrive — sauvegarde : ' + e.message, 'error'); return false; }
+}
+
 async function kdriveNewFolder() {
   const name = prompt('Nom du nouveau dossier :');
   if (!name || !name.trim()) return;
@@ -16111,10 +16133,12 @@ async function kdriveDoSave() {
   const q = '?directory_id=' + _kdCurrentFolder() + '&file_name=' + encodeURIComponent(name) +
             '&conflict=version&total_size=' + bytes;
   try {
-    await _kdJson('/3/drive/' + _kdrive.driveId + '/upload' + q,
+    const resp = await _kdJson('/3/drive/' + _kdrive.driveId + '/upload' + q,
       { method:'POST', headers:{ 'Content-Type':'application/octet-stream' }, body: content });
+    _kdFile = { dirId: _kdCurrentFolder(), name, fileId: resp && resp.data && resp.data.id }; // Ctrl+S → kDrive
+    _fileHandle = null;
     closeKdriveBrowser();
-    termPrint('Enregistré sur kDrive : ' + name, 'success');
+    termPrint('☁ Enregistré sur kDrive : ' + name + ' — Ctrl+S ré-enregistre ici', 'success');
     updateSaveIndicator('saved');
   } catch(e) { termPrint('kDrive — enregistrement : ' + e.message, 'error'); }
 }
@@ -16380,6 +16404,9 @@ function loadFromLocalStorage() {
 
 // ===== JSON SAVE/OPEN =====
 async function cmdSave(name, forceNew) {
+  // Fichier ouvert/enregistré sur kDrive → Ctrl+S ré-enregistre sur kDrive
+  if (_kdFile && !forceNew && !name) { await kdriveSaveCurrent(); return; }
+  if (forceNew) _kdFile = null;   // « Enregistrer sous » local → repasse en local
   const data = buildSaveData(name);
   const json = JSON.stringify(data, null, 2);
 
@@ -16474,6 +16501,7 @@ function openJSON(content, filename) {
     termPrint('Fichier JSON non reconnu comme projet MiniCAD', 'error');
     return;
   }
+  _kdFile = null;   // par défaut local ; l'ouverture kDrive le re-définit après cet appel
   pushUndo();
   if (data.layers) { S.layers = data.layers; S.layers.forEach(l=>{if(!l.lineWidth)l.lineWidth=0.25;if(!l.lineType)l.lineType='solid';if(!l.printColor)l.printColor='#000000';}); }
   if (data.entities) S.entities = data.entities;
