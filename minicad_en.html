@@ -1161,6 +1161,7 @@
         <div class="menu-dropdown-item" onclick="executeCommand('DIVIDE');closeMenus()"><span>Divide (DIV)</span></div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="executeCommand('EXPLODE');closeMenus()"><span>Explode (X)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('MATCHPROP');closeMenus()"><span>Copier les propriétés</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('GROUP');closeMenus()"><span>Group (GROUP)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('UNGROUP');closeMenus()"><span>Ungroup (UNGROUP)</span></div>
         <div class="menu-dropdown-sep"></div>
@@ -1358,6 +1359,13 @@
           <line x1="15" y1="18" x2="22" y2="12"/>
           <circle cx="9" cy="12" r="2" fill="currentColor" fill-opacity="0.4"/>
           <path d="M14,9 Q16,6 15,18" fill="none" stroke-dasharray="2,2"/>
+        </svg>
+      </button>
+      <button class="tool-btn" data-tool="matchprop" title="Copier les propriétés (MA)" onclick="executeCommand('MATCHPROP')">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M16 3l5 5-8.5 8.5-5-5L16 3z"/>
+          <line x1="9" y1="8.5" x2="15.5" y2="15"/>
+          <path d="M6.5 15.5c-1.7 0-2.8 1.3-2.8 3.1 0 .6-.5 1.1-1.7 1.3.9.9 2.3 1.4 3.6 1.4 2 0 3.4-1.4 3.4-3.3 0-1.6-1.1-2.5-2.5-3.5z" fill="currentColor" stroke="none"/>
         </svg>
       </button>
       <!-- Réseau -->
@@ -2397,6 +2405,8 @@ const S = {
   filletClickPos1: null,
   // JOIN
   joinSelection: [],
+  // MATCHPROP (copier les propriétés)
+  matchSource: null,
   // AI ASSISTANT
   aiHistory: [],
   aiModel: 'qwen3-coder:30b-opt',
@@ -3433,6 +3443,11 @@ const CMD = {
     S.joinSelection=[]; S.selected=[];
     setTool('join');
     termPrint('JOIN — Cliquer les entités à joindre, Entrée pour confirmer (Echap=fin)','info');
+    setTimeout(smartFocus,0);
+  }},
+  MATCHPROP: { alias: ['MA','MATCH','COPIERPROP','COPIERPROPRIETES','PINCEAU'], desc: 'Copier les propriétés d\'un objet vers d\'autres', exec() {
+    S.matchSource=null; setTool('matchprop');
+    termPrint('COPIER PROPRIÉTÉS — cliquez l\'objet source','info');
     setTimeout(smartFocus,0);
   }},
   FILLET: { alias: ['F','RACCORD','RACCORDER'], desc: 'Raccord arrondi — FILLET [rayon]', exec(args) {
@@ -8477,6 +8492,7 @@ function getCursorMode() {
   if ((t === 'dim_linear' || t === 'dim_aligned') && S._dimPick) return 'pick';
   if ((t === 'dim_radius' || t === 'dim_diameter') && !S._dimCircle) return 'pick';
   if (t === 'divide_pick') return 'pick';
+  if (t === 'matchprop') return 'pick';
   if (t === 'point' || t === 'measure') return 'draw';
   return 'draw';
 }
@@ -8576,7 +8592,7 @@ canvas.addEventListener('mousemove', (ev) => {
 
   // Hover entity for offset / fillet / chamfer selection highlight
   if ((S.tool === 'offset' && S.offsetTargetId === null) ||
-      S.tool === 'fillet' || S.tool === 'chamfer' || S.tool === 'join' || S.tool === 'trim' || S.tool === 'extend' || S.tool === 'hatch' ||
+      S.tool === 'fillet' || S.tool === 'chamfer' || S.tool === 'join' || S.tool === 'trim' || S.tool === 'extend' || S.tool === 'hatch' || S.tool === 'matchprop' ||
       (((S.tool === 'dim_linear' || S.tool === 'dim_aligned') && S._dimPick)) ||
       S.offsetPending) {
     const _dimPickHover = (S.tool === 'dim_linear' || S.tool === 'dim_aligned') && S._dimPick;
@@ -9283,6 +9299,22 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
         if (tool === 'circle') S.circleDiamMode = false;
         S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
       }
+    }
+    render(); return;
+  }
+
+  // MATCHPROP — copier les propriétés : 1er clic = source, clics suivants = cibles
+  if (tool === 'matchprop') {
+    const hit = hitTest(rawWx, rawWy);
+    if (!hit) { termPrint('Copier propriétés : cliquez un objet', 'warning'); render(); return; }
+    if (!S.matchSource) {
+      S.matchSource = captureMatchProps(hit);
+      termPrint('Source : #' + hit.id + ' — cliquez les objets cibles (Échap pour finir)', 'info');
+    } else {
+      pushUndo();
+      applyMatchProps(hit, S.matchSource);
+      updateSaveIndicator('modified'); autoSave(); updateUI();
+      termPrint('Propriétés appliquées à #' + hit.id, 'success');
     }
     render(); return;
   }
@@ -10127,6 +10159,21 @@ function angleInArc(a,sa,ea) {
   let end=ea; while(end<sa) end+=Math.PI*2;
   let ang=a;  while(ang<sa) ang+=Math.PI*2;
   return ang<=end+1e-9;
+}
+
+// ── Copier les propriétés (MATCHPROP) ──
+function captureMatchProps(e){
+  const p = { layer: e.layer, color: (e.color !== undefined ? e.color : null), dash: (e.dash || null) };
+  if (e.type === 'text') p.text = { size:e.size, font:e.font, bold:!!e.bold, italic:!!e.italic };
+  if (e.dimStyle !== undefined) p.dimStyle = e.dimStyle;
+  return p;
+}
+function applyMatchProps(t, p){
+  if (p.layer !== undefined) t.layer = p.layer;
+  if (p.color) t.color = p.color; else delete t.color;       // couleur d'objet ou héritée du calque
+  if (p.dash) t.dash = p.dash; else delete t.dash;
+  if (t.type === 'text' && p.text){ t.size = p.text.size; t.font = p.text.font; t.bold = p.text.bold; t.italic = p.text.italic; }
+  if (p.dimStyle !== undefined && t.dimStyle !== undefined) t.dimStyle = p.dimStyle;
 }
 
 // Segment à bulge → arc {cx,cy,r,sa,ea} (intervalle CCW), identique au rendu (drawPolyArcSegToPath)
@@ -11752,6 +11799,7 @@ function setTool(t) {
   if(t !== 'tube') S.tubePoints=[];
   if(t !== 'dim_angular') { S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null; S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null; }
   S._dimPick = false; // mode « sélection d'objet » des cotes linéaire/parallèle (Espace)
+  if(t !== 'matchprop') S.matchSource = null;
   if(t !== 'measure' && t !== 'select') { S.measurePt1=null; S.measureResult=null; }
   if(t === 'measure') { S.measurePt1=null; } // résultat précédent gardé jusqu'au 1er clic
   S.diLocked=false; S.diField='dist';
@@ -14630,6 +14678,7 @@ cmdInput.addEventListener('keydown',(ev)=>{
     if(S.offsetAwaitDist){ S.offsetAwaitDist=false; termPrint('Décalage annulé','warning'); setTool('select'); return; }
     if(S.tool==='offset'){ S.offsetTargetId=null; S.drawing=false; termPrint('Décalage terminé','info'); setTool('select'); render(); return; }
     if(S.tool==='fillet'||S.tool==='chamfer'){ S.filletFirstId=null; S.filletFirstSeg=null; S.filletClickPos1=null; S.filletAwaitRadius=false; S._chamferAwaitD=0; S.selected=[]; setTool('select'); render(); return; }
+    if(S.tool==='matchprop'){ S.matchSource=null; setTool('select'); termPrint('Copier propriétés terminé','info'); render(); return; }
     if(S.tool==='text_place'||S.tool==='text_edit'){ S._textLivePreview=null; S._textEditId=null; document.getElementById('text-dialog').style.display='none'; setTool('select'); render(); return; }
     if(S.drawing){
       if(['polyline','cable'].includes(S.tool))finishPolyline(S.tool);
