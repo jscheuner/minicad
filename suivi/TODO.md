@@ -14,6 +14,10 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## 🟡 Priorité moyenne
 
+- [ ] **Connexion cloud kDrive (Infomaniak)** — ouvrir/enregistrer les `.mcad` sur kDrive
+  - Plan + test CORS : voir [plan_cloud_kdrive.md](plan_cloud_kdrive.md)
+  - **Étape 0 d'abord** : valider le CORS (décide client direct vs mini-proxy)
+
 - [ ] **Présentations (espace papier)** — onglets Objet/Présentation, fenêtres à l'échelle, cartouche, impression PDF
   - Plan détaillé Phase 1 : voir [plan_presentations.md](plan_presentations.md) (≈ 600–700 lignes)
   - En cours : étape 1 (données + persistance) + étape 2 (onglets + feuille)
