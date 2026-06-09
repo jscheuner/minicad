@@ -6991,7 +6991,7 @@ function getGripPoints(e) {
         // Indépendant : centroïde + sommets du contour
         gp(hcx, hcy, (ent, nx, ny) => {
           const dx = nx - hcx, dy = ny - hcy;
-          ent.points = ent.points.map(p => [p[0]+dx, p[1]+dy]);
+          ent.points = ent.points.map(p => p.length>2 ? [p[0]+dx, p[1]+dy, p[2]] : [p[0]+dx, p[1]+dy]);
         });
         const hn = e.points.length;
         const hFirst = e.points[0], hLast = e.points[hn-1];
@@ -10132,7 +10132,7 @@ function offsetEntity(e,dx,dy) {
   if(e.cx!==undefined){e.cx+=dx;e.cy+=dy;} if(e.x!==undefined&&e.x1===undefined){e.x+=dx;e.y+=dy;}
   if(e.vx!==undefined){e.vx+=dx;e.vy+=dy;} // dim_angular vertex
   if(e.textWx!==undefined){e.textWx+=dx;e.textWy+=dy;} // dim_radius/dim_diameter text
-  if(e.points) e.points=e.points.map(p=>[p[0]+dx,p[1]+dy]);
+  if(e.points) e.points=e.points.map(p=> p.length>2 ? [p[0]+dx,p[1]+dy,p[2]] : [p[0]+dx,p[1]+dy]); // conserver le bulge
 }
 
 // Déplacer des entités + leur tubelbl lié
@@ -11195,7 +11195,7 @@ function mirrorEntity(src,ax,ay,bx,by) {
   if(e.cx!==undefined){[e.cx,e.cy]=m(e.cx,e.cy);}
   if(e.x!==undefined&&e.x1===undefined){[e.x,e.y]=m(e.x,e.y);}
   if(e.vx!==undefined){[e.vx,e.vy]=m(e.vx,e.vy);}
-  if(e.points) e.points=e.points.map(p=>m(p[0],p[1]));
+  if(e.points) e.points=e.points.map(p=> p.length>2 ? [...m(p[0],p[1]), -p[2]] : m(p[0],p[1])); // miroir → bulge inversé
   // Angles d'arc : réflexion + inversion start/end pour conserver le sens
   if(e.type==='arc'){
     const la=Math.atan2(by-ay,bx-ax);
