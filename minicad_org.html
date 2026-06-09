@@ -2866,6 +2866,9 @@ function findOsnap(wx, wy) {
         for (let i = 0; i < n; i++) { sx += e.points[i][0]; sy += e.points[i][1]; }
         check(sx / n, sy / n, 'center', e);
       }
+      if (e.type === 'tube') {
+        _tubeWalkBends(e, (bcx, bcy) => check(bcx, bcy, 'center', e)); // centre de chaque coude
+      }
     }
 
     // NEAREST (projection on segments)
@@ -9273,6 +9276,24 @@ function _tubeWalkStraights(e, cb) {
       const { angle: phi, bendRadius: R, side } = seg;
       const bcx = cx - side * R * Math.sin(theta);
       const bcy = cy + side * R * Math.cos(theta);
+      const arcEnd = (theta - side * Math.PI / 2) + side * phi;
+      cx = bcx + R * Math.cos(arcEnd); cy = bcy + R * Math.sin(arcEnd);
+      theta += side * phi;
+    }
+  }
+}
+
+// Parcourt les coudes du tube → centre d'arc (bcx,bcy), rayon R, segment
+function _tubeWalkBends(e, cb) {
+  let cx = e.startX, cy = e.startY, theta = e.startAngle;
+  for (const seg of e.segments) {
+    if (seg.type === 'straight') {
+      cx += seg.length * Math.cos(theta); cy += seg.length * Math.sin(theta);
+    } else if (seg.type === 'bend') {
+      const { angle: phi, bendRadius: R, side } = seg;
+      const bcx = cx - side * R * Math.sin(theta);
+      const bcy = cy + side * R * Math.cos(theta);
+      cb(bcx, bcy, R, seg);
       const arcEnd = (theta - side * Math.PI / 2) + side * phi;
       cx = bcx + R * Math.cos(arcEnd); cy = bcy + R * Math.sin(arcEnd);
       theta += side * phi;
