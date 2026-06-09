@@ -6308,24 +6308,15 @@ function flattenPolyPoints(pts) {
     const bulge = p[2] || 0;
     if (bulge !== 0 && i + 1 < pts.length) {
       const p2 = pts[i + 1];
-      const x1 = p[0], y1 = p[1], x2 = p2[0], y2 = p2[1];
-      const d = Math.hypot(x2 - x1, y2 - y1);
-      if (d < 1e-9) continue;
-      const r = d * (1 + bulge * bulge) / (4 * Math.abs(bulge));
-      const offset = Math.sqrt(Math.max(0, r * r - d * d / 4));
-      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-      const pdx = -(y2 - y1) / d, pdy = (x2 - x1) / d;
-      const cx = mx + Math.sign(bulge) * pdx * offset;
-      const cy = my + Math.sign(bulge) * pdy * offset;
-      const sa = Math.atan2(y1 - cy, x1 - cx);
-      const ea = Math.atan2(y2 - cy, x2 - cx);
-      let dAngle = ea - sa;
-      if (bulge > 0 && dAngle <= 0) dAngle += 2 * Math.PI;
-      if (bulge < 0 && dAngle >= 0) dAngle -= 2 * Math.PI;
-      const N = Math.max(8, Math.ceil(Math.abs(dAngle) * r / 5));
-      for (let j = 1; j < N; j++) {
-        const a = sa + dAngle * (j / N);
-        out.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+      // Échantillonnage via bulgeToArc → identique au rendu (gère les arcs majeurs |bulge|>1)
+      const arc = bulgeToArc(p[0], p[1], p2[0], p2[1], bulge);
+      if (arc) {
+        const span = arc.ea - arc.sa;   // intervalle CCW (>0)
+        const N = Math.max(8, Math.ceil(Math.abs(span) * arc.r / 5));
+        for (let j = 1; j < N; j++) {
+          const a = arc.sa + span * (j / N);
+          out.push([arc.cx + arc.r * Math.cos(a), arc.cy + arc.r * Math.sin(a)]);
+        }
       }
     }
   }
