@@ -5742,7 +5742,13 @@ function drawTubeLabel(e) {
   ry += sepPx;
 
   // Lignes de segments
+  let rowNo = 0;
   for (const row of data.rows) {
+    rowNo++;
+    // Colonne de numéros (gauche)
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'left';
+    ctx.fillText(String(rowNo), sx + padPx * 0.5, ry);
     ctx.fillStyle = '#e2e8f0';
     ctx.textAlign = 'right';
     ctx.fillText(row.len.toFixed(lenDec), sx + padPx + col1Px, ry);
@@ -5750,7 +5756,7 @@ function drawTubeLabel(e) {
     if (row.bend) {
       const deg = row.bend.angle * 180 / Math.PI;
       ctx.fillStyle = '#fbbf24';
-      ctx.fillText('#' + row.bendNo + '  ' + (row.bend.side < 0 ? '-' : '') + deg.toFixed(2) + '°', sx + padPx + col1Px + gapPx + col2Px / 2, ry);
+      ctx.fillText((row.bend.side < 0 ? '-' : '') + deg.toFixed(2) + '°', sx + padPx + col1Px + gapPx + col2Px / 2, ry);
     } else {
       ctx.fillStyle = '#64748b';
       ctx.fillText('-', sx + padPx + col1Px + gapPx + col2Px / 2, ry);
@@ -5950,15 +5956,12 @@ function openTubeEditDialog(ent) {
     tbody.innerHTML = '';
     const { R, tr } = getRD();
     const inpNarrow = inp.replace('width:72px','width:58px');
-    let _bn = 0;
     editRows.forEach((row, i) => {
       const isLast  = i === editRows.length - 1;
-      const bendNo  = isLast ? null : ++_bn;     // numéro de coude (1, 2, 3…)
       // Angle always displayed positive; side toggle button controls direction
       const angCell = isLast
         ? `<span style="color:var(--text-dim);padding:0 6px">—</span>`
-        : `<span style="display:inline-flex;gap:4px;align-items:center">
-            <span title="Coude n°${bendNo}" style="color:var(--text-dim);font-size:10px">#${bendNo}</span>
+        : `<span style="display:inline-flex;gap:3px;align-items:center">
             <input class="te-ang" value="${Math.abs(row.angle??90).toFixed(1)}" style="${inpNarrow}">
             <button class="te-side" title="Inverser le sens du coude" style="background:#2a2a3e;border:1px solid #334;color:var(--accent);width:22px;height:22px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1;padding:0">${row.side >= 0 ? '⟳' : '⟲'}</button>
            </span>`;
