@@ -3403,7 +3403,10 @@ const CMD = {
         delete e.sourceId;
       }
     });
-    S.entities = S.entities.filter(e => !S.selected.includes(e.id));
+    // Supprimer aussi les entités liées à un tube supprimé (traitillé de construction + cotes auto, tubelbl)
+    const _del = new Set(S.selected);
+    S.entities = S.entities.filter(e =>
+      !_del.has(e.id) && !(e.linkedTubeId !== undefined && _del.has(e.linkedTubeId)));
     termPrint(S.selected.length + ' objet(s) supprimé(s)', 'success'); S.selected = []; render();
   }},
   COPY: { alias: ['CO','COPIER'], desc: 'Copier sélection', exec: () => {
@@ -5387,13 +5390,13 @@ function applyTubeRefOffset(pts, tr, ref) {
 
 function getTubeTableData(e) {
   const rows = [];
-  let totalLen = 0;
+  let totalLen = 0, bendNo = 0;
   for (const seg of (e.segments || [])) {
     if (seg.type === 'straight') {
-      rows.push({ len: seg.length, bend: null });
+      rows.push({ len: seg.length, bend: null, bendNo: null });
       totalLen += seg.length;
     } else if (seg.type === 'bend') {
-      if (rows.length > 0) rows[rows.length - 1].bend = seg;
+      if (rows.length > 0) { rows[rows.length - 1].bend = seg; rows[rows.length - 1].bendNo = ++bendNo; }
       totalLen += seg.bendRadius * seg.angle;
     }
   }
@@ -5626,7 +5629,7 @@ function drawTubeLabel(e) {
     if (row.bend) {
       const deg = row.bend.angle * 180 / Math.PI;
       ctx.fillStyle = '#fbbf24';
-      ctx.fillText((row.bend.side < 0 ? '-' : '') + deg.toFixed(2) + '°', sx + padPx + col1Px + gapPx + col2Px / 2, ry);
+      ctx.fillText('#' + row.bendNo + '  ' + (row.bend.side < 0 ? '-' : '') + deg.toFixed(2) + '°', sx + padPx + col1Px + gapPx + col2Px / 2, ry);
     } else {
       ctx.fillStyle = '#64748b';
       ctx.fillText('-', sx + padPx + col1Px + gapPx + col2Px / 2, ry);
@@ -5826,12 +5829,15 @@ function openTubeEditDialog(ent) {
     tbody.innerHTML = '';
     const { R, tr } = getRD();
     const inpNarrow = inp.replace('width:72px','width:58px');
+    let _bn = 0;
     editRows.forEach((row, i) => {
       const isLast  = i === editRows.length - 1;
+      const bendNo  = isLast ? null : ++_bn;     // numéro de coude (1, 2, 3…)
       // Angle always displayed positive; side toggle button controls direction
       const angCell = isLast
         ? `<span style="color:var(--text-dim);padding:0 6px">—</span>`
-        : `<span style="display:inline-flex;gap:3px;align-items:center">
+        : `<span style="display:inline-flex;gap:4px;align-items:center">
+            <span title="Coude n°${bendNo}" style="color:var(--text-dim);font-size:10px">#${bendNo}</span>
             <input class="te-ang" value="${Math.abs(row.angle??90).toFixed(1)}" style="${inpNarrow}">
             <button class="te-side" title="Inverser le sens du coude" style="background:#2a2a3e;border:1px solid #334;color:var(--accent);width:22px;height:22px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1;padding:0">${row.side >= 0 ? '⟳' : '⟲'}</button>
            </span>`;
