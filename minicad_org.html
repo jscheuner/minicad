@@ -8015,11 +8015,16 @@ function applyJoin() {
     }
   }
 
+  // Détecter la fermeture (1er point ≈ dernier) → activer le drapeau closed
+  // (sinon décalage/offset traite la couture comme ouverte → angle non joint)
+  const closed = allPts.length > 3 &&
+    Math.hypot(allPts[0][0]-allPts[allPts.length-1][0], allPts[0][1]-allPts[allPts.length-1][1]) < TOL;
+
   pushUndo();
   const type = chain.some(c=>c.ent.type==='cable') ? 'cable' : 'polyline';
   S.joinSelection.forEach(id => { const idx=S.entities.findIndex(e=>e.id===id); if(idx>=0) S.entities.splice(idx,1); });
-  S.entities.push({type, points:allPts, id:S.nextId++, layer:chain[0].ent.layer});
-  termPrint('JOIN — '+chain.length+' entités fusionnées','success');
+  S.entities.push({type, points:allPts, closed, id:S.nextId++, layer:chain[0].ent.layer});
+  termPrint('JOIN — '+chain.length+' entités fusionnées'+(closed?' (fermée)':''),'success');
   S.joinSelection=[]; S.selected=[]; setTool('select');
   updateSaveIndicator('modified'); autoSave(); render();
 }
