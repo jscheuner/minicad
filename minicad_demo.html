@@ -5625,7 +5625,7 @@ function drawTubeLabel(e) {
   for (const row of data.rows) {
     rowNo++;
     // Colonne de numéros (gauche)
-    ctx.fillStyle = '#64748b';
+    ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'left';
     ctx.fillText(String(rowNo), sx + padPx * 0.5, ry);
     ctx.fillStyle = '#e2e8f0';
@@ -5850,7 +5850,7 @@ function openTubeEditDialog(ent) {
       const delDis  = editRows.length <= 1 ? 'opacity:.3;cursor:default;' : 'cursor:pointer;';
       const domTr   = document.createElement('tr');
       domTr.innerHTML = `
-        <td style="text-align:center;color:var(--text-dim);padding:3px 6px">${i+1}</td>
+        <td style="text-align:center;color:#fff;padding:3px 6px">${i+1}</td>
         <td style="padding:3px 4px"><input class="te-straight" value="${saisieAt(i,R,tr,activeRef).toFixed(1)}" style="${inp}"></td>
         <td style="padding:3px 4px;text-align:center">${angCell}</td>
         <td style="padding:3px 4px;text-align:right">${arcCell}</td>
