@@ -15295,6 +15295,14 @@ function exportSVG() {
 }
 
 // ===== DXF EXPORT =====
+// Nom de calque DXF : le calque par défaut (index 0) DOIT s'appeler "0" (calque obligatoire
+// d'AutoCAD) ; les autres sont assainis (caractères non [A-Za-z0-9_-] → "_").
+function dxfLayerName(idx) {
+  return (idx === 0 || idx == null || !S.layers[idx])
+    ? '0'
+    : S.layers[idx].name.replace(/[^a-zA-Z0-9_-]/g,'_');
+}
+
 async function exportDXF() {
   const dxf = [];
   const w = (s) => dxf.push(s);
@@ -15361,19 +15369,23 @@ async function exportDXF() {
   w('73'); w('1'); w('74'); w('3'); w('75'); w('0'); w('76'); w('1'); w('77'); w('0'); w('78'); w('0');
   w('0'); w('ENDTAB');
 
-  // LTYPE table
+  // LTYPE table — BYLAYER + BYBLOCK sont OBLIGATOIRES pour AutoCAD (sans eux : rejet/récupération)
   const hLtypeT = nh();
-  w('0'); w('TABLE'); w('2'); w('LTYPE'); w('5'); w(hLtypeT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('TABLE'); w('2'); w('LTYPE'); w('5'); w(hLtypeT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('3');
+  w('0'); w('LTYPE'); w('5'); w(nh()); w('330'); w(hLtypeT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLinetypeTableRecord');
+  w('2'); w('ByBlock'); w('70'); w('0'); w('3'); w(''); w('72'); w('65'); w('73'); w('0'); w('40'); w('0.0');
+  w('0'); w('LTYPE'); w('5'); w(nh()); w('330'); w(hLtypeT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLinetypeTableRecord');
+  w('2'); w('ByLayer'); w('70'); w('0'); w('3'); w(''); w('72'); w('65'); w('73'); w('0'); w('40'); w('0.0');
   w('0'); w('LTYPE'); w('5'); w(nh()); w('330'); w(hLtypeT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLinetypeTableRecord');
   w('2'); w('CONTINUOUS'); w('70'); w('0'); w('3'); w('Solid line'); w('72'); w('65'); w('73'); w('0'); w('40'); w('0.0');
   w('0'); w('ENDTAB');
 
-  // LAYER table
+  // LAYER table  (dxfLayerName : le calque par défaut index 0 → "0", obligatoire pour AutoCAD)
   const hLayerT = nh();
   w('0'); w('TABLE'); w('2'); w('LAYER'); w('5'); w(hLayerT); w('330'); w('0'); w('100'); w('AcDbSymbolTable');
   w('70'); w(String(S.layers.length));
-  S.layers.forEach(lay => {
-    const ln = lay.name.replace(/[^a-zA-Z0-9_-]/g,'_');
+  S.layers.forEach((lay, idx) => {
+    const ln = dxfLayerName(idx);
     w('0'); w('LAYER'); w('5'); w(nh()); w('330'); w(hLayerT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLayerTableRecord');
     w('2'); w(ln);
     w('70'); w(lay.visible ? '0' : '1');
@@ -15445,7 +15457,7 @@ async function exportDXF() {
   }
 
   S.entities.forEach(e => {
-    const layerName = (S.layers[e.layer]?.name || '0').replace(/[^a-zA-Z0-9_-]/g,'_');
+    const layerName = dxfLayerName(e.layer);
     const col = dxfColorIndex(S.layers[e.layer]?.color || '#ffffff');
 
     switch(e.type) {
@@ -15781,7 +15793,7 @@ function exportDWG() {
   w2('0'); w2('TABLE'); w2('2'); w2('LAYER'); w2('70'); w2(String(S.layers.length));
   S.layers.forEach((lay, i) => {
     w2('0'); w2('LAYER');
-    w2('2'); w2(lay.name.replace(/[^a-zA-Z0-9_-]/g,'_'));
+    w2('2'); w2(dxfLayerName(i));
     w2('70'); w2(lay.visible ? '0' : '1');
     w2('62'); w2(String(dxfColorIndex(lay.color)));
     w2('6'); w2('CONTINUOUS');
@@ -15790,7 +15802,7 @@ function exportDWG() {
   w2('0'); w2('SECTION'); w2('2'); w2('ENTITIES');
   // Re-use same entity export logic
   S.entities.forEach(e => {
-    const layerName = (S.layers[e.layer]?.name || '0').replace(/[^a-zA-Z0-9_-]/g,'_');
+    const layerName = dxfLayerName(e.layer);
     const col = dxfColorIndex(S.layers[e.layer]?.color || '#ffffff');
     if(e.type==='line'||e.type==='wall'||e.type==='leader'||e.type==='dim_linear'||e.type==='dim_aligned'){
       w2('0');w2('LINE');w2('8');w2(layerName);w2('62');w2(String(col));
