@@ -15190,7 +15190,7 @@ async function exportDXF() {
   // $HANDSEED = handle suivant le plus grand utilisé (requis par les logiciels de CAO)
   if (_handseedIdx >= 0) dxf[_handseedIdx] = (_h).toString(16).toUpperCase();
 
-  const content = dxf.join('\n');
+  const content = dxf.join('\r\n') + '\r\n'; // CRLF requis par AutoCAD (LT rejette le LF nu)
   const baseName = currentDrawingBaseName('minicad_export');
   const fname = await saveWithPicker(content, baseName, 'dxf', 'application/dxf', 'CAO DXF');
   if (!fname) { termPrint('Export DXF annulé', 'info'); return; }
@@ -15269,7 +15269,7 @@ function exportDWG() {
   });
   w2('0');w2('ENDSEC');w2('0');w2('EOF');
 
-  const content = dxf.join('\n');
+  const content = dxf.join('\r\n') + '\r\n'; // CRLF (compat AutoCAD)
   downloadBlob(content, 'application/octet-stream', 'minicad_export.dwg');
   termPrint('Fichier .dwg exporté (contenu DXF compatible)','success');
 }
