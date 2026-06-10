@@ -15313,6 +15313,7 @@ async function exportDXF() {
   const nh = () => (_h++).toString(16).toUpperCase();// prochain handle unique
   let _handseedIdx = -1;                             // index du $HANDSEED à patcher en fin
   let hModelBR = '', hPaperBR = '';                  // handles BLOCK_RECORD Model/Paper Space
+  let hModelLayout = '', hPaperLayout = '', hLayoutDict = ''; // LAYOUT + dict ACAD_LAYOUT (requis ODA/AutoCAD)
 
   // ── Compute drawing extents ──────────────────────────────────────────────────
   let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
@@ -15422,12 +15423,14 @@ async function exportDXF() {
   w('0'); w('ENDTAB');
 
   // BLOCK_RECORD table (required by AC1015)
+  // Pré-allouer les handles des objets LAYOUT (émis dans OBJECTS) pour le lien 340 ci-dessous.
+  hModelLayout = nh(); hPaperLayout = nh(); hLayoutDict = nh();
   const hBlkRecT = nh();
   w('0'); w('TABLE'); w('2'); w('BLOCK_RECORD'); w('5'); w(hBlkRecT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('2');
   hModelBR = nh();
-  w('0'); w('BLOCK_RECORD'); w('5'); w(hModelBR); w('330'); w(hBlkRecT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Model_Space');
+  w('0'); w('BLOCK_RECORD'); w('5'); w(hModelBR); w('330'); w(hBlkRecT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Model_Space'); w('340'); w(hModelLayout);
   hPaperBR = nh();
-  w('0'); w('BLOCK_RECORD'); w('5'); w(hPaperBR); w('330'); w(hBlkRecT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Paper_Space');
+  w('0'); w('BLOCK_RECORD'); w('5'); w(hPaperBR); w('330'); w(hBlkRecT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Paper_Space'); w('340'); w(hPaperLayout);
   w('0'); w('ENDTAB');
 
   w('0'); w('ENDSEC');
@@ -15749,13 +15752,44 @@ async function exportDXF() {
 
   w('0'); w('ENDSEC');
 
-  // ── OBJECTS (required by AC1015) — dictionnaire racine + ACAD_GROUP ────────────
+  // ── OBJECTS (required by AC1015) — dict racine + ACAD_GROUP + ACAD_LAYOUT + LAYOUTs ──
+  // Les objets LAYOUT (Model + papier) et leur liaison aux BLOCK_RECORD sont OBLIGATOIRES
+  // pour ODA/AutoCAD : sans LAYOUT « Model », l'espace objet est invalide → fichier rejeté.
   w('0'); w('SECTION');
   w('2'); w('OBJECTS');
   const hRootDict = nh(), hGroupDict = nh();
   w('0'); w('DICTIONARY'); w('5'); w(hRootDict); w('330'); w('0'); w('100'); w('AcDbDictionary'); w('281'); w('1');
   w('3'); w('ACAD_GROUP'); w('350'); w(hGroupDict);
+  w('3'); w('ACAD_LAYOUT'); w('350'); w(hLayoutDict);
   w('0'); w('DICTIONARY'); w('5'); w(hGroupDict); w('330'); w(hRootDict); w('100'); w('AcDbDictionary'); w('281'); w('1');
+  // Dictionnaire ACAD_LAYOUT → Model / Layout1
+  w('0'); w('DICTIONARY'); w('5'); w(hLayoutDict); w('330'); w(hRootDict); w('100'); w('AcDbDictionary'); w('281'); w('1');
+  w('3'); w('Model'); w('350'); w(hModelLayout);
+  w('3'); w('Layout1'); w('350'); w(hPaperLayout);
+  // Objet LAYOUT — helper (AcDbPlotSettings minimal + AcDbLayout lié au BLOCK_RECORD)
+  const wLayout = (h, name, brHandle, tabOrder, isModel) => {
+    w('0'); w('LAYOUT'); w('5'); w(h); w('330'); w(hLayoutDict);
+    w('100'); w('AcDbPlotSettings');
+    w('1'); w(''); w('2'); w(''); w('4'); w('A4'); w('6'); w('');
+    w('40'); w('7.5'); w('41'); w('7.5'); w('42'); w('7.5'); w('43'); w('7.5');
+    w('44'); w('210.0'); w('45'); w('297.0'); w('46'); w('0.0'); w('47'); w('0.0');
+    w('48'); w('0.0'); w('49'); w('0.0'); w('140'); w('0.0'); w('141'); w('0.0');
+    w('142'); w('1.0'); w('143'); w('1.0'); w('70'); w(isModel ? '1024' : '0');
+    w('72'); w('0'); w('73'); w('0'); w('74'); w('0'); w('7'); w('');
+    w('75'); w('0'); w('147'); w('1.0'); w('148'); w('0.0'); w('149'); w('0.0');
+    w('100'); w('AcDbLayout');
+    w('1'); w(name); w('70'); w('1'); w('71'); w(String(tabOrder));
+    w('10'); w('0.0'); w('20'); w('0.0'); w('11'); w('210.0'); w('21'); w('297.0');
+    w('12'); w('0.0'); w('22'); w('0.0'); w('32'); w('0.0');
+    w('14'); w('1.0E+20'); w('24'); w('1.0E+20'); w('34'); w('1.0E+20');
+    w('15'); w('-1.0E+20'); w('25'); w('-1.0E+20'); w('35'); w('-1.0E+20');
+    w('146'); w('0.0'); w('13'); w('0.0'); w('23'); w('0.0'); w('33'); w('0.0');
+    w('16'); w('1.0'); w('26'); w('0.0'); w('36'); w('0.0');
+    w('17'); w('0.0'); w('27'); w('1.0'); w('37'); w('0.0');
+    w('76'); w('0'); w('330'); w(brHandle);
+  };
+  wLayout(hModelLayout, 'Model', hModelBR, 0, true);
+  wLayout(hPaperLayout, 'Layout1', hPaperBR, 1, false);
   w('0'); w('ENDSEC');
 
   w('0'); w('EOF');
