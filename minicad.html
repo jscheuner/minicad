@@ -10643,6 +10643,10 @@ function applyTrimPolyline(ent, prims, clickWx, clickWy) {
         lineCircleIntersect(p1[0],p1[1],p2[0],p2[1],p.cx,p.cy,p.r).forEach(h=>{
           if(h.t>1e-9&&h.t<1-1e-9&&angleInArc(Math.atan2(h.y-p.cy,h.x-p.cx),p.sa,p.ea)) globalTs.push(i+h.t);
         });
+      } else if(p.type==='ellipse'){
+        lineEllipseIntersect(p1[0],p1[1],p2[0],p2[1],p).forEach(h=>{
+          if(h.t>1e-9&&h.t<1-1e-9&&(p.sa===undefined||angleInArc(ellipseParam(p,h.x,h.y),p.sa,p.ea))) globalTs.push(i+h.t);
+        });
       }
     }
   }

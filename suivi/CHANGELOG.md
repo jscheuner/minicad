@@ -48,6 +48,8 @@ Format : `[version] — YYYY-MM-DD — Description`
   (l'ellipse complète stocke 0..2π — la détection alignée sur celle du rendu)
 - TRIM cercle : les propriétés d'apparence (couleur, type de ligne…) sont conservées
   lors de la conversion en arc ; un cercle exige 2 points de coupe minimum
+- **TRIM rect/polygone/polyligne avec une ellipse comme limite** : l'ellipse était
+  ignorée comme limite de coupe (« aucune intersection trouvée »)
 - Sélection fenêtre (G→D) : bbox serrée (la marge de culling faussait l'inclusion)
 - Sélection d'une polyligne en cliquant sur un **arc** (bulge)
 - **EXPLODE** : arcs de polyligne qui s'inversaient (sens de bulge)
