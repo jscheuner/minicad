@@ -18,6 +18,13 @@ Format : `[version] — YYYY-MM-DD — Description`
   - Chrome UI : blancs translucides convertis en `color-mix(in srgb, var(--ink) …)`
     qui s'inversent avec le thème ; badges/onglets sur canvas via `--badge-bg`
 - **Contraste** : `--text-dim` passé de #576a80 à #8295ab (≈3:1 → ≈5:1 sur fond panneau)
+- **Dialogue Préférences refait** — mise en page professionnelle (sections Apparence /
+  Grille / OSNAP / Saisie & curseur / Cotation / Tube, contrôles alignés, unités,
+  libellés OSNAP en français, bouton Annuler, confirmation avant réinitialisation),
+  entièrement internationalisé (clés `prefs.*` FR/EN)
+  - Nouvelles préférences : **thème** (sombre/clair), **taille du pickbox** (px,
+    pilote aussi la tolérance de sélection) et **portée de détection OSNAP** (px)
+  - Styles de cote listés dynamiquement depuis le document (plus de liste figée)
 - **Espace sur poignée active → DÉPLACER l'objet entier** (façon AutoCAD) : après avoir
   saisi une poignée, `Espace` bascule en MOVE de toute la sélection avec la poignée
   comme point de base (clic destination ou distance au clavier) ; sans effet si une

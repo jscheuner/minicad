@@ -787,6 +787,57 @@
     border: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
   }
 
+  /* ── Dialogue Préférences ───────────────────────────────────────────── */
+  #prefs-dialog {
+    position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+    width: 480px; max-height: calc(100vh - 110px);
+    display: flex; flex-direction: column;
+    background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 12px 40px #0008; z-index: 3000;
+    color: var(--text); font-size: 12px; font-family: 'IBM Plex Sans', sans-serif;
+  }
+  .pf-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 18px 11px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .pf-title { font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; }
+  .pf-close { cursor: pointer; color: var(--text-dim); font-size: 17px; line-height: 1; }
+  .pf-close:hover { color: var(--text-bright); }
+  .pf-body { overflow-y: auto; padding: 2px 18px 14px; }
+  .pf-sec-title {
+    font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--accent); margin: 16px 0 4px; padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .pf-row { display: flex; align-items: center; min-height: 27px; gap: 10px; }
+  .pf-lbl { flex: 1; }
+  .pf-hint { font-size: 10px; color: var(--text-dim); margin: -2px 0 4px; }
+  .pf-ctl input[type=number] { width: 76px; text-align: right; }
+  .pf-ctl input[type=text], .pf-ctl input[type=number], .pf-ctl select {
+    background: var(--input-bg); border: 1px solid var(--border); color: var(--text);
+    padding: 3px 6px; border-radius: 4px; font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .pf-ctl select { min-width: 110px; }
+  .pf-unit { width: 38px; color: var(--text-dim); font-size: 10px; }
+  #prefs-dialog input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+  .pf-os-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px 8px; margin: 6px 0 2px; }
+  .pf-os-grid label { display: flex; gap: 6px; align-items: center; cursor: pointer; font-size: 11px; }
+  .pf-foot {
+    display: flex; gap: 8px; align-items: center;
+    padding: 12px 18px; border-top: 1px solid var(--border); flex-shrink: 0;
+  }
+  .pf-spacer { flex: 1; }
+  .pf-btn {
+    background: var(--btn-bg); border: 1px solid var(--border); color: var(--text);
+    padding: 5px 13px; border-radius: 4px; cursor: pointer; font-size: 11px; font-family: inherit;
+  }
+  .pf-btn:hover { border-color: var(--text-dim); }
+  .pf-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+  .pf-btn.primary:hover { filter: brightness(1.15); }
+  .pf-btn.danger { background: none; border-color: var(--error); color: var(--error); }
+  .pf-btn.danger:hover { background: var(--error); color: #fff; }
+
   /* Dynamic Input near cursor — editable fields */
   #dynamic-input {
     position: absolute;
@@ -2332,6 +2383,8 @@
 // ===USER_PREFS_START===
 const USER_PREFS = {
   theme: 'dark',
+  pickboxPx: 6,
+  osnapTolPx: 15,
   snap: true,
   snapSize: 20,
   gridSize: 20,
@@ -2352,6 +2405,8 @@ const USER_PREFS = {
 // ===== STATE =====
 const S = {
   theme: 'dark',
+  pickboxPx: 6,    // demi-côté du carré de sélection (px écran)
+  osnapTolPx: 15,  // portée d'accrochage OSNAP (px écran)
   entities: [],
   layers: [
     { name: '0 - Défaut',      color: '#00d4ff', printColor: '#000000', visible: true, lineWidth: 0.35, lineType: 'solid' },
@@ -2728,7 +2783,7 @@ function findOsnap(wx, wy) {
     return _osnapCache.result;
   }
 
-  const tol = 15 / S.zoom;
+  const tol = (S.osnapTolPx || 15) / S.zoom;
   let best = null;
   let bestDist = tol;
 
@@ -8759,7 +8814,7 @@ function drawCursor() {
   if (!mouseOnCanvas) return;
   const [sx, sy] = S.mouseScreen;
   const mode = getCursorMode();
-  const pickHalf = 6;
+  const pickHalf = S.pickboxPx || 6;
   const gap = pickHalf + 2;
 
   ctx.save();
@@ -11598,7 +11653,7 @@ function closeSpline() {
 }
 
 function hitTest(wx,wy,filter) {
-  const tol=8/S.zoom;
+  const tol=((S.pickboxPx||6)+2)/S.zoom; // pickbox + marge (8px par défaut)
   let best=null, bestDist=Infinity;
   // Record candidate only if closer than current best
   function tryHit(e,dist){ if(dist<tol && dist<bestDist){bestDist=dist;best=e;} }
@@ -15720,6 +15775,8 @@ function autoSave() {
 function captureUserPrefs() {
   return {
     theme: S.theme,
+    pickboxPx: S.pickboxPx,
+    osnapTolPx: S.osnapTolPx,
     snap: S.snap,
     snapSize: S.gridSize,
     gridSize: S.gridSize,
@@ -15750,6 +15807,8 @@ function _isOldIsoStyleSet(styles) {
 function applyUserPrefs(prefs) {
   if (!prefs) return;
   if (prefs.theme !== undefined && prefs.theme !== S.theme) setTheme(prefs.theme);
+  if (prefs.pickboxPx !== undefined)    S.pickboxPx = Math.max(3, Math.min(20, prefs.pickboxPx));
+  if (prefs.osnapTolPx !== undefined)   S.osnapTolPx = Math.max(5, Math.min(40, prefs.osnapTolPx));
   if (prefs.snap !== undefined)         S.snap = prefs.snap;
   if (prefs.gridSize !== undefined)     S.gridSize = prefs.gridSize;
   if (prefs.gridVis !== undefined)      S.gridVis = prefs.gridVis;
@@ -15825,60 +15884,93 @@ function resetUserPrefs() {
   termPrint('Préférences réinitialisées aux valeurs par défaut', 'info');
 }
 
+const _PD_OS_MODES = ['endpoint','midpoint','center','nearest','intersection','perpendicular','tangent','quadrant','extension'];
+
 function openPrefsDialog() {
   const existing = document.getElementById('prefs-dialog');
   if (existing) { existing.remove(); return; }
   const p = captureUserPrefs();
+  const osLabels = {
+    endpoint: `{{osnap.endpoint}}`, midpoint: `{{osnap.midpoint}}`, center: `{{osnap.center}}`,
+    nearest: `{{osnap.nearest}}`, intersection: `{{osnap.intersection}}`, perpendicular: `{{osnap.perpendicular}}`,
+    tangent: `{{osnap.tangent}}`, quadrant: `{{osnap.quadrant}}`, extension: `{{osnap.extension}}`,
+  };
   const dlg = document.createElement('div');
   dlg.id = 'prefs-dialog';
-  dlg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:var(--bg-dark);border:1px solid var(--border);border-radius:6px;padding:16px 20px;z-index:3000;min-width:340px;max-width:420px;box-shadow:0 8px 32px #000c;color:var(--text);font-family:var(--font-mono);font-size:11px;';
-  function row(label, content) { return `<div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0;gap:8px"><span style="color:var(--text-dim);min-width:140px">${label}</span>${content}</div>`; }
-  function chk(id, val, lbl) { return `<label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="pd-${id}" ${val?'checked':''}> ${lbl||''}</label>`; }
-  function num(id, val, step, min) { return `<input type="number" id="pd-${id}" value="${val}" step="${step||1}" min="${min||0}" style="width:70px;background:var(--input-bg,#1e1e1e);border:1px solid var(--border);color:var(--text);padding:2px 5px;border-radius:3px;font-size:11px;">`; }
-  function sel(id, opts, val) { return `<select id="pd-${id}" style="background:var(--input-bg,#1e1e1e);border:1px solid var(--border);color:var(--text);padding:2px 5px;border-radius:3px;font-size:11px;">${opts.map(o=>`<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('')}</select>`; }
+  const row = (label, ctl, unit) => `<div class="pf-row"><span class="pf-lbl">${label}</span><span class="pf-ctl">${ctl}</span><span class="pf-unit">${unit||''}</span></div>`;
+  const chk = (id, val) => `<input type="checkbox" id="pd-${id}" ${val?'checked':''}>`;
+  const num = (id, val, step, min, max) => `<input type="number" id="pd-${id}" value="${val}" step="${step||1}" min="${min??0}"${max!==undefined?` max="${max}"`:''}>`;
+  const sel = (id, opts, val) => `<select id="pd-${id}">${opts.map(o=>`<option value="${o.v}" ${o.v===val?'selected':''}>${o.l}</option>`).join('')}</select>`;
+  const sec = (t) => `<div class="pf-sec-title">${t}</div>`;
   dlg.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <span style="font-size:13px;font-weight:bold;letter-spacing:1px">PRÉFÉRENCES UTILISATEUR</span>
-      <span onclick="document.getElementById('prefs-dialog').remove()" style="cursor:pointer;opacity:.6;font-size:16px">✕</span>
+    <div class="pf-head">
+      <span class="pf-title">{{prefs.title}}</span>
+      <span class="pf-close" onclick="document.getElementById('prefs-dialog').remove()">✕</span>
     </div>
-    <div style="font-size:10px;color:var(--text-dim);margin-bottom:10px;letter-spacing:.5px">ACCROCHAGE &amp; GRILLE</div>
-    ${row('Snap grille', chk('snap', p.snap))}
-    ${row('Taille grille / snap', num('gridSize', p.gridSize, 5, 1))}
-    ${row('Grille visible', chk('gridVis', p.gridVis))}
-    ${row('OSNAP', chk('osnapEnabled', p.osnapEnabled))}
-    <div style="margin:4px 0 4px 148px;display:flex;flex-wrap:wrap;gap:4px" id="pd-osmodes">
-      ${['endpoint','midpoint','center','nearest','intersection','perpendicular','tangent','quadrant','extension'].map(m=>
-        `<label style="cursor:pointer;font-size:10px;white-space:nowrap"><input type="checkbox" id="pd-os-${m}" ${p.osnapModes[m]?'checked':''}> ${m}</label>`
-      ).join('')}
+    <div class="pf-body">
+      ${sec(`{{prefs.appearance}}`)}
+      ${row(`{{prefs.theme}}`, sel('theme', [{v:'dark',l:`{{prefs.theme_dark}}`},{v:'light',l:`{{prefs.theme_light}}`}], p.theme||'dark'))}
+
+      ${sec(`{{prefs.grid}}`)}
+      ${row(`{{prefs.grid_visible}}`, chk('gridVis', p.gridVis))}
+      ${row(`{{prefs.grid_snap}}`, chk('snap', p.snap))}
+      ${row(`{{prefs.grid_size}}`, num('gridSize', p.gridSize, 5, 1), `{{prefs.unit_drawing}}`)}
+
+      ${sec(`{{prefs.osnap}}`)}
+      ${row(`{{prefs.osnap_enabled}}`, chk('osnapEnabled', p.osnapEnabled))}
+      ${row(`{{prefs.osnap_range}}`, num('osnapTolPx', p.osnapTolPx ?? 15, 1, 5, 40), 'px')}
+      <div class="pf-os-grid">
+        ${_PD_OS_MODES.map(m =>
+          `<label><input type="checkbox" id="pd-os-${m}" ${p.osnapModes[m]?'checked':''}>${osLabels[m]}</label>`
+        ).join('')}
+      </div>
+
+      ${sec(`{{prefs.input}}`)}
+      ${row(`{{prefs.input_ortho}} <span class="pf-unit">F8</span>`, chk('ortho', p.ortho))}
+      ${row(`{{prefs.input_polar}} <span class="pf-unit">F10</span>`, chk('polar', p.polar))}
+      ${row(`{{prefs.input_polar_inc}}`, num('polarAngle', p.polarAngle, 5, 1, 90), '°')}
+      ${row(`{{prefs.input_pickbox}}`, num('pickboxPx', p.pickboxPx ?? 6, 1, 3, 20), 'px')}
+
+      ${sec(`{{prefs.dim}}`)}
+      ${row(`{{prefs.dim_style}}`, sel('dimStyle', S.dimStyles.map(s=>({v:s.name,l:s.name})), p.currentDimStyle))}
+
+      ${sec(`{{prefs.tube}}`)}
+      ${row(`{{prefs.tube_diameter}}`, num('tubeDiameter', p.tubeDiameter, 5, 1), `{{prefs.unit_drawing}}`)}
+      ${row(`{{prefs.tube_bend}}`, num('tubeBendRadius', p.tubeBendRadius, 5, 1), `{{prefs.unit_drawing}}`)}
+      ${row(`{{prefs.tube_ref}}`, sel('tubeRef', [
+        {v:'axe', l:`{{prefs.tube_ref_axis}}`},
+        {v:'ext', l:`{{prefs.tube_ref_outer}}`},
+        {v:'int', l:`{{prefs.tube_ref_inner}}`},
+      ], p.tubeRef))}
     </div>
-    <div style="font-size:10px;color:var(--text-dim);margin:10px 0 6px;letter-spacing:.5px">CONTRAINTES</div>
-    ${row('Ortho (F8)', chk('ortho', p.ortho))}
-    ${row('Polaire (F10)', chk('polar', p.polar))}
-    ${row('Incrément polaire', num('polarAngle', p.polarAngle, 5, 1) + ' <span style="color:var(--text-dim)">°</span>')}
-    <div style="font-size:10px;color:var(--text-dim);margin:10px 0 6px;letter-spacing:.5px">TUBE</div>
-    ${row('Diamètre tube (Ø)', num('tubeDiameter', p.tubeDiameter, 5, 1))}
-    ${row('Rayon coude', num('tubeBendRadius', p.tubeBendRadius, 5, 1))}
-    ${row('Référence tube', sel('tubeRef', ['axe','ext','int'], p.tubeRef))}
-    <div style="font-size:10px;color:var(--text-dim);margin:10px 0 6px;letter-spacing:.5px">COTATION</div>
-    ${row('Style de cote', sel('dimStyle', ['1:1','1:2','1:5','1:10','1:20','1:50','1:100'], p.currentDimStyle))}
-    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
-      <button onclick="resetUserPrefs();document.getElementById('prefs-dialog').remove()" style="background:var(--danger,#e53935);border:none;color:#fff;padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px;">Réinitialiser</button>
-      <button onclick="importPrefsFromFile();document.getElementById('prefs-dialog').remove()" style="background:var(--btn-bg);border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px;">Importer…</button>
-      <button onclick="savePrefsToFile()" style="background:var(--btn-bg);border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px;">Exporter…</button>
-      <button id="pd-apply-btn" style="background:var(--accent);border:none;color:var(--on-accent);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold;">Appliquer</button>
+    <div class="pf-foot">
+      <button class="pf-btn danger" id="pd-reset-btn">{{prefs.reset}}</button>
+      <button class="pf-btn" onclick="importPrefsFromFile();document.getElementById('prefs-dialog').remove()">{{prefs.import}}</button>
+      <button class="pf-btn" onclick="savePrefsToFile()">{{prefs.export}}</button>
+      <span class="pf-spacer"></span>
+      <button class="pf-btn" onclick="document.getElementById('prefs-dialog').remove()">{{prefs.cancel}}</button>
+      <button class="pf-btn primary" id="pd-apply-btn">{{prefs.apply}}</button>
     </div>`;
   document.body.appendChild(dlg);
+  document.getElementById('pd-reset-btn').onclick = () => {
+    if (!confirm(`{{prefs.reset_confirm}}`)) return;
+    resetUserPrefs();
+    dlg.remove();
+  };
   document.getElementById('pd-apply-btn').onclick = () => {
     const g = id => document.getElementById('pd-' + id);
     const prefs = {
+      theme: g('theme').value,
       snap: g('snap').checked,
       gridSize: parseFloat(g('gridSize').value) || 20,
       gridVis: g('gridVis').checked,
       osnapEnabled: g('osnapEnabled').checked,
-      osnapModes: Object.fromEntries(['endpoint','midpoint','center','nearest','intersection','perpendicular','tangent','quadrant','extension'].map(m => [m, document.getElementById('pd-os-'+m).checked])),
+      osnapTolPx: parseFloat(g('osnapTolPx').value) || 15,
+      osnapModes: Object.fromEntries(_PD_OS_MODES.map(m => [m, document.getElementById('pd-os-'+m).checked])),
       ortho: g('ortho').checked,
       polar: g('polar').checked,
       polarAngle: parseFloat(g('polarAngle').value) || 15,
+      pickboxPx: parseFloat(g('pickboxPx').value) || 6,
       tubeDiameter: parseFloat(g('tubeDiameter').value) || 40,
       tubeBendRadius: parseFloat(g('tubeBendRadius').value) || 67,
       tubeRef: g('tubeRef').value,
