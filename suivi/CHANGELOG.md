@@ -7,6 +7,10 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.1] — 2026-06-07 — Version courante
 
 ### Ajouté
+- **Espace sur poignée active → DÉPLACER l'objet entier** (façon AutoCAD) : après avoir
+  saisi une poignée, `Espace` bascule en MOVE de toute la sélection avec la poignée
+  comme point de base (clic destination ou distance au clavier) ; sans effet si une
+  valeur est déjà tapée dans la saisie dynamique
 - **Présentations (espace papier)** — onglets *Objet / Présentation*
   - Feuilles aux formats **A0, A1, A2, A3, A4, A5, Letter** + **personnalisé** (mm)
   - **Fenêtres** (viewports) montrant le dessin à une échelle fixe ; création,

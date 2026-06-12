@@ -6943,6 +6943,21 @@ function applyGripMove(nx, ny) {
   if (grip) grip.apply(ent, nx, ny);
 }
 
+// Espace pendant une poignée active → DÉPLACER l'objet entier (façon AutoCAD :
+// le grip devient le point de base, la sélection complète suit le curseur)
+function gripToMove() {
+  if (!S.gripEdit) return false;
+  const bx = S.gripEdit.origX, by = S.gripEdit.origY;
+  const entId = S.gripEdit.entId;
+  if (!S.selected.includes(entId)) S.selected = [entId];
+  setTool('move_obj'); // remet gripEdit/drawing/diLocked à zéro
+  S.drawing = true; S.drawPoints = [[bx, by]]; S.awaitingInput = true;
+  termPrint('DÉPLACER — cliquez la destination ou tapez une distance', 'info');
+  render();
+  setTimeout(smartFocus, 0);
+  return true;
+}
+
 // Draw grip edit preview (entity with grip at mouse position)
 function drawGripPreview() {
   if (!S.gripEdit) return;
@@ -8305,6 +8320,9 @@ diDist.addEventListener('keydown', (ev) => {
       return;
     }
     confirmDynamicInput();
+  } else if (ev.key === ' ' && S.gripEdit && !S.diLocked) {
+    ev.preventDefault(); ev.stopPropagation();
+    gripToMove(); // Espace sur poignée active → déplacer l'objet entier
   } else if (ev.key === 'Escape') {
     ev.preventDefault(); ev.stopPropagation();
     diDist.blur(); diAngle.blur(); S.diLocked = false;
@@ -8321,6 +8339,9 @@ diAngle.addEventListener('keydown', (ev) => {
   } else if (ev.key === 'Enter') {
     ev.preventDefault(); ev.stopPropagation();
     confirmDynamicInput();
+  } else if (ev.key === ' ' && S.gripEdit && !S.diLocked) {
+    ev.preventDefault(); ev.stopPropagation();
+    gripToMove(); // Espace sur poignée active → déplacer l'objet entier
   } else if (ev.key === 'Escape') {
     ev.preventDefault(); ev.stopPropagation();
     diDist.blur(); diAngle.blur(); S.diLocked = false;
@@ -8912,7 +8933,7 @@ canvas.addEventListener('mousedown', (ev) => {
         S.gripSelected = null;
         S.drawing = true; S.awaitingInput = true;
         S.drawPoints = [[gripHit.origX, gripHit.origY]];
-        termPrint('Poignée active (' + gripHit.origX.toFixed(1) + ', ' + gripHit.origY.toFixed(1) + ') — Tapez distance ou cliquez destination (Ortho/Polaire actifs)', 'info');
+        termPrint('Poignée active (' + gripHit.origX.toFixed(1) + ', ' + gripHit.origY.toFixed(1) + ') — Tapez distance ou cliquez destination (Espace = déplacer l\'objet)', 'info');
         render();
         setTimeout(smartFocus, 0);
         return;
@@ -9332,7 +9353,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
         S.drawing = true;
         S.awaitingInput = true;
         S.drawPoints = [[gripHit.origX, gripHit.origY]];
-        termPrint('Poignée saisie (' + gripHit.origX.toFixed(1) + ', ' + gripHit.origY.toFixed(1) + ') — Déplacez et cliquez, ou tapez coordonnées', 'warning');
+        termPrint('Poignée saisie (' + gripHit.origX.toFixed(1) + ', ' + gripHit.origY.toFixed(1) + ') — Déplacez et cliquez, ou tapez coordonnées (Espace = déplacer l\'objet)', 'warning');
         render(); return;
       }
     }
@@ -14845,15 +14866,10 @@ function executeCommand(input) {
 }
 
 cmdInput.addEventListener('keydown',(ev)=>{
-  // Espace sur grip armé → MOVE avec le grip comme point de base
-  if(ev.key===' ' && S.gripSelected && !S.gripEdit){
+  // Espace sur poignée active → DÉPLACER l'objet entier (seulement si rien n'est tapé)
+  if(ev.key===' ' && S.gripEdit && cmdInput.value.trim()===''){
     ev.preventDefault(); ev.stopPropagation();
-    const bx = S.gripSelected.origX, by = S.gripSelected.origY;
-    S.gripSelected = null;
-    setTool('move_obj');
-    S.drawing = true; S.drawPoints = [[bx, by]]; S.awaitingInput = true;
-    termPrint('DÉPLACER — cliquez la destination', 'info');
-    render(); return;
+    gripToMove(); return;
   }
   if(ev.key==='Enter'){
     const cmd = cmdInput.value.trim();
@@ -14933,18 +14949,6 @@ document.addEventListener('keyup', (ev) => {
 });
 
 document.addEventListener('keydown',(ev)=>{
-  // PRIORITAIRE: grip armé + Espace → MOVE avec grip comme point de base
-  if(ev.key===' ' && S.gripSelected && !S.gripEdit){
-    ev.preventDefault();
-    const bx = S.gripSelected.origX, by = S.gripSelected.origY;
-    const entId = S.gripSelected.entId;
-    S.gripSelected = null;
-    if(!S.selected.includes(entId)) S.selected = [entId];
-    setTool('move_obj');
-    S.drawing = true; S.drawPoints = [[bx, by]]; S.awaitingInput = true;
-    termPrint('DÉPLACER — cliquez la destination', 'info');
-    render(); return;
-  }
   // PRIORITAIRE: cote linéaire/parallèle + Espace → bascule sélection d'objet
   // (avant le filtre de focus, sinon Espace tape dans le terminal après une cote)
   if(ev.key===' ' && (S.tool==='dim_linear'||S.tool==='dim_aligned') && !S.drawing){
@@ -15247,14 +15251,8 @@ document.addEventListener('keydown',(ev)=>{
   if(ev.key==='F10'){ev.preventDefault();togglePolar();}
   if(ev.key===' '){
     ev.preventDefault();
-    if(S.gripSelected && !S.gripEdit){
-      const bx = S.gripSelected.origX, by = S.gripSelected.origY;
-      S.gripSelected = null;
-      setTool('move_obj');
-      S.drawing = true; S.drawPoints = [[bx, by]]; S.awaitingInput = true;
-      termPrint('DÉPLACER — cliquez la destination', 'info');
-      render();
-    } else cmdInput.focus();
+    if(S.gripEdit){ gripToMove(); return; } // poignée active → déplacer l'objet entier
+    cmdInput.focus();
   }
 });
 
