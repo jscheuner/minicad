@@ -10484,8 +10484,10 @@ function applyTrimLine(ent, prims, clickWx, clickWy) {
   const breaks=[0,...ts,1];
   let remIdx=0;
   for(let i=0;i<breaks.length-1;i++) { if(clickT>=breaks[i]-1e-9&&clickT<=breaks[i+1]+1e-9){remIdx=i;break;} }
+  // Couper uniquement aux 2 intersections adjacentes au clic : le reste n'est pas fragmenté
   const kept=[];
-  for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  if(remIdx>0) kept.push([0,breaks[remIdx]]);
+  if(remIdx<breaks.length-2) kept.push([breaks[remIdx+1],1]);
   if(!kept.length){ S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
   ent.x1=ox1+kept[0][0]*dx; ent.y1=oy1+kept[0][0]*dy;
   ent.x2=ox1+kept[0][1]*dx; ent.y2=oy1+kept[0][1]*dy;
@@ -10540,8 +10542,10 @@ function applyTrimArc(ent, prims, clickWx, clickWy) {
   const breaks=[sa,...norm,ea];
   let remIdx=0;
   for(let i=0;i<breaks.length-1;i++) { if(clickA>=breaks[i]-1e-9&&clickA<=breaks[i+1]+1e-9){remIdx=i;break;} }
+  // Couper uniquement aux 2 intersections adjacentes au clic : le reste n'est pas fragmenté
   const kept=[];
-  for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  if(remIdx>0) kept.push([sa,breaks[remIdx]]);
+  if(remIdx<breaks.length-2) kept.push([breaks[remIdx+1],ea]);
   if(!kept.length){ S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
   ent.startAngle=kept[0][0]; ent.endAngle=kept[0][1];
   for(let i=1;i<kept.length;i++) {
@@ -10554,36 +10558,33 @@ function applyTrimArc(ent, prims, clickWx, clickWy) {
 
 function applyTrimCircle(ent, prims, clickWx, clickWy) {
   // Traiter le cercle complet comme un arc [0, 2π]
-  const fakeArc = { cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:0, endAngle:Math.PI*2 };
-  const rawAngles = getTrimAnglesForArc(fakeArc, prims);
-  if (!rawAngles.length) return false;
+  const TAU = Math.PI*2;
+  const fakeArc = { cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:0, endAngle:TAU };
+  let rawAngles = getTrimAnglesForArc(fakeArc, prims).map(a=>((a%TAU)+TAU)%TAU);
   rawAngles.sort((a,b)=>a-b);
+  rawAngles = rawAngles.filter((a,i)=> i===0 || a-rawAngles[i-1]>1e-6); // doublons (cutters concourants)
+  if (rawAngles.length < 2) return false; // un cercle exige 2 points de coupe
   // Angle du clic par rapport au centre
   let clickA = Math.atan2(clickWy-ent.cy, clickWx-ent.cx);
-  if (clickA < 0) clickA += Math.PI*2;
+  if (clickA < 0) clickA += TAU;
   // Trouver le segment angulaire cliqué parmi N segments
-  const breaks = [...rawAngles, rawAngles[0]+Math.PI*2]; // cercle fermé
   let remIdx = 0;
   for (let i=0; i<rawAngles.length; i++) {
     const a1 = rawAngles[i], a2 = rawAngles[(i+1)%rawAngles.length];
     let ca = clickA;
-    while (ca < a1-1e-9) ca += Math.PI*2;
-    const a2w = a2>a1 ? a2 : a2+Math.PI*2;
+    while (ca < a1-1e-9) ca += TAU;
+    const a2w = a2>a1 ? a2 : a2+TAU;
     if (ca >= a1-1e-9 && ca <= a2w+1e-9) { remIdx=i; break; }
   }
-  const kept=[];
-  for (let i=0; i<rawAngles.length; i++) if (i!==remIdx) {
-    const a1=rawAngles[i], a2=rawAngles[(i+1)%rawAngles.length];
-    kept.push([a1, a2>a1?a2:a2+Math.PI*2]);
-  }
-  if (!kept.length) { S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
-  // Remplacer le circle par le premier arc, créer les suivants
+  // Courbe fermée : retirer la pièce cliquée laisse UN seul arc
+  // (de la fin de la pièce retirée à son début, en passant par le reste du cercle)
+  const sa = rawAngles[(remIdx+1)%rawAngles.length];
+  let ea = rawAngles[remIdx];
+  while (ea <= sa+1e-9) ea += TAU;
   const idx = S.entities.findIndex(e=>e.id===ent.id);
-  const firstArc = { type:'arc', cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:kept[0][0], endAngle:kept[0][1], id:ent.id, layer:ent.layer };
-  if (idx>=0) S.entities[idx]=firstArc;
-  for (let i=1; i<kept.length; i++) {
-    S.entities.push({ type:'arc', cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:kept[i][0], endAngle:kept[i][1], id:S.nextId++, layer:ent.layer });
-  }
+  const arc = JSON.parse(JSON.stringify(ent));
+  arc.type='arc'; arc.startAngle=sa; arc.endAngle=ea;
+  if (idx>=0) S.entities[idx]=arc;
   return true;
 }
 
@@ -10685,8 +10686,10 @@ function applyTrimPolyline(ent, prims, clickWx, clickWy) {
   const breaks=[0,...globalTs,nSegs];
   let remIdx=0;
   for(let i=0;i<breaks.length-1;i++){if(clickGlobalT>=breaks[i]-1e-9&&clickGlobalT<=breaks[i+1]+1e-9){remIdx=i;break;}}
+  // Couper uniquement aux 2 intersections adjacentes au clic : le reste n'est pas fragmenté
   const kept=[];
-  for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  if(remIdx>0) kept.push([0,breaks[remIdx]]);
+  if(remIdx<breaks.length-2) kept.push([breaks[remIdx+1],nSegs]);
   if(!kept.length){S.entities=S.entities.filter(e=>e.id!==ent.id);return true;}
   const firstSub=extractSubPoly(pts,nSegs,kept[0][0],kept[0][1]);
   ent.points=firstSub;
@@ -10704,7 +10707,10 @@ function applyTrimEllipse(ent, prims, clickWx, clickWy) {
   const raw=getEllipseHitParams(el, prims);
   if(!raw.length) return false;
   const TAU=Math.PI*2, norm=a=>((a%TAU)+TAU)%TAU;
-  const full = ent.startAngle===undefined || ent.endAngle===undefined;
+  // Ellipse fermée : angles absents OU balayage complet (l'outil ELLIPSE stocke 0..2π)
+  // — même convention que le rendu, sinon la couture 0/2π fragmente le résultat
+  const sa0 = ent.startAngle ?? 0, ea0 = ent.endAngle ?? TAU;
+  const full = Math.abs((ea0-sa0) - TAU) < 1e-9;
   const clickA=ellipseParam(el, clickWx, clickWy);
   const mkArcs=(kept)=>{
     if(!kept.length){ S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
@@ -10717,17 +10723,22 @@ function applyTrimEllipse(ent, prims, clickWx, clickWy) {
     if(angs.length<2) return false;
     let ca=norm(clickA), remIdx=0;
     for(let i=0;i<angs.length;i++){ const a1=angs[i], a2=(i+1<angs.length?angs[i+1]:angs[0]+TAU); let cc=ca; while(cc<a1-1e-9) cc+=TAU; if(cc>=a1-1e-9&&cc<=a2+1e-9){remIdx=i;break;} }
-    const kept=[];
-    for(let i=0;i<angs.length;i++) if(i!==remIdx){ const a1=angs[i], a2=(i+1<angs.length?angs[i+1]:angs[0]+TAU); kept.push([a1,a2]); }
-    return mkArcs(kept);
+    // Courbe fermée : retirer la pièce cliquée laisse UN seul arc d'ellipse
+    const a1=angs[(remIdx+1)%angs.length];
+    let a2=angs[remIdx]; while(a2<=a1+1e-9) a2+=TAU;
+    ent.startAngle=a1; ent.endAngle=a2;
+    return true;
   }
-  const sa=ent.startAngle; let ea=ent.endAngle; while(ea<sa) ea+=TAU;
+  const sa=sa0; let ea=ea0; while(ea<sa) ea+=TAU;
   const inside=raw.map(a=>{let b=a;while(b<sa)b+=TAU;return b;}).filter(a=>a>sa+1e-9&&a<ea-1e-9).sort((x,y)=>x-y);
   if(!inside.length) return false;
   let ca=clickA; while(ca<sa) ca+=TAU;
   const breaks=[sa,...inside,ea]; let remIdx=0;
   for(let i=0;i<breaks.length-1;i++){ if(ca>=breaks[i]-1e-9&&ca<=breaks[i+1]+1e-9){remIdx=i;break;} }
-  const kept=[]; for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  // Couper uniquement aux 2 intersections adjacentes au clic : le reste n'est pas fragmenté
+  const kept=[];
+  if(remIdx>0) kept.push([sa,breaks[remIdx]]);
+  if(remIdx<breaks.length-2) kept.push([breaks[remIdx+1],ea]);
   return mkArcs(kept);
 }
 

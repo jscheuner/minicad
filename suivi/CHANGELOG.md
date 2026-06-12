@@ -41,6 +41,13 @@ Format : `[version] — YYYY-MM-DD — Description`
   (Cloudflare Worker, CORS), navigateur de dossiers (créer/renommer), `Ctrl+S` → kDrive
 
 ### Corrigé
+- **TRIM ne fragmente plus le reste de l'entité** : la coupe se fait uniquement aux
+  2 intersections adjacentes au clic (ligne, arc, cercle, ellipse, polyligne ouverte) ;
+  cercle et ellipse fermée laissent désormais UN seul arc au lieu de N morceaux
+- **TRIM ellipse fermée** : la couture 0/2π n'est plus traitée comme une extrémité
+  (l'ellipse complète stocke 0..2π — la détection alignée sur celle du rendu)
+- TRIM cercle : les propriétés d'apparence (couleur, type de ligne…) sont conservées
+  lors de la conversion en arc ; un cercle exige 2 points de coupe minimum
 - Sélection fenêtre (G→D) : bbox serrée (la marge de culling faussait l'inclusion)
 - Sélection d'une polyligne en cliquant sur un **arc** (bulge)
 - **EXPLODE** : arcs de polyligne qui s'inversaient (sens de bulge)
