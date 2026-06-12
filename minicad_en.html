@@ -954,18 +954,29 @@
     box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     font-family: 'JetBrains Mono', monospace;
   }
-  #vp-dialog, #ct-dialog, #cf-dialog {
+  #vp-dialog, #ct-dialog, #cf-dialog, #kd-dialog, #kd-browser {
     position: fixed; display: none;
     top: 50%; left: 50%; transform: translate(-50%,-50%);
     background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
     z-index: 960; width: 320px; box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     font-family: 'JetBrains Mono', monospace;
   }
-  #vp-dialog .pd-body input[type=number], #ct-dialog .pd-body input[type=number] {
+  #kd-browser { width: 400px; }
+  #vp-dialog .pd-body input[type=number], #ct-dialog .pd-body input[type=number],
+  #kd-dialog .pd-body input, #kd-browser .pd-body input {
     background: #111827; border: 1px solid #ffffff22; color: #e0e0e0;
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     border-radius: 4px; padding: 4px 7px; flex: 1; min-width: 0;
   }
+  .kd-breadcrumb { font-size: 10px; color: var(--text-dim); padding: 2px 2px 6px; }
+  .kd-breadcrumb a { color: var(--accent); cursor: pointer; }
+  .kd-list { max-height: 300px; overflow-y: auto; border: 1px solid #ffffff14; border-radius: 4px; }
+  .kd-item { display: flex; align-items: center; gap: 4px; padding: 5px 8px; cursor: pointer;
+    font-size: 11px; color: var(--text); border-bottom: 1px solid #ffffff08; }
+  .kd-item .kd-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kd-item:hover { background: var(--accent-dim); color: var(--accent); }
+  .kd-ren { color: #777; padding: 0 4px; }
+  .kd-ren:hover { color: var(--accent); }
   /* Menu « Nouvelle présentation depuis un modèle » */
   #ct-menu {
     position: fixed; display: none; z-index: 1000;
@@ -1118,6 +1129,10 @@
         <div class="menu-dropdown-item" onclick="openCartoucheToEdit();closeMenus()">
           <span>Ouvrir un modèle (.pcad) à modifier…</span>
         </div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="kdriveOpenBrowser('open');closeMenus()"><span>☁ Ouvrir depuis kDrive…</span></div>
+        <div class="menu-dropdown-item" onclick="kdriveOpenBrowser('save');closeMenus()"><span>☁ Enregistrer sur kDrive…</span></div>
+        <div class="menu-dropdown-item" onclick="openKdriveConnect();closeMenus()"><span>Connexion kDrive…</span></div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="openPrintDialog();closeMenus()">
           <span>Print / Export PDF</span><span class="item-shortcut">Ctrl+P</span>
@@ -2143,6 +2158,42 @@
 <input type="file" id="ct-file-input" accept=".pcad,.json" style="display:none" onchange="_onCartoucheFile(event)">
 <div id="ct-menu"></div>
 
+<div id="kd-dialog">
+  <div class="pd-header">CONNEXION kDRIVE
+    <span onclick="closeKdriveConnect()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+  </div>
+  <div class="pd-body">
+    <div class="pd-row"><span class="pd-label">Proxy (Worker)</span><input id="kd-worker" type="text"></div>
+    <div class="pd-row"><span class="pd-label">Token API</span><input id="kd-token" type="password" autocomplete="off"></div>
+    <div class="pd-row"><span class="pd-label">Drive ID</span><input id="kd-drive" type="text"></div>
+    <div style="font-size:9px;color:#888;padding:2px 2px;line-height:1.5">Token avec le scope « Drive » (manager Infomaniak). Stocké uniquement dans CE navigateur.</div>
+    <div class="pd-row"><span class="pd-label"></span><button class="pd-btn-sel" onclick="kdriveTest()">Tester</button> <span id="kd-status" style="font-size:10px;margin-left:6px"></span></div>
+  </div>
+  <div class="pd-footer">
+    <button onclick="kdriveForget()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Oublier</button>
+    <button onclick="closeKdriveConnect()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Fermer</button>
+    <button class="pd-btn-print" onclick="kdriveSaveConn()">Enregistrer ↵</button>
+  </div>
+</div>
+
+<div id="kd-browser">
+  <div class="pd-header"><span id="kd-br-title">kDRIVE</span>
+    <span onclick="closeKdriveBrowser()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+  </div>
+  <div class="pd-body">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div id="kd-breadcrumb" class="kd-breadcrumb" style="flex:1"></div>
+      <button class="pd-btn-sel" onclick="kdriveNewFolder()" title="Créer un dossier ici">+ Dossier</button>
+    </div>
+    <div id="kd-list" class="kd-list"></div>
+    <div class="pd-row" id="kd-save-row" style="display:none"><span class="pd-label">Nom</span><input id="kd-fname" type="text" placeholder="dessin.mcad"></div>
+  </div>
+  <div class="pd-footer">
+    <button onclick="closeKdriveBrowser()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button id="kd-save-btn" class="pd-btn-print" style="display:none" onclick="kdriveDoSave()">Enregistrer ici</button>
+  </div>
+</div>
+
 <div id="text-dialog" style="display:none">
   <div class="td-header">
     <span>TEXTE</span>
@@ -2693,6 +2744,9 @@ function findOsnap(wx, wy) {
         let sx = 0, sy = 0;
         for (let i = 0; i < n; i++) { sx += e.points[i][0]; sy += e.points[i][1]; }
         check(sx / n, sy / n, 'center', e);
+      }
+      if (e.type === 'tube') {
+        _tubeWalkBends(e, (bcx, bcy) => check(bcx, bcy, 'center', e)); // centre de chaque coude
       }
     }
 
@@ -3352,7 +3406,10 @@ const CMD = {
         delete e.sourceId;
       }
     });
-    S.entities = S.entities.filter(e => !S.selected.includes(e.id));
+    // Supprimer aussi les entités liées à un tube supprimé (traitillé de construction + cotes auto, tubelbl)
+    const _del = new Set(S.selected);
+    S.entities = S.entities.filter(e =>
+      !_del.has(e.id) && !(e.linkedTubeId !== undefined && _del.has(e.linkedTubeId)));
     termPrint(S.selected.length + ' objet(s) supprimé(s)', 'success'); S.selected = []; render();
   }},
   COPY: { alias: ['CO','COPIER'], desc: 'Copier sélection', exec: () => {
@@ -3565,7 +3622,7 @@ const CMD = {
       }
     }
     if (S.entities.length) pushUndo(); S.entities = []; S.selected = [];
-    _fileHandle = null; localStorage.removeItem('minicad_autosave'); updateSaveIndicator('new');
+    _fileHandle = null; _kdFile = null; localStorage.removeItem('minicad_autosave'); updateSaveIndicator('new');
     termPrint('Dessin effacé', 'success'); render();
   }},
   GRID: { alias: ['GRILLE'], desc: 'Taille grille (GRID [n])', exec: (args) => {
@@ -5336,13 +5393,13 @@ function applyTubeRefOffset(pts, tr, ref) {
 
 function getTubeTableData(e) {
   const rows = [];
-  let totalLen = 0;
+  let totalLen = 0, bendNo = 0;
   for (const seg of (e.segments || [])) {
     if (seg.type === 'straight') {
-      rows.push({ len: seg.length, bend: null });
+      rows.push({ len: seg.length, bend: null, bendNo: null });
       totalLen += seg.length;
     } else if (seg.type === 'bend') {
-      if (rows.length > 0) rows[rows.length - 1].bend = seg;
+      if (rows.length > 0) { rows[rows.length - 1].bend = seg; rows[rows.length - 1].bendNo = ++bendNo; }
       totalLen += seg.bendRadius * seg.angle;
     }
   }
@@ -5567,7 +5624,13 @@ function drawTubeLabel(e) {
   ry += sepPx;
 
   // Lignes de segments
+  let rowNo = 0;
   for (const row of data.rows) {
+    rowNo++;
+    // Colonne de numéros (gauche)
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.fillText(String(rowNo), sx + padPx * 0.5, ry);
     ctx.fillStyle = '#e2e8f0';
     ctx.textAlign = 'right';
     ctx.fillText(row.len.toFixed(lenDec), sx + padPx + col1Px, ry);
@@ -5790,7 +5853,7 @@ function openTubeEditDialog(ent) {
       const delDis  = editRows.length <= 1 ? 'opacity:.3;cursor:default;' : 'cursor:pointer;';
       const domTr   = document.createElement('tr');
       domTr.innerHTML = `
-        <td style="text-align:center;color:var(--text-dim);padding:3px 6px">${i+1}</td>
+        <td style="text-align:center;color:#fff;padding:3px 6px">${i+1}</td>
         <td style="padding:3px 4px"><input class="te-straight" value="${saisieAt(i,R,tr,activeRef).toFixed(1)}" style="${inp}"></td>
         <td style="padding:3px 4px;text-align:center">${angCell}</td>
         <td style="padding:3px 4px;text-align:right">${arcCell}</td>
@@ -6124,24 +6187,15 @@ function flattenPolyPoints(pts) {
     const bulge = p[2] || 0;
     if (bulge !== 0 && i + 1 < pts.length) {
       const p2 = pts[i + 1];
-      const x1 = p[0], y1 = p[1], x2 = p2[0], y2 = p2[1];
-      const d = Math.hypot(x2 - x1, y2 - y1);
-      if (d < 1e-9) continue;
-      const r = d * (1 + bulge * bulge) / (4 * Math.abs(bulge));
-      const offset = Math.sqrt(Math.max(0, r * r - d * d / 4));
-      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-      const pdx = -(y2 - y1) / d, pdy = (x2 - x1) / d;
-      const cx = mx + Math.sign(bulge) * pdx * offset;
-      const cy = my + Math.sign(bulge) * pdy * offset;
-      const sa = Math.atan2(y1 - cy, x1 - cx);
-      const ea = Math.atan2(y2 - cy, x2 - cx);
-      let dAngle = ea - sa;
-      if (bulge > 0 && dAngle <= 0) dAngle += 2 * Math.PI;
-      if (bulge < 0 && dAngle >= 0) dAngle -= 2 * Math.PI;
-      const N = Math.max(8, Math.ceil(Math.abs(dAngle) * r / 5));
-      for (let j = 1; j < N; j++) {
-        const a = sa + dAngle * (j / N);
-        out.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+      // Échantillonnage via bulgeToArc → identique au rendu (gère les arcs majeurs |bulge|>1)
+      const arc = bulgeToArc(p[0], p[1], p2[0], p2[1], bulge);
+      if (arc) {
+        const span = arc.ea - arc.sa;   // intervalle CCW (>0)
+        const N = Math.max(8, Math.ceil(Math.abs(span) * arc.r / 5));
+        for (let j = 1; j < N; j++) {
+          const a = arc.sa + span * (j / N);
+          out.push([arc.cx + arc.r * Math.cos(a), arc.cy + arc.r * Math.sin(a)]);
+        }
       }
     }
   }
@@ -6816,7 +6870,7 @@ function getGripPoints(e) {
         // Indépendant : centroïde + sommets du contour
         gp(hcx, hcy, (ent, nx, ny) => {
           const dx = nx - hcx, dy = ny - hcy;
-          ent.points = ent.points.map(p => [p[0]+dx, p[1]+dy]);
+          ent.points = ent.points.map(p => p.length>2 ? [p[0]+dx, p[1]+dy, p[2]] : [p[0]+dx, p[1]+dy]);
         });
         const hn = e.points.length;
         const hFirst = e.points[0], hLast = e.points[hn-1];
@@ -6887,6 +6941,21 @@ function applyGripMove(nx, ny) {
   const grips = getGripPoints(ent);
   const grip = grips[S.gripEdit.gripIdx];
   if (grip) grip.apply(ent, nx, ny);
+}
+
+// Espace pendant une poignée active → DÉPLACER l'objet entier (façon AutoCAD :
+// le grip devient le point de base, la sélection complète suit le curseur)
+function gripToMove() {
+  if (!S.gripEdit) return false;
+  const bx = S.gripEdit.origX, by = S.gripEdit.origY;
+  const entId = S.gripEdit.entId;
+  if (!S.selected.includes(entId)) S.selected = [entId];
+  setTool('move_obj'); // remet gripEdit/drawing/diLocked à zéro
+  S.drawing = true; S.drawPoints = [[bx, by]]; S.awaitingInput = true;
+  termPrint('DÉPLACER — cliquez la destination ou tapez une distance', 'info');
+  render();
+  setTimeout(smartFocus, 0);
+  return true;
 }
 
 // Draw grip edit preview (entity with grip at mouse position)
@@ -7840,11 +7909,16 @@ function applyJoin() {
     }
   }
 
+  // Détecter la fermeture (1er point ≈ dernier) → activer le drapeau closed
+  // (sinon décalage/offset traite la couture comme ouverte → angle non joint)
+  const closed = allPts.length > 3 &&
+    Math.hypot(allPts[0][0]-allPts[allPts.length-1][0], allPts[0][1]-allPts[allPts.length-1][1]) < TOL;
+
   pushUndo();
   const type = chain.some(c=>c.ent.type==='cable') ? 'cable' : 'polyline';
   S.joinSelection.forEach(id => { const idx=S.entities.findIndex(e=>e.id===id); if(idx>=0) S.entities.splice(idx,1); });
-  S.entities.push({type, points:allPts, id:S.nextId++, layer:chain[0].ent.layer});
-  termPrint('JOIN — '+chain.length+' entités fusionnées','success');
+  S.entities.push({type, points:allPts, closed, id:S.nextId++, layer:chain[0].ent.layer});
+  termPrint('JOIN — '+chain.length+' entités fusionnées'+(closed?' (fermée)':''),'success');
   S.joinSelection=[]; S.selected=[]; setTool('select');
   updateSaveIndicator('modified'); autoSave(); render();
 }
@@ -8246,6 +8320,9 @@ diDist.addEventListener('keydown', (ev) => {
       return;
     }
     confirmDynamicInput();
+  } else if (ev.key === ' ' && S.gripEdit && !S.diLocked) {
+    ev.preventDefault(); ev.stopPropagation();
+    gripToMove(); // Espace sur poignée active → déplacer l'objet entier
   } else if (ev.key === 'Escape') {
     ev.preventDefault(); ev.stopPropagation();
     diDist.blur(); diAngle.blur(); S.diLocked = false;
@@ -8262,6 +8339,9 @@ diAngle.addEventListener('keydown', (ev) => {
   } else if (ev.key === 'Enter') {
     ev.preventDefault(); ev.stopPropagation();
     confirmDynamicInput();
+  } else if (ev.key === ' ' && S.gripEdit && !S.diLocked) {
+    ev.preventDefault(); ev.stopPropagation();
+    gripToMove(); // Espace sur poignée active → déplacer l'objet entier
   } else if (ev.key === 'Escape') {
     ev.preventDefault(); ev.stopPropagation();
     diDist.blur(); diAngle.blur(); S.diLocked = false;
@@ -8853,7 +8933,7 @@ canvas.addEventListener('mousedown', (ev) => {
         S.gripSelected = null;
         S.drawing = true; S.awaitingInput = true;
         S.drawPoints = [[gripHit.origX, gripHit.origY]];
-        termPrint('Poignée active (' + gripHit.origX.toFixed(1) + ', ' + gripHit.origY.toFixed(1) + ') — Tapez distance ou cliquez destination (Ortho/Polaire actifs)', 'info');
+        termPrint('Poignée active (' + gripHit.origX.toFixed(1) + ', ' + gripHit.origY.toFixed(1) + ') — Tapez distance ou cliquez destination (Espace = déplacer l\'objet)', 'info');
         render();
         setTimeout(smartFocus, 0);
         return;
@@ -9099,6 +9179,24 @@ function _tubeWalkStraights(e, cb) {
   }
 }
 
+// Parcourt les coudes du tube → centre d'arc (bcx,bcy), rayon R, segment
+function _tubeWalkBends(e, cb) {
+  let cx = e.startX, cy = e.startY, theta = e.startAngle;
+  for (const seg of e.segments) {
+    if (seg.type === 'straight') {
+      cx += seg.length * Math.cos(theta); cy += seg.length * Math.sin(theta);
+    } else if (seg.type === 'bend') {
+      const { angle: phi, bendRadius: R, side } = seg;
+      const bcx = cx - side * R * Math.sin(theta);
+      const bcy = cy + side * R * Math.cos(theta);
+      cb(bcx, bcy, R, seg);
+      const arcEnd = (theta - side * Math.PI / 2) + side * phi;
+      cx = bcx + R * Math.cos(arcEnd); cy = bcy + R * Math.sin(arcEnd);
+      theta += side * phi;
+    }
+  }
+}
+
 // Returns snap points (endpoints + midpoints) for all tube walls + axis
 function getTubeSnapPoints(e) {
   const tr = e.tubeRadius || 20;
@@ -9255,7 +9353,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
         S.drawing = true;
         S.awaitingInput = true;
         S.drawPoints = [[gripHit.origX, gripHit.origY]];
-        termPrint('Poignée saisie (' + gripHit.origX.toFixed(1) + ', ' + gripHit.origY.toFixed(1) + ') — Déplacez et cliquez, ou tapez coordonnées', 'warning');
+        termPrint('Poignée saisie (' + gripHit.origX.toFixed(1) + ', ' + gripHit.origY.toFixed(1) + ') — Déplacez et cliquez, ou tapez coordonnées (Espace = déplacer l\'objet)', 'warning');
         render(); return;
       }
     }
@@ -9939,7 +10037,7 @@ function offsetEntity(e,dx,dy) {
   if(e.cx!==undefined){e.cx+=dx;e.cy+=dy;} if(e.x!==undefined&&e.x1===undefined){e.x+=dx;e.y+=dy;}
   if(e.vx!==undefined){e.vx+=dx;e.vy+=dy;} // dim_angular vertex
   if(e.textWx!==undefined){e.textWx+=dx;e.textWy+=dy;} // dim_radius/dim_diameter text
-  if(e.points) e.points=e.points.map(p=>[p[0]+dx,p[1]+dy]);
+  if(e.points) e.points=e.points.map(p=> p.length>2 ? [p[0]+dx,p[1]+dy,p[2]] : [p[0]+dx,p[1]+dy]); // conserver le bulge
 }
 
 // Déplacer des entités + leur tubelbl lié
@@ -10047,14 +10145,35 @@ function _shoelace(pts) {
 function computeEntityArea(e) {
   if (e.type === 'circle') return Math.PI * e.r * e.r;
   if (e.type === 'rect')   return Math.abs(e.x2 - e.x1) * Math.abs(e.y2 - e.y1);
+  if (e.type === 'ellipse') {
+    const full = e.startAngle === undefined || Math.abs((e.endAngle - e.startAngle) - Math.PI*2) < 1e-9;
+    return full ? Math.PI * e.rx * e.ry : null;   // pas d'aire pour un arc d'ellipse
+  }
   if (['polyline','cable','hatch'].includes(e.type) && e.points?.length >= 3)
     return _shoelace(flattenPolyPoints(e.points));
   return null;
 }
 
+function _measLengthLabel(e) {
+  if (e.type === 'circle') return 'Circonférence';
+  if (e.type === 'ellipse') { const full = e.startAngle === undefined || Math.abs((e.endAngle-e.startAngle)-Math.PI*2) < 1e-9; return full ? 'Circonférence' : 'Longueur'; }
+  if (e.type === 'arc') return 'Longueur';
+  if (e.type === 'rect') return 'Périmètre';
+  if (['polyline','cable','hatch'].includes(e.type)) {
+    const p = e.points, dup = p && p.length > 2 && Math.hypot(p[0][0]-p[p.length-1][0], p[0][1]-p[p.length-1][1]) < 1e-9;
+    return (e.closed === true || dup) ? 'Périmètre' : 'Longueur';
+  }
+  return 'Longueur';
+}
 function computeEntityPerimeter(e) {
+  if (e.type === 'line' || e.type === 'wall') return Math.hypot(e.x2-e.x1, e.y2-e.y1);
   if (e.type === 'circle') return 2 * Math.PI * e.r;
   if (e.type === 'rect') return 2 * (Math.abs(e.x2 - e.x1) + Math.abs(e.y2 - e.y1));
+  if (e.type === 'arc') { let ea = e.endAngle; while (ea < e.startAngle) ea += Math.PI*2; return e.r * (ea - e.startAngle); }
+  if (e.type === 'ellipse') {
+    const el = { cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0, sa:e.startAngle, ea:e.endAngle };
+    let L = 0; for (const s of ellipseSampleSegs(el, 128)) L += Math.hypot(s[2]-s[0], s[3]-s[1]); return L;
+  }
   if (['polyline','cable','hatch'].includes(e.type) && e.points?.length >= 2) {
     const pts = flattenPolyPoints(e.points);
     let p = 0;
@@ -10365,8 +10484,10 @@ function applyTrimLine(ent, prims, clickWx, clickWy) {
   const breaks=[0,...ts,1];
   let remIdx=0;
   for(let i=0;i<breaks.length-1;i++) { if(clickT>=breaks[i]-1e-9&&clickT<=breaks[i+1]+1e-9){remIdx=i;break;} }
+  // Couper uniquement aux 2 intersections adjacentes au clic : le reste n'est pas fragmenté
   const kept=[];
-  for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  if(remIdx>0) kept.push([0,breaks[remIdx]]);
+  if(remIdx<breaks.length-2) kept.push([breaks[remIdx+1],1]);
   if(!kept.length){ S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
   ent.x1=ox1+kept[0][0]*dx; ent.y1=oy1+kept[0][0]*dy;
   ent.x2=ox1+kept[0][1]*dx; ent.y2=oy1+kept[0][1]*dy;
@@ -10421,8 +10542,10 @@ function applyTrimArc(ent, prims, clickWx, clickWy) {
   const breaks=[sa,...norm,ea];
   let remIdx=0;
   for(let i=0;i<breaks.length-1;i++) { if(clickA>=breaks[i]-1e-9&&clickA<=breaks[i+1]+1e-9){remIdx=i;break;} }
+  // Couper uniquement aux 2 intersections adjacentes au clic : le reste n'est pas fragmenté
   const kept=[];
-  for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  if(remIdx>0) kept.push([sa,breaks[remIdx]]);
+  if(remIdx<breaks.length-2) kept.push([breaks[remIdx+1],ea]);
   if(!kept.length){ S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
   ent.startAngle=kept[0][0]; ent.endAngle=kept[0][1];
   for(let i=1;i<kept.length;i++) {
@@ -10435,36 +10558,33 @@ function applyTrimArc(ent, prims, clickWx, clickWy) {
 
 function applyTrimCircle(ent, prims, clickWx, clickWy) {
   // Traiter le cercle complet comme un arc [0, 2π]
-  const fakeArc = { cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:0, endAngle:Math.PI*2 };
-  const rawAngles = getTrimAnglesForArc(fakeArc, prims);
-  if (!rawAngles.length) return false;
+  const TAU = Math.PI*2;
+  const fakeArc = { cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:0, endAngle:TAU };
+  let rawAngles = getTrimAnglesForArc(fakeArc, prims).map(a=>((a%TAU)+TAU)%TAU);
   rawAngles.sort((a,b)=>a-b);
+  rawAngles = rawAngles.filter((a,i)=> i===0 || a-rawAngles[i-1]>1e-6); // doublons (cutters concourants)
+  if (rawAngles.length < 2) return false; // un cercle exige 2 points de coupe
   // Angle du clic par rapport au centre
   let clickA = Math.atan2(clickWy-ent.cy, clickWx-ent.cx);
-  if (clickA < 0) clickA += Math.PI*2;
+  if (clickA < 0) clickA += TAU;
   // Trouver le segment angulaire cliqué parmi N segments
-  const breaks = [...rawAngles, rawAngles[0]+Math.PI*2]; // cercle fermé
   let remIdx = 0;
   for (let i=0; i<rawAngles.length; i++) {
     const a1 = rawAngles[i], a2 = rawAngles[(i+1)%rawAngles.length];
     let ca = clickA;
-    while (ca < a1-1e-9) ca += Math.PI*2;
-    const a2w = a2>a1 ? a2 : a2+Math.PI*2;
+    while (ca < a1-1e-9) ca += TAU;
+    const a2w = a2>a1 ? a2 : a2+TAU;
     if (ca >= a1-1e-9 && ca <= a2w+1e-9) { remIdx=i; break; }
   }
-  const kept=[];
-  for (let i=0; i<rawAngles.length; i++) if (i!==remIdx) {
-    const a1=rawAngles[i], a2=rawAngles[(i+1)%rawAngles.length];
-    kept.push([a1, a2>a1?a2:a2+Math.PI*2]);
-  }
-  if (!kept.length) { S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
-  // Remplacer le circle par le premier arc, créer les suivants
+  // Courbe fermée : retirer la pièce cliquée laisse UN seul arc
+  // (de la fin de la pièce retirée à son début, en passant par le reste du cercle)
+  const sa = rawAngles[(remIdx+1)%rawAngles.length];
+  let ea = rawAngles[remIdx];
+  while (ea <= sa+1e-9) ea += TAU;
   const idx = S.entities.findIndex(e=>e.id===ent.id);
-  const firstArc = { type:'arc', cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:kept[0][0], endAngle:kept[0][1], id:ent.id, layer:ent.layer };
-  if (idx>=0) S.entities[idx]=firstArc;
-  for (let i=1; i<kept.length; i++) {
-    S.entities.push({ type:'arc', cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:kept[i][0], endAngle:kept[i][1], id:S.nextId++, layer:ent.layer });
-  }
+  const arc = JSON.parse(JSON.stringify(ent));
+  arc.type='arc'; arc.startAngle=sa; arc.endAngle=ea;
+  if (idx>=0) S.entities[idx]=arc;
   return true;
 }
 
@@ -10523,6 +10643,10 @@ function applyTrimPolyline(ent, prims, clickWx, clickWy) {
         lineCircleIntersect(p1[0],p1[1],p2[0],p2[1],p.cx,p.cy,p.r).forEach(h=>{
           if(h.t>1e-9&&h.t<1-1e-9&&angleInArc(Math.atan2(h.y-p.cy,h.x-p.cx),p.sa,p.ea)) globalTs.push(i+h.t);
         });
+      } else if(p.type==='ellipse'){
+        lineEllipseIntersect(p1[0],p1[1],p2[0],p2[1],p).forEach(h=>{
+          if(h.t>1e-9&&h.t<1-1e-9&&(p.sa===undefined||angleInArc(ellipseParam(p,h.x,h.y),p.sa,p.ea))) globalTs.push(i+h.t);
+        });
       }
     }
   }
@@ -10566,8 +10690,10 @@ function applyTrimPolyline(ent, prims, clickWx, clickWy) {
   const breaks=[0,...globalTs,nSegs];
   let remIdx=0;
   for(let i=0;i<breaks.length-1;i++){if(clickGlobalT>=breaks[i]-1e-9&&clickGlobalT<=breaks[i+1]+1e-9){remIdx=i;break;}}
+  // Couper uniquement aux 2 intersections adjacentes au clic : le reste n'est pas fragmenté
   const kept=[];
-  for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  if(remIdx>0) kept.push([0,breaks[remIdx]]);
+  if(remIdx<breaks.length-2) kept.push([breaks[remIdx+1],nSegs]);
   if(!kept.length){S.entities=S.entities.filter(e=>e.id!==ent.id);return true;}
   const firstSub=extractSubPoly(pts,nSegs,kept[0][0],kept[0][1]);
   ent.points=firstSub;
@@ -10585,7 +10711,10 @@ function applyTrimEllipse(ent, prims, clickWx, clickWy) {
   const raw=getEllipseHitParams(el, prims);
   if(!raw.length) return false;
   const TAU=Math.PI*2, norm=a=>((a%TAU)+TAU)%TAU;
-  const full = ent.startAngle===undefined || ent.endAngle===undefined;
+  // Ellipse fermée : angles absents OU balayage complet (l'outil ELLIPSE stocke 0..2π)
+  // — même convention que le rendu, sinon la couture 0/2π fragmente le résultat
+  const sa0 = ent.startAngle ?? 0, ea0 = ent.endAngle ?? TAU;
+  const full = Math.abs((ea0-sa0) - TAU) < 1e-9;
   const clickA=ellipseParam(el, clickWx, clickWy);
   const mkArcs=(kept)=>{
     if(!kept.length){ S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
@@ -10598,17 +10727,22 @@ function applyTrimEllipse(ent, prims, clickWx, clickWy) {
     if(angs.length<2) return false;
     let ca=norm(clickA), remIdx=0;
     for(let i=0;i<angs.length;i++){ const a1=angs[i], a2=(i+1<angs.length?angs[i+1]:angs[0]+TAU); let cc=ca; while(cc<a1-1e-9) cc+=TAU; if(cc>=a1-1e-9&&cc<=a2+1e-9){remIdx=i;break;} }
-    const kept=[];
-    for(let i=0;i<angs.length;i++) if(i!==remIdx){ const a1=angs[i], a2=(i+1<angs.length?angs[i+1]:angs[0]+TAU); kept.push([a1,a2]); }
-    return mkArcs(kept);
+    // Courbe fermée : retirer la pièce cliquée laisse UN seul arc d'ellipse
+    const a1=angs[(remIdx+1)%angs.length];
+    let a2=angs[remIdx]; while(a2<=a1+1e-9) a2+=TAU;
+    ent.startAngle=a1; ent.endAngle=a2;
+    return true;
   }
-  const sa=ent.startAngle; let ea=ent.endAngle; while(ea<sa) ea+=TAU;
+  const sa=sa0; let ea=ea0; while(ea<sa) ea+=TAU;
   const inside=raw.map(a=>{let b=a;while(b<sa)b+=TAU;return b;}).filter(a=>a>sa+1e-9&&a<ea-1e-9).sort((x,y)=>x-y);
   if(!inside.length) return false;
   let ca=clickA; while(ca<sa) ca+=TAU;
   const breaks=[sa,...inside,ea]; let remIdx=0;
   for(let i=0;i<breaks.length-1;i++){ if(ca>=breaks[i]-1e-9&&ca<=breaks[i+1]+1e-9){remIdx=i;break;} }
-  const kept=[]; for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  // Couper uniquement aux 2 intersections adjacentes au clic : le reste n'est pas fragmenté
+  const kept=[];
+  if(remIdx>0) kept.push([sa,breaks[remIdx]]);
+  if(remIdx<breaks.length-2) kept.push([breaks[remIdx+1],ea]);
   return mkArcs(kept);
 }
 
@@ -10981,7 +11115,7 @@ function mirrorEntity(src,ax,ay,bx,by) {
   if(e.cx!==undefined){[e.cx,e.cy]=m(e.cx,e.cy);}
   if(e.x!==undefined&&e.x1===undefined){[e.x,e.y]=m(e.x,e.y);}
   if(e.vx!==undefined){[e.vx,e.vy]=m(e.vx,e.vy);}
-  if(e.points) e.points=e.points.map(p=>m(p[0],p[1]));
+  if(e.points) e.points=e.points.map(p=> p.length>2 ? [...m(p[0],p[1]), -p[2]] : m(p[0],p[1])); // miroir → bulge inversé
   // Angles d'arc : réflexion + inversion start/end pour conserver le sens
   if(e.type==='arc'){
     const la=Math.atan2(by-ay,bx-ax);
@@ -12182,6 +12316,14 @@ function _updatePropertiesSingle(e) {
     if (e.profileStandard) h += row('Norme', '<span class="prop-value">'+e.profileStandard+'</span>');
     if (e.profileG != null) h += row('Poids/m', '<span class="prop-value">'+e.profileG+' kg/m</span>');
   }
+  // Mesures calculées (longueur/périmètre/circonférence + aire)
+  const _len = computeEntityPerimeter(e);
+  if (_len != null && e.type !== 'line' && e.type !== 'wall')   // ligne/mur ont déjà « Longueur »
+    h += row(_measLengthLabel(e), '<span class="prop-value">'+_len.toFixed(2)+' mm</span>');
+  const _area = computeEntityArea(e);
+  const _closed = ['circle','ellipse','rect'].includes(e.type) || _measLengthLabel(e) === 'Périmètre';
+  if (_area != null && _closed)
+    h += row('Aire', '<span class="prop-value">'+_area.toFixed(2)+' mm²</span>');
   c.innerHTML = h;
 }
 
@@ -12280,6 +12422,17 @@ function _updatePropertiesMulti(ents) {
       h += row('Style cote', dsSel);
     }
   }
+
+  // Totaux (longueur cumulée + aire cumulée des objets sélectionnés)
+  let totLen = 0, totArea = 0, anyLen = false, anyArea = false;
+  ents.forEach(e => {
+    const l = computeEntityPerimeter(e); if (l != null) { totLen += l; anyLen = true; }
+    const a = computeEntityArea(e);
+    const closed = ['circle','ellipse','rect'].includes(e.type) || _measLengthLabel(e) === 'Périmètre';
+    if (a != null && closed) { totArea += a; anyArea = true; }
+  });
+  if (anyLen)  h += row('Longueur tot.', '<span class="prop-value">'+totLen.toFixed(2)+' mm</span>');
+  if (anyArea) h += row('Aire tot.',     '<span class="prop-value">'+totArea.toFixed(2)+' mm²</span>');
 
   c.innerHTML = h;
 }
@@ -14728,15 +14881,10 @@ function executeCommand(input) {
 }
 
 cmdInput.addEventListener('keydown',(ev)=>{
-  // Espace sur grip armé → MOVE avec le grip comme point de base
-  if(ev.key===' ' && S.gripSelected && !S.gripEdit){
+  // Espace sur poignée active → DÉPLACER l'objet entier (seulement si rien n'est tapé)
+  if(ev.key===' ' && S.gripEdit && cmdInput.value.trim()===''){
     ev.preventDefault(); ev.stopPropagation();
-    const bx = S.gripSelected.origX, by = S.gripSelected.origY;
-    S.gripSelected = null;
-    setTool('move_obj');
-    S.drawing = true; S.drawPoints = [[bx, by]]; S.awaitingInput = true;
-    termPrint('DÉPLACER — cliquez la destination', 'info');
-    render(); return;
+    gripToMove(); return;
   }
   if(ev.key==='Enter'){
     const cmd = cmdInput.value.trim();
@@ -14816,18 +14964,6 @@ document.addEventListener('keyup', (ev) => {
 });
 
 document.addEventListener('keydown',(ev)=>{
-  // PRIORITAIRE: grip armé + Espace → MOVE avec grip comme point de base
-  if(ev.key===' ' && S.gripSelected && !S.gripEdit){
-    ev.preventDefault();
-    const bx = S.gripSelected.origX, by = S.gripSelected.origY;
-    const entId = S.gripSelected.entId;
-    S.gripSelected = null;
-    if(!S.selected.includes(entId)) S.selected = [entId];
-    setTool('move_obj');
-    S.drawing = true; S.drawPoints = [[bx, by]]; S.awaitingInput = true;
-    termPrint('DÉPLACER — cliquez la destination', 'info');
-    render(); return;
-  }
   // PRIORITAIRE: cote linéaire/parallèle + Espace → bascule sélection d'objet
   // (avant le filtre de focus, sinon Espace tape dans le terminal après une cote)
   if(ev.key===' ' && (S.tool==='dim_linear'||S.tool==='dim_aligned') && !S.drawing){
@@ -15130,14 +15266,8 @@ document.addEventListener('keydown',(ev)=>{
   if(ev.key==='F10'){ev.preventDefault();togglePolar();}
   if(ev.key===' '){
     ev.preventDefault();
-    if(S.gripSelected && !S.gripEdit){
-      const bx = S.gripSelected.origX, by = S.gripSelected.origY;
-      S.gripSelected = null;
-      setTool('move_obj');
-      S.drawing = true; S.drawPoints = [[bx, by]]; S.awaitingInput = true;
-      termPrint('DÉPLACER — cliquez la destination', 'info');
-      render();
-    } else cmdInput.focus();
+    if(S.gripEdit){ gripToMove(); return; } // poignée active → déplacer l'objet entier
+    cmdInput.focus();
   }
 });
 
@@ -15178,6 +15308,14 @@ function exportSVG() {
 }
 
 // ===== DXF EXPORT =====
+// Nom de calque DXF : le calque par défaut (index 0) DOIT s'appeler "0" (calque obligatoire
+// d'AutoCAD) ; les autres sont assainis (caractères non [A-Za-z0-9_-] → "_").
+function dxfLayerName(idx) {
+  return (idx === 0 || idx == null || !S.layers[idx])
+    ? '0'
+    : S.layers[idx].name.replace(/[^a-zA-Z0-9_-]/g,'_');
+}
+
 async function exportDXF() {
   const dxf = [];
   const w = (s) => dxf.push(s);
@@ -15188,6 +15326,7 @@ async function exportDXF() {
   const nh = () => (_h++).toString(16).toUpperCase();// prochain handle unique
   let _handseedIdx = -1;                             // index du $HANDSEED à patcher en fin
   let hModelBR = '', hPaperBR = '';                  // handles BLOCK_RECORD Model/Paper Space
+  let hModelLayout = '', hPaperLayout = '', hLayoutDict = ''; // LAYOUT + dict ACAD_LAYOUT (requis ODA/AutoCAD)
 
   // ── Compute drawing extents ──────────────────────────────────────────────────
   let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
@@ -15244,19 +15383,23 @@ async function exportDXF() {
   w('73'); w('1'); w('74'); w('3'); w('75'); w('0'); w('76'); w('1'); w('77'); w('0'); w('78'); w('0');
   w('0'); w('ENDTAB');
 
-  // LTYPE table
+  // LTYPE table — BYLAYER + BYBLOCK sont OBLIGATOIRES pour AutoCAD (sans eux : rejet/récupération)
   const hLtypeT = nh();
-  w('0'); w('TABLE'); w('2'); w('LTYPE'); w('5'); w(hLtypeT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
+  w('0'); w('TABLE'); w('2'); w('LTYPE'); w('5'); w(hLtypeT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('3');
+  w('0'); w('LTYPE'); w('5'); w(nh()); w('330'); w(hLtypeT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLinetypeTableRecord');
+  w('2'); w('ByBlock'); w('70'); w('0'); w('3'); w(''); w('72'); w('65'); w('73'); w('0'); w('40'); w('0.0');
+  w('0'); w('LTYPE'); w('5'); w(nh()); w('330'); w(hLtypeT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLinetypeTableRecord');
+  w('2'); w('ByLayer'); w('70'); w('0'); w('3'); w(''); w('72'); w('65'); w('73'); w('0'); w('40'); w('0.0');
   w('0'); w('LTYPE'); w('5'); w(nh()); w('330'); w(hLtypeT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLinetypeTableRecord');
   w('2'); w('CONTINUOUS'); w('70'); w('0'); w('3'); w('Solid line'); w('72'); w('65'); w('73'); w('0'); w('40'); w('0.0');
   w('0'); w('ENDTAB');
 
-  // LAYER table
+  // LAYER table  (dxfLayerName : le calque par défaut index 0 → "0", obligatoire pour AutoCAD)
   const hLayerT = nh();
   w('0'); w('TABLE'); w('2'); w('LAYER'); w('5'); w(hLayerT); w('330'); w('0'); w('100'); w('AcDbSymbolTable');
   w('70'); w(String(S.layers.length));
-  S.layers.forEach(lay => {
-    const ln = lay.name.replace(/[^a-zA-Z0-9_-]/g,'_');
+  S.layers.forEach((lay, idx) => {
+    const ln = dxfLayerName(idx);
     w('0'); w('LAYER'); w('5'); w(nh()); w('330'); w(hLayerT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLayerTableRecord');
     w('2'); w(ln);
     w('70'); w(lay.visible ? '0' : '1');
@@ -15293,12 +15436,14 @@ async function exportDXF() {
   w('0'); w('ENDTAB');
 
   // BLOCK_RECORD table (required by AC1015)
+  // Pré-allouer les handles des objets LAYOUT (émis dans OBJECTS) pour le lien 340 ci-dessous.
+  hModelLayout = nh(); hPaperLayout = nh(); hLayoutDict = nh();
   const hBlkRecT = nh();
   w('0'); w('TABLE'); w('2'); w('BLOCK_RECORD'); w('5'); w(hBlkRecT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('2');
   hModelBR = nh();
-  w('0'); w('BLOCK_RECORD'); w('5'); w(hModelBR); w('330'); w(hBlkRecT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Model_Space');
+  w('0'); w('BLOCK_RECORD'); w('5'); w(hModelBR); w('330'); w(hBlkRecT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Model_Space'); w('340'); w(hModelLayout);
   hPaperBR = nh();
-  w('0'); w('BLOCK_RECORD'); w('5'); w(hPaperBR); w('330'); w(hBlkRecT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Paper_Space');
+  w('0'); w('BLOCK_RECORD'); w('5'); w(hPaperBR); w('330'); w(hBlkRecT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Paper_Space'); w('340'); w(hPaperLayout);
   w('0'); w('ENDTAB');
 
   w('0'); w('ENDSEC');
@@ -15328,7 +15473,7 @@ async function exportDXF() {
   }
 
   S.entities.forEach(e => {
-    const layerName = (S.layers[e.layer]?.name || '0').replace(/[^a-zA-Z0-9_-]/g,'_');
+    const layerName = dxfLayerName(e.layer);
     const col = dxfColorIndex(S.layers[e.layer]?.color || '#ffffff');
 
     switch(e.type) {
@@ -15620,13 +15765,44 @@ async function exportDXF() {
 
   w('0'); w('ENDSEC');
 
-  // ── OBJECTS (required by AC1015) — dictionnaire racine + ACAD_GROUP ────────────
+  // ── OBJECTS (required by AC1015) — dict racine + ACAD_GROUP + ACAD_LAYOUT + LAYOUTs ──
+  // Les objets LAYOUT (Model + papier) et leur liaison aux BLOCK_RECORD sont OBLIGATOIRES
+  // pour ODA/AutoCAD : sans LAYOUT « Model », l'espace objet est invalide → fichier rejeté.
   w('0'); w('SECTION');
   w('2'); w('OBJECTS');
   const hRootDict = nh(), hGroupDict = nh();
   w('0'); w('DICTIONARY'); w('5'); w(hRootDict); w('330'); w('0'); w('100'); w('AcDbDictionary'); w('281'); w('1');
   w('3'); w('ACAD_GROUP'); w('350'); w(hGroupDict);
+  w('3'); w('ACAD_LAYOUT'); w('350'); w(hLayoutDict);
   w('0'); w('DICTIONARY'); w('5'); w(hGroupDict); w('330'); w(hRootDict); w('100'); w('AcDbDictionary'); w('281'); w('1');
+  // Dictionnaire ACAD_LAYOUT → Model / Layout1
+  w('0'); w('DICTIONARY'); w('5'); w(hLayoutDict); w('330'); w(hRootDict); w('100'); w('AcDbDictionary'); w('281'); w('1');
+  w('3'); w('Model'); w('350'); w(hModelLayout);
+  w('3'); w('Layout1'); w('350'); w(hPaperLayout);
+  // Objet LAYOUT — helper (AcDbPlotSettings minimal + AcDbLayout lié au BLOCK_RECORD)
+  const wLayout = (h, name, brHandle, tabOrder, isModel) => {
+    w('0'); w('LAYOUT'); w('5'); w(h); w('330'); w(hLayoutDict);
+    w('100'); w('AcDbPlotSettings');
+    w('1'); w(''); w('2'); w(''); w('4'); w('A4'); w('6'); w('');
+    w('40'); w('7.5'); w('41'); w('7.5'); w('42'); w('7.5'); w('43'); w('7.5');
+    w('44'); w('210.0'); w('45'); w('297.0'); w('46'); w('0.0'); w('47'); w('0.0');
+    w('48'); w('0.0'); w('49'); w('0.0'); w('140'); w('0.0'); w('141'); w('0.0');
+    w('142'); w('1.0'); w('143'); w('1.0'); w('70'); w(isModel ? '1024' : '0');
+    w('72'); w('0'); w('73'); w('0'); w('74'); w('0'); w('7'); w('');
+    w('75'); w('0'); w('147'); w('1.0'); w('148'); w('0.0'); w('149'); w('0.0');
+    w('100'); w('AcDbLayout');
+    w('1'); w(name); w('70'); w('1'); w('71'); w(String(tabOrder));
+    w('10'); w('0.0'); w('20'); w('0.0'); w('11'); w('210.0'); w('21'); w('297.0');
+    w('12'); w('0.0'); w('22'); w('0.0'); w('32'); w('0.0');
+    w('14'); w('1.0E+20'); w('24'); w('1.0E+20'); w('34'); w('1.0E+20');
+    w('15'); w('-1.0E+20'); w('25'); w('-1.0E+20'); w('35'); w('-1.0E+20');
+    w('146'); w('0.0'); w('13'); w('0.0'); w('23'); w('0.0'); w('33'); w('0.0');
+    w('16'); w('1.0'); w('26'); w('0.0'); w('36'); w('0.0');
+    w('17'); w('0.0'); w('27'); w('1.0'); w('37'); w('0.0');
+    w('76'); w('0'); w('330'); w(brHandle);
+  };
+  wLayout(hModelLayout, 'Model', hModelBR, 0, true);
+  wLayout(hPaperLayout, 'Layout1', hPaperBR, 1, false);
   w('0'); w('ENDSEC');
 
   w('0'); w('EOF');
@@ -15634,7 +15810,7 @@ async function exportDXF() {
   // $HANDSEED = handle suivant le plus grand utilisé (requis par les logiciels de CAO)
   if (_handseedIdx >= 0) dxf[_handseedIdx] = (_h).toString(16).toUpperCase();
 
-  const content = dxf.join('\n');
+  const content = dxf.join('\r\n') + '\r\n'; // CRLF requis par AutoCAD (LT rejette le LF nu)
   const baseName = currentDrawingBaseName('minicad_export');
   const fname = await saveWithPicker(content, baseName, 'dxf', 'application/dxf', 'CAO DXF');
   if (!fname) { termPrint('Export DXF annulé', 'info'); return; }
@@ -15664,7 +15840,7 @@ function exportDWG() {
   w2('0'); w2('TABLE'); w2('2'); w2('LAYER'); w2('70'); w2(String(S.layers.length));
   S.layers.forEach((lay, i) => {
     w2('0'); w2('LAYER');
-    w2('2'); w2(lay.name.replace(/[^a-zA-Z0-9_-]/g,'_'));
+    w2('2'); w2(dxfLayerName(i));
     w2('70'); w2(lay.visible ? '0' : '1');
     w2('62'); w2(String(dxfColorIndex(lay.color)));
     w2('6'); w2('CONTINUOUS');
@@ -15673,7 +15849,7 @@ function exportDWG() {
   w2('0'); w2('SECTION'); w2('2'); w2('ENTITIES');
   // Re-use same entity export logic
   S.entities.forEach(e => {
-    const layerName = (S.layers[e.layer]?.name || '0').replace(/[^a-zA-Z0-9_-]/g,'_');
+    const layerName = dxfLayerName(e.layer);
     const col = dxfColorIndex(S.layers[e.layer]?.color || '#ffffff');
     if(e.type==='line'||e.type==='wall'||e.type==='leader'||e.type==='dim_linear'||e.type==='dim_aligned'){
       w2('0');w2('LINE');w2('8');w2(layerName);w2('62');w2(String(col));
@@ -15713,7 +15889,7 @@ function exportDWG() {
   });
   w2('0');w2('ENDSEC');w2('0');w2('EOF');
 
-  const content = dxf.join('\n');
+  const content = dxf.join('\r\n') + '\r\n'; // CRLF (compat AutoCAD)
   downloadBlob(content, 'application/octet-stream', 'minicad_export.dwg');
   termPrint('Fichier .dwg exporté (contenu DXF compatible)','success');
 }
@@ -15760,6 +15936,175 @@ function downloadBlob(content, mime, filename) {
 // Nom de base du dessin courant (issu du fichier .mcad enregistré, sinon défaut)
 function currentDrawingBaseName(fallback) {
   return (_fileHandle?.name?.replace(/\.mcad$/i, '')) || fallback || 'minicad_export';
+}
+
+// ===== CLOUD kDrive (Infomaniak) via proxy Worker (CORS) =====
+const KDRIVE_DEFAULT_WORKER = 'https://kdrive.floral-mouse-5d29.workers.dev';
+let _kdrive = { worker:'', token:'', driveId:'' };
+try { Object.assign(_kdrive, JSON.parse(localStorage.getItem('minicad_kdrive') || '{}')); } catch(e) {}
+let _kdNav = [{ id:1, name:'kDrive' }];   // pile de navigation (fil d'Ariane)
+let _kdItems = [];                         // éléments du dossier courant
+let _kdMode = 'open';
+let _kdFile = null;                        // fichier kDrive courant { dirId, name, fileId } → Ctrl+S ré-enregistre dessus
+
+function _kdReady() { return !!(_kdrive.worker && _kdrive.token && _kdrive.driveId); }
+async function _kdRaw(path, opts={}) {
+  const base = (_kdrive.worker || '').replace(/\/+$/, '');
+  const headers = Object.assign({ Authorization: 'Bearer ' + _kdrive.token }, opts.headers || {});
+  return fetch(base + path, Object.assign({}, opts, { headers }));
+}
+async function _kdJson(path, opts) {
+  const r = await _kdRaw(path, opts);
+  const t = await r.text();
+  let j = null; try { j = JSON.parse(t); } catch(e) {}
+  if (!r.ok || (j && j.result === 'error'))
+    throw new Error((j && j.error && j.error.description) || ('HTTP ' + r.status));
+  return j;
+}
+
+// --- Dialogue connexion ---
+function openKdriveConnect() {
+  document.getElementById('kd-worker').value = _kdrive.worker || KDRIVE_DEFAULT_WORKER;
+  document.getElementById('kd-token').value  = _kdrive.token || '';
+  document.getElementById('kd-drive').value  = _kdrive.driveId || '';
+  document.getElementById('kd-status').textContent = '';
+  document.getElementById('kd-dialog').style.display = 'block';
+}
+function closeKdriveConnect() { document.getElementById('kd-dialog').style.display = 'none'; }
+function _kdReadConn() {
+  _kdrive.worker  = document.getElementById('kd-worker').value.trim();
+  _kdrive.token   = document.getElementById('kd-token').value.trim();
+  _kdrive.driveId = document.getElementById('kd-drive').value.trim();
+}
+function kdriveSaveConn() {
+  _kdReadConn();
+  try { localStorage.setItem('minicad_kdrive', JSON.stringify(_kdrive)); } catch(e) {}
+  closeKdriveConnect(); termPrint('kDrive : connexion enregistrée', 'success');
+}
+function kdriveForget() {
+  _kdrive = { worker:'', token:'', driveId:'' };
+  localStorage.removeItem('minicad_kdrive');
+  openKdriveConnect(); termPrint('kDrive : identifiants oubliés', 'info');
+}
+async function kdriveTest() {
+  _kdReadConn();
+  const s = document.getElementById('kd-status');
+  s.textContent = '…'; s.style.color = 'var(--text-dim)';
+  try {
+    const j = await _kdJson('/3/drive/' + _kdrive.driveId + '/files/1/files');
+    s.textContent = '✓ OK (' + (j.data ? j.data.length : 0) + ' éléments)'; s.style.color = 'var(--success)';
+  } catch(e) { s.textContent = '✗ ' + e.message; s.style.color = 'var(--error)'; }
+}
+
+// --- Navigateur de fichiers ---
+async function kdriveOpenBrowser(mode) {
+  if (!_kdReady()) { openKdriveConnect(); termPrint('Configure d\'abord la connexion kDrive', 'warning'); return; }
+  _kdMode = mode; _kdNav = [{ id:1, name:'kDrive' }];
+  document.getElementById('kd-br-title').textContent = mode === 'save' ? 'ENREGISTRER SUR kDRIVE' : 'OUVRIR DEPUIS kDRIVE';
+  document.getElementById('kd-save-row').style.display = mode === 'save' ? 'flex' : 'none';
+  document.getElementById('kd-save-btn').style.display = mode === 'save' ? '' : 'none';
+  if (mode === 'save') document.getElementById('kd-fname').value = currentDrawingBaseName('dessin') + '.mcad';
+  document.getElementById('kd-browser').style.display = 'block';
+  // Entrer directement dans l'espace « Private » (la racine virtuelle id 1 n'est pas un dossier de travail)
+  try {
+    const j = await _kdJson('/3/drive/' + _kdrive.driveId + '/files/1/files');
+    const priv = (j.data || []).find(f => f.type === 'dir' && f.visibility === 'is_private_space')
+              || (j.data || []).find(f => f.type === 'dir' && /private/i.test(f.name));
+    if (priv) _kdNav.push({ id: priv.id, name: priv.name });
+  } catch(e) {}
+  _kdRenderList();
+}
+function closeKdriveBrowser() { document.getElementById('kd-browser').style.display = 'none'; }
+function _kdCurrentFolder() { return _kdNav[_kdNav.length - 1].id; }
+function _kdNavTo(i) { _kdNav = _kdNav.slice(0, i + 1); _kdRenderList(); }
+async function _kdRenderList() {
+  const list = document.getElementById('kd-list'), bc = document.getElementById('kd-breadcrumb');
+  bc.innerHTML = _kdNav.map((n,i) => i < _kdNav.length-1
+    ? '<a onclick="_kdNavTo(' + i + ')">' + _esc(n.name) + '</a> / '
+    : '<b>' + _esc(n.name) + '</b>').join('');
+  list.innerHTML = '<div class="kd-item" style="color:var(--text-dim)">Chargement…</div>';
+  try {
+    const j = await _kdJson('/3/drive/' + _kdrive.driveId + '/files/' + _kdCurrentFolder() + '/files');
+    _kdItems = (j.data || []).filter(f => f.type === 'dir' || /\.mcad$/i.test(f.name));
+    _kdItems.sort((a,b) => (a.type === b.type) ? a.name.localeCompare(b.name) : (a.type === 'dir' ? -1 : 1));
+    if (!_kdItems.length) { list.innerHTML = '<div class="kd-item" style="color:var(--text-dim)">(aucun dossier ni .mcad)</div>'; return; }
+    list.innerHTML = _kdItems.map((f,idx) =>
+      '<div class="kd-item" onclick="_kdItemClick(' + idx + ')">' +
+        '<span class="kd-name">' + (f.type === 'dir' ? '📁 ' : '📄 ') + _esc(f.name) + '</span>' +
+        '<span class="kd-ren" onclick="event.stopPropagation();kdriveRename(' + idx + ')" title="Renommer">✎</span>' +
+      '</div>').join('');
+  } catch(e) { list.innerHTML = '<div class="kd-item" style="color:var(--error)">Erreur : ' + _esc(e.message) + '</div>'; }
+}
+async function _kdItemClick(idx) {
+  const f = _kdItems[idx]; if (!f) return;
+  if (f.type === 'dir') { _kdNav.push({ id:f.id, name:f.name }); _kdRenderList(); return; }
+  if (_kdMode === 'save') { document.getElementById('kd-fname').value = f.name; return; } // écraser ce fichier
+  try {
+    const r = await _kdRaw('/2/drive/' + _kdrive.driveId + '/files/' + f.id + '/download');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const txt = await r.text();
+    openJSON(txt, f.name);
+    _kdFile = { dirId: _kdCurrentFolder(), name: f.name, fileId: f.id }; // Ctrl+S → kDrive
+    _fileHandle = null;
+    updateSaveIndicator('saved');
+    closeKdriveBrowser();
+    termPrint('☁ Ouvert depuis kDrive : ' + f.name + ' — Ctrl+S ré-enregistre ici', 'success');
+  } catch(e) { termPrint('kDrive — ouverture : ' + e.message, 'error'); }
+}
+// Ré-enregistre le dessin sur le fichier kDrive courant (appelé par Ctrl+S)
+async function kdriveSaveCurrent() {
+  if (!_kdFile || !_kdReady()) return false;
+  const name = _kdFile.name;
+  const content = JSON.stringify(buildSaveData(name.replace(/\.mcad$/i, '')));
+  const bytes = new Blob([content]).size;
+  const q = '?directory_id=' + _kdFile.dirId + '&file_name=' + encodeURIComponent(name) +
+            '&conflict=version&total_size=' + bytes;
+  try {
+    await _kdJson('/3/drive/' + _kdrive.driveId + '/upload' + q,
+      { method:'POST', headers:{ 'Content-Type':'application/octet-stream' }, body: content });
+    try { localStorage.setItem('minicad_autosave', content); } catch(e) {}
+    updateSaveIndicator('saved');
+    termPrint('☁ Sauvegardé sur kDrive : ' + name, 'success');
+    return true;
+  } catch(e) { termPrint('kDrive — sauvegarde : ' + e.message, 'error'); return false; }
+}
+
+async function kdriveNewFolder() {
+  const name = prompt('Nom du nouveau dossier :');
+  if (!name || !name.trim()) return;
+  try {
+    await _kdJson('/2/drive/' + _kdrive.driveId + '/files/' + _kdCurrentFolder() + '/directory',
+      { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ name: name.trim() }) });
+    termPrint('Dossier créé : ' + name.trim(), 'success'); _kdRenderList();
+  } catch(e) { termPrint('kDrive — créer dossier : ' + e.message, 'error'); }
+}
+async function kdriveRename(idx) {
+  const f = _kdItems[idx]; if (!f) return;
+  const nn = prompt('Renommer en :', f.name);
+  if (!nn || !nn.trim() || nn.trim() === f.name) return;
+  try {
+    await _kdJson('/2/drive/' + _kdrive.driveId + '/files/' + f.id + '/rename',
+      { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ name: nn.trim() }) });
+    termPrint('Renommé : ' + f.name + ' → ' + nn.trim(), 'success'); _kdRenderList();
+  } catch(e) { termPrint('kDrive — renommer : ' + e.message, 'error'); }
+}
+async function kdriveDoSave() {
+  let name = document.getElementById('kd-fname').value.trim();
+  if (!name) { termPrint('Nom de fichier requis', 'warning'); return; }
+  if (!/\.mcad$/i.test(name)) name += '.mcad';
+  const content = JSON.stringify(buildSaveData(name.replace(/\.mcad$/i, '')));
+  const bytes = new Blob([content]).size;
+  const q = '?directory_id=' + _kdCurrentFolder() + '&file_name=' + encodeURIComponent(name) +
+            '&conflict=version&total_size=' + bytes;
+  try {
+    const resp = await _kdJson('/3/drive/' + _kdrive.driveId + '/upload' + q,
+      { method:'POST', headers:{ 'Content-Type':'application/octet-stream' }, body: content });
+    _kdFile = { dirId: _kdCurrentFolder(), name, fileId: resp && resp.data && resp.data.id }; // Ctrl+S → kDrive
+    _fileHandle = null;
+    closeKdriveBrowser();
+    termPrint('☁ Enregistré sur kDrive : ' + name + ' — Ctrl+S ré-enregistre ici', 'success');
+    updateSaveIndicator('saved');
+  } catch(e) { termPrint('kDrive — enregistrement : ' + e.message, 'error'); }
 }
 
 // Enregistre `content` via une fenêtre « Enregistrer sous » (showSaveFilePicker) :
@@ -16023,6 +16368,9 @@ function loadFromLocalStorage() {
 
 // ===== JSON SAVE/OPEN =====
 async function cmdSave(name, forceNew) {
+  // Fichier ouvert/enregistré sur kDrive → Ctrl+S ré-enregistre sur kDrive
+  if (_kdFile && !forceNew && !name) { await kdriveSaveCurrent(); return; }
+  if (forceNew) _kdFile = null;   // « Enregistrer sous » local → repasse en local
   const data = buildSaveData(name);
   const json = JSON.stringify(data, null, 2);
 
@@ -16117,6 +16465,7 @@ function openJSON(content, filename) {
     termPrint('Fichier JSON non reconnu comme projet MiniCAD', 'error');
     return;
   }
+  _kdFile = null;   // par défaut local ; l'ouverture kDrive le re-définit après cet appel
   pushUndo();
   if (data.layers) { S.layers = data.layers; S.layers.forEach(l=>{if(!l.lineWidth)l.lineWidth=0.25;if(!l.lineType)l.lineType='solid';if(!l.printColor)l.printColor='#000000';}); }
   if (data.entities) S.entities = data.entities;

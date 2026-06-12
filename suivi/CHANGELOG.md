@@ -7,6 +7,10 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.1] — 2026-06-07 — Version courante
 
 ### Ajouté
+- **Espace sur poignée active → DÉPLACER l'objet entier** (façon AutoCAD) : après avoir
+  saisi une poignée, `Espace` bascule en MOVE de toute la sélection avec la poignée
+  comme point de base (clic destination ou distance au clavier) ; sans effet si une
+  valeur est déjà tapée dans la saisie dynamique
 - **Présentations (espace papier)** — onglets *Objet / Présentation*
   - Feuilles aux formats **A0, A1, A2, A3, A4, A5, Letter** + **personnalisé** (mm)
   - **Fenêtres** (viewports) montrant le dessin à une échelle fixe ; création,
@@ -25,11 +29,37 @@ Format : `[version] — YYYY-MM-DD — Description`
     champ vide → affiche son libellé
 - **Aperçus animés au survol des outils** (curseur + clics + élastique) — 46 outils
   - Fichier externe `animations/tool_anim.js` injecté au build
+- **Copier les propriétés** (`MATCHPROP` / `MA`) — pinceau : applique calque, couleur,
+  type/épaisseur de ligne, style de texte/cote d'un objet vers d'autres (curseur dédié)
+- **Propriétés d'apparence par objet** : couleur, type de ligne, épaisseur (ou « Du calque »)
+  — sélection simple et multiple ; respectées à l'écran, en présentation et à l'impression
+- **Propriétés calculées** dans le panneau : longueur / périmètre / circonférence + **aire**
+  (cercle, rectangle, ellipse, polyligne fermée, polygone) ; totaux en sélection multiple
+- **TRIM / EXTEND sur l'ellipse** (cible et limite) ; EXTEND sur l'arc
+- **OSNAP sur l'ellipse** : intersection, proche, extrémité/milieu (+ filtre arc visible)
+- **Cloud kDrive (Infomaniak)** : ouvrir/enregistrer les `.mcad` sur kDrive via proxy
+  (Cloudflare Worker, CORS), navigateur de dossiers (créer/renommer), `Ctrl+S` → kDrive
+
+### Corrigé
+- **TRIM ne fragmente plus le reste de l'entité** : la coupe se fait uniquement aux
+  2 intersections adjacentes au clic (ligne, arc, cercle, ellipse, polyligne ouverte) ;
+  cercle et ellipse fermée laissent désormais UN seul arc au lieu de N morceaux
+- **TRIM ellipse fermée** : la couture 0/2π n'est plus traitée comme une extrémité
+  (l'ellipse complète stocke 0..2π — la détection alignée sur celle du rendu)
+- TRIM cercle : les propriétés d'apparence (couleur, type de ligne…) sont conservées
+  lors de la conversion en arc ; un cercle exige 2 points de coupe minimum
+- **TRIM rect/polygone/polyligne avec une ellipse comme limite** : l'ellipse était
+  ignorée comme limite de coupe (« aucune intersection trouvée »)
+- Sélection fenêtre (G→D) : bbox serrée (la marge de culling faussait l'inclusion)
+- Sélection d'une polyligne en cliquant sur un **arc** (bulge)
+- **EXPLODE** : arcs de polyligne qui s'inversaient (sens de bulge)
+- Cotes : sélection d'objet (Espace) pour DIMLINEAR/DIMALIGNED ; hit-test des cotes alignées
 
 ### Modifié
 - Format de sauvegarde `.mcad` : version `0.1`
-- README mis à jour (Présentations, commandes manquantes : RECTCENTER, POLYGON,
-  ELLIPSE, ARRAY_POLAR, GROUP/UNGROUP, AREA, MESURER, CALC, LIST, LOAD…)
+- README mis à jour (Présentations, propriétés objet/calculées, OSNAP ellipse, cloud kDrive,
+  commandes : RECTCENTER, POLYGON, ELLIPSE, ARRAY_POLAR, GROUP/UNGROUP, AREA, MESURER,
+  CALC, LIST, LOAD, MATCHPROP…)
 
 ---
 
