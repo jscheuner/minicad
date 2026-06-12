@@ -13,12 +13,20 @@
     --bg-panel: #16213e;
     --bg-canvas: #0f0f1a;
     --bg-terminal: #0a0a14;
+    --bg-elev: #1a2133;
+    --menu-bg: #000000dd;
+    --badge-bg: #00000088;
+    --input-bg: #0f0f1a;
+    --btn-bg: #2a2a3e;
+    --border: color-mix(in srgb, var(--ink) 13%, transparent);
+    --ink: #ffffff;
+    --on-accent: #000000;
     --accent: #00d4ff;
     --accent-dim: #00d4ff33;
     --grid: #1a2a4a;
     --grid-major: #253a5a;
     --text: #c8d6e5;
-    --text-dim: #576a80;
+    --text-dim: #8295ab;
     --text-bright: #f0f4f8;
     --success: #00e676;
     --warning: #ffab40;
@@ -39,6 +47,46 @@
     --module-text: #ff4081;
   }
 
+  /* Thème clair — proche du rendu papier ; couleurs assombries pour le contraste */
+  :root.theme-light {
+    --bg-dark: #e9ebef;
+    --bg-panel: #f5f6f8;
+    --bg-canvas: #fbfcfd;
+    --bg-terminal: #eef0f4;
+    --bg-elev: #ffffff;
+    --menu-bg: #ffffffee;
+    --badge-bg: #ffffffcc;
+    --input-bg: #ffffff;
+    --btn-bg: #e2e6ea;
+    --border: #00000024;
+    --ink: #13202e;
+    --on-accent: #ffffff;
+    --accent: #0072ad;
+    --accent-dim: #0072ad26;
+    --grid: #dde3eb;
+    --grid-major: #c6d0dd;
+    --text: #222e3c;
+    --text-dim: #5a6b7f;
+    --text-bright: #0a121c;
+    --success: #00873e;
+    --warning: #9a5b00;
+    --error: #c62828;
+    --snap-color: #c2185b;
+    --osnap-endpoint: #c2185b;
+    --osnap-midpoint: #00873e;
+    --osnap-center: #9a5b00;
+    --osnap-nearest: #2962ff;
+    --osnap-intersection: #9c27b0;
+    --osnap-perpendicular: #00707e;
+    --osnap-tangent: #d84315;
+    --osnap-quadrant: #7a7000;
+    --osnap-extension: #e65100;
+    --module-arch: #5e35b1;
+    --module-elec: #9a5b00;
+    --module-dim: #00873e;
+    --module-text: #c2185b;
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
@@ -55,7 +103,7 @@
   .menubar {
     height: 56px;
     background: var(--bg-panel);
-    border-bottom: 1px solid #ffffff10;
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     display: flex;
     align-items: center;
     padding: 0 12px;
@@ -77,16 +125,16 @@
   .menu-items { display: flex; gap: 2px; margin-left: 12px; }
   .menu-item {
     font-size: 14px; padding: 4px 12px; border-radius: 3px; cursor: pointer;
-    color: #d8e6f4; font-family: 'IBM Plex Sans', sans-serif;
+    color: var(--text); font-family: 'IBM Plex Sans', sans-serif;
   }
-  .menu-item:hover { background: #ffffff0a; color: #ffffff; }
-  .menu-item.open { background: #ffffff0f; color: #ffffff; }
+  .menu-item:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); color: var(--text-bright); }
+  .menu-item.open { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--text-bright); }
 
   .menu-dropdown { position: relative; }
   .menu-dropdown-list {
     position: fixed;
     background: var(--bg-panel);
-    border: 1px solid #ffffff20;
+    border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent);
     border-radius: 4px;
     padding: 4px 0;
     min-width: 210px;
@@ -107,10 +155,10 @@
     gap: 24px;
     white-space: nowrap;
   }
-  .menu-dropdown-item:hover { background: #ffffff0a; color: var(--text-bright); }
+  .menu-dropdown-item:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); color: var(--text-bright); }
   .menu-dropdown-item.disabled { opacity: 0.35; pointer-events: none; }
   .item-shortcut { color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
-  .menu-dropdown-sep { height: 1px; background: #ffffff10; margin: 4px 0; }
+  .menu-dropdown-sep { height: 1px; background: color-mix(in srgb, var(--ink) 6%, transparent); margin: 4px 0; }
 
   .topbar-right {
     margin-left: auto;
@@ -128,7 +176,7 @@
   /* === DOCK AREA === */
   .dock-area {
     background: var(--bg-panel);
-    border-bottom: 1px solid #ffffff10;
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -149,7 +197,7 @@
     flex-shrink: 0;
   }
   .cad-toolbar.docked {
-    border: 1px solid #ffffff06;
+    border: 1px solid color-mix(in srgb, var(--ink) 2%, transparent);
     margin: 0 1px;
   }
   .cad-toolbar.floating {
@@ -179,7 +227,7 @@
     flex-shrink: 0;
     padding: 0 1px;
   }
-  .tb-grip:hover { opacity: 0.8; background: #ffffff08; }
+  .tb-grip:hover { opacity: 0.8; background: color-mix(in srgb, var(--ink) 3%, transparent); }
   .tb-grip:active { cursor: grabbing; }
   .cad-toolbar.floating .tb-grip { display: none; }
 
@@ -189,7 +237,7 @@
     justify-content: space-between;
     padding: 2px 4px 2px 8px;
     background: #0d1a33;
-    border-bottom: 1px solid #ffffff10;
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     cursor: grab;
     border-radius: 3px 3px 0 0;
   }
@@ -216,7 +264,7 @@
     padding: 2px;
   }
   .tb-sep {
-    width: 1px; height: 20px; background: #ffffff10; margin: 0 2px; flex-shrink: 0;
+    width: 1px; height: 20px; background: color-mix(in srgb, var(--ink) 6%, transparent); margin: 0 2px; flex-shrink: 0;
   }
   .cad-toolbar.floating .tb-sep {
     width: 100%; height: 1px; margin: 2px 0;
@@ -226,7 +274,7 @@
   .tb-context {
     position: fixed; z-index: 300;
     background: var(--bg-panel);
-    border: 1px solid #ffffff20;
+    border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent);
     border-radius: 4px;
     padding: 4px 0;
     min-width: 160px;
@@ -258,14 +306,14 @@
   .tube-def-popup .tdp-row:last-of-type { margin-bottom: 16px; }
   .tube-def-popup .tdp-lbl { color: var(--text-dim); white-space: nowrap; }
   .tube-def-popup input[type=number] {
-    width: 100%; background: #0d1929; border: 1px solid #ffffff22;
+    width: 100%; background: #0d1929; border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent);
     border-radius: 4px; color: var(--text); font-family: inherit;
     font-size: 13px; padding: 5px 8px; text-align: right; box-sizing: border-box;
   }
   .tube-def-popup input[type=number]:focus { outline: none; border-color: var(--accent); }
   .tube-def-popup .tdp-unit { color: var(--text-dim); min-width: 20px; }
   .tube-def-popup .tdp-ok {
-    width: 100%; padding: 7px 0; background: var(--accent); color: #000;
+    width: 100%; padding: 7px 0; background: var(--accent); color: var(--on-accent);
     border: none; border-radius: 4px; font-family: inherit; font-size: 12px;
     font-weight: 600; cursor: pointer; letter-spacing: 0.3px;
   }
@@ -276,10 +324,10 @@
     font-size: 11px; color: var(--text); cursor: pointer;
     font-family: 'IBM Plex Sans', sans-serif;
   }
-  .tb-ctx-item:hover { background: #ffffff0a; }
+  .tb-ctx-item:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
   .tb-ctx-check { width: 14px; text-align: center; color: var(--accent); font-size: 12px; }
   .tb-ctx-item .ctx-shortcut { margin-left: auto; color: var(--text-dim); font-size: 10px; }
-  .tb-ctx-sep { height: 1px; background: #ffffff12; margin: 4px 0; }
+  .tb-ctx-sep { height: 1px; background: color-mix(in srgb, var(--ink) 7%, transparent); margin: 4px 0; }
   .tb-ctx-header { padding: 4px 12px 2px; font-size: 10px; color: var(--text-dim); letter-spacing: 0.5px; text-transform: uppercase; }
 
   .tool-btn {
@@ -295,7 +343,7 @@
     font-size: 14px;
     transition: all 0.15s;
   }
-  .tool-btn:hover { background: #ffffff0a; color: var(--text); border-color: #ffffff15; }
+  .tool-btn:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); color: var(--text); border-color: color-mix(in srgb, var(--ink) 8%, transparent); }
   .tool-btn.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
   .tool-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; }
   .tool-btn.text-btn { width: auto; padding: 0 6px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
@@ -305,14 +353,14 @@
   .side-panel {
     width: 220px;
     background: var(--bg-panel);
-    border-right: 1px solid #ffffff10;
+    border-right: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
     overflow-y: auto;
   }
 
-  .panel-section { border-bottom: 1px solid #ffffff08; }
+  .panel-section { border-bottom: 1px solid color-mix(in srgb, var(--ink) 3%, transparent); }
 
   .panel-header {
     padding: 8px 12px;
@@ -327,7 +375,7 @@
     justify-content: space-between;
     align-items: center;
   }
-  .panel-header:hover { background: #ffffff08; }
+  .panel-header:hover { background: color-mix(in srgb, var(--ink) 3%, transparent); }
   .panel-header .arrow { transition: transform 0.2s; }
   .panel-header.collapsed .arrow { transform: rotate(-90deg); }
 
@@ -339,7 +387,7 @@
     padding: 4px 6px; border-radius: 3px; cursor: pointer;
     font-size: 11px; transition: background 0.1s;
   }
-  .layer-item:hover { background: #ffffff08; }
+  .layer-item:hover { background: color-mix(in srgb, var(--ink) 3%, transparent); }
   .layer-item.active { background: var(--accent-dim); }
   .layer-item.assignable { cursor: crosshair; }
   .layer-item.assignable:hover { background: #00d4ff18; outline: 1px solid #00d4ff44; }
@@ -348,7 +396,7 @@
   .layer-vis:hover { opacity: 1; }
   .layer-mgr-btn {
     width: 100%; margin-top: 6px; padding: 5px; background: none;
-    border: 1px solid #ffffff18; border-radius: 3px; color: var(--text-dim);
+    border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent); border-radius: 3px; color: var(--text-dim);
     font-size: 10px; cursor: pointer; letter-spacing: 0.5px;
   }
   .layer-mgr-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -356,7 +404,7 @@
   /* Layer Manager Dialog */
   #layer-manager {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     z-index: 950; width: 560px; max-height: 80vh;
     box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     display: flex; flex-direction: column;
@@ -364,41 +412,41 @@
   }
   .lm-header {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 16px; border-bottom: 1px solid #ffffff18;
+    padding: 10px 16px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     font-weight: 600; letter-spacing: 1px; color: var(--accent);
   }
-  .lm-close { cursor: pointer; color: #ffffff55; font-size: 18px; line-height: 1; }
+  .lm-close { cursor: pointer; color: color-mix(in srgb, var(--ink) 33%, transparent); font-size: 18px; line-height: 1; }
   .lm-close:hover { color: #fff; }
-  .lm-toolbar { padding: 8px 12px; border-bottom: 1px solid #ffffff0a; }
+  .lm-toolbar { padding: 8px 12px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 4%, transparent); }
   .lm-add-btn {
     padding: 4px 12px; background: var(--accent-dim); border: 1px solid var(--accent);
     border-radius: 4px; color: var(--accent); font-size: 11px; cursor: pointer;
   }
-  .lm-add-btn:hover { background: var(--accent); color: #000; }
+  .lm-add-btn:hover { background: var(--accent); color: var(--on-accent); }
   .lm-table { overflow-y: auto; flex: 1; }
   table.lm-grid {
     width: 100%; border-collapse: collapse; font-size: 11px;
   }
   .lm-grid th {
     padding: 5px 8px; text-align: left; font-size: 9px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.8px; color: #ffffff44;
-    border-bottom: 1px solid #ffffff12; background: #0f1726; position: sticky; top: 0;
+    text-transform: uppercase; letter-spacing: 0.8px; color: color-mix(in srgb, var(--ink) 27%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 7%, transparent); background: #0f1726; position: sticky; top: 0;
   }
-  .lm-grid td { padding: 4px 8px; border-bottom: 1px solid #ffffff08; vertical-align: middle; }
-  .lm-grid tr:hover td { background: #ffffff06; }
+  .lm-grid td { padding: 4px 8px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 3%, transparent); vertical-align: middle; }
+  .lm-grid tr:hover td { background: color-mix(in srgb, var(--ink) 2%, transparent); }
   .lm-grid tr.lm-current td { background: var(--accent-dim); }
   .lm-color-btn {
-    width: 22px; height: 16px; border-radius: 3px; border: 1px solid #ffffff30;
+    width: 22px; height: 16px; border-radius: 3px; border: 1px solid color-mix(in srgb, var(--ink) 19%, transparent);
     cursor: pointer; padding: 0; display: block;
   }
   .lm-name-input {
     background: transparent; border: none; color: var(--text); font-size: 11px;
     font-family: 'IBM Plex Sans', sans-serif; width: 100%; min-width: 100px;
   }
-  .lm-name-input:focus { outline: 1px solid var(--accent); border-radius: 2px; background: #ffffff08; }
+  .lm-name-input:focus { outline: 1px solid var(--accent); border-radius: 2px; background: color-mix(in srgb, var(--ink) 3%, transparent); }
   .lm-sel {
-    background: #0d1525; border: 1px solid #ffffff18; border-radius: 3px;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent); border-radius: 3px;
     color: var(--text); font-size: 10px; padding: 2px 4px; cursor: pointer; width: 100%;
   }
   .lm-sel:focus { outline: none; border-color: var(--accent); }
@@ -407,39 +455,39 @@
     cursor: pointer; font-size: 14px; padding: 0 4px;
   }
   .lm-del-btn:hover { opacity: 1; }
-  .lm-footer { padding: 10px 16px; border-top: 1px solid #ffffff12; text-align: right; }
+  .lm-footer { padding: 10px 16px; border-top: 1px solid color-mix(in srgb, var(--ink) 7%, transparent); text-align: right; }
   .lm-close-btn {
     padding: 5px 18px; background: var(--accent); border: none; border-radius: 4px;
-    color: #000; font-size: 11px; font-weight: 600; cursor: pointer;
+    color: var(--on-accent); font-size: 11px; font-weight: 600; cursor: pointer;
   }
   .lm-close-btn:hover { opacity: 0.85; }
 
   /* ===== CALCULATRICE ===== */
   #calc-dialog {
     position: fixed; top: 120px; right: 20px; z-index: 960;
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     box-shadow: 0 12px 48px rgba(0,0,0,0.8); font-family: 'IBM Plex Sans', sans-serif;
     display: none; flex-direction: column; width: 240px; user-select: none;
   }
   .calc-hdr {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 8px 12px; border-bottom: 1px solid #ffffff18; cursor: move;
+    padding: 8px 12px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 9%, transparent); cursor: move;
     font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
     letter-spacing: 1px; color: var(--accent);
   }
   .calc-hdr-btns { display: flex; gap: 6px; align-items: center; }
   .calc-mode-btn {
-    background: #0d1525; border: 1px solid #ffffff22; border-radius: 3px;
-    color: #ffffff66; font-size: 9px; font-weight: 700; letter-spacing: .5px;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 3px;
+    color: color-mix(in srgb, var(--ink) 40%, transparent); font-size: 9px; font-weight: 700; letter-spacing: .5px;
     padding: 2px 6px; cursor: pointer; font-family: 'JetBrains Mono', monospace;
     transition: border-color .15s, color .15s;
   }
   .calc-mode-btn.active { border-color: var(--accent); color: var(--accent); }
   .calc-display {
-    padding: 8px 10px 6px; background: #0d1525; border-bottom: 1px solid #ffffff12;
+    padding: 8px 10px 6px; background: var(--input-bg); border-bottom: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
   }
   .calc-expr-line {
-    font-size: 10px; color: #ffffff44; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: color-mix(in srgb, var(--ink) 27%, transparent); font-family: 'JetBrains Mono', monospace;
     min-height: 14px; text-align: right; overflow: hidden; text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -448,7 +496,7 @@
     text-align: right; padding: 2px 0; cursor: pointer; border-radius: 3px;
     transition: background .1s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  #calc-result:hover { background: #ffffff0d; }
+  #calc-result:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
   #calc-result.calc-error { color: #ff5252; font-size: 14px; }
   .calc-deg-btn {
     font-size: 9px; color: #ffab4066; font-family: 'JetBrains Mono', monospace;
@@ -459,18 +507,18 @@
   .calc-btns { padding: 8px; display: grid; gap: 5px; }
   .calc-btns.basic  { grid-template-columns: repeat(4, 1fr); }
   .calc-btns.paren  { grid-template-columns: 1fr 1fr; padding: 6px 8px 0; gap: 5px; display: grid; }
-  .calc-btns.sci    { grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #ffffff12; margin: 0 8px; padding: 8px 0; }
+  .calc-btns.sci    { grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid color-mix(in srgb, var(--ink) 7%, transparent); margin: 0 8px; padding: 8px 0; }
   .cb {
-    background: #0d1525; border: 1px solid #ffffff15; border-radius: 4px;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent); border-radius: 4px;
     color: var(--text); font-size: 13px; font-family: 'JetBrains Mono', monospace;
     padding: 7px 4px; cursor: pointer; text-align: center;
     transition: background .1s, border-color .1s;
   }
-  .cb:hover  { background: #ffffff18; border-color: #ffffff30; }
+  .cb:hover  { background: color-mix(in srgb, var(--ink) 9%, transparent); border-color: color-mix(in srgb, var(--ink) 19%, transparent); }
   .cb:active { background: #ffffff28; }
   .cb.op     { color: var(--accent); }
   .cb.fn     { color: #a0c4ff; font-size: 11px; }
-  .cb.eq     { background: var(--accent); color: #000; font-weight: 700; border-color: var(--accent); }
+  .cb.eq     { background: var(--accent); color: var(--on-accent); font-weight: 700; border-color: var(--accent); }
   .cb.eq:hover { opacity: .85; }
   .cb.clr    { color: #ff5252; }
   .cb.wide   { grid-column: span 2; }
@@ -478,21 +526,21 @@
   /* ===== ARRAY DIALOG ===== */
   #array-dialog, #polar-array-dialog {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     z-index: 952; width: 320px; box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     font-family: 'IBM Plex Sans', sans-serif; display: none; flex-direction: column;
   }
   .ar-header {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 16px; border-bottom: 1px solid #ffffff18;
+    padding: 10px 16px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     font-weight: 600; letter-spacing: 1px; color: var(--accent);
   }
   .ar-body { padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .ar-group { display: flex; flex-direction: column; gap: 4px; }
-  .ar-label { font-size: 9px; color: #ffffff55; text-transform: uppercase; letter-spacing: 0.6px; }
+  .ar-label { font-size: 9px; color: color-mix(in srgb, var(--ink) 33%, transparent); text-transform: uppercase; letter-spacing: 0.6px; }
   .ar-input {
-    background: #0d1525; border: 1px solid #ffffff18; border-radius: 4px;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent); border-radius: 4px;
     color: var(--text); font-size: 13px; padding: 6px 8px; width: 100%;
     font-family: 'JetBrains Mono', monospace; box-sizing: border-box;
   }
@@ -500,20 +548,20 @@
   .ar-pick-row { display: flex; gap: 4px; }
   .ar-pick-row .ar-input { flex: 1; min-width: 0; }
   .ar-pick-btn {
-    background: #0d1525; border: 1px solid #ffffff22; border-radius: 4px;
-    color: #ffffff66; font-size: 14px; padding: 0 7px; cursor: pointer; flex-shrink: 0;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 4px;
+    color: color-mix(in srgb, var(--ink) 40%, transparent); font-size: 14px; padding: 0 7px; cursor: pointer; flex-shrink: 0;
     display: flex; align-items: center; transition: border-color .15s, color .15s;
   }
   .ar-pick-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .ar-info { padding: 6px 16px 0; font-size: 10px; color: #ffffff44; text-align: center; }
+  .ar-info { padding: 6px 16px 0; font-size: 10px; color: color-mix(in srgb, var(--ink) 27%, transparent); text-align: center; }
   .ar-footer {
-    padding: 12px 16px; border-top: 1px solid #ffffff12;
+    padding: 12px 16px; border-top: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
     display: flex; justify-content: flex-end; gap: 8px;
   }
   .ar-btn { padding: 5px 18px; border: none; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; }
-  .ar-btn.cancel { background: #ffffff12; color: var(--text); }
-  .ar-btn.cancel:hover { background: #ffffff20; }
-  .ar-btn.ok { background: var(--accent); color: #000; }
+  .ar-btn.cancel { background: color-mix(in srgb, var(--ink) 7%, transparent); color: var(--text); }
+  .ar-btn.cancel:hover { background: color-mix(in srgb, var(--ink) 13%, transparent); }
+  .ar-btn.ok { background: var(--accent); color: var(--on-accent); }
   .ar-btn.ok:hover { opacity: 0.85; }
 
   /* ── BIBLIOTHÈQUE — menus cascadants ─────────── */
@@ -523,12 +571,12 @@
     cursor: pointer; white-space: nowrap;
     color: var(--text); font-size: 12px; user-select: none;
   }
-  .lib-sub-item:hover { background: #ffffff0a; color: var(--text-bright); }
+  .lib-sub-item:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); color: var(--text-bright); }
   .lib-sub-item::after { content: '►'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 8px; opacity: 0.45; }
   .lib-sub-item.disabled { opacity: 0.35; pointer-events: none; }
   .lib-sub-list {
     display: none; position: absolute; left: 100%; top: -1px;
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 4px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 4px;
     z-index: 1002; box-shadow: 4px 8px 24px rgba(0,0,0,0.7);
     min-width: 130px;
   }
@@ -540,7 +588,7 @@
     font-family: 'JetBrains Mono', monospace;
     display: flex; align-items: center; gap: 6px;
   }
-  .lib-leaf-item:hover { background: #ffffff0a; color: var(--text-bright); }
+  .lib-leaf-item:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); color: var(--text-bright); }
   .lib-leaf-item .lib-chk { color: var(--accent); opacity: 0; font-size: 10px; flex-shrink: 0; }
   .lib-leaf-item.selected .lib-chk { opacity: 1; }
   .lib-leaf-item.selected { color: var(--accent); }
@@ -548,7 +596,7 @@
   /* ===== AI ASSISTANT PANEL ===== */
   #ai-panel {
     position: fixed; top: 80px; right: 16px;
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     z-index: 950; width: 340px; height: 520px;
     box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     display: flex; flex-direction: column;
@@ -557,45 +605,45 @@
   }
   .ai-header {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 16px; border-bottom: 1px solid #ffffff18;
+    padding: 10px 16px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     font-weight: 600; letter-spacing: 1px; color: var(--accent);
     cursor: move; flex-shrink: 0;
   }
   .ai-header-btns { display: flex; gap: 8px; align-items: center; }
   .ai-settings-btn {
-    background: none; border: none; color: #ffffff55; font-size: 14px;
+    background: none; border: none; color: color-mix(in srgb, var(--ink) 33%, transparent); font-size: 14px;
     cursor: pointer; padding: 0 2px; line-height: 1;
   }
   .ai-settings-btn:hover { color: #fff; }
   .ai-settings-panel {
-    padding: 10px 14px; border-bottom: 1px solid #ffffff12;
+    padding: 10px 14px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
     background: #131b2e; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px;
   }
   .ai-settings-row {
     display: flex; align-items: center; gap: 8px;
   }
-  .ai-settings-label { font-size: 9px; color: #ffffff55; text-transform: uppercase; letter-spacing: 0.6px; flex: 0 0 48px; }
+  .ai-settings-label { font-size: 9px; color: color-mix(in srgb, var(--ink) 33%, transparent); text-transform: uppercase; letter-spacing: 0.6px; flex: 0 0 48px; }
   .ai-settings-input {
-    flex: 1; background: #0d1525; border: 1px solid #ffffff18; border-radius: 3px;
+    flex: 1; background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent); border-radius: 3px;
     color: var(--text); font-size: 11px; padding: 4px 8px;
     font-family: 'JetBrains Mono', monospace;
   }
   .ai-settings-input:focus { outline: none; border-color: var(--accent); }
   .ai-settings-sel {
-    flex: 1; background: #0d1525; border: 1px solid #ffffff18; border-radius: 3px;
+    flex: 1; background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent); border-radius: 3px;
     color: var(--text); font-size: 11px; padding: 3px 6px; cursor: pointer;
   }
   .ai-settings-sel:focus { outline: none; border-color: var(--accent); }
   .ai-refresh-btn {
-    background: none; border: 1px solid #ffffff22; border-radius: 3px;
-    color: #ffffff88; font-size: 11px; cursor: pointer; padding: 3px 7px;
+    background: none; border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 3px;
+    color: color-mix(in srgb, var(--ink) 53%, transparent); font-size: 11px; cursor: pointer; padding: 3px 7px;
   }
   .ai-refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
   .ai-chat {
     flex: 1; overflow-y: auto; padding: 10px 12px;
     display: flex; flex-direction: column; gap: 8px;
-    scrollbar-width: thin; scrollbar-color: #ffffff18 transparent;
+    scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--ink) 9%, transparent) transparent;
   }
   .ai-msg {
     border-radius: 6px; padding: 7px 10px; font-size: 12px; line-height: 1.5;
@@ -607,26 +655,26 @@
     align-self: flex-end; text-align: right;
   }
   .ai-msg.assistant {
-    background: #ffffff08; border: 1px solid #ffffff12; color: var(--text);
+    background: color-mix(in srgb, var(--ink) 3%, transparent); border: 1px solid color-mix(in srgb, var(--ink) 7%, transparent); color: var(--text);
     align-self: flex-start;
   }
   .ai-msg.system-msg {
-    background: none; border: none; color: #ffffff33; font-size: 10px;
+    background: none; border: none; color: color-mix(in srgb, var(--ink) 20%, transparent); font-size: 10px;
     align-self: center; text-align: center; padding: 2px 6px;
   }
   .ai-msg .ai-entities-btn {
     display: inline-block; margin-top: 6px;
     padding: 3px 10px; background: var(--accent); border: none; border-radius: 4px;
-    color: #000; font-size: 10px; font-weight: 600; cursor: pointer;
+    color: var(--on-accent); font-size: 10px; font-weight: 600; cursor: pointer;
   }
   .ai-msg .ai-entities-btn:hover { opacity: 0.8; }
   .ai-input-area {
     display: flex; gap: 6px; padding: 8px 10px;
-    border-top: 1px solid #ffffff12; flex-shrink: 0;
+    border-top: 1px solid color-mix(in srgb, var(--ink) 7%, transparent); flex-shrink: 0;
     align-items: flex-end;
   }
   .ai-textarea {
-    flex: 1; background: #0d1525; border: 1px solid #ffffff18; border-radius: 4px;
+    flex: 1; background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent); border-radius: 4px;
     color: var(--text); font-size: 12px; padding: 6px 8px;
     font-family: 'IBM Plex Sans', sans-serif; resize: none;
     max-height: 80px; overflow-y: auto; min-height: 32px;
@@ -634,12 +682,12 @@
   .ai-textarea:focus { outline: none; border-color: var(--accent); }
   .ai-send-btn {
     background: var(--accent); border: none; border-radius: 4px;
-    color: #000; font-size: 16px; width: 32px; height: 32px;
+    color: var(--on-accent); font-size: 16px; width: 32px; height: 32px;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
   .ai-send-btn:hover { opacity: 0.85; }
-  .ai-send-btn:disabled { background: #ffffff22; color: #ffffff44; cursor: default; }
+  .ai-send-btn:disabled { background: color-mix(in srgb, var(--ink) 13%, transparent); color: color-mix(in srgb, var(--ink) 27%, transparent); cursor: default; }
   .ai-thinking {
     display: flex; gap: 4px; align-items: center; padding: 4px 0;
   }
@@ -651,7 +699,7 @@
   .ai-thinking span:nth-child(3) { animation-delay: 0.4s; }
   @keyframes aiDot { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
   .ai-toolbar-btn {
-    background: none; border: 1px solid #ffffff22; border-radius: 4px;
+    background: none; border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 4px;
     color: var(--accent); font-size: 13px; padding: 3px 8px;
     cursor: pointer; font-family: 'JetBrains Mono', monospace;
   }
@@ -668,8 +716,8 @@
     transition: all 0.15s;
     border: 1px solid transparent;
   }
-  .module-item:hover { background: #ffffff08; }
-  .module-item.loaded { border-color: #ffffff15; background: #ffffff06; }
+  .module-item:hover { background: color-mix(in srgb, var(--ink) 3%, transparent); }
+  .module-item.loaded { border-color: color-mix(in srgb, var(--ink) 8%, transparent); background: color-mix(in srgb, var(--ink) 2%, transparent); }
 
   .module-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 
@@ -689,7 +737,7 @@
     cursor: pointer;
     border-radius: 3px;
   }
-  .osnap-row:hover { background: #ffffff08; }
+  .osnap-row:hover { background: color-mix(in srgb, var(--ink) 3%, transparent); }
   .osnap-row .osnap-dot { width: 8px; height: 8px; flex-shrink: 0; }
   .osnap-row input { accent-color: var(--accent); }
 
@@ -710,8 +758,8 @@
   }
   .space-tab, .space-tab-add {
     padding: 3px 10px; cursor: pointer; user-select: none;
-    background: #00000088; backdrop-filter: blur(4px);
-    color: var(--text-dim); border: 1px solid #ffffff10;
+    background: var(--badge-bg); backdrop-filter: blur(4px);
+    color: var(--text-dim); border: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     border-bottom: none; border-radius: 4px 4px 0 0;
   }
   .space-tab:hover, .space-tab-add:hover { color: var(--text-bright); }
@@ -734,9 +782,9 @@
     font-size: 10px;
     padding: 3px 8px;
     border-radius: 3px;
-    background: #00000088;
+    background: var(--badge-bg);
     backdrop-filter: blur(4px);
-    border: 1px solid #ffffff10;
+    border: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
   }
 
   /* Dynamic Input near cursor — editable fields */
@@ -752,8 +800,8 @@
   #dynamic-input.visible { display: flex; }
   .di-field {
     display: flex; align-items: center; gap: 3px;
-    background: #000000dd;
-    border: 1px solid #ffffff30;
+    background: var(--menu-bg);
+    border: 1px solid color-mix(in srgb, var(--ink) 19%, transparent);
     border-radius: 3px;
     padding: 2px 6px;
   }
@@ -772,7 +820,7 @@
     padding: 1px 0;
   }
   .di-input::placeholder { color: var(--text-dim); opacity: 0.3; }
-  .di-input::selection { background: var(--accent); color: #000; }
+  .di-input::selection { background: var(--accent); color: var(--on-accent); }
   .di-unit { color: var(--text-dim); font-size: 9px; }
 
   /* Polar tracking guide line */
@@ -801,7 +849,7 @@
   .props-panel {
     width: 200px;
     background: var(--bg-panel);
-    border-left: 1px solid #ffffff10;
+    border-left: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     font-size: 11px;
     overflow-y: auto;
     flex-shrink: 0;
@@ -811,13 +859,13 @@
     display: flex;
     justify-content: space-between;
     padding: 4px 10px;
-    border-bottom: 1px solid #ffffff06;
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 2%, transparent);
   }
   .prop-label { color: var(--text-dim); }
   .prop-value { color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
   .prop-input {
     background: var(--bg-dark);
-    border: 1px solid #ffffff20;
+    border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent);
     border-radius: 3px;
     color: var(--text);
     font-family: 'JetBrains Mono', monospace;
@@ -829,7 +877,7 @@
   .prop-input:focus { outline: none; border-color: var(--accent); }
   .prop-select {
     background: var(--bg-dark);
-    border: 1px solid #ffffff20;
+    border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent);
     border-radius: 3px;
     color: var(--text);
     font-family: 'JetBrains Mono', monospace;
@@ -839,11 +887,11 @@
   }
   .prop-select:focus { outline: none; border-color: var(--accent); }
   .prop-color {
-    width: 30px; height: 18px; padding: 0; border: 1px solid #ffffff20;
+    width: 30px; height: 18px; padding: 0; border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent);
     border-radius: 3px; background: var(--bg-dark); cursor: pointer; vertical-align: middle;
   }
   .prop-mini {
-    background: var(--bg-dark); border: 1px solid #ffffff20; border-radius: 3px;
+    background: var(--bg-dark); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 3px;
     color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 9px;
     padding: 1px 5px; cursor: pointer; vertical-align: middle;
   }
@@ -863,7 +911,7 @@
     display: flex;
     align-items: center;
     padding: 4px 12px;
-    background: #ffffff06;
+    background: color-mix(in srgb, var(--ink) 2%, transparent);
     gap: 10px;
   }
 
@@ -888,7 +936,7 @@
     cursor: text;
   }
   .terminal-output::-webkit-scrollbar { width: 4px; }
-  .terminal-output::-webkit-scrollbar-thumb { background: #ffffff20; border-radius: 2px; }
+  .terminal-output::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 2px; }
 
   .term-line { display: flex; gap: 6px; }
   .term-prompt { color: var(--accent); white-space: nowrap; }
@@ -905,7 +953,7 @@
     align-items: center;
     padding: 4px 12px 6px;
     gap: 6px;
-    border-top: 1px solid #ffffff08;
+    border-top: 1px solid color-mix(in srgb, var(--ink) 3%, transparent);
   }
 
   .terminal-input-row .prompt-icon {
@@ -930,7 +978,7 @@
   .statusbar {
     height: 22px;
     background: var(--bg-panel);
-    border-top: 1px solid #ffffff10;
+    border-top: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     display: flex;
     align-items: center;
     padding: 0 12px;
@@ -943,13 +991,13 @@
   .status-dot { width: 5px; height: 5px; border-radius: 50%; }
 
   .side-panel::-webkit-scrollbar, .props-panel::-webkit-scrollbar { width: 4px; }
-  .side-panel::-webkit-scrollbar-thumb, .props-panel::-webkit-scrollbar-thumb { background: #ffffff15; }
+  .side-panel::-webkit-scrollbar-thumb, .props-panel::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--ink) 8%, transparent); }
 
   /* TEXT PROPERTIES DIALOG */
   #print-dialog {
     position: fixed; display: none;
     top: 50%; left: 50%; transform: translate(-50%,-50%);
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     padding: 0; z-index: 960; width: 320px;
     box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     font-family: 'JetBrains Mono', monospace;
@@ -957,14 +1005,14 @@
   #vp-dialog, #ct-dialog, #cf-dialog, #kd-dialog, #kd-browser {
     position: fixed; display: none;
     top: 50%; left: 50%; transform: translate(-50%,-50%);
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     z-index: 960; width: 320px; box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     font-family: 'JetBrains Mono', monospace;
   }
   #kd-browser { width: 400px; }
   #vp-dialog .pd-body input[type=number], #ct-dialog .pd-body input[type=number],
   #kd-dialog .pd-body input, #kd-browser .pd-body input {
-    background: #111827; border: 1px solid #ffffff22; color: #e0e0e0;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); color: var(--text);
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     border-radius: 4px; padding: 4px 7px; flex: 1; min-width: 0;
   }
@@ -972,23 +1020,23 @@
   .kd-breadcrumb a { color: var(--accent); cursor: pointer; }
   .kd-list { max-height: 300px; overflow-y: auto; border: 1px solid #ffffff14; border-radius: 4px; }
   .kd-item { display: flex; align-items: center; gap: 4px; padding: 5px 8px; cursor: pointer;
-    font-size: 11px; color: var(--text); border-bottom: 1px solid #ffffff08; }
+    font-size: 11px; color: var(--text); border-bottom: 1px solid color-mix(in srgb, var(--ink) 3%, transparent); }
   .kd-item .kd-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kd-item:hover { background: var(--accent-dim); color: var(--accent); }
-  .kd-ren { color: #777; padding: 0 4px; }
+  .kd-ren { color: var(--text-dim); padding: 0 4px; }
   .kd-ren:hover { color: var(--accent); }
   /* Menu « Nouvelle présentation depuis un modèle » */
   #ct-menu {
     position: fixed; display: none; z-index: 1000;
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 6px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 6px;
     box-shadow: 0 8px 28px rgba(0,0,0,0.7); padding: 4px;
     font-family: 'JetBrains Mono', monospace; font-size: 11px; min-width: 200px;
   }
   #ct-menu .ctm-item { padding: 6px 10px; cursor: pointer; border-radius: 4px; color: var(--text); white-space: nowrap; display: flex; align-items: center; }
   #ct-menu .ctm-item:hover { background: var(--accent-dim); color: var(--accent); }
-  #ct-menu .ctm-edit { margin-left: auto; padding-left: 12px; color: #777; }
+  #ct-menu .ctm-edit { margin-left: auto; padding-left: 12px; color: var(--text-dim); }
   #ct-menu .ctm-edit:hover { color: var(--accent); }
-  #ct-menu .ctm-del { padding-left: 8px; color: #777; }
+  #ct-menu .ctm-del { padding-left: 8px; color: var(--text-dim); }
   #ct-menu .ctm-del:hover { color: var(--error); }
   #ct-menu .ctm-sep { height: 1px; background: #ffffff14; margin: 4px 2px; }
   #ct-menu .ctm-title { padding: 4px 10px; color: var(--text-dim); font-size: 9px; letter-spacing: .5px; }
@@ -998,29 +1046,29 @@
   #paper-tools button {
     font-family: 'JetBrains Mono', monospace; font-size: 10px; cursor: pointer;
     background: #00000088; backdrop-filter: blur(4px); color: var(--text);
-    border: 1px solid #ffffff20; border-radius: 4px; padding: 4px 10px;
+    border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 4px; padding: 4px 10px;
   }
   #paper-tools button:hover { color: var(--accent); border-color: var(--accent); }
 
   .pd-header {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 14px 9px; border-bottom: 1px solid #ffffff18;
+    padding: 10px 14px 9px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
     font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #ff9800;
   }
   .pd-body { padding: 14px; }
   .pd-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
   .pd-label { font-size: 10px; color: #aaa; min-width: 70px; }
   .pd-body input[type=text], .pd-body select {
-    background: #111827; border: 1px solid #ffffff22; color: #e0e0e0;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); color: var(--text);
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     border-radius: 4px; padding: 4px 7px; flex: 1; min-width: 0;
   }
   .pd-zone-info {
-    background: #0d1526; border: 1px solid #ffffff15; border-radius: 4px;
+    background: #0d1526; border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent); border-radius: 4px;
     padding: 5px 9px; font-size: 10px; color: #aaa; flex: 1;
   }
   .pd-zone-info.set { color: #00d4ff; }
-  .pd-sep { height: 1px; background: #ffffff10; margin: 6px 0 10px; }
+  .pd-sep { height: 1px; background: color-mix(in srgb, var(--ink) 6%, transparent); margin: 6px 0 10px; }
   .pd-footer { display: flex; gap: 8px; padding: 0 14px 14px; justify-content: flex-end; }
   .pd-btn-print {
     background: #ff9800; color: #000; border: none; border-radius: 4px;
@@ -1036,25 +1084,25 @@
   .pd-btn-sel:hover { background: #1e4a7a; }
   #text-dialog {
     position: fixed;
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     padding: 0; z-index: 900; width: 280px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.7);
     font-family: 'JetBrains Mono', monospace;
   }
   .td-header {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 14px 9px; border-bottom: 1px solid #ffffff18;
+    padding: 10px 14px 9px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
     font-size: 11px; font-weight: 600; letter-spacing: 1px; color: var(--accent);
   }
   .td-close {
-    cursor: pointer; color: #ffffff55; font-size: 16px; line-height: 1;
+    cursor: pointer; color: color-mix(in srgb, var(--ink) 33%, transparent); font-size: 16px; line-height: 1;
     width: 20px; text-align: center;
   }
   .td-close:hover { color: #fff; }
   .td-body { padding: 12px 14px 10px; display: flex; flex-direction: column; gap: 10px; }
   .td-symbols { display: flex; gap: 4px; flex-wrap: wrap; }
   .td-sym-btn {
-    min-width: 28px; height: 26px; background: #0d1525; border: 1px solid #ffffff1a;
+    min-width: 28px; height: 26px; background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
     color: #e8ecf4; font-size: 13px; cursor: pointer; border-radius: 4px;
     display: flex; align-items: center; justify-content: center; padding: 0 5px;
     font-family: 'Share Tech', sans-serif;
@@ -1063,32 +1111,32 @@
   .td-field { display: flex; flex-direction: column; gap: 4px; }
   .td-label {
     font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;
-    color: #ffffff44;
+    color: color-mix(in srgb, var(--ink) 27%, transparent);
   }
   .td-field input, .td-field select {
-    background: #0d1525; border: 1px solid #ffffff1a; border-radius: 4px;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); border-radius: 4px;
     color: #e8ecf4; font-family: 'JetBrains Mono', monospace; font-size: 12px;
     padding: 6px 9px; outline: none; width: 100%; box-sizing: border-box;
   }
   .td-field input:focus, .td-field select:focus { border-color: var(--accent); }
-  .td-field select option { background: #1a2133; }
+  .td-field select option { background: var(--bg-elev); }
   .td-row2 { display: flex; gap: 10px; }
   .td-row2 .td-field { flex: 1; }
   .td-styles { display: flex; gap: 6px; }
   .td-style-btn {
-    min-width: 36px; height: 30px; background: #0d1525; border: 1px solid #ffffff1a;
-    color: #ffffff88; font-size: 13px; cursor: pointer; border-radius: 4px;
+    min-width: 36px; height: 30px; background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+    color: color-mix(in srgb, var(--ink) 53%, transparent); font-size: 13px; cursor: pointer; border-radius: 4px;
     display: flex; align-items: center; justify-content: center; padding: 0 8px;
   }
   .td-style-btn.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
-  .td-style-btn:hover:not(.active) { border-color: #ffffff33; color: #fff; }
+  .td-style-btn:hover:not(.active) { border-color: color-mix(in srgb, var(--ink) 20%, transparent); color: #fff; }
   .td-footer { display: flex; gap: 8px; padding: 0 14px 12px; }
   .td-footer button {
     flex: 1; padding: 7px 10px; font-size: 11px; font-weight: 600; cursor: pointer;
-    border-radius: 5px; border: 1px solid #ffffff22; background: #0d1525;
+    border-radius: 5px; border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); background: var(--input-bg);
     color: #ffffffaa; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.3px;
   }
-  .td-footer button:hover { color: #fff; border-color: #ffffff44; }
+  .td-footer button:hover { color: #fff; border-color: color-mix(in srgb, var(--ink) 27%, transparent); }
   .td-ok { background: var(--accent-dim) !important; color: var(--accent) !important; border-color: var(--accent) !important; }
 </style>
 </head>
@@ -1138,6 +1186,9 @@
           <span>Imprimer / Export PDF</span><span class="item-shortcut">Ctrl+P</span>
         </div>
         <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('THEME');closeMenus()">
+          <span>Thème clair / sombre</span>
+        </div>
         <div class="menu-dropdown-item" onclick="openPrefsDialog();closeMenus()">
           <span>Préférences…</span>
         </div>
@@ -1652,6 +1703,9 @@
       <button class="tool-btn" data-tool="pan" title="Panoramique" onclick="setTool('pan')">
         <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="3" fill="none"/></svg>
       </button>
+      <button class="tool-btn" id="theme-btn" title="Basculer le thème (THEME)" onclick="executeCommand('THEME')">
+        <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.5-.05-1-.13-1.45A7 7 0 0 1 11.45 3.13C11 3.05 12.5 3 12 3z"/><circle cx="12" cy="12" r="9" fill="none"/></svg>
+      </button>
     </div>
   </div>
 
@@ -1899,7 +1953,7 @@
     </div>
   </div>
   <div style="padding:0 16px 10px">
-    <label style="display:flex;align-items:center;gap:7px;font-size:11px;color:#ffffff88;cursor:pointer;user-select:none">
+    <label style="display:flex;align-items:center;gap:7px;font-size:11px;color:color-mix(in srgb, var(--ink) 53%, transparent);cursor:pointer;user-select:none">
       <input id="par-rotate" type="checkbox" checked onchange="polarArrayPreviewUpdate()">
       Faire pivoter les éléments
     </label>
@@ -2002,28 +2056,28 @@
   </div>
 </div>
 
-<div id="dim-text-dialog" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2133;border:1px solid #ffffff22;border-radius:8px;z-index:951;width:340px;box-shadow:0 12px 48px rgba(0,0,0,0.8);font-family:'IBM Plex Sans',sans-serif">
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #ffffff18;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1px;color:var(--accent)">
+<div id="dim-text-dialog" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2133;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:8px;z-index:951;width:340px;box-shadow:0 12px 48px rgba(0,0,0,0.8);font-family:'IBM Plex Sans',sans-serif">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid color-mix(in srgb, var(--ink) 9%, transparent);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1px;color:var(--accent)">
     TEXTE DE COTE
-    <span onclick="closeDimTextDialog()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+    <span onclick="closeDimTextDialog()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
   </div>
   <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px">
-    <label style="font-size:10px;color:#ffffff55;letter-spacing:0.4px">Texte libre — utiliser &lt;&gt; pour la valeur mesurée</label>
+    <label style="font-size:10px;color:color-mix(in srgb, var(--ink) 33%, transparent);letter-spacing:0.4px">Texte libre — utiliser &lt;&gt; pour la valeur mesurée</label>
     <input id="dim-td-input" type="text" placeholder="<>" autocomplete="off"
-      style="background:#0d1525;border:1px solid #ffffff22;border-radius:3px;color:var(--text);font-size:13px;padding:6px 10px;font-family:'JetBrains Mono',monospace;outline:none"
+      style="background:#0d1525;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:3px;color:var(--text);font-size:13px;padding:6px 10px;font-family:'JetBrains Mono',monospace;outline:none"
       oninput="updateDimTextPreview()" onkeydown="if(event.key==='Enter')confirmDimTextDialog();if(event.key==='Escape')closeDimTextDialog()">
     <div id="dim-td-preview" style="font-size:12px;color:var(--accent);min-height:18px;font-family:'JetBrains Mono',monospace;padding-left:2px"></div>
   </div>
-  <div style="padding:8px 16px;border-top:1px solid #ffffff12;display:flex;justify-content:flex-end;gap:8px">
-    <button onclick="closeDimTextDialog()" style="padding:4px 16px;background:none;border:1px solid #ffffff22;border-radius:3px;color:var(--text-dim);font-size:11px;cursor:pointer">Annuler</button>
-    <button onclick="confirmDimTextDialog()" style="padding:4px 16px;background:var(--accent);border:none;border-radius:3px;color:#000;font-size:11px;font-weight:600;cursor:pointer">OK</button>
+  <div style="padding:8px 16px;border-top:1px solid color-mix(in srgb, var(--ink) 7%, transparent);display:flex;justify-content:flex-end;gap:8px">
+    <button onclick="closeDimTextDialog()" style="padding:4px 16px;background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:3px;color:var(--text-dim);font-size:11px;cursor:pointer">Annuler</button>
+    <button onclick="confirmDimTextDialog()" style="padding:4px 16px;background:var(--accent);border:none;border-radius:3px;color:var(--on-accent);font-size:11px;font-weight:600;cursor:pointer">OK</button>
   </div>
 </div>
 
 <div id="print-dialog">
   <div class="pd-header">
     EXPORT PDF
-    <span onclick="closePrintDialog()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+    <span onclick="closePrintDialog()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
   </div>
   <div class="pd-body">
     <div class="pd-row">
@@ -2070,14 +2124,14 @@
     </div>
   </div>
   <div class="pd-footer">
-    <button onclick="closePrintDialog()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button onclick="closePrintDialog()" style="background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:4px;padding:6px 14px;color:var(--text-dim);font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
     <button class="pd-btn-print" onclick="doPrint()">Télécharger PDF ↵</button>
   </div>
 </div>
 
 <div id="vp-dialog">
   <div class="pd-header">FENÊTRE
-    <span onclick="closeViewportDialog()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+    <span onclick="closeViewportDialog()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
   </div>
   <div class="pd-body">
     <div class="pd-row">
@@ -2109,14 +2163,14 @@
     <div class="pd-row"><span class="pd-label">Verrouillée</span><input id="vpd-lock" type="checkbox" style="flex:none"></div>
   </div>
   <div class="pd-footer">
-    <button onclick="closeViewportDialog()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button onclick="closeViewportDialog()" style="background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:4px;padding:6px 14px;color:var(--text-dim);font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
     <button class="pd-btn-print" onclick="applyViewportDialog()">Appliquer ↵</button>
   </div>
 </div>
 
 <div id="ct-dialog">
   <div class="pd-header">ENREGISTRER LE MODÈLE
-    <span onclick="closeSaveCartoucheDialog()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+    <span onclick="closeSaveCartoucheDialog()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
   </div>
   <div class="pd-body">
     <div class="pd-row"><span class="pd-label">Nom</span><input id="ct-name" type="text" placeholder="Mon cartouche"></div>
@@ -2138,7 +2192,7 @@
     <div style="font-size:9px;color:#888;line-height:1.5">Le dessin courant devient le modèle (cadre + cartouche).<br>Champs dynamiques dans les textes : {{titre}}, {{echelle}}, {{date}}, {{auteur}}, {{indice}}, {{numero}}, {{format}}, {{page}}.</div>
   </div>
   <div class="pd-footer">
-    <button onclick="closeSaveCartoucheDialog()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button onclick="closeSaveCartoucheDialog()" style="background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:4px;padding:6px 14px;color:var(--text-dim);font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
     <button class="pd-btn-sel" onclick="saveCartouche(false)">Ajouter à mes modèles</button>
     <button class="pd-btn-print" onclick="saveCartouche(true)">Exporter .pcad ↵</button>
   </div>
@@ -2146,11 +2200,11 @@
 
 <div id="cf-dialog">
   <div class="pd-header">CARTOUCHE
-    <span onclick="closeCartoucheFields()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+    <span onclick="closeCartoucheFields()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
   </div>
   <div class="pd-body" id="cf-fields"></div>
   <div class="pd-footer">
-    <button onclick="closeCartoucheFields()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button onclick="closeCartoucheFields()" style="background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:4px;padding:6px 14px;color:var(--text-dim);font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
     <button class="pd-btn-print" onclick="applyCartoucheFields()">Appliquer ↵</button>
   </div>
 </div>
@@ -2160,7 +2214,7 @@
 
 <div id="kd-dialog">
   <div class="pd-header">CONNEXION kDRIVE
-    <span onclick="closeKdriveConnect()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+    <span onclick="closeKdriveConnect()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
   </div>
   <div class="pd-body">
     <div class="pd-row"><span class="pd-label">Proxy (Worker)</span><input id="kd-worker" type="text"></div>
@@ -2170,15 +2224,15 @@
     <div class="pd-row"><span class="pd-label"></span><button class="pd-btn-sel" onclick="kdriveTest()">Tester</button> <span id="kd-status" style="font-size:10px;margin-left:6px"></span></div>
   </div>
   <div class="pd-footer">
-    <button onclick="kdriveForget()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Oublier</button>
-    <button onclick="closeKdriveConnect()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Fermer</button>
+    <button onclick="kdriveForget()" style="background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:4px;padding:6px 14px;color:var(--text-dim);font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Oublier</button>
+    <button onclick="closeKdriveConnect()" style="background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:4px;padding:6px 14px;color:var(--text-dim);font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Fermer</button>
     <button class="pd-btn-print" onclick="kdriveSaveConn()">Enregistrer ↵</button>
   </div>
 </div>
 
 <div id="kd-browser">
   <div class="pd-header"><span id="kd-br-title">kDRIVE</span>
-    <span onclick="closeKdriveBrowser()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+    <span onclick="closeKdriveBrowser()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
   </div>
   <div class="pd-body">
     <div style="display:flex;align-items:center;gap:8px">
@@ -2189,7 +2243,7 @@
     <div class="pd-row" id="kd-save-row" style="display:none"><span class="pd-label">Nom</span><input id="kd-fname" type="text" placeholder="dessin.mcad"></div>
   </div>
   <div class="pd-footer">
-    <button onclick="closeKdriveBrowser()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button onclick="closeKdriveBrowser()" style="background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:4px;padding:6px 14px;color:var(--text-dim);font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
     <button id="kd-save-btn" class="pd-btn-print" style="display:none" onclick="kdriveDoSave()">Enregistrer ici</button>
   </div>
 </div>
@@ -2277,6 +2331,7 @@
 <script>
 // ===USER_PREFS_START===
 const USER_PREFS = {
+  theme: 'dark',
   snap: true,
   snapSize: 20,
   gridSize: 20,
@@ -2296,6 +2351,7 @@ const USER_PREFS = {
 
 // ===== STATE =====
 const S = {
+  theme: 'dark',
   entities: [],
   layers: [
     { name: '0 - Défaut',      color: '#00d4ff', printColor: '#000000', visible: true, lineWidth: 0.35, lineType: 'solid' },
@@ -2497,7 +2553,7 @@ const S = {
 };
 
 // ===== OSNAP ENGINE =====
-const OSNAP_COLORS = {
+const OSNAP_COLORS_DARK = {
   endpoint: '#ff4081',
   midpoint: '#00e676',
   center: '#ffab40',
@@ -2508,6 +2564,73 @@ const OSNAP_COLORS = {
   quadrant: '#cddc39',
   extension: '#ff9800',
 };
+// Mêmes teintes, assombries pour rester lisibles sur fond clair
+const OSNAP_COLORS_LIGHT = {
+  endpoint: '#c2185b',
+  midpoint: '#00873e',
+  center: '#9a5b00',
+  nearest: '#2962ff',
+  intersection: '#9c27b0',
+  perpendicular: '#00707e',
+  tangent: '#d84315',
+  quadrant: '#7a7000',
+  extension: '#e65100',
+};
+let OSNAP_COLORS = OSNAP_COLORS_DARK;
+
+// ===== THÈME (sombre / clair) =====
+// Couleurs du canvas pilotées par le thème. `ink` = encre de chrome (réticule,
+// guides, marqueurs) ; les suffixes alpha hex y sont concaténés (TC.ink+'66').
+const CANVAS_THEMES = {
+  dark: {
+    ink: '#ffffff', accent: '#00d4ff', label: '#ffab40',
+    gridFine: '#141e35', grid: '#1a2a4a', gridMajor: '#253a5a',
+    pill: '#0d1525cc', atelier: '#0c0f17',
+    rbWin: '#00d4ff', rbCross: '#00e676',
+  },
+  light: {
+    ink: '#13202e', accent: '#0072ad', label: '#9a5b00',
+    gridFine: '#e9edf3', grid: '#dde3eb', gridMajor: '#c6d0dd',
+    pill: '#ffffffe6', atelier: '#c6cbd3',
+    rbWin: '#0072ad', rbCross: '#00873e',
+  },
+};
+let TC = CANVAS_THEMES.dark;
+
+// Adapte une couleur d'entité au fond clair : si trop lumineuse pour rester
+// lisible sur blanc (contraste < ~3:1), on la rabat vers le noir en conservant
+// la teinte. Cache par couleur, vidé au changement de thème.
+const _dispColorCache = new Map();
+function _srgb2lin(u){ u/=255; return u<=0.04045 ? u/12.92 : Math.pow((u+0.055)/1.055, 2.4); }
+function _lin2srgb(v){ v=Math.max(0,Math.min(1,v)); return Math.round(255*(v<=0.0031308 ? v*12.92 : 1.055*Math.pow(v,1/2.4)-0.055)); }
+function dispColor(c) {
+  if (S.theme !== 'light' || !c) return c;
+  let v = _dispColorCache.get(c);
+  if (v !== undefined) return v;
+  v = c;
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(c).trim());
+  if (m) {
+    let h = m[1]; if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    const r=_srgb2lin(parseInt(h.slice(0,2),16)), g=_srgb2lin(parseInt(h.slice(2,4),16)), b=_srgb2lin(parseInt(h.slice(4,6),16));
+    const L = 0.2126*r + 0.7152*g + 0.0722*b;
+    const Lmax = 0.28; // ≈ contraste 3:1 sur fond blanc
+    if (L > Lmax) {
+      const k = Lmax / L;
+      v = '#' + [r,g,b].map(x => _lin2srgb(x*k).toString(16).padStart(2,'0')).join('');
+    }
+  }
+  _dispColorCache.set(c, v);
+  return v;
+}
+
+function setTheme(t) {
+  S.theme = t === 'light' ? 'light' : 'dark';
+  document.documentElement.classList.toggle('theme-light', S.theme === 'light');
+  TC = CANVAS_THEMES[S.theme];
+  OSNAP_COLORS = S.theme === 'light' ? OSNAP_COLORS_LIGHT : OSNAP_COLORS_DARK;
+  _dispColorCache.clear();
+  render();
+}
 
 // Retourne les directions de tracking pour un point acquis selon Ortho/Polaire
 function getExtTrackDirs(acq) {
@@ -3496,6 +3619,16 @@ const CMD = {
     termPrint(valid.length + ' objet(s) resélectionné(s) [Previous]', 'success');
     updateProperties(); render();
   }},
+  THEME: { alias: ['THM'], desc: 'Basculer thème sombre/clair (THEME [CLAIR|SOMBRE])', exec(args) {
+    const a = (args[0] || '').toUpperCase();
+    let t;
+    if (['CLAIR','LIGHT','L'].includes(a)) t = 'light';
+    else if (['SOMBRE','DARK','D'].includes(a)) t = 'dark';
+    else t = S.theme === 'dark' ? 'light' : 'dark';
+    setTheme(t);
+    autoSavePrefs();
+    termPrint('Thème : ' + (t === 'light' ? 'clair' : 'sombre'), 'info');
+  }},
   TRIM: { alias: ['TR'], desc: 'Couper une entité avec une ou plusieurs limites', exec() {
     S.trimStep=1; S.trimCuttingIds=[];
     setTool('trim');
@@ -4085,14 +4218,14 @@ function _drawStaticLayer() {
     const g = S.gridSize * S.zoom;
     if (g > 4) {
       const ox = (S.panX + canvasW/2) % g, oy = (S.panY + canvasH/2) % g;
-      ctx.strokeStyle = g > 15 ? '#1a2a4a' : '#141e35'; ctx.lineWidth = 0.5;
+      ctx.strokeStyle = g > 15 ? TC.grid : TC.gridFine; ctx.lineWidth = 0.5;
       for (let x=ox; x<canvasW; x+=g){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvasH); ctx.stroke(); }
       for (let y=oy; y<canvasH; y+=g){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvasW,y); ctx.stroke(); }
     }
     const mg = g*5;
     if (mg > 20) {
       const ox2=(S.panX+canvasW/2)%mg, oy2=(S.panY+canvasH/2)%mg;
-      ctx.strokeStyle='#253a5a'; ctx.lineWidth=0.5;
+      ctx.strokeStyle=TC.gridMajor; ctx.lineWidth=0.5;
       for (let x=ox2; x<canvasW; x+=mg){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvasH); ctx.stroke(); }
       for (let y=oy2; y<canvasH; y+=mg){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvasW,y); ctx.stroke(); }
     }
@@ -4100,7 +4233,7 @@ function _drawStaticLayer() {
 
   // Origine
   const [ox,oy] = w2s(0,0);
-  ctx.strokeStyle='#ffffff20'; ctx.lineWidth=1;
+  ctx.strokeStyle=TC.ink+'20'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(ox-20,oy); ctx.lineTo(ox+20,oy); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(ox,oy-20); ctx.lineTo(ox,oy+20); ctx.stroke();
 
@@ -4114,7 +4247,7 @@ function _drawStaticLayer() {
     if (!S.layers[e.layer]?.visible) return;
     if (!_inViewport(getEntityBBox(e), vp)) return;
     const layer = S.layers[e.layer];
-    const color = e.color || layer?.color || '#00d4ff';
+    const color = dispColor(e.color || layer?.color || '#00d4ff');
     ctx.strokeStyle = color; ctx.fillStyle = color;
     ctx.lineWidth = getLayerLineWidthPx(e.lineWidth ?? layer?.lineWidth);
     ctx.setLineDash(e.dash || getLayerLineDash(e.lineType || layer?.lineType || 'solid'));
@@ -4135,7 +4268,7 @@ function drawAiPlacementPreview() {
   ctx.globalAlpha = 0.55;
   S.aiPendingEntities.forEach(e => {
     const layer = S.layers[e.layer] || S.layers[S.currentLayer];
-    ctx.strokeStyle = layer?.color || '#00d4ff';
+    ctx.strokeStyle = dispColor(layer?.color || '#00d4ff');
     ctx.fillStyle = ctx.strokeStyle;
     ctx.lineWidth = Math.max(1, getLayerLineWidthPx(layer?.lineWidth));
     ctx.setLineDash([5, 4]);
@@ -4146,7 +4279,7 @@ function drawAiPlacementPreview() {
   // Croix au point d'ancrage (centre de la bbox)
   const [scx, scy] = w2s(cx + (mx - cx), cy + (my - cy)); // = w2s(mx, my)
   ctx.save();
-  ctx.strokeStyle = '#00d4ff';
+  ctx.strokeStyle = TC.accent;
   ctx.lineWidth = 1;
   const g = 8;
   ctx.beginPath();
@@ -4168,7 +4301,7 @@ function drawLibPreview() {
   ctx.setLineDash([5, 4]);
   ghosts.forEach(e => {
     const layer = S.layers[e.layer] || S.layers[S.currentLayer];
-    ctx.strokeStyle = layer?.color || '#00d4ff';
+    ctx.strokeStyle = dispColor(layer?.color || '#00d4ff');
     ctx.lineWidth = Math.max(1, getLayerLineWidthPx(layer?.lineWidth));
     drawEntity(e);
   });
@@ -4220,7 +4353,7 @@ function drawPastePreview() {
   ctx.setLineDash([5, 4]);
   S.clipboard.forEach(e => {
     const layer = S.layers[e.layer] || S.layers[S.currentLayer];
-    ctx.strokeStyle = layer?.color || '#00d4ff';
+    ctx.strokeStyle = dispColor(layer?.color || '#00d4ff');
     ctx.fillStyle = ctx.strokeStyle;
     ctx.lineWidth = Math.max(1, getLayerLineWidthPx(layer?.lineWidth));
     drawEntity(e);
@@ -4230,7 +4363,7 @@ function drawPastePreview() {
   // Crosshair at insertion point
   const [smx, smy] = w2s(wx, wy);
   ctx.save();
-  ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 1;
+  ctx.strokeStyle = TC.accent; ctx.lineWidth = 1;
   const g = 8;
   ctx.beginPath();
   ctx.moveTo(smx - g, smy); ctx.lineTo(smx + g, smy);
@@ -4268,8 +4401,8 @@ function _drawDynamicLayer() {
                         isJoinSelected||isJoinHover||isTrimCutting||isTrimHover||isExtendBound||isExtendHover||isHatchHover;
     if (!highlighted) return;
     let color = '#448aff';
-    if (isOffsetTarget||isFilletFirst||isJoinSelected||isTrimCutting||isExtendBound) color='#ffab40';
-    if (isOffsetHover ||isFilletHover ||isJoinHover  ||isTrimHover  ||isExtendHover||isHatchHover) color='#ffffff';
+    if (isOffsetTarget||isFilletFirst||isJoinSelected||isTrimCutting||isExtendBound) color=TC.label;
+    if (isOffsetHover ||isFilletHover ||isJoinHover  ||isTrimHover  ||isExtendHover||isHatchHover) color=TC.ink;
     ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=2;
     ctx.setLineDash(e.dash||[]); drawEntity(e); ctx.setLineDash([]);
     if (sel) drawGrips(e);
@@ -4286,9 +4419,9 @@ function _drawDynamicLayer() {
   if (S.tool==='dist' && S.distPt1 && mouseOnCanvas) {
     const [x1,y1]=S.distPt1,[mx,my]=S.mouseWorld;
     const [sx1,sy1]=w2s(x1,y1),[smx,smy]=w2s(mx,my);
-    ctx.save(); ctx.strokeStyle='#ffab40'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+    ctx.save(); ctx.strokeStyle=TC.label; ctx.lineWidth=1; ctx.setLineDash([4,4]);
     ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(smx,smy); ctx.stroke();
-    ctx.fillStyle='#ffab40'; ctx.font='10px JetBrains Mono';
+    ctx.fillStyle=TC.label; ctx.font='10px JetBrains Mono';
     ctx.textAlign='left'; ctx.textBaseline='bottom';
     ctx.fillText(Math.hypot(mx-x1,my-y1).toFixed(2),(sx1+smx)/2+4,(sy1+smy)/2-4);
     ctx.setLineDash([]); ctx.restore();
@@ -4296,7 +4429,7 @@ function _drawDynamicLayer() {
   if (S.tool === 'area' && S._areaMode === 'points' && S._areaPoints.length > 0 && mouseOnCanvas) {
     const pts = S._areaPoints;
     const [mx, my] = S.mouseWorld;
-    ctx.save(); ctx.strokeStyle = '#ffab40'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+    ctx.save(); ctx.strokeStyle = TC.label; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
     ctx.beginPath();
     const [s0x, s0y] = w2s(pts[0][0], pts[0][1]);
     ctx.moveTo(s0x, s0y);
@@ -4306,13 +4439,13 @@ function _drawDynamicLayer() {
     if (pts.length >= 2) ctx.lineTo(s0x, s0y); // closing dashed line
     ctx.stroke(); ctx.setLineDash([]);
     // Vertex dots
-    ctx.fillStyle = '#ffab40';
+    ctx.fillStyle = TC.label;
     pts.forEach(p => { const [spx, spy] = w2s(p[0], p[1]); ctx.fillRect(spx-3, spy-3, 6, 6); });
     // Live area label
     if (pts.length >= 2) {
       const tmpPts = [...pts, [mx, my]];
       const a = _shoelace(tmpPts);
-      ctx.fillStyle = '#ffab40'; ctx.font = '10px JetBrains Mono';
+      ctx.fillStyle = TC.label; ctx.font = '10px JetBrains Mono';
       ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
       ctx.fillText('S≈' + a.toFixed(2), smx + 6, smy - 4);
     }
@@ -4326,9 +4459,9 @@ function _drawDynamicLayer() {
     const [x1,y1]=S.offsetDistPt1, [mx,my]=S.mouseWorld;
     const [sx1,sy1]=w2s(x1,y1), [smx,smy]=w2s(mx,my);
     const d=Math.hypot(mx-x1,my-y1);
-    ctx.save(); ctx.strokeStyle='#ffab40'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+    ctx.save(); ctx.strokeStyle=TC.label; ctx.lineWidth=1; ctx.setLineDash([4,4]);
     ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(smx,smy); ctx.stroke();
-    ctx.setLineDash([]); ctx.fillStyle='#ffab40'; ctx.font='11px JetBrains Mono';
+    ctx.setLineDash([]); ctx.fillStyle=TC.label; ctx.font='11px JetBrains Mono';
     ctx.textAlign='left'; ctx.textBaseline='bottom';
     ctx.fillText(d.toFixed(1),(sx1+smx)/2+6,(sy1+smy)/2-4);
     ctx.restore();
@@ -4422,7 +4555,7 @@ function _drawDynamicLayer() {
       const rw=Math.abs(dsx), rh=Math.abs(dsy);
       const isWin = rbEnd.wx >= rbStart.wx;
       ctx.save();
-      ctx.strokeStyle=isWin?'#00d4ffaa':'#00e676aa'; ctx.fillStyle=isWin?'#00d4ff0d':'#00e6760d';
+      ctx.strokeStyle=(isWin?TC.rbWin:TC.rbCross)+'aa'; ctx.fillStyle=(isWin?TC.rbWin:TC.rbCross)+'0d';
       ctx.lineWidth=1; if(!isWin) ctx.setLineDash([4,4]);
       ctx.beginPath(); ctx.rect(rx,ry,rw,rh); ctx.fill(); ctx.stroke();
       ctx.setLineDash([]); ctx.restore();
@@ -4452,8 +4585,8 @@ function drawArrayPreview() {
   if (!sources.length) return;
   ctx.save();
   ctx.globalAlpha = 0.45;
-  ctx.strokeStyle = '#00d4ff';
-  ctx.fillStyle = '#00d4ff';
+  ctx.strokeStyle = TC.accent;
+  ctx.fillStyle = TC.accent;
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
   for (let r = 0; r < p.rows; r++) {
@@ -4482,7 +4615,7 @@ function drawPolarArrayPreview() {
 
   ctx.save();
   ctx.globalAlpha = 0.45;
-  ctx.strokeStyle = '#00d4ff'; ctx.fillStyle = '#00d4ff';
+  ctx.strokeStyle = TC.accent; ctx.fillStyle = TC.accent;
   ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
   for (let i = 1; i < p.count; i++) {
     const theta = totalRad * i / p.count;
@@ -4504,7 +4637,7 @@ function drawPolarArrayPreview() {
   const r = Math.hypot(bx - p.cx, by - p.cy) * S.zoom;
   if (r > 3) { ctx.beginPath(); ctx.arc(scx, scy, r, 0, Math.PI*2); ctx.stroke(); }
   ctx.setLineDash([]); ctx.globalAlpha = 0.75;
-  ctx.strokeStyle = '#ffab40'; const cs = 7;
+  ctx.strokeStyle = TC.label; const cs = 7;
   ctx.beginPath(); ctx.moveTo(scx-cs,scy); ctx.lineTo(scx+cs,scy); ctx.moveTo(scx,scy-cs); ctx.lineTo(scx,scy+cs); ctx.stroke();
   ctx.restore();
 }
@@ -4519,7 +4652,7 @@ function _drawMeasureLine(wx1, wy1, wx2, wy2, alpha) {
   ctx.save(); ctx.globalAlpha = alpha;
 
   // Ligne principale
-  ctx.strokeStyle = '#ffab40'; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+  ctx.strokeStyle = TC.label; ctx.lineWidth = 1.5; ctx.setLineDash([]);
   ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(sx2,sy2); ctx.stroke();
 
   // Petites barres perpendiculaires aux extrémités
@@ -4549,14 +4682,14 @@ function _drawMeasureLine(wx1, wy1, wx2, wy2, alpha) {
   const bh = lines.length * lh + pad;
   const bLeft = bx - maxW/2, bTop = by - bh/2;
 
-  ctx.fillStyle = '#0d1525cc';
-  ctx.strokeStyle = '#ffab4088'; ctx.lineWidth = 1; ctx.setLineDash([]);
+  ctx.fillStyle = TC.pill;
+  ctx.strokeStyle = TC.label+'88'; ctx.lineWidth = 1; ctx.setLineDash([]);
   ctx.beginPath();
   ctx.roundRect ? ctx.roundRect(bLeft, bTop, maxW, bh, 4)
                 : ctx.rect(bLeft, bTop, maxW, bh);
   ctx.fill(); ctx.stroke();
 
-  ctx.fillStyle = '#ffab40'; ctx.font = 'bold 11px JetBrains Mono';
+  ctx.fillStyle = TC.label; ctx.font = 'bold 11px JetBrains Mono';
   ctx.textAlign = 'left'; ctx.textBaseline = 'top';
   lines.forEach((l, i) => ctx.fillText(l, bLeft + pad, bTop + pad/2 + i * lh));
 
@@ -4575,7 +4708,7 @@ function drawMeasureOverlay() {
     _drawMeasureLine(S.measurePt1[0], S.measurePt1[1], mx, my, 1.0);
     // Point d'ancrage
     const [spx,spy] = w2s(S.measurePt1[0], S.measurePt1[1]);
-    ctx.save(); ctx.fillStyle = '#ffab40'; ctx.globalAlpha = 1;
+    ctx.save(); ctx.fillStyle = TC.label; ctx.globalAlpha = 1;
     ctx.beginPath(); ctx.arc(spx, spy, 4, 0, Math.PI*2); ctx.fill();
     ctx.restore();
   }
@@ -4720,7 +4853,7 @@ function _drawPaperSpace(layout) {
   ctx = mainCtx;
   ctx.save(); ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
   ctx.clearRect(0, 0, canvasW, canvasH);
-  ctx.fillStyle = '#0c0f17'; ctx.fillRect(0, 0, canvasW, canvasH); // fond atelier
+  ctx.fillStyle = TC.atelier; ctx.fillRect(0, 0, canvasW, canvasH); // fond atelier
   if (!layout) { ctx.restore(); return; }
 
   const Z = S.paperView.zoom, PX = S.paperView.panX, PY = S.paperView.panY;
@@ -4768,7 +4901,7 @@ function _drawViewport(vp, p2s, Z, opts) {
     S.entities.forEach(e => {
       const lyr = S.layers[e.layer];
       if (!lyr || !lyr.visible) return;
-      const color = opts.print ? (lyr.printColor || '#000000') : (e.color || lyr.color || '#00d4ff');
+      const color = opts.print ? (lyr.printColor || '#000000') : dispColor(e.color || lyr.color || '#00d4ff');
       ctx.strokeStyle = color; ctx.fillStyle = color;
       const _lw = e.lineWidth ?? lyr.lineWidth;
       ctx.lineWidth = opts.print ? Math.max(0.13*MM2PX96, (_lw || 0.25)*MM2PX96)
@@ -4796,7 +4929,7 @@ function _vpHandlePts(vx, vy, vw, vh) {
 }
 function _drawVpHandles(vx, vy, vw, vh) {
   const pts = _vpHandlePts(vx, vy, vw, vh);
-  ctx.setLineDash([]); ctx.fillStyle = '#00d4ff'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
+  ctx.setLineDash([]); ctx.fillStyle = TC.accent; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
   Object.values(pts).forEach(([x,y]) => { ctx.fillRect(x-3, y-3, 6, 6); ctx.strokeRect(x-3, y-3, 6, 6); });
 }
 
@@ -5464,7 +5597,7 @@ function drawEllipsePreview() {
   else { [mx,my]=snapToGrid(mx,my); if(S.ortho)[mx,my]=applyOrtho(cx,cy,mx,my); else if(S.polar)[mx,my]=applyPolar(cx,cy,mx,my); }
 
   ctx.save();
-  ctx.strokeStyle='#ffffff66'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+  ctx.strokeStyle=TC.ink+'66'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
 
   if (S._ellipStep === 1) {
     // Rubber-band axe 1
@@ -5482,7 +5615,7 @@ function drawEllipsePreview() {
       ctx.ellipse(scx,scy, rx*S.zoom, ry*S.zoom, -a, 0, Math.PI*2);
       ctx.stroke();
       // Axes en pointillés légers
-      ctx.setLineDash([2,5]); ctx.strokeStyle='#ffffff33';
+      ctx.setLineDash([2,5]); ctx.strokeStyle=TC.ink+'33';
       const [ax1,ay1]=w2s(cx+rx*Math.cos(a),cy+rx*Math.sin(a));
       const [ax2,ay2]=w2s(cx-rx*Math.cos(a),cy-rx*Math.sin(a));
       ctx.beginPath(); ctx.moveTo(ax1,ay1); ctx.lineTo(ax2,ay2); ctx.stroke();
@@ -5533,7 +5666,7 @@ function drawPolygonPreview() {
   const R = S._polyMode === 'C' ? r / Math.cos(Math.PI / n) : r;
   const startAngle = -Math.PI / 2;
   ctx.save();
-  ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = TC.ink+'66'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
   ctx.beginPath();
   for (let i = 0; i <= n; i++) {
     const a = startAngle + (2 * Math.PI * i) / n;
@@ -5543,12 +5676,12 @@ function drawPolygonPreview() {
   ctx.stroke();
   // Cercle de référence en pointillés légers
   ctx.setLineDash([2, 5]);
-  ctx.strokeStyle = '#ffffff22';
+  ctx.strokeStyle = TC.ink+'22';
   const [scx, scy] = w2s(cx, cy);
   ctx.beginPath(); ctx.arc(scx, scy, r * S.zoom, 0, Math.PI * 2); ctx.stroke();
   // Ligne centre → curseur
   ctx.setLineDash([]);
-  ctx.strokeStyle = '#ffffff44';
+  ctx.strokeStyle = TC.ink+'44';
   const [smx, smy] = w2s(mx, my);
   ctx.beginPath(); ctx.moveTo(scx, scy); ctx.lineTo(smx, smy); ctx.stroke();
   ctx.restore();
@@ -5712,9 +5845,9 @@ function openTubeEditDialog(ent) {
 
   const dlg = document.createElement('div');
   dlg.id = 'tube-edit-dialog';
-  dlg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1a1a2e;border:1px solid #334;border-radius:6px;padding:16px 20px;z-index:3000;min-width:480px;max-width:560px;box-shadow:0 8px 32px #000c;color:var(--text);font-family:var(--font-mono,monospace);font-size:11px;';
-  const inp     = 'width:72px;background:#0f0f1a;border:1px solid #334;color:var(--text);padding:2px 5px;border-radius:3px;font-size:11px;text-align:right;';
-  const btnBase = 'border:1px solid #334;padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:.5px;';
+  dlg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:var(--bg-dark);border:1px solid var(--border);border-radius:6px;padding:16px 20px;z-index:3000;min-width:480px;max-width:560px;box-shadow:0 8px 32px #000c;color:var(--text);font-family:var(--font-mono,monospace);font-size:11px;';
+  const inp     = 'width:72px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);padding:2px 5px;border-radius:3px;font-size:11px;text-align:right;';
+  const btnBase = 'border:1px solid var(--border);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:.5px;';
 
   dlg.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -5741,18 +5874,18 @@ function openTubeEditDialog(ent) {
       <tbody id="te-tbody"></tbody>
     </table>
     <div style="margin-bottom:10px">
-      <button id="te-add" style="background:#2a2a3e;border:1px solid #334;color:var(--accent);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;width:100%">+ Ajouter une section</button>
+      <button id="te-add" style="background:var(--btn-bg);border:1px solid var(--border);color:var(--accent);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;width:100%">+ Ajouter une section</button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:6px 0;border-top:1px solid #334">
       <span style="color:var(--text-dim)">Long. développée AXE</span>
       <span id="te-devlen" style="color:var(--accent);font-weight:bold">${data.totalLen.toFixed(1)} mm</span>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button id="te-cancel" style="background:#2a2a3e;border:1px solid #334;color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Annuler</button>
-      <button id="te-delcote" style="background:#2a2a3e;border:1px solid #644;color:#c88;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">✕ Cotes</button>
-      <button id="te-cote" style="background:#2a2a3e;border:1px solid #556;color:#aac;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Coter</button>
-      <button id="te-preview" style="background:#2a2a3e;border:1px solid var(--accent);color:var(--accent);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Prévisualiser</button>
-      <button id="te-ok" style="background:var(--accent);border:none;color:#000;padding:4px 14px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold">Appliquer ↵</button>
+      <button id="te-cancel" style="background:var(--btn-bg);border:1px solid var(--border);color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Annuler</button>
+      <button id="te-delcote" style="background:var(--btn-bg);border:1px solid #644;color:#c88;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">✕ Cotes</button>
+      <button id="te-cote" style="background:var(--btn-bg);border:1px solid #556;color:#aac;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Coter</button>
+      <button id="te-preview" style="background:var(--btn-bg);border:1px solid var(--accent);color:var(--accent);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Prévisualiser</button>
+      <button id="te-ok" style="background:var(--accent);border:none;color:var(--on-accent);padding:4px 14px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold">Appliquer ↵</button>
     </div>`;
   document.body.appendChild(dlg);
 
@@ -5845,7 +5978,7 @@ function openTubeEditDialog(ent) {
         ? `<span style="color:var(--text-dim);padding:0 6px">—</span>`
         : `<span style="display:inline-flex;gap:3px;align-items:center">
             <input class="te-ang" value="${Math.abs(row.angle??90).toFixed(1)}" style="${inpNarrow}">
-            <button class="te-side" title="Inverser le sens du coude" style="background:#2a2a3e;border:1px solid #334;color:var(--accent);width:22px;height:22px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1;padding:0">${row.side >= 0 ? '⟳' : '⟲'}</button>
+            <button class="te-side" title="Inverser le sens du coude" style="background:var(--btn-bg);border:1px solid var(--border);color:var(--accent);width:22px;height:22px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1;padding:0">${row.side >= 0 ? '⟳' : '⟲'}</button>
            </span>`;
       const arcCell = isLast
         ? `<span style="color:var(--text-dim);padding:0 6px">—</span>`
@@ -6610,7 +6743,7 @@ function drawEntity(e) {
       const savedStroke = ctx.strokeStyle, savedFill = ctx.fillStyle, savedLW = ctx.lineWidth;
       for (const child of e.entities) {
         const layer = S.layers[child.layer] || S.layers[S.currentLayer];
-        ctx.strokeStyle = child.color || layer?.color || '#00d4ff';
+        ctx.strokeStyle = dispColor(child.color || layer?.color || '#00d4ff');
         ctx.fillStyle = ctx.strokeStyle;
         ctx.lineWidth = getLayerLineWidthPx(child.lineWidth ?? layer?.lineWidth);
         ctx.setLineDash(child.dash || getLayerLineDash(child.lineType || layer?.lineType || 'solid'));
@@ -6981,8 +7114,8 @@ function drawGripPreview() {
 
   ctx.save();
   ctx.globalAlpha = 0.6;
-  ctx.strokeStyle = '#ffffff88';
-  ctx.fillStyle = '#ffffff88';
+  ctx.strokeStyle = TC.ink+'88';
+  ctx.fillStyle = TC.ink+'88';
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
   drawEntity(clone);
@@ -7025,8 +7158,8 @@ function drawGripSelected() {
 
   ctx.save();
   ctx.globalAlpha = 0.6;
-  ctx.strokeStyle = '#ffffff88';
-  ctx.fillStyle = '#ffffff88';
+  ctx.strokeStyle = TC.ink+'88';
+  ctx.fillStyle = TC.ink+'88';
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
   drawEntity(clone);
@@ -7043,7 +7176,7 @@ function drawGripSelected() {
 
   // Grip armé : carré orange vif
   ctx.fillStyle = '#ff6b35';
-  ctx.strokeStyle = '#fff';
+  ctx.strokeStyle = TC.ink;
   ctx.lineWidth = 1.5;
   ctx.fillRect(ox - 5, oy - 5, 10, 10);
   ctx.strokeRect(ox - 5, oy - 5, 10, 10);
@@ -7083,7 +7216,7 @@ function computeDimOffset(tool, p1, p2, mousePos) {
 function drawDimPreview(tool, p1, p2, mouseWorld) {
   const off = computeDimOffset(tool, p1, p2, mouseWorld);
   ctx.save();
-  ctx.strokeStyle = '#ffffff88'; ctx.fillStyle = '#ffffff88'; ctx.lineWidth = 1; ctx.setLineDash([]);
+  ctx.strokeStyle = TC.ink+'88'; ctx.fillStyle = TC.ink+'88'; ctx.lineWidth = 1; ctx.setLineDash([]);
 
   const _ds = getDimStyle(null);
   const _tpx = Math.max(5, _ds.textHeight * S.zoom);
@@ -7145,7 +7278,7 @@ function drawPreview() {
   if (osnap) { mx = osnap.x; my = osnap.y; S.currentOsnap = osnap; }
   else { [mx, my] = snapToGrid(mx, my); S.currentOsnap = null; }
 
-  ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+  ctx.strokeStyle = TC.ink+'66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
   const tool = S.tool;
 
   if (['line','wall','dim_linear','dim_aligned','leader'].includes(tool) && pts.length === 1) {
@@ -7156,7 +7289,7 @@ function drawPreview() {
     // Draw polar tracking guide line (dashed green) through the whole canvas
     if (S.polar && !S.ortho && tool !== 'dim_aligned') drawPolarGuides(p1[0],p1[1],tx,ty);
     const [x1,y1]=w2s(p1[0],p1[1]), [x2,y2]=w2s(tx,ty);
-    ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+    ctx.strokeStyle = TC.ink+'66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
     ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
   } else if (tool==='rect' && pts.length===1) {
     const [x1,y1]=w2s(pts[0][0],pts[0][1]), [x2,y2]=w2s(mx,my);
@@ -7169,9 +7302,9 @@ function drawPreview() {
     ctx.beginPath(); ctx.rect(Math.min(sx1,sx2),Math.min(sy1,sy2),Math.abs(sx2-sx1),Math.abs(sy2-sy1)); ctx.stroke();
     // Croix sur le centre
     const [scx,scy]=w2s(cx,cy); const cs=6;
-    ctx.setLineDash([]); ctx.strokeStyle='#ffab4088';
+    ctx.setLineDash([]); ctx.strokeStyle=TC.label+'88';
     ctx.beginPath(); ctx.moveTo(scx-cs,scy); ctx.lineTo(scx+cs,scy); ctx.moveTo(scx,scy-cs); ctx.lineTo(scx,scy+cs); ctx.stroke();
-    ctx.setLineDash([4,4]); ctx.strokeStyle='#ffffff66';
+    ctx.setLineDash([4,4]); ctx.strokeStyle=TC.ink+'66';
   } else if (tool==='circle' && pts.length===1) {
     const dist=Math.hypot(mx-pts[0][0],my-pts[0][1]);
     const r = S.circleDiamMode ? dist/2 : dist;
@@ -7195,9 +7328,9 @@ function drawPreview() {
       }
       // Croix sur le centre
       const[ccx,ccy]=w2s(pts[1][0],pts[1][1]);
-      ctx.setLineDash([]); ctx.strokeStyle='#ffaa0099';
+      ctx.setLineDash([]); ctx.strokeStyle=TC.label+'99';
       ctx.beginPath();ctx.moveTo(ccx-6,ccy);ctx.lineTo(ccx+6,ccy);ctx.moveTo(ccx,ccy-6);ctx.lineTo(ccx,ccy+6);ctx.stroke();
-      ctx.setLineDash([4,4]); ctx.strokeStyle='#ffffff66';
+      ctx.setLineDash([4,4]); ctx.strokeStyle=TC.ink+'66';
     } else if (pts.length===2 && mode==='ser') {
       // Preview SER : corde P1-P2 + ligne vers souris (future position centre approx)
       const[x1,y1]=w2s(pts[0][0],pts[0][1]),[x2,y2]=w2s(pts[1][0],pts[1][1]);
@@ -7219,10 +7352,10 @@ function drawPreview() {
     }
 
     // Segment rubber-band (dernier point → souris) → pointillés
-    ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+    ctx.strokeStyle = TC.ink+'66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
     if (S.polar && !S.ortho) {
       drawPolarGuides(last[0],last[1],tx,ty);
-      ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+      ctx.strokeStyle = TC.ink+'66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
     }
     const[lx,ly]=w2s(last[0],last[1]), [ex,ey]=w2s(tx,ty);
     ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(ex,ey); ctx.stroke();
@@ -7237,7 +7370,7 @@ function drawPreview() {
       let tMin=-1e9, tMax=1e9;
       if(Math.abs(sdx)>1e-10){const t1=-bsx/sdx,t2=(W-bsx)/sdx;tMin=Math.max(tMin,Math.min(t1,t2));tMax=Math.min(tMax,Math.max(t1,t2));}
       if(Math.abs(sdy)>1e-10){const t1=-bsy/sdy,t2=(H-bsy)/sdy;tMin=Math.max(tMin,Math.min(t1,t2));tMax=Math.min(tMax,Math.max(t1,t2));}
-      ctx.strokeStyle='#ffffff66'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+      ctx.strokeStyle=TC.ink+'66'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
       ctx.beginPath();
       if (tool==='ray'||tool==='ray_rev') { ctx.moveTo(bsx,bsy); ctx.lineTo(bsx+tMax*sdx,bsy+tMax*sdy); }
       else { ctx.moveTo(bsx+tMin*sdx,bsy+tMin*sdy); ctx.lineTo(bsx+tMax*sdx,bsy+tMax*sdy); }
@@ -7260,7 +7393,7 @@ function drawPreview() {
     }
 
     // Rubber-band vers la souris
-    ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+    ctx.strokeStyle = TC.ink+'66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
     const[lx,ly]=w2s(last[0],last[1]), [ex,ey]=w2s(tx,ty);
     ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(ex,ey); ctx.stroke();
   } else if (tool === 'dim_angular') {
@@ -7271,7 +7404,7 @@ function drawPreview() {
       const r = Math.max(20 * S.zoom, Math.hypot(mx - vtx[0], my - vtx[1]) * S.zoom);
       const [vsx, vsy] = w2s(vtx[0], vtx[1]);
       const sa = sec.startAngle, ea = sa + sec.angle;
-      ctx.strokeStyle = '#ffffff88'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+      ctx.strokeStyle = TC.ink+'88'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
       const rayLen = r * 1.4;
       ctx.beginPath(); ctx.moveTo(vsx,vsy); ctx.lineTo(vsx+rayLen*Math.cos(-sa),vsy+rayLen*Math.sin(-sa)); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(vsx,vsy); ctx.lineTo(vsx+rayLen*Math.cos(-ea),vsy+rayLen*Math.sin(-ea)); ctx.stroke();
@@ -7280,16 +7413,16 @@ function drawPreview() {
       const _pds = getDimStyle(null);
       const _ptpx = Math.max(5, _pds.textHeight * S.zoom);
       const midA = -(sa + sec.angle/2);
-      ctx.font=_ptpx+'px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#ffffff88';
+      ctx.font=_ptpx+'px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle=TC.ink+'88';
       ctx.fillText((sec.angle*180/Math.PI).toFixed(1)+'°', vsx+(r+_ptpx*1.2)*Math.cos(midA), vsy+(r+_ptpx*1.2)*Math.sin(midA));
     } else if (S._dimAngLine1) {
       // Étape 1: 1ère ligne sélectionnée, la surligner en orange
       const e1 = S._dimAngLine1;
       const [sx1,sy1] = w2s(e1.x1,e1.y1), [sx2,sy2] = w2s(e1.x2,e1.y2);
-      ctx.strokeStyle = '#ffaa00cc'; ctx.lineWidth = 3; ctx.setLineDash([]);
+      ctx.strokeStyle = TC.label+'cc'; ctx.lineWidth = 3; ctx.setLineDash([]);
       ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(sx2,sy2); ctx.stroke();
       const [msx,msy] = w2s(mx,my);
-      ctx.strokeStyle = '#ffffff44'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+      ctx.strokeStyle = TC.ink+'44'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
       ctx.beginPath(); ctx.moveTo((sx1+sx2)/2,(sy1+sy2)/2); ctx.lineTo(msx,msy); ctx.stroke();
       ctx.setLineDash([]);
     }
@@ -7300,7 +7433,7 @@ function drawPreview() {
     const c = S._dimCircle;
     const a = Math.atan2(my - c.cy, mx - c.cx);
     ctx.setLineDash([]);
-    ctx.strokeStyle = '#ffffff88'; ctx.fillStyle = '#ffffff88'; ctx.lineWidth = 1;
+    ctx.strokeStyle = TC.ink+'88'; ctx.fillStyle = TC.ink+'88'; ctx.lineWidth = 1;
     const [csx,csy] = w2s(c.cx, c.cy);
     const [esx,esy] = w2s(c.cx + c.r*Math.cos(a), c.cy + c.r*Math.sin(a));
     const _rpds = getDimStyle(null);
@@ -7359,7 +7492,7 @@ function drawPreview() {
     } else {
       // Only 1 point: simple rubber-band
       const [lx, ly] = w2s(last[0], last[1]), [ex, ey] = w2s(tx, ty);
-      ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = TC.ink+'66'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
       ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(ex, ey); ctx.stroke();
       ctx.setLineDash([]);
     }
@@ -7377,7 +7510,7 @@ function drawPreview() {
     const [lx1,ly1]=w2s(ax-ext*Math.cos(angle),ay-ext*Math.sin(angle));
     const [lx2,ly2]=w2s(ax+ext*Math.cos(angle),ay+ext*Math.sin(angle));
     ctx.save();
-    ctx.strokeStyle='#ffab4099'; ctx.lineWidth=1; ctx.setLineDash([10,5]);
+    ctx.strokeStyle=TC.label+'99'; ctx.lineWidth=1; ctx.setLineDash([10,5]);
     ctx.beginPath(); ctx.moveTo(lx1,ly1); ctx.lineTo(lx2,ly2); ctx.stroke();
     ctx.globalAlpha=0.45;
     S.selected.forEach(id=>{
@@ -7458,7 +7591,7 @@ function drawTextLivePreview() {
   ctx.fillText(p.content || '', tx, ty);
   // Petite croix sur le point d'ancrage
   ctx.globalAlpha = 0.5;
-  ctx.strokeStyle = '#00d4ff';
+  ctx.strokeStyle = TC.accent;
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(tx - 5, ty); ctx.lineTo(tx + 5, ty);
@@ -7975,7 +8108,7 @@ function openHatchDialog(pts, layer, existingEntity, sourceId) {
 
   const dlg = document.createElement('div');
   dlg.id = 'hatch-dialog';
-  dlg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1a2e;border:1px solid #334;border-radius:6px;padding:16px;z-index:3000;min-width:310px;color:var(--text);font-family:JetBrains Mono,monospace;font-size:12px;box-shadow:0 4px 20px #000a';
+  dlg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-dark);border:1px solid var(--border);border-radius:6px;padding:16px;z-index:3000;min-width:310px;color:var(--text);font-family:JetBrains Mono,monospace;font-size:12px;box-shadow:0 4px 20px #000a';
 
   const patList = MINICAD_HATCHES.length ? MINICAD_HATCHES : [
     {id:'ANSI31',label:'Acier',defaultAngle:45,category:'Métal',families:[{angleOffset:0}]},
@@ -7997,7 +8130,7 @@ function openHatchDialog(pts, layer, existingEntity, sourceId) {
       <span style="font-size:9px;text-align:center;line-height:1.1;max-width:52px">${h.label}</span>
     </div>`;
   const patsHtml = catOrder.map(cat =>
-    `<div style="grid-column:1/-1;font-size:9px;color:#ffffff55;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px">${cat}</div>` +
+    `<div style="grid-column:1/-1;font-size:9px;color:color-mix(in srgb, var(--ink) 33%, transparent);text-transform:uppercase;letter-spacing:0.5px;margin-top:4px">${cat}</div>` +
     catMap[cat].map(tileHtml).join('')
   ).join('');
 
@@ -8007,15 +8140,15 @@ function openHatchDialog(pts, layer, existingEntity, sourceId) {
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
       <div id="h-angle-row" style="display:${initDef.showAngle===false?'none':'flex'};align-items:center;gap:10px">
         <span style="width:90px;flex-shrink:0">Angle (°)</span>
-        <input id="h-angle" type="number" value="${initAngle}" style="background:#12122a;border:1px solid #334;color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
+        <input id="h-angle" type="number" value="${initAngle}" style="background:#12122a;border:1px solid var(--border);color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
       </div>
       <div id="h-spacing-row" style="display:flex;align-items:center;gap:10px">
         <span style="width:90px;flex-shrink:0">Espacement</span>
-        <input id="h-spacing" type="number" value="${initSpacing}" min="0.1" style="background:#12122a;border:1px solid #334;color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
+        <input id="h-spacing" type="number" value="${initSpacing}" min="0.1" style="background:#12122a;border:1px solid var(--border);color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
       </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button id="h-cancel" style="background:#223;border:1px solid #334;color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer">Annuler</button>
+      <button id="h-cancel" style="background:#223;border:1px solid var(--border);color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer">Annuler</button>
       <button id="h-ok" style="background:#00d4ff22;border:1px solid #00d4ff66;color:#00d4ff;padding:4px 12px;border-radius:3px;cursor:pointer">OK ↵</button>
     </div>`;
 
@@ -8077,7 +8210,7 @@ function drawRotatePreview() {
   const [bsx, bsy] = w2s(bx, by), [msx, msy] = w2s(mx, my);
   ctx.save();
   ctx.globalAlpha = 0.55;
-  ctx.strokeStyle = '#00d4ff';
+  ctx.strokeStyle = TC.accent;
   ctx.lineWidth = 1.2;
   ctx.setLineDash([4, 4]);
   S.rotateIds.forEach(id => {
@@ -8088,13 +8221,13 @@ function drawRotatePreview() {
     drawEntity(g);
   });
   ctx.setLineDash([2, 4]);
-  ctx.strokeStyle = '#ffffff44';
+  ctx.strokeStyle = TC.ink+'44';
   ctx.lineWidth = 1;
   ctx.globalAlpha = 0.8;
   ctx.beginPath(); ctx.moveTo(bsx, bsy); ctx.lineTo(msx, msy); ctx.stroke();
   // Angle label
   ctx.globalAlpha = 1;
-  ctx.fillStyle = '#ffab40';
+  ctx.fillStyle = TC.label;
   ctx.font = '10px JetBrains Mono';
   ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
   ctx.fillText((angle*180/Math.PI).toFixed(1)+'°', msx+6, msy-4);
@@ -8635,7 +8768,7 @@ function drawCursor() {
 
   if (mode === 'idle' || mode === 'draw') {
     // Réticule — avec ou sans gap selon présence du carré
-    ctx.strokeStyle = '#ffffffaa';
+    ctx.strokeStyle = TC.ink+'aa';
     ctx.beginPath();
     if (mode === 'idle') {
       ctx.moveTo(0, sy);       ctx.lineTo(sx - gap, sy);
@@ -8657,7 +8790,7 @@ function drawCursor() {
   if (mode === 'idle' || mode === 'pick') {
     // Carré de sélection — vert + marque pinceau quand des propriétés sont prêtes à coller
     const matchPaste = S.tool === 'matchprop' && S.matchSource;
-    ctx.strokeStyle = matchPaste ? '#00e676' : '#ffffffcc';
+    ctx.strokeStyle = matchPaste ? '#00e676' : TC.ink+'cc';
     ctx.strokeRect(sx - pickHalf, sy - pickHalf, pickHalf * 2, pickHalf * 2);
     if (matchPaste) {
       ctx.fillStyle = '#00e676';
@@ -10813,7 +10946,7 @@ function drawExtendPreview() {
     const g = JSON.parse(JSON.stringify(ent));
     if (!applyExtendArc(g, prims, mx, my)) return;
     ctx.save();
-    ctx.strokeStyle='#00d4ff'; ctx.lineWidth=1.5; ctx.globalAlpha=0.7; ctx.setLineDash([6,4]);
+    ctx.strokeStyle=TC.accent; ctx.lineWidth=1.5; ctx.globalAlpha=0.7; ctx.setLineDash([6,4]);
     drawEntity(g);
     ctx.restore();
     return;
@@ -10821,7 +10954,7 @@ function drawExtendPreview() {
     const g = JSON.parse(JSON.stringify(ent));
     if (!applyExtendEllipse(g, prims, mx, my)) return;
     ctx.save();
-    ctx.strokeStyle='#00d4ff'; ctx.lineWidth=1.5; ctx.globalAlpha=0.7; ctx.setLineDash([6,4]);
+    ctx.strokeStyle=TC.accent; ctx.lineWidth=1.5; ctx.globalAlpha=0.7; ctx.setLineDash([6,4]);
     drawEntity(g);
     ctx.restore();
     return;
@@ -10829,12 +10962,12 @@ function drawExtendPreview() {
 
   const [sx1,sy1]=w2s(fromX,fromY), [sx2,sy2]=w2s(toX,toY);
   ctx.save();
-  ctx.strokeStyle='#00d4ff'; ctx.lineWidth=1.5; ctx.globalAlpha=0.7;
+  ctx.strokeStyle=TC.accent; ctx.lineWidth=1.5; ctx.globalAlpha=0.7;
   ctx.setLineDash([6,4]);
   ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(sx2,sy2); ctx.stroke();
   ctx.setLineDash([]);
   // Point d'arrivée
-  ctx.globalAlpha=1; ctx.fillStyle='#00d4ff';
+  ctx.globalAlpha=1; ctx.fillStyle=TC.accent;
   ctx.beginPath(); ctx.arc(sx2,sy2,3,0,Math.PI*2); ctx.fill();
   ctx.restore();
 }
@@ -11046,7 +11179,7 @@ function drawScalePreview() {
   const [bsx, bsy] = w2s(bx, by), [msx, msy] = w2s(mx, my);
   ctx.save();
   ctx.globalAlpha = 0.55;
-  ctx.strokeStyle = '#00d4ff';
+  ctx.strokeStyle = TC.accent;
   ctx.lineWidth = 1.2;
   ctx.setLineDash([4, 4]);
   S.scaleIds.forEach(id => {
@@ -11057,12 +11190,12 @@ function drawScalePreview() {
     drawEntity(g);
   });
   ctx.setLineDash([2, 4]);
-  ctx.strokeStyle = '#ffffff44';
+  ctx.strokeStyle = TC.ink+'44';
   ctx.lineWidth = 1;
   ctx.globalAlpha = 0.8;
   ctx.beginPath(); ctx.moveTo(bsx, bsy); ctx.lineTo(msx, msy); ctx.stroke();
   ctx.globalAlpha = 1;
-  ctx.fillStyle = '#ffab40';
+  ctx.fillStyle = TC.label;
   ctx.font = '10px JetBrains Mono';
   ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
   ctx.fillText('×'+factor.toFixed(3), msx+6, msy-4);
@@ -16159,6 +16292,7 @@ function autoSave() {
 
 function captureUserPrefs() {
   return {
+    theme: S.theme,
     snap: S.snap,
     snapSize: S.gridSize,
     gridSize: S.gridSize,
@@ -16188,6 +16322,7 @@ function _isOldIsoStyleSet(styles) {
 
 function applyUserPrefs(prefs) {
   if (!prefs) return;
+  if (prefs.theme !== undefined && prefs.theme !== S.theme) setTheme(prefs.theme);
   if (prefs.snap !== undefined)         S.snap = prefs.snap;
   if (prefs.gridSize !== undefined)     S.gridSize = prefs.gridSize;
   if (prefs.gridVis !== undefined)      S.gridVis = prefs.gridVis;
@@ -16269,7 +16404,7 @@ function openPrefsDialog() {
   const p = captureUserPrefs();
   const dlg = document.createElement('div');
   dlg.id = 'prefs-dialog';
-  dlg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1a1a2e;border:1px solid var(--border);border-radius:6px;padding:16px 20px;z-index:3000;min-width:340px;max-width:420px;box-shadow:0 8px 32px #000c;color:var(--text);font-family:var(--font-mono);font-size:11px;';
+  dlg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:var(--bg-dark);border:1px solid var(--border);border-radius:6px;padding:16px 20px;z-index:3000;min-width:340px;max-width:420px;box-shadow:0 8px 32px #000c;color:var(--text);font-family:var(--font-mono);font-size:11px;';
   function row(label, content) { return `<div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0;gap:8px"><span style="color:var(--text-dim);min-width:140px">${label}</span>${content}</div>`; }
   function chk(id, val, lbl) { return `<label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="pd-${id}" ${val?'checked':''}> ${lbl||''}</label>`; }
   function num(id, val, step, min) { return `<input type="number" id="pd-${id}" value="${val}" step="${step||1}" min="${min||0}" style="width:70px;background:var(--input-bg,#1e1e1e);border:1px solid var(--border);color:var(--text);padding:2px 5px;border-radius:3px;font-size:11px;">`; }
@@ -16301,9 +16436,9 @@ function openPrefsDialog() {
     ${row('Style de cote', sel('dimStyle', ['1:1','1:2','1:5','1:10','1:20','1:50','1:100'], p.currentDimStyle))}
     <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
       <button onclick="resetUserPrefs();document.getElementById('prefs-dialog').remove()" style="background:var(--danger,#e53935);border:none;color:#fff;padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px;">Réinitialiser</button>
-      <button onclick="importPrefsFromFile();document.getElementById('prefs-dialog').remove()" style="background:#2a2a3e;border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px;">Importer…</button>
-      <button onclick="savePrefsToFile()" style="background:#2a2a3e;border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px;">Exporter…</button>
-      <button id="pd-apply-btn" style="background:var(--accent);border:none;color:#000;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold;">Appliquer</button>
+      <button onclick="importPrefsFromFile();document.getElementById('prefs-dialog').remove()" style="background:var(--btn-bg);border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px;">Importer…</button>
+      <button onclick="savePrefsToFile()" style="background:var(--btn-bg);border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px;">Exporter…</button>
+      <button id="pd-apply-btn" style="background:var(--accent);border:none;color:var(--on-accent);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold;">Appliquer</button>
     </div>`;
   document.body.appendChild(dlg);
   document.getElementById('pd-apply-btn').onclick = () => {
@@ -16874,7 +17009,7 @@ function showTBContext(ev) {
   });
   // Add "Tout réinitialiser"
   const sep = document.createElement('div');
-  sep.style.cssText = 'height:1px;background:#ffffff10;margin:4px 0;';
+  sep.style.cssText = 'height:1px;background:color-mix(in srgb, var(--ink) 6%, transparent);margin:4px 0;';
   menu.appendChild(sep);
   const reset = document.createElement('div');
   reset.className = 'tb-ctx-item';
