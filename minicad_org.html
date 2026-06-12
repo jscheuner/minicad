@@ -7064,6 +7064,21 @@ function applyGripMove(nx, ny) {
   if (grip) grip.apply(ent, nx, ny);
 }
 
+// Espace pendant une poignée active → DÉPLACER l'objet entier (façon AutoCAD :
+// le grip devient le point de base, la sélection complète suit le curseur)
+function gripToMove() {
+  if (!S.gripEdit) return false;
+  const bx = S.gripEdit.origX, by = S.gripEdit.origY;
+  const entId = S.gripEdit.entId;
+  if (!S.selected.includes(entId)) S.selected = [entId];
+  setTool('move_obj'); // remet gripEdit/drawing/diLocked à zéro
+  S.drawing = true; S.drawPoints = [[bx, by]]; S.awaitingInput = true;
+  termPrint('DÉPLACER — cliquez la destination ou tapez une distance', 'info');
+  render();
+  setTimeout(smartFocus, 0);
+  return true;
+}
+
 // Draw grip edit preview (entity with grip at mouse position)
 function drawGripPreview() {
   if (!S.gripEdit) return;
@@ -8426,6 +8441,9 @@ diDist.addEventListener('keydown', (ev) => {
       return;
     }
     confirmDynamicInput();
+  } else if (ev.key === ' ' && S.gripEdit && !S.diLocked) {
+    ev.preventDefault(); ev.stopPropagation();
+    gripToMove(); // Espace sur poignée active → déplacer l'objet entier
   } else if (ev.key === 'Escape') {
     ev.preventDefault(); ev.stopPropagation();
     diDist.blur(); diAngle.blur(); S.diLocked = false;
@@ -8442,6 +8460,9 @@ diAngle.addEventListener('keydown', (ev) => {
   } else if (ev.key === 'Enter') {
     ev.preventDefault(); ev.stopPropagation();
     confirmDynamicInput();
+  } else if (ev.key === ' ' && S.gripEdit && !S.diLocked) {
+    ev.preventDefault(); ev.stopPropagation();
+    gripToMove(); // Espace sur poignée active → déplacer l'objet entier
   } else if (ev.key === 'Escape') {
     ev.preventDefault(); ev.stopPropagation();
     diDist.blur(); diAngle.blur(); S.diLocked = false;
@@ -9033,7 +9054,7 @@ canvas.addEventListener('mousedown', (ev) => {
         S.gripSelected = null;
         S.drawing = true; S.awaitingInput = true;
         S.drawPoints = [[gripHit.origX, gripHit.origY]];
-        termPrint('Poignée active (' + gripHit.origX.toFixed(1) + ', ' + gripHit.origY.toFixed(1) + ') — Tapez distance ou cliquez destination (Ortho/Polaire actifs)', 'info');
+        termPrint('Poignée active (' + gripHit.origX.toFixed(1) + ', ' + gripHit.origY.toFixed(1) + ') — Tapez distance ou cliquez destination (Espace = déplacer l\'objet)', 'info');
         render();
         setTimeout(smartFocus, 0);
         return;
@@ -9453,7 +9474,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
         S.drawing = true;
         S.awaitingInput = true;
         S.drawPoints = [[gripHit.origX, gripHit.origY]];
-        termPrint('Poignée saisie (' + gripHit.origX.toFixed(1) + ', ' + gripHit.origY.toFixed(1) + ') — Déplacez et cliquez, ou tapez coordonnées', 'warning');
+        termPrint('Poignée saisie (' + gripHit.origX.toFixed(1) + ', ' + gripHit.origY.toFixed(1) + ') — Déplacez et cliquez, ou tapez coordonnées (Espace = déplacer l\'objet)', 'warning');
         render(); return;
       }
     }
@@ -10584,8 +10605,10 @@ function applyTrimLine(ent, prims, clickWx, clickWy) {
   const breaks=[0,...ts,1];
   let remIdx=0;
   for(let i=0;i<breaks.length-1;i++) { if(clickT>=breaks[i]-1e-9&&clickT<=breaks[i+1]+1e-9){remIdx=i;break;} }
+  // Couper uniquement aux 2 intersections adjacentes au clic : le reste n'est pas fragmenté
   const kept=[];
-  for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  if(remIdx>0) kept.push([0,breaks[remIdx]]);
+  if(remIdx<breaks.length-2) kept.push([breaks[remIdx+1],1]);
   if(!kept.length){ S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
   ent.x1=ox1+kept[0][0]*dx; ent.y1=oy1+kept[0][0]*dy;
   ent.x2=ox1+kept[0][1]*dx; ent.y2=oy1+kept[0][1]*dy;
@@ -10640,8 +10663,10 @@ function applyTrimArc(ent, prims, clickWx, clickWy) {
   const breaks=[sa,...norm,ea];
   let remIdx=0;
   for(let i=0;i<breaks.length-1;i++) { if(clickA>=breaks[i]-1e-9&&clickA<=breaks[i+1]+1e-9){remIdx=i;break;} }
+  // Couper uniquement aux 2 intersections adjacentes au clic : le reste n'est pas fragmenté
   const kept=[];
-  for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  if(remIdx>0) kept.push([sa,breaks[remIdx]]);
+  if(remIdx<breaks.length-2) kept.push([breaks[remIdx+1],ea]);
   if(!kept.length){ S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
   ent.startAngle=kept[0][0]; ent.endAngle=kept[0][1];
   for(let i=1;i<kept.length;i++) {
@@ -10654,36 +10679,33 @@ function applyTrimArc(ent, prims, clickWx, clickWy) {
 
 function applyTrimCircle(ent, prims, clickWx, clickWy) {
   // Traiter le cercle complet comme un arc [0, 2π]
-  const fakeArc = { cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:0, endAngle:Math.PI*2 };
-  const rawAngles = getTrimAnglesForArc(fakeArc, prims);
-  if (!rawAngles.length) return false;
+  const TAU = Math.PI*2;
+  const fakeArc = { cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:0, endAngle:TAU };
+  let rawAngles = getTrimAnglesForArc(fakeArc, prims).map(a=>((a%TAU)+TAU)%TAU);
   rawAngles.sort((a,b)=>a-b);
+  rawAngles = rawAngles.filter((a,i)=> i===0 || a-rawAngles[i-1]>1e-6); // doublons (cutters concourants)
+  if (rawAngles.length < 2) return false; // un cercle exige 2 points de coupe
   // Angle du clic par rapport au centre
   let clickA = Math.atan2(clickWy-ent.cy, clickWx-ent.cx);
-  if (clickA < 0) clickA += Math.PI*2;
+  if (clickA < 0) clickA += TAU;
   // Trouver le segment angulaire cliqué parmi N segments
-  const breaks = [...rawAngles, rawAngles[0]+Math.PI*2]; // cercle fermé
   let remIdx = 0;
   for (let i=0; i<rawAngles.length; i++) {
     const a1 = rawAngles[i], a2 = rawAngles[(i+1)%rawAngles.length];
     let ca = clickA;
-    while (ca < a1-1e-9) ca += Math.PI*2;
-    const a2w = a2>a1 ? a2 : a2+Math.PI*2;
+    while (ca < a1-1e-9) ca += TAU;
+    const a2w = a2>a1 ? a2 : a2+TAU;
     if (ca >= a1-1e-9 && ca <= a2w+1e-9) { remIdx=i; break; }
   }
-  const kept=[];
-  for (let i=0; i<rawAngles.length; i++) if (i!==remIdx) {
-    const a1=rawAngles[i], a2=rawAngles[(i+1)%rawAngles.length];
-    kept.push([a1, a2>a1?a2:a2+Math.PI*2]);
-  }
-  if (!kept.length) { S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
-  // Remplacer le circle par le premier arc, créer les suivants
+  // Courbe fermée : retirer la pièce cliquée laisse UN seul arc
+  // (de la fin de la pièce retirée à son début, en passant par le reste du cercle)
+  const sa = rawAngles[(remIdx+1)%rawAngles.length];
+  let ea = rawAngles[remIdx];
+  while (ea <= sa+1e-9) ea += TAU;
   const idx = S.entities.findIndex(e=>e.id===ent.id);
-  const firstArc = { type:'arc', cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:kept[0][0], endAngle:kept[0][1], id:ent.id, layer:ent.layer };
-  if (idx>=0) S.entities[idx]=firstArc;
-  for (let i=1; i<kept.length; i++) {
-    S.entities.push({ type:'arc', cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:kept[i][0], endAngle:kept[i][1], id:S.nextId++, layer:ent.layer });
-  }
+  const arc = JSON.parse(JSON.stringify(ent));
+  arc.type='arc'; arc.startAngle=sa; arc.endAngle=ea;
+  if (idx>=0) S.entities[idx]=arc;
   return true;
 }
 
@@ -10742,6 +10764,10 @@ function applyTrimPolyline(ent, prims, clickWx, clickWy) {
         lineCircleIntersect(p1[0],p1[1],p2[0],p2[1],p.cx,p.cy,p.r).forEach(h=>{
           if(h.t>1e-9&&h.t<1-1e-9&&angleInArc(Math.atan2(h.y-p.cy,h.x-p.cx),p.sa,p.ea)) globalTs.push(i+h.t);
         });
+      } else if(p.type==='ellipse'){
+        lineEllipseIntersect(p1[0],p1[1],p2[0],p2[1],p).forEach(h=>{
+          if(h.t>1e-9&&h.t<1-1e-9&&(p.sa===undefined||angleInArc(ellipseParam(p,h.x,h.y),p.sa,p.ea))) globalTs.push(i+h.t);
+        });
       }
     }
   }
@@ -10785,8 +10811,10 @@ function applyTrimPolyline(ent, prims, clickWx, clickWy) {
   const breaks=[0,...globalTs,nSegs];
   let remIdx=0;
   for(let i=0;i<breaks.length-1;i++){if(clickGlobalT>=breaks[i]-1e-9&&clickGlobalT<=breaks[i+1]+1e-9){remIdx=i;break;}}
+  // Couper uniquement aux 2 intersections adjacentes au clic : le reste n'est pas fragmenté
   const kept=[];
-  for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  if(remIdx>0) kept.push([0,breaks[remIdx]]);
+  if(remIdx<breaks.length-2) kept.push([breaks[remIdx+1],nSegs]);
   if(!kept.length){S.entities=S.entities.filter(e=>e.id!==ent.id);return true;}
   const firstSub=extractSubPoly(pts,nSegs,kept[0][0],kept[0][1]);
   ent.points=firstSub;
@@ -10804,7 +10832,10 @@ function applyTrimEllipse(ent, prims, clickWx, clickWy) {
   const raw=getEllipseHitParams(el, prims);
   if(!raw.length) return false;
   const TAU=Math.PI*2, norm=a=>((a%TAU)+TAU)%TAU;
-  const full = ent.startAngle===undefined || ent.endAngle===undefined;
+  // Ellipse fermée : angles absents OU balayage complet (l'outil ELLIPSE stocke 0..2π)
+  // — même convention que le rendu, sinon la couture 0/2π fragmente le résultat
+  const sa0 = ent.startAngle ?? 0, ea0 = ent.endAngle ?? TAU;
+  const full = Math.abs((ea0-sa0) - TAU) < 1e-9;
   const clickA=ellipseParam(el, clickWx, clickWy);
   const mkArcs=(kept)=>{
     if(!kept.length){ S.entities=S.entities.filter(e=>e.id!==ent.id); return true; }
@@ -10817,17 +10848,22 @@ function applyTrimEllipse(ent, prims, clickWx, clickWy) {
     if(angs.length<2) return false;
     let ca=norm(clickA), remIdx=0;
     for(let i=0;i<angs.length;i++){ const a1=angs[i], a2=(i+1<angs.length?angs[i+1]:angs[0]+TAU); let cc=ca; while(cc<a1-1e-9) cc+=TAU; if(cc>=a1-1e-9&&cc<=a2+1e-9){remIdx=i;break;} }
-    const kept=[];
-    for(let i=0;i<angs.length;i++) if(i!==remIdx){ const a1=angs[i], a2=(i+1<angs.length?angs[i+1]:angs[0]+TAU); kept.push([a1,a2]); }
-    return mkArcs(kept);
+    // Courbe fermée : retirer la pièce cliquée laisse UN seul arc d'ellipse
+    const a1=angs[(remIdx+1)%angs.length];
+    let a2=angs[remIdx]; while(a2<=a1+1e-9) a2+=TAU;
+    ent.startAngle=a1; ent.endAngle=a2;
+    return true;
   }
-  const sa=ent.startAngle; let ea=ent.endAngle; while(ea<sa) ea+=TAU;
+  const sa=sa0; let ea=ea0; while(ea<sa) ea+=TAU;
   const inside=raw.map(a=>{let b=a;while(b<sa)b+=TAU;return b;}).filter(a=>a>sa+1e-9&&a<ea-1e-9).sort((x,y)=>x-y);
   if(!inside.length) return false;
   let ca=clickA; while(ca<sa) ca+=TAU;
   const breaks=[sa,...inside,ea]; let remIdx=0;
   for(let i=0;i<breaks.length-1;i++){ if(ca>=breaks[i]-1e-9&&ca<=breaks[i+1]+1e-9){remIdx=i;break;} }
-  const kept=[]; for(let i=0;i<breaks.length-1;i++) if(i!==remIdx) kept.push([breaks[i],breaks[i+1]]);
+  // Couper uniquement aux 2 intersections adjacentes au clic : le reste n'est pas fragmenté
+  const kept=[];
+  if(remIdx>0) kept.push([sa,breaks[remIdx]]);
+  if(remIdx<breaks.length-2) kept.push([breaks[remIdx+1],ea]);
   return mkArcs(kept);
 }
 
@@ -14966,15 +15002,10 @@ function executeCommand(input) {
 }
 
 cmdInput.addEventListener('keydown',(ev)=>{
-  // Espace sur grip armé → MOVE avec le grip comme point de base
-  if(ev.key===' ' && S.gripSelected && !S.gripEdit){
+  // Espace sur poignée active → DÉPLACER l'objet entier (seulement si rien n'est tapé)
+  if(ev.key===' ' && S.gripEdit && cmdInput.value.trim()===''){
     ev.preventDefault(); ev.stopPropagation();
-    const bx = S.gripSelected.origX, by = S.gripSelected.origY;
-    S.gripSelected = null;
-    setTool('move_obj');
-    S.drawing = true; S.drawPoints = [[bx, by]]; S.awaitingInput = true;
-    termPrint('DÉPLACER — cliquez la destination', 'info');
-    render(); return;
+    gripToMove(); return;
   }
   if(ev.key==='Enter'){
     const cmd = cmdInput.value.trim();
@@ -15054,18 +15085,6 @@ document.addEventListener('keyup', (ev) => {
 });
 
 document.addEventListener('keydown',(ev)=>{
-  // PRIORITAIRE: grip armé + Espace → MOVE avec grip comme point de base
-  if(ev.key===' ' && S.gripSelected && !S.gripEdit){
-    ev.preventDefault();
-    const bx = S.gripSelected.origX, by = S.gripSelected.origY;
-    const entId = S.gripSelected.entId;
-    S.gripSelected = null;
-    if(!S.selected.includes(entId)) S.selected = [entId];
-    setTool('move_obj');
-    S.drawing = true; S.drawPoints = [[bx, by]]; S.awaitingInput = true;
-    termPrint('DÉPLACER — cliquez la destination', 'info');
-    render(); return;
-  }
   // PRIORITAIRE: cote linéaire/parallèle + Espace → bascule sélection d'objet
   // (avant le filtre de focus, sinon Espace tape dans le terminal après une cote)
   if(ev.key===' ' && (S.tool==='dim_linear'||S.tool==='dim_aligned') && !S.drawing){
@@ -15368,14 +15387,8 @@ document.addEventListener('keydown',(ev)=>{
   if(ev.key==='F10'){ev.preventDefault();togglePolar();}
   if(ev.key===' '){
     ev.preventDefault();
-    if(S.gripSelected && !S.gripEdit){
-      const bx = S.gripSelected.origX, by = S.gripSelected.origY;
-      S.gripSelected = null;
-      setTool('move_obj');
-      S.drawing = true; S.drawPoints = [[bx, by]]; S.awaitingInput = true;
-      termPrint('DÉPLACER — cliquez la destination', 'info');
-      render();
-    } else cmdInput.focus();
+    if(S.gripEdit){ gripToMove(); return; } // poignée active → déplacer l'objet entier
+    cmdInput.focus();
   }
 });
 
