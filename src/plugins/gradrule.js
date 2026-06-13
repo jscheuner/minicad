@@ -52,6 +52,7 @@ function closeGradPopup() {
 }
 
 function applyGradDef() {
+  console.log('[GRADRULE] applyGradDef called, mode:', _gradMode);
   closeGradPopup();
 
   if (_gradMode === 'disk') {
@@ -65,6 +66,7 @@ function applyGradDef() {
                   cx:0, cy:0, radius, count, labelEvery, gradScale, textScale };
     S.aiPendingEntities = [ent];
     S._pendingGrad = { type:'grad_disk', radius, count, labelEvery, gradScale, textScale };
+    console.log('[GRADRULE] Setting tool to grad_place');
     setTool('grad_place');
     startGradMouseTracking();
     termPrint(`GRADISC — Cliquez pour placer (Échap=annuler)`, 'info');
@@ -172,8 +174,12 @@ const GRADRULE_RENDER_CASES = {
 // ======== OUTILS (à injecter dans handleClick via toolHandlers) ========
 const GRADRULE_TOOL_HANDLERS = {
   grad_place: function(x, y, ev) {
+    console.log('[GRADRULE] grad_place handler called at', x, y);
     const pg = S._pendingGrad;
-    if (!pg) return;
+    if (!pg) {
+      console.warn('[GRADRULE] No S._pendingGrad, aborting placement');
+      return;
+    }
     let ent;
     if (pg.type === 'grad_disk') {
       ent = { type:'grad_disk', id:S.nextId++, layer:S.currentLayer,
