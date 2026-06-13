@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 .claude/
 CLAUDE.MD
+
+# Fichiers de travail personnels (non livrables)
+a faire dans minicad.txt
+minicad_modifier_user.html
