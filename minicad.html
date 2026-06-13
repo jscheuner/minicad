@@ -1938,7 +1938,7 @@
   <div class="lm-table">
     <table class="lm-grid">
       <thead><tr>
-        <th>Nom</th><th>Texte (mm)</th><th>Flèche (mm)</th><th>Attache (mm)</th><th>Retrait (mm)</th><th>Déc.</th><th></th>
+        <th>Nom</th><th>Texte (mm)</th><th>Flèche (mm)</th><th>Attache (mm)</th><th>Retrait (mm)</th><th title="Distance entre le trait de cote et le dessous du texte">Écart txt (mm)</th><th>Déc.</th><th></th>
       </tr></thead>
       <tbody id="dsm-body"></tbody>
     </table>
@@ -2423,13 +2423,13 @@ const S = {
     { name: '3 - Texte',       color: '#ffab40', printColor: '#000000', visible: true, lineWidth: 0.25, lineType: 'solid' },
   ],
   dimStyles: [
-    { name: '1:1',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, extOff:  2.0, decimals: 1 },
-    { name: '1:2',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, extOff:  4.0, decimals: 1 },
-    { name: '1:5',   textHeight:   5, arrowSize:  3.0, extGap:  2.0, extOff:  6.0, decimals: 1 },
-    { name: '1:10',  textHeight:  10, arrowSize:  6.0, extGap:  4.0, extOff: 10.0, decimals: 0 },
-    { name: '1:20',  textHeight:  20, arrowSize: 12.0, extGap:  8.0, extOff: 20.0, decimals: 0 },
-    { name: '1:50',  textHeight:  50, arrowSize: 30.0, extGap: 20.0, extOff: 20.0, decimals: 0 },
-    { name: '1:100', textHeight: 100, arrowSize: 60.0, extGap: 40.0, extOff: 20.0, decimals: 0 },
+    { name: '1:1',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, extOff:  2.0, textGap:  1.0, decimals: 1 },
+    { name: '1:2',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, extOff:  4.0, textGap:  1.0, decimals: 1 },
+    { name: '1:5',   textHeight:   5, arrowSize:  3.0, extGap:  2.0, extOff:  6.0, textGap:  1.5, decimals: 1 },
+    { name: '1:10',  textHeight:  10, arrowSize:  6.0, extGap:  4.0, extOff: 10.0, textGap:  3.0, decimals: 0 },
+    { name: '1:20',  textHeight:  20, arrowSize: 12.0, extGap:  8.0, extOff: 20.0, textGap:  6.0, decimals: 0 },
+    { name: '1:50',  textHeight:  50, arrowSize: 30.0, extGap: 20.0, extOff: 20.0, textGap: 15.0, decimals: 0 },
+    { name: '1:100', textHeight: 100, arrowSize: 60.0, extGap: 40.0, extOff: 20.0, textGap: 30.0, decimals: 0 },
   ],
   currentDimStyle: '1:1',
   currentLayer: 0,
@@ -3545,8 +3545,8 @@ modules.dimensioning.commands = {
   DIMALIGNED: { alias: ['DIMPAR','DIMPARALLEL'], desc: 'Cote parallèle (alignée)', exec() { setTool('dim_aligned'); termPrint('COTE PARALLÈLE: cliquez deux points — ou Espace pour sélectionner une ligne', 'info'); }},
   DIMANGULAR: { alias: ['DIMANG','ANGLE'], desc: 'Cote angulaire (cliquer ligne1, ligne2, puis placer)', exec() {
     S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null;
-    S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null;
-    termPrint('COTE ANGULAIRE: Cliquez la 1ère ligne', 'info');
+    S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null; S._dimAngArc=false;
+    termPrint('COTE ANGULAIRE: Cliquez la 1ère ligne ou un arc', 'info');
     setTool('dim_angular');
   }},
   DIMRADIUS: { alias: ['DIMRAD'], desc: 'Cote de rayon (cliquer un cercle/arc)', exec() { termPrint('RAYON: Cliquez sur un cercle ou un arc', 'info'); setTool('dim_radius'); }},
@@ -4200,7 +4200,7 @@ function getEntityBBox(e, tight) {
       return { minX:(e.cx||0)-(e.r||50)-pad, maxX:(e.cx||0)+(e.r||50)+pad,
                minY:(e.cy||0)-(e.r||50)-pad, maxY:(e.cy||0)+(e.r||50)+pad };
     case 'dim_arc': {
-      const rr = (e.r||50) + Math.abs(e.offset||0) + (getDimStyle(e).textHeight||10)*1.5;
+      const rr = (e.r||50) + Math.abs(e.offset||0) + dimTextGap(getDimStyle(e)) + (getDimStyle(e).textHeight||10)*1.5;
       return { minX:(e.cx||0)-rr-pad, maxX:(e.cx||0)+rr+pad,
                minY:(e.cy||0)-rr-pad, maxY:(e.cy||0)+rr+pad };
     }
@@ -6700,7 +6700,7 @@ function drawEntity(e) {
         const dist = Math.abs(e.x2 - e.x1);
         const [ttx, tty] = w2s((e.x1+e.x2)/2 + to, dimY);
         ctx.font = tpx + 'px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.fillText(dimText(e, dist), ttx, tty - tpx*0.3);
+        ctx.fillText(dimText(e, dist), ttx, tty - dimTextGap(ds)*S.zoom);
       } else {
         const dimX = (e.x1 + e.x2) / 2 + off;
         const [a1, b1] = w2s(dimX, e.y1), [a2, b2] = w2s(dimX, e.y2);
@@ -6744,7 +6744,7 @@ function drawEntity(e) {
       if (textAngle > Math.PI/2 || textAngle < -Math.PI/2) textAngle += Math.PI;
       ctx.rotate(textAngle);
       ctx.font = tpx + 'px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillText(dimText(e, dist), 0, -tpx*0.3); ctx.restore();
+      ctx.fillText(dimText(e, dist), 0, -dimTextGap(ds)*S.zoom); ctx.restore();
       break;
     }
     case 'dim_angular': {
@@ -6767,9 +6767,18 @@ function drawEntity(e) {
       if (angle < 0) angle += Math.PI * 2;
       const deg = angle * 180 / Math.PI;
       const midA = -(sa + angle / 2);
-      const textR = r + tpx * 1.2;
+      const textR = r + dimTextGap(ds)*S.zoom + tpx*0.5;
+      // Texte tangent à l'arc de cote (espace écran), maintenu lisible
+      const _ta = [vsx + r*Math.cos(midA-0.01), vsy + r*Math.sin(midA-0.01)];
+      const _tb = [vsx + r*Math.cos(midA+0.01), vsy + r*Math.sin(midA+0.01)];
+      let textAngle = Math.atan2(_tb[1]-_ta[1], _tb[0]-_ta[0]);
+      if (textAngle > Math.PI/2 || textAngle < -Math.PI/2) textAngle += Math.PI;
+      ctx.save();
+      ctx.translate(vsx + textR * Math.cos(midA), vsy + textR * Math.sin(midA));
+      ctx.rotate(textAngle);
       ctx.font = tpx + 'px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(dimText(e, deg) + (e.text ? '' : '°'), vsx + textR * Math.cos(midA), vsy + textR * Math.sin(midA));
+      ctx.fillText(dimText(e, deg) + (e.text ? '' : '°'), 0, 0);
+      ctx.restore();
       ctx.restore();
       break;
     }
@@ -6815,7 +6824,7 @@ function drawEntity(e) {
       ctx.rotate(lineAngle);
       ctx.font = tpx + 'px JetBrains Mono';
       ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillText(prefix + dimText(e, val), 0, -tpx * 0.2);
+      ctx.fillText(prefix + dimText(e, val), 0, -dimTextGap(ds)*S.zoom);
       ctx.restore();
       ctx.restore();
       break;
@@ -6894,6 +6903,10 @@ function getDimStyle(e) {
   return S.dimStyles.find(d => d.name === name) || S.dimStyles[0];
 }
 
+// Écart (en unités monde) entre le trait de cote et le dessous du texte.
+// Paramètre de style `textGap` ; fallback ≈ 0.3·hauteur de texte pour les anciens styles.
+function dimTextGap(ds) { return (ds && ds.textGap != null) ? ds.textGap : ((ds ? ds.textHeight : 4) * 0.3); }
+
 function drawArrowHead(fromX, fromY, toX, toY, sz) {
   sz = sz !== undefined ? sz : 8;
   const a = Math.atan2(toY - fromY, toX - fromX);
@@ -6938,15 +6951,24 @@ function _renderDimArc(e) {
   const t2 = w2s(e.cx + rd*Math.cos(ea),    e.cy + rd*Math.sin(ea));
   const b2 = w2s(e.cx + rd*Math.cos(ea-da), e.cy + rd*Math.sin(ea-da));
   drawArrowHead(b2[0], b2[1], t2[0], t2[1], asz);
-  // Texte : longueur d'arc précédée du symbole ⌒, au milieu de l'arc, déplaçable
+  // Texte : longueur d'arc précédée du symbole ⌒, tangent au trait de cote, déplaçable
   const midA = sa + span/2;
-  const rTxt = rd + dir * (tpx*0.9)/S.zoom;
+  const rTxt = rd + dir * (dimTextGap(ds) + ds.textHeight*0.5);
   const twx = e.textWx !== undefined ? e.textWx : e.cx + rTxt*Math.cos(midA);
   const twy = e.textWy !== undefined ? e.textWy : e.cy + rTxt*Math.sin(midA);
   const [tsx, tsy] = w2s(twx, twy);
+  // Orientation tangente à l'arc au milieu (espace écran, Y inversé), maintenue lisible
+  const _pa = w2s(e.cx + rd*Math.cos(midA-0.01), e.cy + rd*Math.sin(midA-0.01));
+  const _pb = w2s(e.cx + rd*Math.cos(midA+0.01), e.cy + rd*Math.sin(midA+0.01));
+  let lineAngle = Math.atan2(_pb[1]-_pa[1], _pb[0]-_pa[0]);
+  if (lineAngle > Math.PI/2 || lineAngle < -Math.PI/2) lineAngle += Math.PI;
+  ctx.save();
+  ctx.translate(tsx, tsy);
+  ctx.rotate(lineAngle);
   ctx.font = tpx + 'px JetBrains Mono';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('⌒' + dimText(e, e.r * span), tsx, tsy);
+  ctx.fillText('⌒' + dimText(e, e.r * span), 0, 0);
+  ctx.restore();
 }
 
 // Legacy drawArrow (bidirectional) for compatibility
@@ -7113,7 +7135,7 @@ function getGripPoints(e) {
       });
       // Grip texte — déplace uniquement le label
       const _dir = (e.offset || 0) >= 0 ? 1 : -1;
-      const _rTxt = _rd + _dir * getDimStyle(e).textHeight * 0.9;
+      const _rTxt = _rd + _dir * (dimTextGap(getDimStyle(e)) + getDimStyle(e).textHeight * 0.5);
       const _atwx = e.textWx !== undefined ? e.textWx : e.cx + _rTxt*Math.cos(_midA);
       const _atwy = e.textWy !== undefined ? e.textWy : e.cy + _rTxt*Math.sin(_midA);
       gp(_atwx, _atwy, (ent, nx, ny) => { ent.textWx = nx; ent.textWy = ny; });
@@ -7415,7 +7437,7 @@ function drawDimPreview(tool, p1, p2, mouseWorld) {
       drawArrowHead(a2,b2,a1,b1,_asz); drawArrowHead(a1,b1,a2,b2,_asz);
       ctx.font=_tpx+'px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='bottom';
       const _dec = (_ds.decimals != null) ? _ds.decimals : 1;
-      ctx.fillText(Math.abs(p2[0]-p1[0]).toFixed(_dec),(a1+a2)/2,Math.min(b1,b2)-_tpx*0.3);
+      ctx.fillText(Math.abs(p2[0]-p1[0]).toFixed(_dec),(a1+a2)/2,Math.min(b1,b2)-dimTextGap(_ds)*S.zoom);
     } else {
       const _dec = (_ds.decimals != null) ? _ds.decimals : 1;
       const dimX = (p1[0] + p2[0]) / 2 + off;
@@ -7428,7 +7450,7 @@ function drawDimPreview(tool, p1, p2, mouseWorld) {
       drawArrowHead(a2,b2,a1,b1,_asz); drawArrowHead(a1,b1,a2,b2,_asz);
       ctx.save(); ctx.translate((a1+a2)/2,(b1+b2)/2); ctx.rotate(-Math.PI/2);
       ctx.font=_tpx+'px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='bottom';
-      ctx.fillText(Math.abs(p2[1]-p1[1]).toFixed(_dec),0,-_tpx*0.3); ctx.restore();
+      ctx.fillText(Math.abs(p2[1]-p1[1]).toFixed(_dec),0,-dimTextGap(_ds)*S.zoom); ctx.restore();
     }
   } else {
     // Aligned
@@ -7448,7 +7470,7 @@ function drawDimPreview(tool, p1, p2, mouseWorld) {
     ctx.save(); ctx.translate((dx1+dx2)/2,(dy1+dy2)/2);
     let ta=angle; if(ta>Math.PI/2||ta<-Math.PI/2)ta+=Math.PI;
     ctx.rotate(ta); ctx.font=_tpx+'px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='bottom';
-    ctx.fillText(dist.toFixed(_dec),0,-_tpx*0.3); ctx.restore();
+    ctx.fillText(dist.toFixed(_dec),0,-dimTextGap(_ds)*S.zoom); ctx.restore();
   }
   ctx.restore();
 }
@@ -7581,12 +7603,14 @@ function drawPreview() {
     ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(ex,ey); ctx.stroke();
   } else if (tool === 'dim_angular') {
     if (S._dimAngVtx) {
-      // Étape 2: vertex connu, afficher secteur dynamique sous la souris
+      // Étape 2: vertex connu, afficher le secteur sous la souris (ou fixe si issu d'un arc)
       const vtx = S._dimAngVtx;
-      const sec = _dimAngSector(vtx[0], vtx[1], S._dimAngLA1, S._dimAngLA2, mx, my);
+      let sa, _secAng;
+      if (S._dimAngArc) { sa = S._dimAngLA1; _secAng = arcSpan(S._dimAngLA1, S._dimAngLA2); }
+      else { const sec = _dimAngSector(vtx[0], vtx[1], S._dimAngLA1, S._dimAngLA2, mx, my); sa = sec.startAngle; _secAng = sec.angle; }
       const r = Math.max(20 * S.zoom, Math.hypot(mx - vtx[0], my - vtx[1]) * S.zoom);
       const [vsx, vsy] = w2s(vtx[0], vtx[1]);
-      const sa = sec.startAngle, ea = sa + sec.angle;
+      const ea = sa + _secAng;
       ctx.strokeStyle = TC.ink+'88'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
       const rayLen = r * 1.4;
       ctx.beginPath(); ctx.moveTo(vsx,vsy); ctx.lineTo(vsx+rayLen*Math.cos(-sa),vsy+rayLen*Math.sin(-sa)); ctx.stroke();
@@ -7595,9 +7619,18 @@ function drawPreview() {
       ctx.beginPath(); ctx.arc(vsx, vsy, r, -ea, -sa); ctx.stroke();
       const _pds = getDimStyle(null);
       const _ptpx = Math.max(5, _pds.textHeight * S.zoom);
-      const midA = -(sa + sec.angle/2);
+      const midA = -(sa + _secAng/2);
+      const _pta = [vsx + r*Math.cos(midA-0.01), vsy + r*Math.sin(midA-0.01)];
+      const _ptb = [vsx + r*Math.cos(midA+0.01), vsy + r*Math.sin(midA+0.01)];
+      let _ptang = Math.atan2(_ptb[1]-_pta[1], _ptb[0]-_pta[0]);
+      if (_ptang > Math.PI/2 || _ptang < -Math.PI/2) _ptang += Math.PI;
+      const _ptR = r + dimTextGap(_pds)*S.zoom + _ptpx*0.5;
+      ctx.save();
+      ctx.translate(vsx+_ptR*Math.cos(midA), vsy+_ptR*Math.sin(midA));
+      ctx.rotate(_ptang);
       ctx.font=_ptpx+'px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle=TC.ink+'88';
-      ctx.fillText((sec.angle*180/Math.PI).toFixed(1)+'°', vsx+(r+_ptpx*1.2)*Math.cos(midA), vsy+(r+_ptpx*1.2)*Math.sin(midA));
+      ctx.fillText((_secAng*180/Math.PI).toFixed(1)+'°', 0, 0);
+      ctx.restore();
     } else if (S._dimAngLine1) {
       // Étape 1: 1ère ligne sélectionnée, la surligner en orange
       const e1 = S._dimAngLine1;
@@ -9878,13 +9911,23 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     render(); return;
   }
 
-  // DIMANGULAR: cliquer ligne1 → cliquer ligne2 → positionner avec souris → cliquer pour placer
+  // DIMANGULAR: cliquer ligne1 → cliquer ligne2 → positionner ; OU cliquer un arc → angle direct
   if (tool === 'dim_angular') {
-    if (!S._dimAngLine1) {
+    if (!S._dimAngVtx && !S._dimAngLine1) {
+      // Cas spécial : 1er clic sur un arc → mesure directe de son angle d'ouverture
+      const arcHit = findArcEntity(rawWx, rawWy);
+      if (arcHit) {
+        S._dimAngVtx = [arcHit.cx, arcHit.cy];
+        S._dimAngLA1 = arcHit.startAngle; S._dimAngLA2 = arcHit.endAngle;
+        S._dimAngArc = true;
+        S.drawing = true; S.awaitingInput = true; S.drawPoints = [[arcHit.cx, arcHit.cy]];
+        termPrint('Arc ' + (arcSpan(arcHit.startAngle, arcHit.endAngle)*180/Math.PI).toFixed(1) + '° — Choisissez le côté et cliquez', 'info');
+        render(); return;
+      }
       // Étape 0: pick 1ère ligne (ligne, mur ou segment de polyligne)
       const hit = hitTest(rawWx, rawWy);
       const lineEnt = _dimAngExtractLine(hit, rawWx, rawWy);
-      if (!lineEnt) { termPrint('DIMANGULAR: cliquez sur une ligne, un mur ou un segment de polyligne', 'warning'); render(); return; }
+      if (!lineEnt) { termPrint('DIMANGULAR: cliquez sur une ligne, un mur, un segment de polyligne ou un arc', 'warning'); render(); return; }
       S._dimAngLine1 = lineEnt; S._dimAngClick1 = [wx, wy];
       S.drawing = true; S.awaitingInput = true; S.drawPoints = [[wx, wy]];
       termPrint('Segment 1 sélectionné — Cliquez le 2ème segment', 'info');
@@ -9910,23 +9953,30 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     } else {
       // Étape 2: placer la cote
       const vtx = S._dimAngVtx;
-      const sec = _dimAngSector(vtx[0], vtx[1], S._dimAngLA1, S._dimAngLA2, wx, wy);
+      let saA, eaA, angA;
+      if (S._dimAngArc) {
+        // Angle imposé par l'arc (span réel, reflex compris)
+        saA = S._dimAngLA1; angA = arcSpan(S._dimAngLA1, S._dimAngLA2); eaA = saA + angA;
+      } else {
+        const sec = _dimAngSector(vtx[0], vtx[1], S._dimAngLA1, S._dimAngLA2, wx, wy);
+        saA = sec.startAngle; eaA = sec.endAngle; angA = sec.angle;
+      }
       const r = Math.max(20, Math.hypot(wx - vtx[0], wy - vtx[1]));
       pushUndo();
-      const x1 = vtx[0] + r * Math.cos(sec.startAngle);
-      const y1 = vtx[1] + r * Math.sin(sec.startAngle);
-      const x2 = vtx[0] + r * Math.cos(sec.endAngle);
-      const y2 = vtx[1] + r * Math.sin(sec.endAngle);
+      const x1 = vtx[0] + r * Math.cos(saA);
+      const y1 = vtx[1] + r * Math.sin(saA);
+      const x2 = vtx[0] + r * Math.cos(eaA);
+      const y2 = vtx[1] + r * Math.sin(eaA);
       const ent = { type:'dim_angular', vx:vtx[0], vy:vtx[1],
                     x1, y1, x2, y2,
-                    startAngle:sec.startAngle, endAngle:sec.endAngle,
-                    r, angle:sec.angle, dimStyle: S.currentDimStyle,
+                    startAngle:saA, endAngle:eaA,
+                    r, angle:angA, dimStyle: S.currentDimStyle,
                     id:S.nextId++, layer:S.currentLayer };
       S.entities.push(ent);
-      termPrint('#'+ent.id+' dim_angular ' + (sec.angle*180/Math.PI).toFixed(1) + '°', 'success');
+      termPrint('#'+ent.id+' dim_angular ' + (angA*180/Math.PI).toFixed(1) + '°', 'success');
       S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
       S._dimAngLine1 = null; S._dimAngLine2 = null; S._dimAngVtx = null;
-      S._dimAngClick1 = null; S._dimAngLA1 = null; S._dimAngLA2 = null;
+      S._dimAngClick1 = null; S._dimAngLA1 = null; S._dimAngLA2 = null; S._dimAngArc = false;
     }
     render(); return;
   }
@@ -12037,7 +12087,7 @@ function hitTest(wx,wy,filter) {
       d=Math.min(d, distToSeg(wx,wy,e.vx,e.vy,e.x2,e.y2));
       d=Math.min(d, Math.abs(Math.hypot(wx-e.vx,wy-e.vy)-e.r));
       const _rw=e.r||40,_midA=(e.startAngle||0)+(e.angle||0)/2;
-      const _textRW=_rw+getDimStyle(e).textHeight*1.2;
+      const _textRW=_rw+dimTextGap(getDimStyle(e))+getDimStyle(e).textHeight*0.5;
       const td=Math.hypot(wx-(e.vx+_textRW*Math.cos(_midA)),wy-(e.vy+_textRW*Math.sin(_midA)));
       if(td<tol*4) d=Math.min(d,td/4);
       tryHit(e,d);
@@ -12065,7 +12115,7 @@ function hitTest(wx,wy,filter) {
               ? Math.abs(Math.hypot(wx-e.cx,wy-e.cy)-rd) : Infinity;
       const span=arcSpan(e.startAngle,e.endAngle), midA=e.startAngle+span/2;
       const dir=(e.offset||0)>=0?1:-1;
-      const rTxt=rd+dir*getDimStyle(e).textHeight*0.9;
+      const rTxt=rd+dir*(dimTextGap(getDimStyle(e))+getDimStyle(e).textHeight*0.5);
       const twx=e.textWx!==undefined?e.textWx:e.cx+rTxt*Math.cos(midA);
       const twy=e.textWy!==undefined?e.textWy:e.cy+rTxt*Math.sin(midA);
       const td=Math.hypot(wx-twx,wy-twy); if(td<tol*6) d=Math.min(d,td/6);
@@ -12430,7 +12480,7 @@ function setTool(t) {
   if(t !== 'circle') S.circleDiamMode=false;
   S.tool=t; S.drawing=false; S.drawPoints=[]; S.awaitingInput=false;
   if(t !== 'tube') S.tubePoints=[];
-  if(t !== 'dim_angular') { S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null; S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null; }
+  if(t !== 'dim_angular') { S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null; S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null; S._dimAngArc=false; }
   if(t !== 'dim_arc') S._dimArc=null;
   S._dimPick = false; // mode « sélection d'objet » des cotes linéaire/parallèle (Espace)
   if(t !== 'matchprop') S.matchSource = null;
@@ -12990,6 +13040,8 @@ function refreshDimStyleManagerTable() {
         ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsProp('+i+',\'extGap\',+this.value)"></td>'+
       '<td><input type="number" class="lm-name-input" style="width:60px" step="0.1" min="0" value="'+(ds.extOff != null ? ds.extOff : 0).toFixed(1)+'"'+
         ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsProp('+i+',\'extOff\',+this.value)"></td>'+
+      '<td><input type="number" class="lm-name-input" style="width:60px" step="0.1" min="0" value="'+(ds.textGap != null ? ds.textGap : +(ds.textHeight*0.3).toFixed(1)).toFixed(1)+'"'+
+        ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsProp('+i+',\'textGap\',+this.value)"></td>'+
       '<td><input type="number" class="lm-name-input" style="width:44px" step="1" min="0" max="6" value="'+(ds.decimals != null ? ds.decimals : 1)+'"'+
         ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsDecimals('+i+',+this.value)"></td>'+
       '<td><button class="lm-del-btn" onclick="event.stopPropagation();_dsDelete('+i+')" title="Supprimer">✕</button></td>'+
@@ -13004,7 +13056,7 @@ function _dsSet(name) {
 }
 function _dsAdd() {
   const n = 'Style ' + (S.dimStyles.length + 1);
-  S.dimStyles.push({ name: n, textHeight: 3.5, arrowSize: 3.5, extGap: 1.5, extOff: 1.5, decimals: 1 });
+  S.dimStyles.push({ name: n, textHeight: 3.5, arrowSize: 3.5, extGap: 1.5, extOff: 1.5, textGap: 1.0, decimals: 1 });
   refreshDimStylePanel(); refreshDimStyleManagerTable(); autoSave();
 }
 function _dsDecimals(i, v) {
@@ -13028,8 +13080,8 @@ function _dsName(i, v) {
   refreshDimStylePanel(); autoSave();
 }
 function _dsProp(i, prop, v) {
-  // extGap (dépassement) et extOff (retrait) acceptent 0 ; les autres doivent être > 0
-  const minOk = (prop === 'extGap' || prop === 'extOff') ? v >= 0 : v > 0;
+  // extGap (dépassement), extOff (retrait) et textGap (écart texte) acceptent 0 ; les autres > 0
+  const minOk = (prop === 'extGap' || prop === 'extOff' || prop === 'textGap') ? v >= 0 : v > 0;
   if (!isNaN(v) && minOk && S.dimStyles[i]) { S.dimStyles[i][prop] = v; render(); autoSave(); }
 }
 function _propChangeDimStyle(id, val) {
@@ -16072,7 +16124,7 @@ async function exportDXF() {
           w('11'); w(f(e.cx+rExt*Math.cos(a)));  w('21'); w(f(e.cy+rExt*Math.sin(a)));  w('31'); w('0.0');
         }
         // Texte longueur d'arc
-        const midA = sa + span/2, rTxt = rd + dir*th;
+        const midA = sa + span/2, rTxt = rd + dir*(dimTextGap(_ds) + th*0.5);
         const tx = e.textWx !== undefined ? e.textWx : e.cx + rTxt*Math.cos(midA);
         const ty = e.textWy !== undefined ? e.textWy : e.cy + rTxt*Math.sin(midA);
         w('0'); w('TEXT'); wEnt(layerName,col); w('100'); w('AcDbText');
