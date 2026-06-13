@@ -52,25 +52,22 @@ function closeGradPopup() {
 }
 
 function applyGradDef() {
-  console.log('[GRADRULE] applyGradDef called, mode:', _gradMode);
   closeGradPopup();
 
+  // On s'appuie sur le système de placement intégré (aiPendingEntities) :
+  //  - drawAiPlacementPreview() affiche l'aperçu attaché à la souris
+  //  - le mousedown intégré pose l'entité au point cliqué (via offsetEntity)
+  // L'entité est créée à l'origine (0,0) et aiPendingCenter=[0,0] sert d'ancrage.
+  let ent;
   if (_gradMode === 'disk') {
     const radius     = parseFloat(document.getElementById('gd-radius').value)     || 75;
     const count      = parseInt(document.getElementById('gd-count').value)        || 100;
     const labelEvery = parseInt(document.getElementById('gd-label-every').value)  || 10;
     const gradScale  = (parseFloat(document.getElementById('gd-grad-size').value) || 100) / 100;
     const textScale  = (parseFloat(document.getElementById('gd-text-size').value) || 100) / 100;
-
-    const ent = { type:'grad_disk', id:S.nextId++, layer:S.currentLayer,
-                  cx:0, cy:0, radius, count, labelEvery, gradScale, textScale };
-    S.aiPendingEntities = [ent];
-    S.aiPendingCenter = [0, 0];
-    S._pendingGrad = { type:'grad_disk', radius, count, labelEvery, gradScale, textScale };
-    console.log('[GRADRULE] Setting tool to grad_place');
-    setTool('grad_place');
-    startGradMouseTracking();
-    termPrint(`GRADISC — Bougez la souris pour prévisualiser, cliquez pour placer (Échap=annuler)`, 'info');
+    ent = { type:'grad_disk', layer:S.currentLayer,
+            cx:0, cy:0, radius, count, labelEvery, gradScale, textScale };
+    termPrint(`GRADISC — Cliquez pour placer le disque (Échap=annuler)`, 'info');
   } else {
     const length     = parseFloat(document.getElementById('gr-length').value)     || 200;
     const width      = parseFloat(document.getElementById('gr-width').value)      || 30;
@@ -78,16 +75,13 @@ function applyGradDef() {
     const labelEvery = parseInt(document.getElementById('gr-label-every').value)  || 10;
     const gradScale  = (parseFloat(document.getElementById('gr-grad-size').value) || 100) / 100;
     const textScale  = (parseFloat(document.getElementById('gr-text-size').value) || 100) / 100;
-
-    const ent = { type:'grad_ruler', id:S.nextId++, layer:S.currentLayer,
-                  x:0, y:0, length, width, count, labelEvery, gradScale, textScale };
-    S.aiPendingEntities = [ent];
-    S.aiPendingCenter = [0, 0];
-    S._pendingGrad = { type:'grad_ruler', length, width, count, labelEvery, gradScale, textScale };
-    setTool('grad_place');
-    startGradMouseTracking();
-    termPrint(`GRADRULE — Bougez la souris pour prévisualiser, cliquez pour placer (Échap=annuler)`, 'info');
+    ent = { type:'grad_ruler', layer:S.currentLayer,
+            x:0, y:0, length, width, count, labelEvery, gradScale, textScale };
+    termPrint(`GRADRULE — Cliquez pour placer la règle (Échap=annuler)`, 'info');
   }
+  S.aiPendingEntities = [ent];
+  S.aiPendingCenter = [0, 0];
+  S.tool = 'select'; // le placement intégré s'occupe du clic, pas d'outil custom
   scheduleRender();
 }
 
@@ -173,36 +167,6 @@ const GRADRULE_RENDER_CASES = {
   }
 };
 
-// ======== OUTILS (à injecter dans handleClick via toolHandlers) ========
-const GRADRULE_TOOL_HANDLERS = {
-  grad_place: function(x, y, ev) {
-    console.log('[GRADRULE] grad_place handler called at', x, y);
-    const pg = S._pendingGrad;
-    if (!pg) {
-      console.warn('[GRADRULE] No S._pendingGrad, aborting placement');
-      return;
-    }
-    let ent;
-    if (pg.type === 'grad_disk') {
-      ent = { type:'grad_disk', id:S.nextId++, layer:S.currentLayer,
-        cx:x, cy:y, radius:pg.radius, count:pg.count, labelEvery:pg.labelEvery,
-        gradScale:pg.gradScale, textScale:pg.textScale };
-    } else {
-      ent = { type:'grad_ruler', id:S.nextId++, layer:S.currentLayer,
-        x:x, y:y, length:pg.length, width:pg.width, count:pg.count,
-        labelEvery:pg.labelEvery, gradScale:pg.gradScale, textScale:pg.textScale };
-    }
-    stopGradMouseTracking();
-    addToHistory();
-    S.entities.push(ent);
-    S._pendingGrad = null;
-    S.aiPendingEntities = [];
-    setTool('select');
-    termPrint((pg.type === 'grad_disk' ? 'Disque gradué' : 'Règle graduée') + ' placé(e)', 'success');
-    scheduleRender();
-  }
-};
-
 // ======== GÉOMÉTRIE: BBOX ========
 const GRADRULE_BBOX_HANDLERS = {
   grad_disk: function(e) {
@@ -261,51 +225,11 @@ const GRADRULE_ICONS = {
 };
 
 // ======== ÉVÉNEMENTS ========
-let _gradMouseTrackingActive = false;
-
 function initGradPopupButtons() {
   const okBtn = document.getElementById('grad-popup-ok');
   const cancelBtn = document.getElementById('grad-popup-cancel');
   if (okBtn) okBtn.addEventListener('click', applyGradDef);
   if (cancelBtn) cancelBtn.addEventListener('click', closeGradPopup);
-}
-
-// Suivre la souris pour le preview en temps réel
-let _gradUpdatePreviewPos = null;
-
-function startGradMouseTracking() {
-  if (_gradMouseTrackingActive) return;
-  _gradMouseTrackingActive = true;
-
-  _gradUpdatePreviewPos = (ev) => {
-    if (!S._pendingGrad || !S.aiPendingEntities || S.aiPendingEntities.length === 0) return;
-
-    // Convertir les coordonnées écran → monde
-    const [wx, wy] = s2w(ev.clientX, ev.clientY);
-    const ent = S.aiPendingEntities[0];
-
-    if (S._pendingGrad.type === 'grad_disk') {
-      ent.cx = wx;
-      ent.cy = wy;
-    } else {
-      ent.x = wx;
-      ent.y = wy;
-    }
-    scheduleRender();
-  };
-
-  document.addEventListener('mousemove', _gradUpdatePreviewPos);
-}
-
-function stopGradMouseTracking() {
-  if (!_gradMouseTrackingActive) return;
-  _gradMouseTrackingActive = false;
-  if (_gradUpdatePreviewPos) {
-    document.removeEventListener('mousemove', _gradUpdatePreviewPos);
-    _gradUpdatePreviewPos = null;
-  }
-  S.aiPendingEntities = [];
-  S._pendingGrad = null;
 }
 
 // Close on outside click
@@ -316,18 +240,12 @@ document.addEventListener('mousedown', (e) => {
   }
 }, true);
 
-// Close on ESC
+// Close on ESC (l'annulation du placement aiPendingEntities est gérée par le handler intégré)
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     const p = document.getElementById('grad-popup');
     if (p && p.classList.contains('show')) {
       closeGradPopup();
-      e.preventDefault();
-    }
-    if (S.tool === 'grad_place') {
-      stopGradMouseTracking();
-      setTool('select');
-      termPrint('Annulé', 'info');
       e.preventDefault();
     }
   }
@@ -342,7 +260,6 @@ window.GRADRULE_PLUGIN = {
   renderCases: GRADRULE_RENDER_CASES,
   bboxHandlers: GRADRULE_BBOX_HANDLERS,
   moveHandlers: GRADRULE_MOVE_HANDLERS,
-  toolHandlers: GRADRULE_TOOL_HANDLERS,
   html: GRADRULE_HTML,
   init: function() {
     // Injecter le HTML du popup
@@ -356,32 +273,42 @@ window.GRADRULE_PLUGIN = {
     // Injecter les commandes
     Object.assign(CMD, this.commands);
 
-    // Créer une barre d'outils dynamique pour le plugin
-    if (!document.getElementById('tb-gradrule')) {
-      const dockArea = document.getElementById('dock-area');
-      if (dockArea) {
-        const tb = document.createElement('div');
-        tb.className = 'cad-toolbar docked';
-        tb.id = 'tb-gradrule';
-        tb.dataset.name = 'Graduations';
-        tb.innerHTML = `
-          <div class="tb-grip" onmousedown="startTBDrag(event,'tb-gradrule')" ondblclick="toggleTBDock('tb-gradrule')">⋮⋮</div>
-          <div class="tb-header" onmousedown="startTBDrag(event,'tb-gradrule')" ondblclick="toggleTBDock('tb-gradrule')">
-            <span class="tb-title">Graduations</span><span class="tb-close" onclick="hideToolbar('tb-gradrule')">×</span>
-          </div>
-          <div class="tb-buttons">
-            <button class="tool-btn" data-tbid="gradisc" title="Disque gradué (GRADISC)" onclick="executeCommand('GRADISC')">${GRADRULE_ICONS.gradisc}</button>
-            <button class="tool-btn" data-tbid="gradrule" title="Règle graduée (GRADRULE)" onclick="executeCommand('GRADRULE')">${GRADRULE_ICONS.gradrule}</button>
-          </div>
-        `;
-        dockArea.appendChild(tb);
-        // Enregistrer la barre dans le système de toolbars personnalisables
-        if (typeof _tbHarvest === 'function') {
-          _tbHarvest();
-        }
+    // Créer / compléter la barre d'outils du plugin.
+    // Note : _tbApplyLayout (chargé avant le plugin) peut avoir recréé une coquille
+    // VIDE de la barre depuis un layout sauvegardé, car les boutons n'étaient pas
+    // encore enregistrés. On gère ce cas en remplissant la barre si nécessaire.
+    const dockArea = document.getElementById('dock-area');
+    let tb = document.getElementById('tb-gradrule');
+    if (!tb && dockArea) {
+      tb = document.createElement('div');
+      tb.className = 'cad-toolbar docked';
+      tb.id = 'tb-gradrule';
+      tb.dataset.name = 'Graduations';
+      tb.innerHTML = `
+        <div class="tb-grip" onmousedown="startTBDrag(event,'tb-gradrule')" ondblclick="toggleTBDock('tb-gradrule')">⋮⋮</div>
+        <div class="tb-header" onmousedown="startTBDrag(event,'tb-gradrule')" ondblclick="toggleTBDock('tb-gradrule')">
+          <span class="tb-title">Graduations</span><span class="tb-close" onclick="hideToolbar('tb-gradrule')">×</span>
+        </div>
+        <div class="tb-buttons"></div>`;
+      dockArea.appendChild(tb);
+    }
+    // S'assurer que les boutons existent (coquille vide ou neuve)
+    if (tb) {
+      const cont = tb.querySelector('.tb-buttons');
+      if (cont && !cont.querySelector('[data-tbid="gradisc"]')) {
+        cont.insertAdjacentHTML('beforeend',
+          `<button class="tool-btn" data-tbid="gradisc" title="Disque gradué (GRADISC)" onclick="executeCommand('GRADISC')">${GRADRULE_ICONS.gradisc}</button>` +
+          `<button class="tool-btn" data-tbid="gradrule" title="Règle graduée (GRADRULE)" onclick="executeCommand('GRADRULE')">${GRADRULE_ICONS.gradrule}</button>`);
+      }
+      // Enregistrer les boutons dans le registre des toolbars personnalisables
+      if (cont && typeof TB_REGISTRY === 'object' && TB_REGISTRY) {
+        cont.querySelectorAll('[data-tbid]').forEach(btn => {
+          const id = btn.dataset.tbid;
+          TB_REGISTRY[id] = { el: btn,
+            label: (btn.getAttribute('title')||id).replace(/\s*\(.*?\)\s*$/,'').trim(),
+            group: 'Graduations' };
+        });
       }
     }
-
-    console.log('GRADRULE plugin loaded');
   }
 };

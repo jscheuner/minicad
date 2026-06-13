@@ -17844,6 +17844,7 @@ function _tbUpdatePalettePlaced(){
    ============================================================ */
 const PLUGINS = {};          // { name: pluginObj }
 const LOADED_PLUGINS = {};   // { name: true/false }
+const _pluginsInFlight = {}; // garde anti-race : chargements async en cours
 
 // Lister les plugins disponibles (dans src/plugins/)
 const AVAILABLE_PLUGINS = [
@@ -17852,10 +17853,10 @@ const AVAILABLE_PLUGINS = [
 
 // Charger un plugin dynamiquement (fetch + eval)
 async function loadPlugin(name) {
-  if (LOADED_PLUGINS[name]) {
-    termPrint(`Plugin « ${name} » déjà chargé`, 'warn');
-    return;
-  }
+  // Garde anti-race : ignore si déjà chargé OU déjà en cours de chargement.
+  // (loadSavedPlugins + auto-load peuvent appeler en parallèle ; fetch est async.)
+  if (LOADED_PLUGINS[name] || _pluginsInFlight[name]) return;
+  _pluginsInFlight[name] = true;
   try {
     const url = `plugins/${name}.js`;
     const resp = await fetch(url);
@@ -17879,6 +17880,8 @@ async function loadPlugin(name) {
   } catch (err) {
     console.error('Plugin load error:', err);
     termPrint(`Erreur lors du chargement du plugin « ${name} »: ${err.message}`, 'error');
+  } finally {
+    delete _pluginsInFlight[name];
   }
 }
 
@@ -18353,6 +18356,8 @@ renderSpaceTabs();
 loadUserPrefs();
 syncUIState();
 loadSavedPlugins();
+// GRADRULE chargé par défaut (idempotent : gardes LOADED_PLUGINS/_pluginsInFlight)
+loadPlugin('gradrule').catch(err => console.warn('Failed to load gradrule plugin:', err));
 window.addEventListener('beforeunload', autoSave);
 loadFromLocalStorage();
 
