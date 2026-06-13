@@ -17780,6 +17780,10 @@ renderSpaceTabs();
 loadUserPrefs();
 syncUIState();
 loadSavedPlugins();
+// Charger automatiquement le plugin GRADRULE
+if (!LOADED_PLUGINS['gradrule']) {
+  loadPlugin('gradrule').catch(err => console.warn('Failed to load gradrule plugin:', err));
+}
 window.addEventListener('beforeunload', autoSave);
 loadFromLocalStorage();
 
