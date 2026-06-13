@@ -149,18 +149,21 @@
   .menu-dropdown-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     padding: 5px 14px;
     font-size: 11px;
     color: var(--text);
     cursor: pointer;
     font-family: 'IBM Plex Sans', sans-serif;
-    gap: 24px;
     white-space: nowrap;
   }
   .menu-dropdown-item:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); color: var(--text-bright); }
   .menu-dropdown-item.disabled { opacity: 0.35; pointer-events: none; }
-  .item-shortcut { color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+  .menu-ico { flex: 0 0 16px; width: 16px; height: 16px; margin-right: 9px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-dim); }
+  .menu-ico svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+  .menu-ico .menu-emoji { font-size: 13px; line-height: 1; }
+  .menu-dropdown-item:hover .menu-ico { color: var(--accent); }
+  .item-shortcut { margin-left: auto; padding-left: 24px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
   .menu-dropdown-sep { height: 1px; background: color-mix(in srgb, var(--ink) 6%, transparent); margin: 4px 0; }
 
   .topbar-right {
@@ -273,6 +276,55 @@
     width: 100%; height: 1px; margin: 2px 0;
   }
 
+  /* ----- Mode personnalisation des barres ----- */
+  body.tb-customizing .cad-toolbar { outline: 1px dashed var(--accent); outline-offset: 1px; }
+  body.tb-customizing .tool-btn { cursor: grab; }
+  body.tb-customizing .tool-btn:active { cursor: grabbing; }
+  body.tb-customizing .tb-buttons { min-height: 26px; }
+  body.tb-customizing .tb-buttons:empty { min-width: 60px; }
+  body.tb-customizing .tb-buttons:empty::after {
+    content: '＋'; display: flex; align-items: center; justify-content: center;
+    width: 100%; min-height: 22px; color: var(--text-dim); opacity: .5; font-size: 14px;
+  }
+  .tb-buttons.tb-drop-hover { background: color-mix(in srgb, var(--accent) 18%, transparent); border-radius: 3px; }
+  .tool-btn.tb-dragging, .tb-sep.tb-dragging { opacity: .35; }
+  body.tb-customizing .tb-sep { cursor: grab; min-width: 3px; }
+  .tb-edit { display: inline-flex; gap: 2px; margin: 0 4px; }
+  .tb-edit button {
+    background: none; border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+    border-radius: 3px; color: var(--text-dim); cursor: pointer; font-size: 11px;
+    line-height: 1; padding: 1px 4px;
+  }
+  .tb-edit button:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* Palette du catalogue d'icônes */
+  #tb-palette {
+    position: fixed; right: 14px; bottom: 14px; z-index: 320;
+    width: 340px; max-height: 70vh; flex-direction: column;
+    background: var(--bg-panel); border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+    border-radius: 8px; box-shadow: 0 8px 28px #000000aa; display: none; overflow: hidden;
+  }
+  #tb-palette.tb-drop-hover { outline: 2px solid var(--accent); }
+  .tb-pal-head { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); flex-wrap: wrap; }
+  .tb-pal-head b { flex: 1; font-size: 12px; }
+  .tb-pal-head button { background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent); border-radius: 4px; color: var(--text); cursor: pointer; font-size: 11px; padding: 3px 8px; }
+  .tb-pal-head button:hover { border-color: var(--accent); color: var(--accent); }
+  .tb-pal-head .tb-pal-done { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .tb-pal-hint { padding: 6px 10px; font-size: 10px; color: var(--text-dim); line-height: 1.4; }
+  .tb-pal-body { overflow-y: auto; padding: 4px 8px 10px; }
+  .tb-pal-group { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-dim); margin: 8px 2px 4px; }
+  .tb-pal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 4px; }
+  .tb-pal-item {
+    display: flex; align-items: center; gap: 5px; padding: 4px 6px; cursor: grab;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+    border-radius: 4px; font-size: 10px; color: var(--text); overflow: hidden; white-space: nowrap;
+  }
+  .tb-pal-item:hover { border-color: var(--accent); }
+  .tb-pal-item.placed { opacity: .45; }
+  .tb-pal-ic { flex-shrink: 0; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; color: var(--text); }
+  .tb-pal-ic svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+  .tb-pal-lbl { overflow: hidden; text-overflow: ellipsis; }
+
   /* Toolbar context menu */
   .tb-context {
     position: fixed; z-index: 300;
@@ -298,29 +350,36 @@
     font-family: 'JetBrains Mono', monospace;
     font-size: 13px;
     color: var(--text);
-    width: 260px;
+    width: 420px;
+    max-height: 80vh;
+    overflow-y: auto;
   }
   .tube-def-popup.show { display: block; }
   .tube-def-popup .tdp-title {
     font-size: 11px; color: var(--text-dim); letter-spacing: 0.5px;
     text-transform: uppercase; margin-bottom: 14px;
   }
-  .tube-def-popup .tdp-row { display: grid; grid-template-columns: 90px 1fr 28px; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .tube-def-popup .tdp-row { display: grid; grid-template-columns: 120px 1fr 40px; align-items: center; gap: 8px; margin-bottom: 10px; }
   .tube-def-popup .tdp-row:last-of-type { margin-bottom: 16px; }
-  .tube-def-popup .tdp-lbl { color: var(--text-dim); white-space: nowrap; }
-  .tube-def-popup input[type=number] {
+  .tube-def-popup .tdp-lbl { color: var(--text-dim); white-space: nowrap; font-size: 12px; }
+  .tube-def-popup input[type=text], .tube-def-popup input[type=number] {
     width: 100%; background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent);
-    border-radius: 4px; color: var(--text); font-family: inherit;
-    font-size: 13px; padding: 5px 8px; text-align: right; box-sizing: border-box;
+    border-radius: 4px; color: var(--text); font-family: inherit; padding: 5px 8px;
+    font-size: 13px; text-align: right; box-sizing: border-box;
   }
-  .tube-def-popup input[type=number]:focus { outline: none; border-color: var(--accent); }
-  .tube-def-popup .tdp-unit { color: var(--text-dim); min-width: 20px; }
-  .tube-def-popup .tdp-ok {
-    width: 100%; padding: 7px 0; background: var(--accent); color: var(--on-accent);
+  .tube-def-popup input[type=text]:focus, .tube-def-popup input[type=number]:focus {
+    outline: none; border-color: var(--accent); background: color-mix(in srgb, var(--bg-elev) 80%, var(--accent) 5%);
+  }
+  .tube-def-popup .tdp-unit { color: var(--text-dim); min-width: 32px; text-align: left; font-size: 12px; }
+  .tube-def-popup .tdp-ok, .tube-def-popup .tdp-cancel {
+    flex: 1; padding: 7px 12px; background: var(--accent); color: var(--on-accent);
     border: none; border-radius: 4px; font-family: inherit; font-size: 12px;
     font-weight: 600; cursor: pointer; letter-spacing: 0.3px;
   }
-  .tube-def-popup .tdp-ok:hover { opacity: 0.85; }
+  .tube-def-popup .tdp-ok:hover, .tube-def-popup .tdp-cancel:hover { opacity: 0.85; }
+  .tube-def-popup .tdp-cancel {
+    background: color-mix(in srgb, var(--text-dim) 40%, transparent); color: var(--text);
+  }
   .tb-ctx-item {
     display: flex; align-items: center; gap: 8px;
     padding: 5px 12px;
@@ -1245,6 +1304,10 @@
         </div>
         <div class="menu-dropdown-item" onclick="openPrefsDialog();closeMenus()">
           <span>Préférences…</span>
+        </div>
+        <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="showPluginsMenu();event.stopPropagation()">
+          <span>⚙ Plugins…</span>
         </div>
       </div>
     </div>
@@ -2407,6 +2470,8 @@ const USER_PREFS = {
   tubeRef: 'axe',
   currentDimStyle: '1:1',
   defaultLayers: null,
+  toolbarLayout: null,
+  loadedPlugins: null,
 };
 // ===USER_PREFS_END===
 
@@ -6895,6 +6960,8 @@ function drawEntity(e) {
       ctx.stroke(); ctx.restore();
       break;
     }
+    default:
+      invokePluginRender(e.type, e);
   }
 }
 
@@ -9739,6 +9806,14 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     return;
   }
 
+  // Plugin tools
+  for (const [name, plugin] of Object.entries(PLUGINS)) {
+    if (plugin.toolHandlers && plugin.toolHandlers[tool]) {
+      plugin.toolHandlers[tool](wx, wy, ev);
+      return;
+    }
+  }
+
   if (tool === 'select') {
     // Check grip hit first (only if entities are selected and not in copy-pending mode)
     if (S.selected.length > 0 && !S.copyPending) {
@@ -12155,6 +12230,21 @@ function hitTest(wx,wy,filter) {
           const hit=hitTest(wx,wy); S.entities=tmpEntities;
           if(hit) tryHit(e, tol*0.5);
         }
+      }
+    }
+    else if(e.type==='grad_disk'){
+      // Disque gradué : sélectionner via la bbox
+      const d=Math.hypot(wx-e.cx,wy-e.cy);
+      if(d<=e.radius*1.1) tryHit(e, d);
+    }
+    else if(e.type==='grad_ruler'){
+      // Règle graduée : sélectionner via la bbox
+      if(wx>=e.x-tol && wx<=e.x+e.length+tol && wy>=e.y-e.width-tol && wy<=e.y+tol){
+        const d=Math.min(
+          Math.abs(wy-e.y), Math.abs(wy-e.y+e.width),
+          Math.abs(wx-e.x), Math.abs(wx-e.x-e.length)
+        );
+        tryHit(e, d);
       }
     }
     else if(e.x!==undefined){
@@ -16711,6 +16801,8 @@ function captureUserPrefs() {
     tubeRef: S.tubeRef,
     currentDimStyle: S.currentDimStyle,
     defaultLayers: JSON.parse(JSON.stringify(S.layers)),
+    toolbarLayout: S.toolbarLayout ? JSON.parse(JSON.stringify(S.toolbarLayout)) : null,
+    loadedPlugins: S.loadedPlugins ? S.loadedPlugins.slice() : null,
   };
 }
 
@@ -16742,6 +16834,9 @@ function applyUserPrefs(prefs) {
   if (prefs.tubeBendRadius !== undefined) S.tubeBendRadius = prefs.tubeBendRadius;
   if (prefs.tubeRef !== undefined)      S.tubeRef = prefs.tubeRef;
   if (prefs.currentDimStyle)            S.currentDimStyle = _migrateDimStyle(prefs.currentDimStyle);
+  if (prefs.toolbarLayout !== undefined) S.toolbarLayout = prefs.toolbarLayout;
+  if (prefs.loadedPlugins !== undefined) S.loadedPlugins = prefs.loadedPlugins;
+  _tbApplyLayout();
 }
 
 function loadUserPrefs() {
@@ -17393,6 +17488,7 @@ function endTBDrag(ev) {
   _tbDrag = null;
   document.removeEventListener('mousemove', onTBDrag);
   document.removeEventListener('mouseup', endTBDrag);
+  _tbSyncFromDOM();
 }
 
 function toggleTBDock(id) {
@@ -17409,6 +17505,7 @@ function toggleTBDock(id) {
   } else {
     redockToolbar(id);
   }
+  _tbSyncFromDOM();
 }
 
 function redockToolbar(id) {
@@ -17422,6 +17519,7 @@ function redockToolbar(id) {
 function hideToolbar(id) {
   const el = document.getElementById(id);
   el.classList.add('hidden');
+  _tbSyncFromDOM();
 }
 
 function showToolbar(id) {
@@ -17434,6 +17532,7 @@ function showToolbar(id) {
   if (el.classList.contains('floating') && !document.body.contains(el)) {
     redockToolbar(id);
   }
+  _tbSyncFromDOM();
 }
 
 // Context menu for toolbar visibility
@@ -17451,23 +17550,480 @@ function showTBContext(ev) {
     item.onclick = () => { if (visible) hideToolbar(tb.id); else showToolbar(tb.id); menu.classList.remove('show'); };
     menu.appendChild(item);
   });
-  // Add "Tout réinitialiser"
   const sep = document.createElement('div');
   sep.style.cssText = 'height:1px;background:color-mix(in srgb, var(--ink) 6%, transparent);margin:4px 0;';
   menu.appendChild(sep);
+  // Personnaliser les barres (glisser-déposer)
+  const custo = document.createElement('div');
+  custo.className = 'tb-ctx-item';
+  custo.innerHTML = '<span class="tb-ctx-check"></span><span>Personnaliser les barres…</span>';
+  custo.onclick = () => { menu.classList.remove('show'); tbToggleCustomize(true); };
+  menu.appendChild(custo);
+  // Add "Tout réinitialiser"
   const reset = document.createElement('div');
   reset.className = 'tb-ctx-item';
-  reset.innerHTML = '<span class="tb-ctx-check"></span><span>Tout réinitialiser</span>';
-  reset.onclick = () => {
-    document.querySelectorAll('.cad-toolbar.floating').forEach(tb => redockToolbar(tb.id));
-    document.querySelectorAll('.cad-toolbar.hidden').forEach(tb => tb.classList.remove('hidden'));
-    menu.classList.remove('show');
-  };
+  reset.innerHTML = '<span class="tb-ctx-check"></span><span>Réinitialiser les barres</span>';
+  reset.onclick = () => { menu.classList.remove('show'); tbResetToolbars(); };
   menu.appendChild(reset);
 
   menu.style.left = ev.clientX + 'px';
   menu.style.top = ev.clientY + 'px';
   menu.classList.add('show');
+}
+
+/* ============================================================
+   BARRES D'OUTILS PERSONNALISABLES
+   - Registre (catalogue) récolté depuis le HTML existant — on déplace les
+     vrais éléments boutons, on ne les recrée pas (i18n + surbrillance préservées).
+   - Disposition = donnée sérialisable S.toolbarLayout → prefs/localStorage/export.
+   - Le DOM est la vérité pendant l'interaction ; _tbSyncFromDOM() le sérialise.
+   ============================================================ */
+const TB_REGISTRY = {};        // tbid -> { el, label, group }
+let TB_DEFAULT_LAYOUT = null;  // capturé une fois depuis le HTML d'origine
+let _tbCustomizing = false;
+let _tbDnd = null;            // { src:Element, sep:bool }
+
+function _tbEsc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _tbSlug(s){ return ((s||'').replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,48).toLowerCase()) || 'x'; }
+
+// Identifiant stable d'un item (déterministe → survit aux rechargements)
+function _tbItemId(el){
+  if (el.dataset.tbid) return el.dataset.tbid;
+  let id = el.id ? 'el-'+el.id
+         : el.dataset.tool ? 'tool-'+el.dataset.tool
+         : 'cmd-'+_tbSlug(el.getAttribute('onclick') || el.getAttribute('title'));
+  let base=id, n=2; while (TB_REGISTRY[id] && TB_REGISTRY[id].el !== el) id = base+'-'+(n++);
+  el.dataset.tbid = id; return id;
+}
+
+function _tbReservoir(){
+  let r = document.getElementById('tb-reservoir');
+  if (!r){ r=document.createElement('div'); r.id='tb-reservoir'; r.style.display='none'; document.body.appendChild(r); }
+  return r;
+}
+
+// Récolte le HTML d'origine → registre + disposition par défaut (une seule fois)
+function _tbHarvest(){
+  if (TB_DEFAULT_LAYOUT) return;
+  const dock = document.getElementById('dock-area');
+  if (!dock) return;
+  const layout = [];
+  dock.querySelectorAll(':scope > .cad-toolbar').forEach(tb=>{
+    const items=[]; const cont = tb.querySelector('.tb-buttons');
+    if (cont) Array.from(cont.children).forEach(ch=>{
+      if (ch.classList.contains('tb-sep')) { items.push('|'); return; }
+      const id = _tbItemId(ch);
+      TB_REGISTRY[id] = { el: ch, label:(ch.getAttribute('title')||id).replace(/\s*\(.*?\)\s*$/,'').trim(), group: tb.dataset.name||tb.id };
+      items.push(id);
+    });
+    layout.push({ id: tb.id, name: tb.dataset.name||tb.id, builtin:true,
+      state: tb.classList.contains('floating')?'floating':'docked',
+      hidden: tb.classList.contains('hidden'), x:0, y:0, items });
+  });
+  TB_DEFAULT_LAYOUT = JSON.parse(JSON.stringify(layout));
+}
+
+// Crée une coquille de barre (utilisée pour les barres custom et la reconstruction)
+function _tbCreateShell(id, name){
+  const tb = document.createElement('div');
+  tb.className = 'cad-toolbar docked'; tb.id = id; tb.dataset.name = name||id;
+  tb.innerHTML =
+    '<div class="tb-grip" onmousedown="startTBDrag(event,\''+id+'\')" ondblclick="toggleTBDock(\''+id+'\')">⋮⋮</div>'+
+    '<div class="tb-header" onmousedown="startTBDrag(event,\''+id+'\')" ondblclick="toggleTBDock(\''+id+'\')">'+
+      '<span class="tb-title">'+_tbEsc(name||id)+'</span><span class="tb-close" onclick="hideToolbar(\''+id+'\')">×</span>'+
+    '</div><div class="tb-buttons"></div>';
+  document.getElementById('dock-area').appendChild(tb);
+  return tb;
+}
+
+// DOM → S.toolbarLayout (+ sauvegarde des préférences)
+function _tbSyncFromDOM(save){
+  if (!TB_DEFAULT_LAYOUT) return;
+  const dock = document.getElementById('dock-area');
+  const all = [];
+  dock.querySelectorAll(':scope > .cad-toolbar').forEach(tb=>all.push(tb));
+  document.querySelectorAll('body > .cad-toolbar').forEach(tb=>all.push(tb));
+  S.toolbarLayout = all.map(tb=>{
+    const items=[]; const cont = tb.querySelector('.tb-buttons');
+    if (cont) Array.from(cont.children).forEach(ch=>{
+      if (ch.classList.contains('tb-sep')) items.push('|');
+      else if (ch.dataset.tbid) items.push(ch.dataset.tbid);
+    });
+    const o = { id: tb.id, name: tb.dataset.name||tb.id,
+      builtin: (TB_DEFAULT_LAYOUT||[]).some(t=>t.id===tb.id),
+      state: tb.classList.contains('floating')?'floating':'docked',
+      hidden: tb.classList.contains('hidden'), items };
+    if (o.state==='floating'){ o.x=parseInt(tb.style.left)||80; o.y=parseInt(tb.style.top)||80; }
+    return o;
+  });
+  if (save!==false) autoSavePrefs();
+}
+
+// S.toolbarLayout → DOM (chargement / reset / import). Sans layout → garde le HTML d'origine.
+function _tbApplyLayout(){
+  _tbHarvest();
+  let layout = S.toolbarLayout;
+  if (!Array.isArray(layout) || !layout.length) return;
+  layout = JSON.parse(JSON.stringify(layout));
+  // Fusion : réintégrer les barres intégrées manquantes (nouvelle version, etc.)
+  (TB_DEFAULT_LAYOUT||[]).forEach(d=>{ if(!layout.find(t=>t.id===d.id)) layout.push(JSON.parse(JSON.stringify(d))); });
+  const dock = document.getElementById('dock-area');
+  const reservoir = _tbReservoir();
+  Object.values(TB_REGISTRY).forEach(r=>reservoir.appendChild(r.el)); // tout détacher
+  const wantIds = new Set(layout.map(t=>t.id));
+  Array.from(document.querySelectorAll('.cad-toolbar')).forEach(tb=>{ if(!wantIds.has(tb.id)) tb.remove(); });
+  layout.forEach(tl=>{
+    let tb = document.getElementById(tl.id) || _tbCreateShell(tl.id, tl.name);
+    tb.dataset.name = tl.name;
+    const titleEl = tb.querySelector('.tb-title'); if (titleEl) titleEl.textContent = tl.name;
+    const cont = tb.querySelector('.tb-buttons'); cont.innerHTML='';
+    (tl.items||[]).forEach(it=>{
+      if (it==='|'){ const s=document.createElement('div'); s.className='tb-sep'; cont.appendChild(s); return; }
+      const r = TB_REGISTRY[it]; if (r) cont.appendChild(r.el);
+    });
+    tb.classList.toggle('hidden', !!tl.hidden);
+    if (tl.state==='floating'){ tb.classList.remove('docked'); tb.classList.add('floating'); document.body.appendChild(tb); tb.style.left=(tl.x||80)+'px'; tb.style.top=(tl.y||80)+'px'; }
+    else { tb.classList.remove('floating'); tb.classList.add('docked'); tb.style.left=''; tb.style.top=''; dock.appendChild(tb); }
+  });
+  layout.forEach(tl=>{ const tb=document.getElementById(tl.id); if(tb && !tb.classList.contains('floating')) dock.appendChild(tb); });
+  _tbRefreshActive();
+  if (_tbCustomizing) _tbDecorate(true);
+}
+
+function _tbRefreshActive(){
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(b=>b.classList.toggle('active', b.dataset.tool===S.tool));
+}
+
+/* ---------- Mode « Personnaliser » ---------- */
+function tbToggleCustomize(on){
+  _tbHarvest();
+  _tbCustomizing = (on===undefined) ? !_tbCustomizing : !!on;
+  document.body.classList.toggle('tb-customizing', _tbCustomizing);
+  _tbDecorate(_tbCustomizing);
+  if (_tbCustomizing){ _tbOpenPalette(); document.addEventListener('click', _tbBlockClick, true); termPrint('Personnalisation des barres : glissez les icônes vers les barres, ajoutez/retirez des barres. « Terminer » pour finir.','info'); }
+  else { _tbClosePalette(); document.removeEventListener('click', _tbBlockClick, true); _tbSyncFromDOM(); termPrint('Personnalisation terminée','success'); }
+}
+
+function _tbBlockClick(e){ if (_tbCustomizing && e.target.closest('.cad-toolbar .tool-btn')){ e.stopPropagation(); e.preventDefault(); } }
+
+function _tbDecorate(on){
+  document.querySelectorAll('.cad-toolbar').forEach(tb=>{
+    const cont = tb.querySelector('.tb-buttons');
+    if (cont){
+      cont.removeEventListener('dragover', _tbDragOver); cont.removeEventListener('drop', _tbDrop); cont.removeEventListener('dragleave', _tbDragLeave);
+      if (on){ cont.addEventListener('dragover', _tbDragOver); cont.addEventListener('drop', _tbDrop); cont.addEventListener('dragleave', _tbDragLeave); }
+      Array.from(cont.children).forEach(ch=>{ if (ch.classList.contains('tb-sep')||ch.dataset.tbid) ch.setAttribute('draggable', on?'true':'false'); });
+    }
+    _tbHeaderTools(tb, on);
+  });
+  document.removeEventListener('dragstart', _tbDragStart);
+  document.removeEventListener('dragend', _tbDragEnd);
+  if (on){ document.addEventListener('dragstart', _tbDragStart); document.addEventListener('dragend', _tbDragEnd); }
+}
+
+function _tbHeaderTools(tb, on){
+  let edit = tb.querySelector('.tb-edit');
+  if (!on){ if (edit) edit.remove(); return; }
+  if (edit) return;
+  const header = tb.querySelector('.tb-header'); if (!header) return;
+  const builtin = (TB_DEFAULT_LAYOUT||[]).some(t=>t.id===tb.id);
+  edit = document.createElement('span'); edit.className='tb-edit';
+  edit.innerHTML = '<button title="Renommer" onclick="tbRenameToolbar(\''+tb.id+'\')">✎</button>'+
+                   '<button title="Ajouter un séparateur" onclick="tbAddSeparator(\''+tb.id+'\')">｜</button>'+
+                   (builtin ? '' : '<button title="Supprimer la barre" onclick="tbDeleteToolbar(\''+tb.id+'\')">🗑</button>');
+  header.insertBefore(edit, header.querySelector('.tb-close'));
+}
+
+function _tbDragStart(e){
+  if (!_tbCustomizing) return;
+  const el = e.target.closest('.tb-pal-item, .cad-toolbar [data-tbid], .cad-toolbar .tb-sep');
+  if (!el) return;
+  const src = el.classList.contains('tb-pal-item') ? (TB_REGISTRY[el.dataset.tbid]||{}).el : el;
+  if (!src){ return; }
+  _tbDnd = { src, sep: src.classList.contains('tb-sep') };
+  try { e.dataTransfer.setData('text/plain', el.dataset.tbid||'|'); e.dataTransfer.effectAllowed='move'; } catch(_){}
+  src.classList.add('tb-dragging');
+}
+function _tbDragEnd(){ if (_tbDnd&&_tbDnd.src) _tbDnd.src.classList.remove('tb-dragging'); document.querySelectorAll('.tb-drop-hover').forEach(c=>c.classList.remove('tb-drop-hover')); _tbDnd=null; }
+function _tbDragOver(e){ if(!_tbDnd) return; e.preventDefault(); try{e.dataTransfer.dropEffect='move';}catch(_){}; e.currentTarget.classList.add('tb-drop-hover'); }
+function _tbDragLeave(e){ e.currentTarget.classList.remove('tb-drop-hover'); }
+function _tbInsertRef(cont, x){
+  const kids = Array.from(cont.children).filter(c=>c!==(_tbDnd&&_tbDnd.src));
+  for (const c of kids){ const r=c.getBoundingClientRect(); if (x < r.left + r.width/2) return c; }
+  return null;
+}
+function _tbDrop(e){
+  e.preventDefault(); const cont = e.currentTarget; cont.classList.remove('tb-drop-hover');
+  if (!_tbDnd || !_tbDnd.src) return;
+  cont.insertBefore(_tbDnd.src, _tbInsertRef(cont, e.clientX));
+  _tbDnd.src.classList.remove('tb-dragging');
+  if (_tbCustomizing) _tbDnd.src.setAttribute('draggable','true');
+  _tbDnd = null; _tbSyncFromDOM(); _tbUpdatePalettePlaced();
+}
+function _tbDropRemove(e){
+  e.preventDefault(); const p=document.getElementById('tb-palette'); if(p) p.classList.remove('tb-drop-hover');
+  if (!_tbDnd || !_tbDnd.src) return;
+  if (_tbDnd.sep) _tbDnd.src.remove(); else _tbReservoir().appendChild(_tbDnd.src);
+  _tbDnd.src.classList.remove('tb-dragging'); _tbDnd=null; _tbSyncFromDOM(); _tbUpdatePalettePlaced();
+}
+
+/* ---------- Ajout / suppression / renommage de barres + séparateurs ---------- */
+function tbAddToolbar(){
+  _tbHarvest();
+  let n=1; while(document.getElementById('tb-custom-'+n)) n++;
+  const id='tb-custom-'+n;
+  const tb=_tbCreateShell(id, 'Barre '+n);
+  tb.classList.remove('docked'); tb.classList.add('floating'); document.body.appendChild(tb);
+  tb.style.left=Math.round(window.innerWidth/2-60)+'px'; tb.style.top='130px';
+  _tbDecorate(_tbCustomizing); _tbSyncFromDOM();
+  termPrint('Barre « '+tb.dataset.name+' » ajoutée — glissez-y des icônes','info');
+}
+function tbDeleteToolbar(id){
+  const tb=document.getElementById(id); if(!tb) return;
+  const cont=tb.querySelector('.tb-buttons');
+  if (cont) Array.from(cont.children).forEach(ch=>{ if(ch.classList.contains('tool-btn')) _tbReservoir().appendChild(ch); });
+  tb.remove(); _tbSyncFromDOM(); _tbUpdatePalettePlaced();
+}
+function tbRenameToolbar(id){
+  const tb=document.getElementById(id); if(!tb) return;
+  const v=prompt('Nom de la barre :', tb.dataset.name||id); if(v==null) return;
+  const name=v.trim()||tb.dataset.name||id;
+  tb.dataset.name=name; const t=tb.querySelector('.tb-title'); if(t) t.textContent=name;
+  tb.removeAttribute('data-i18n-name'); const ts=tb.querySelector('.tb-title'); if(ts) ts.removeAttribute('data-i18n');
+  _tbSyncFromDOM();
+}
+function tbAddSeparator(id){
+  const tb=document.getElementById(id); const cont=tb&&tb.querySelector('.tb-buttons'); if(!cont) return;
+  const s=document.createElement('div'); s.className='tb-sep'; if(_tbCustomizing) s.setAttribute('draggable','true');
+  cont.appendChild(s); _tbSyncFromDOM();
+}
+function tbResetToolbars(){
+  S.toolbarLayout = TB_DEFAULT_LAYOUT ? JSON.parse(JSON.stringify(TB_DEFAULT_LAYOUT)) : null;
+  _tbApplyLayout(); _tbSyncFromDOM(); _tbUpdatePalettePlaced();
+  termPrint('Barres d\'outils réinitialisées','info');
+}
+
+/* ---------- Palette (catalogue de toutes les icônes) ---------- */
+function _tbOpenPalette(){
+  let p=document.getElementById('tb-palette');
+  if(!p){ p=document.createElement('div'); p.id='tb-palette'; document.body.appendChild(p);
+    p.addEventListener('dragover', e=>{ if(_tbDnd){ e.preventDefault(); p.classList.add('tb-drop-hover'); } });
+    p.addEventListener('dragleave', ()=>p.classList.remove('tb-drop-hover'));
+    p.addEventListener('drop', _tbDropRemove);
+  }
+  const groups={};
+  Object.entries(TB_REGISTRY).forEach(([id,r])=>{ (groups[r.group]=groups[r.group]||[]).push([id,r]); });
+  let html='<div class="tb-pal-head"><b>Personnaliser les barres</b>'+
+    '<button onclick="tbAddToolbar()">+ Barre vide</button>'+
+    '<button onclick="tbResetToolbars()">Réinitialiser</button>'+
+    '<button class="tb-pal-done" onclick="tbToggleCustomize(false)">Terminer</button></div>'+
+    '<div class="tb-pal-hint">Glissez une icône vers une barre pour l\'ajouter/déplacer. Glissez-la ici pour la retirer. Double-cliquez l\'entête d\'une barre (✎) pour la renommer.</div>'+
+    '<div class="tb-pal-body">';
+  Object.keys(groups).forEach(g=>{
+    html+='<div class="tb-pal-group">'+_tbEsc(g)+'</div><div class="tb-pal-grid">';
+    groups[g].forEach(([id,r])=>{
+      const placed = r.el.closest('.cad-toolbar') ? ' placed':'';
+      const svg = r.el.querySelector('svg');
+      const icon = svg ? svg.outerHTML : '<span class="tb-pal-emoji">'+_tbEsc((r.el.textContent||'•').trim().slice(0,2))+'</span>';
+      html+='<div class="tb-pal-item'+placed+'" draggable="true" data-tbid="'+_tbEsc(id)+'" title="'+_tbEsc(r.label)+'"><span class="tb-pal-ic">'+icon+'</span><span class="tb-pal-lbl">'+_tbEsc(r.label)+'</span></div>';
+    });
+    html+='</div>';
+  });
+  html+='</div>';
+  p.innerHTML=html; p.style.display='flex';
+}
+function _tbClosePalette(){ const p=document.getElementById('tb-palette'); if(p) p.style.display='none'; }
+function _tbUpdatePalettePlaced(){
+  const p=document.getElementById('tb-palette'); if(!p || p.style.display==='none') return;
+  p.querySelectorAll('.tb-pal-item').forEach(it=>{ const r=TB_REGISTRY[it.dataset.tbid]; it.classList.toggle('placed', !!(r&&r.el.closest('.cad-toolbar'))); });
+}
+
+/* ============================================================
+   SYSTÈME DE PLUGINS DYNAMIQUES
+   Charge des plugins (fichiers JS) qui ajoutent des commandes, des rendus, etc.
+   ============================================================ */
+const PLUGINS = {};          // { name: pluginObj }
+const LOADED_PLUGINS = {};   // { name: true/false }
+
+// Lister les plugins disponibles (dans src/plugins/)
+const AVAILABLE_PLUGINS = [
+  { name: 'gradrule', label: 'Disques & Règles graduées (GRADISC, GRADRULE)' },
+];
+
+// Charger un plugin dynamiquement (fetch + eval)
+async function loadPlugin(name) {
+  if (LOADED_PLUGINS[name]) {
+    termPrint(`Plugin « ${name} » déjà chargé`, 'warn');
+    return;
+  }
+  try {
+    const url = `plugins/${name}.js`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const code = await resp.text();
+    const fn = new Function(code);
+    fn(); // Exécute le code du plugin
+    const pluginObj = eval(name.toUpperCase().replace(/-/g,'_') + '_PLUGIN');
+    if (pluginObj && pluginObj.init) {
+      pluginObj.init();
+      LOADED_PLUGINS[name] = true;
+      PLUGINS[name] = pluginObj;
+      // Sauvegarder dans les prefs
+      if (!S.loadedPlugins) S.loadedPlugins = [];
+      if (!S.loadedPlugins.includes(name)) S.loadedPlugins.push(name);
+      autoSavePrefs();
+      termPrint(`Plugin « ${name} » chargé ✓`, 'success');
+    } else {
+      throw new Error('Plugin format incorrect (missing _PLUGIN export)');
+    }
+  } catch (err) {
+    console.error('Plugin load error:', err);
+    termPrint(`Erreur lors du chargement du plugin « ${name} »: ${err.message}`, 'error');
+  }
+}
+
+// Charger les plugins sauvegardés au démarrage
+function loadSavedPlugins() {
+  if (!S.loadedPlugins) return;
+  S.loadedPlugins.forEach(name => {
+    if (!LOADED_PLUGINS[name]) {
+      loadPlugin(name).catch(err => console.warn('Auto-load plugin failed:', name, err));
+    }
+  });
+}
+
+// Décharger un plugin (le retirer des prefs et du DOM)
+function unloadPlugin(name) {
+  if (PLUGINS[name]) {
+    delete PLUGINS[name];
+    delete LOADED_PLUGINS[name];
+    if (S.loadedPlugins) {
+      const idx = S.loadedPlugins.indexOf(name);
+      if (idx >= 0) S.loadedPlugins.splice(idx, 1);
+    }
+    // Masquer la barre d'outils du plugin si elle existe
+    const tb = document.getElementById('tb-' + name);
+    if (tb) hideToolbar('tb-' + name);
+    autoSavePrefs();
+    termPrint(`Plugin « ${name} » déchargé`, 'info');
+  }
+}
+
+// Menu de gestion des plugins
+function showPluginsMenu() {
+  const menu = document.getElementById('tb-context');
+  menu.innerHTML = '';
+  menu.appendChild(document.createElement('div')).className = 'tb-ctx-sep';
+  const title = document.createElement('div');
+  title.style.cssText = 'padding:6px 14px;font-size:10px;color:var(--text-dim);font-weight:bold;text-transform:uppercase;letter-spacing:.05em';
+  title.textContent = '⚙ Plugins';
+  menu.appendChild(title);
+  AVAILABLE_PLUGINS.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'tb-ctx-item';
+    const loaded = LOADED_PLUGINS[p.name];
+    const check = loaded ? '✓' : '';
+    item.innerHTML = `<span class="tb-ctx-check">${check}</span><span>${p.label}</span>`;
+    item.style.cursor = 'pointer';
+    item.style.opacity = loaded ? '0.7' : '1';
+    item.onclick = () => {
+      if (loaded) {
+        unloadPlugin(p.name);
+      } else {
+        loadPlugin(p.name);
+      }
+      menu.classList.remove('show');
+    };
+    menu.appendChild(item);
+  });
+  menu.style.left = event.clientX + 'px';
+  menu.style.top = event.clientY + 'px';
+  menu.classList.add('show');
+}
+
+// Hooks d'injection pour plugins
+function invokePluginRender(type, e) {
+  for (const [name, plugin] of Object.entries(PLUGINS)) {
+    if (plugin.renderCases && plugin.renderCases[type]) {
+      return plugin.renderCases[type](e);
+    }
+  }
+  return null;
+}
+
+function invokePluginBbox(type, e) {
+  for (const [name, plugin] of Object.entries(PLUGINS)) {
+    if (plugin.bboxHandlers && plugin.bboxHandlers[type]) {
+      return plugin.bboxHandlers[type](e);
+    }
+  }
+  return null;
+}
+
+function invokePluginMove(type, e, dx, dy) {
+  for (const [name, plugin] of Object.entries(PLUGINS)) {
+    if (plugin.moveHandlers && plugin.moveHandlers[type]) {
+      return plugin.moveHandlers[type](e, dx, dy);
+    }
+  }
+}
+
+/* ============================================================
+   ICÔNES DANS LES MENUS DÉROULANTS (Fichier, Dessin, …)
+   Réutilise les icônes des barres d'outils : correspondance par l'action onclick.
+   ============================================================ */
+const _menuIcoMap = {};
+// Quelques icônes de repli pour les entrées sans équivalent dans les barres
+const _MENU_ICO_FALLBACK = {
+  'executeCommand|CLEAR': '<svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>',
+  'exportDXF': '<svg viewBox="0 0 24 24"><path d="M12 3v11M8 11l4 3 4-3"/><path d="M5 20h14"/></svg>',
+  'openPrintDialog': '<svg viewBox="0 0 24 24"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1"/><rect x="8" y="15" width="8" height="6"/></svg>',
+  'openPrefsDialog': '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>',
+  'openSaveCartoucheDialog': '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18M8 20V9"/></svg>',
+  'importCartoucheFile': '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18M8 20V9"/><path d="M12 17l3-3-3-3" /></svg>',
+  'openCartoucheToEdit': '<svg viewBox="0 0 24 24"><path d="M14 3l7 7-11 11H3v-7z"/></svg>',
+};
+
+// Signatures d'action extraites d'un onclick (funcName ou funcName|premierArg), hors closeMenus/LOAD
+function _menuSigs(onclick){
+  const sigs=[]; const re=/([A-Za-z_$][\w$]*)\s*\(\s*(?:'([^']*)'|"([^"]*)")?/g; let m;
+  while((m=re.exec(onclick||''))){
+    const fn=m[1], arg=(m[2]!=null?m[2]:m[3]);
+    if(fn==='closeMenus'||fn==='event'||fn==='function') continue;
+    if(arg && /^LOAD\b/i.test(arg)) continue;
+    sigs.push((arg!=null && arg!=='') ? fn+'|'+arg : fn);
+  }
+  return sigs;
+}
+
+function _buildMenuIconMap(){
+  if (Object.keys(_menuIcoMap).length) return;
+  document.querySelectorAll('.cad-toolbar .tool-btn, #tb-reservoir .tool-btn').forEach(btn=>{
+    const svg=btn.querySelector('svg');
+    const ico = svg ? svg.outerHTML
+              : (btn.classList.contains('text-btn') ? '<span class="menu-emoji">'+(btn.textContent||'').trim()+'</span>' : null);
+    if(!ico) return;
+    _menuSigs(btn.getAttribute('onclick')).forEach(s=>{ if(!(s in _menuIcoMap)) _menuIcoMap[s]=ico; });
+  });
+}
+
+function _menuIconFor(onclick){
+  const sigs=_menuSigs(onclick);
+  for(const s of sigs){ if(_menuIcoMap[s]) return _menuIcoMap[s]; }
+  for(const s of sigs){ if(_MENU_ICO_FALLBACK[s]) return _MENU_ICO_FALLBACK[s]; }
+  return null;
+}
+
+function injectMenuIcons(){
+  _tbHarvest(); _buildMenuIconMap();
+  document.querySelectorAll('.menu-dropdown-item').forEach(item=>{
+    if(item.querySelector(':scope > .menu-ico')) return; // déjà fait
+    const ico=_menuIconFor(item.getAttribute('onclick'));
+    const span=document.createElement('span');
+    span.className='menu-ico'+(ico?'':' empty');
+    if(ico) span.innerHTML=ico;
+    item.insertBefore(span, item.firstChild);
+  });
 }
 
 document.addEventListener('click', (ev) => {
@@ -17796,6 +18352,7 @@ loadCartoucheLibrary();
 renderSpaceTabs();
 loadUserPrefs();
 syncUIState();
+loadSavedPlugins();
 window.addEventListener('beforeunload', autoSave);
 loadFromLocalStorage();
 
