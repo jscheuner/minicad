@@ -13,6 +13,7 @@ Usage:
     python build.py --demo --deploy    # + upload sur le serveur (minicad_org multilang)
 """
 
+import datetime
 import json
 import os
 import re
@@ -39,11 +40,23 @@ SFTP_USER     = _env.get('SFTP_USER', '')
 SFTP_PASSWORD = _env.get('SFTP_PASSWORD', '')
 SFTP_REMOTE   = _env.get('SFTP_REMOTE', 'web/index.html')
 
+# ── Paramètres SEO (minicad.org) ─────────────────────────────────────────────
+SITE_URL = _env.get('SITE_URL', 'https://minicad.org/')  # doit finir par /
+# Code de vérification Google Search Console. Laisser vide tant que la propriété
+# n'est pas créée. Récupérer dans GSC → Ajouter une propriété (préfixe d'URL) →
+# méthode « Balise HTML » → copier la valeur de l'attribut content=. Puis rebuild.
+GSC_VERIFICATION = _env.get('GSC_VERIFICATION', '')
+OG_IMAGE_W, OG_IMAGE_H = 1640, 624  # dimensions de logo/minicad-facebook-couverture.png
+
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 HTML_SRC    = os.path.join(BASE_DIR, 'src', 'minicad.html')   # source (ne jamais écrire ici)
 HTML_FILE   = os.path.join(BASE_DIR, 'minicad.html')          # output racine (GitHub download)
 DEMO_OUT    = os.path.join(BASE_DIR, 'minicad_demo.html')
 ORG_OUT     = os.path.join(BASE_DIR, 'minicad_org.html')
+SEO_DIR      = os.path.join(BASE_DIR, 'seo')                  # robots.txt + sitemap.xml générés
+ROBOTS_OUT   = os.path.join(SEO_DIR, 'robots.txt')
+SITEMAP_OUT  = os.path.join(SEO_DIR, 'sitemap.xml')
+OG_IMAGE_SRC = os.path.join(BASE_DIR, 'logo', 'minicad-facebook-couverture.png')  # → og-image.png
 LIB_DIR     = os.path.join(BASE_DIR, 'libraries')
 INDEX_FILE  = os.path.join(LIB_DIR, 'index.json')
 HATCH_DIR   = os.path.join(BASE_DIR, 'hatches')
@@ -51,6 +64,7 @@ HATCH_INDEX  = os.path.join(HATCH_DIR, 'index.json')
 DEMO_FILE    = os.path.join(BASE_DIR, 'demo', 'demo_sequence.js')
 ANIM_FILE    = os.path.join(BASE_DIR, 'animations', 'tool_anim.js')
 TRANS_DIR    = os.path.join(BASE_DIR, 'translations')
+PLUGINS_DIR  = os.path.join(BASE_DIR, 'plugins')  # copié depuis src/plugins/ lors du build
 
 
 # ── Traductions ────────────────────────────────────────────────────────────────
@@ -107,11 +121,25 @@ def apply_lang_mode_b(html, default_lang='fr'):
     i18n_js = f"""<script id="i18n-runtime">
 (function(){{
   var T = {trans_json};
-  var _lang = localStorage.getItem('minicad_lang') || '{default_lang}';
+  // Priorité : ?lang=xx (SEO / lien direct) > dernier choix mémorisé > langue par défaut
+  var _urlLang = null;
+  try {{ _urlLang = new URLSearchParams(location.search).get('lang'); }} catch(e) {{}}
+  var _lang = (_urlLang && T[_urlLang]) ? _urlLang
+            : (localStorage.getItem('minicad_lang') || '{default_lang}');
+  function _setMeta(name, val, attr) {{
+    var el = document.querySelector('meta[' + (attr || 'name') + '="' + name + '"]');
+    if (el && val) el.setAttribute('content', val);
+  }}
   window.setLang = function(lang) {{
     if (!T[lang]) return;
     _lang = lang;
     localStorage.setItem('minicad_lang', lang);
+    // SEO : titre, description et OpenGraph suivent la langue active
+    document.documentElement.lang = lang;
+    if (T[lang]['seo.title']) document.title = T[lang]['seo.title'];
+    _setMeta('description', T[lang]['seo.description']);
+    _setMeta('og:title', T[lang]['seo.title'], 'property');
+    _setMeta('og:description', T[lang]['seo.description'], 'property');
     document.querySelectorAll('[data-i18n]').forEach(function(el) {{
       var v = T[lang][el.dataset.i18n]; if (v) el.textContent = v;
     }});
@@ -200,6 +228,15 @@ GTM_BLOCK = """\
     ifr.style.cssText='display:none;visibility:hidden';
     ns.appendChild(ifr);
     document.body.insertBefore(ns, document.body.firstChild);
+
+    // Meta (Facebook) Pixel — chargé uniquement après consentement
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
+    (window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1918542022065028');
+    fbq('track', 'PageView');
   }
 
   function hideBanner() {
@@ -239,7 +276,7 @@ COOKIE_BLOCK = """\
   if (!localStorage.getItem('minicad_cookie_consent')) {
     var b = document.getElementById('cookie-banner');
     b.style.display = 'flex';
-    b.innerHTML = '<p>Ce site utilise des cookies analytiques (Google Tag Manager) pour mesurer l\\'audience. Aucune donnée personnelle identifiable n\\'est collectée.</p>'
+    b.innerHTML = '<p>Ce site utilise des cookies analytiques et marketing (Google Tag Manager, Meta Pixel) pour mesurer l\\'audience et améliorer nos publicités. Ces traceurs ne sont chargés qu\\'après votre accord.</p>'
       + '<div class="cb-btns"><button id="cb-accept">Accepter</button><button id="cb-decline">Refuser</button></div>';
   }
 })();
@@ -392,11 +429,103 @@ def inject_block(html, marker_begin, marker_end, block):
     return pattern.sub(lambda _: block, html)
 
 
-def build_org_html(html):
-    """Injecte GTM + cookie banner dans le HTML pour générer minicad_org.html."""
-    html = html.replace('</head>', GTM_BLOCK + '\n</head>', 1)
+def _esc_attr(s):
+    """Échappe une chaîne pour un attribut HTML."""
+    return (s or '').replace('&', '&amp;').replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')
+
+
+def build_seo_block(default_lang='fr'):
+    """Bloc SEO complet (canonical, hreflang, OpenGraph, Twitter, JSON-LD,
+    Search Console) — injecté uniquement dans minicad_org.html (minicad.org)."""
+    langs = load_all_langs()
+    d = langs.get(default_lang, {})
+    title = d.get('seo.title', 'MiniCAD')
+    desc  = d.get('seo.description', '')
+    base  = SITE_URL.rstrip('/') + '/'
+    en_url = base + '?lang=en'
+    og_image = base + 'og-image.png'
+
+    gsc = (f'<meta name="google-site-verification" content="{_esc_attr(GSC_VERIFICATION)}">\n'
+           if GSC_VERIFICATION else
+           '<!-- google-site-verification : renseigner GSC_VERIFICATION dans .env puis rebuild -->\n')
+
+    json_ld = {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "MiniCAD",
+        "url": base,
+        "description": desc,
+        "applicationCategory": "DesignApplication",
+        "operatingSystem": "Web",
+        "browserRequirements": "Requires JavaScript and HTML5 Canvas",
+        "softwareVersion": "0.1",
+        "inLanguage": list(langs.keys()),
+        "image": og_image,
+        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"},
+        "featureList": [
+            "Dessin 2D : lignes, cercles, arcs, polylignes, splines",
+            "Cotation (linéaire, alignée, angulaire, rayon, diamètre)",
+            "Calques, OSNAP / accrochage aux objets",
+            "Import / export DXF, SVG et fichiers .mcad",
+        ],
+    }
+    json_ld_str = json.dumps(json_ld, ensure_ascii=False, separators=(',', ':'))
+
+    return f"""<!-- SEO minicad.org -->
+<link rel="canonical" href="{base}">
+<meta name="robots" content="index,follow">
+<link rel="alternate" hreflang="fr" href="{base}">
+<link rel="alternate" hreflang="en" href="{en_url}">
+<link rel="alternate" hreflang="x-default" href="{base}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MiniCAD">
+<meta property="og:title" content="{_esc_attr(title)}">
+<meta property="og:description" content="{_esc_attr(desc)}">
+<meta property="og:url" content="{base}">
+<meta property="og:image" content="{og_image}">
+<meta property="og:image:width" content="{OG_IMAGE_W}">
+<meta property="og:image:height" content="{OG_IMAGE_H}">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{_esc_attr(title)}">
+<meta name="twitter:description" content="{_esc_attr(desc)}">
+<meta name="twitter:image" content="{og_image}">
+{gsc}<script type="application/ld+json">{json_ld_str}</script>
+"""
+
+
+def build_org_html(html, default_lang='fr'):
+    """Injecte SEO + GTM + cookie banner dans le HTML pour générer minicad_org.html."""
+    html = html.replace('</head>', build_seo_block(default_lang) + GTM_BLOCK + '\n</head>', 1)
     html = html.replace('<body>', '<body>\n' + COOKIE_BLOCK, 1)
     return html
+
+
+def build_seo_files():
+    """Génère seo/robots.txt et seo/sitemap.xml (à déployer à la racine de minicad.org)."""
+    os.makedirs(SEO_DIR, exist_ok=True)
+    base = SITE_URL.rstrip('/') + '/'
+    with open(ROBOTS_OUT, 'w', encoding='utf-8') as f:
+        f.write(f"User-agent: *\nAllow: /\n\nSitemap: {base}sitemap.xml\n")
+    today = datetime.date.today().isoformat()
+    sitemap = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>{base}</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="{base}"/>
+    <xhtml:link rel="alternate" hreflang="en" href="{base}?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="{base}"/>
+    <lastmod>{today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
+"""
+    with open(SITEMAP_OUT, 'w', encoding='utf-8') as f:
+        f.write(sitemap)
+    print('  ✓ seo/robots.txt + seo/sitemap.xml générés')
 
 
 def clear_demo_block(html):
@@ -411,8 +540,9 @@ def clear_demo_block(html):
     return html
 
 
-def deploy_sftp(local_file):
-    """Upload local_file sur le serveur FTP."""
+def deploy_sftp(local_file, assets=None):
+    """Upload local_file (→ SFTP_REMOTE) + assets optionnels sur le serveur FTP.
+    assets : liste de (chemin_local, nom_distant) déposés dans le même dossier que index.html."""
     from ftplib import FTP, all_errors as FTP_ERRORS
     import socket
 
@@ -432,8 +562,28 @@ def deploy_sftp(local_file):
             ftp.cwd(remote_dir)
         with open(local_file, 'rb') as f:
             ftp.storbinary(f'STOR {remote_file}', f)
-        ftp.quit()
         print(f'  ✓ {os.path.basename(local_file)} → {SFTP_REMOTE}  (déployé)')
+        for local, remote in (assets or []):
+            if not os.path.exists(local):
+                print(f'  ⚠  Asset introuvable, ignoré : {local}')
+                continue
+            if os.path.isdir(local):
+                # Créer le dossier distant et envoyer tous les fichiers
+                try:
+                    ftp.mkd(remote)
+                except:
+                    pass  # Le dossier existe peut-être déjà
+                for fname in os.listdir(local):
+                    fpath = os.path.join(local, fname)
+                    if os.path.isfile(fpath):
+                        with open(fpath, 'rb') as f:
+                            ftp.storbinary(f'STOR {remote}/{fname}', f)
+                        print(f'  ✓ {remote}/{fname}  (déployé)')
+            else:
+                with open(local, 'rb') as f:
+                    ftp.storbinary(f'STOR {remote}', f)
+                print(f'  ✓ {remote}  (déployé)')
+        ftp.quit()
     except socket.timeout:
         sys.exit(f'Erreur : timeout ({timeout}s) — impossible de joindre {SFTP_HOST}:{SFTP_PORT}')
     except (socket.gaierror, ConnectionRefusedError, OSError) as e:
@@ -442,9 +592,32 @@ def deploy_sftp(local_file):
         sys.exit(f'Erreur FTP : {e}')
 
 
+def sync_plugins():
+    """Copie les plugins depuis src/plugins/ vers plugins/."""
+    src_plugins = os.path.join(BASE_DIR, 'src', 'plugins')
+    if not os.path.isdir(src_plugins):
+        return
+    # Créer plugins/ s'il n'existe pas
+    if not os.path.isdir(PLUGINS_DIR):
+        os.makedirs(PLUGINS_DIR, exist_ok=True)
+    # Copier tous les .js depuis src/plugins/
+    count = 0
+    for fname in os.listdir(src_plugins):
+        if fname.endswith('.js'):
+            src = os.path.join(src_plugins, fname)
+            dst = os.path.join(PLUGINS_DIR, fname)
+            import shutil
+            shutil.copy2(src, dst)
+            count += 1
+    if count > 0:
+        print(f'  ✓ {count} plugin(s) synchronisés vers plugins/')
+
 def main():
     with_demo   = '--demo'   in sys.argv
     with_deploy = '--deploy' in sys.argv
+
+    # ── Synchroniser les plugins ─────────────────────────
+    sync_plugins()
 
     # ── Langue(s) cible(s) ───────────────────────────────
     lang_arg = next((a for a in sys.argv if a.startswith('--lang=')), None)
@@ -508,19 +681,27 @@ def main():
             f.write(html_demo)
         print(f'  ✓ [FR+démo] → minicad_demo.html')
 
-        # minicad_org.html — Mode B multilang + GTM (minicad.org)
+        # minicad_org.html — Mode B multilang + SEO + GTM (minicad.org)
         html_org_i18n = apply_lang_mode_b(html_with_demo, 'fr')
-        html_org = build_org_html(html_org_i18n)
+        html_org = build_org_html(html_org_i18n, 'fr')
         with open(ORG_OUT, 'w', encoding='utf-8') as f:
             f.write(html_org)
         all_langs = list(load_all_langs().keys())
         print(f'  ✓ [multilang:{",".join(all_langs)}] → minicad_org.html')
 
+        # robots.txt + sitemap.xml (déployés à la racine de minicad.org)
+        build_seo_files()
+
     # ── Déploiement SFTP ─────────────────────────────────
     if with_deploy:
         if not with_demo:
             sys.exit('Erreur : --deploy nécessite --demo (minicad_org.html doit exister).')
-        deploy_sftp(ORG_OUT)
+        deploy_sftp(ORG_OUT, [
+            (OG_IMAGE_SRC, 'og-image.png'),
+            (ROBOTS_OUT,   'robots.txt'),
+            (SITEMAP_OUT,  'sitemap.xml'),
+            (PLUGINS_DIR,  'plugins'),  # Dossier des plugins (copié depuis src/plugins/)
+        ])
 
     # ── Résumé ────────────────────────────────────────────
     n_cats  = len(index['categories'])
