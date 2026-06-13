@@ -43,64 +43,15 @@ function openGradPopup(mode) {
   popup.classList.add('show');
   const firstInput = popup.querySelector('input');
   if (firstInput) setTimeout(() => firstInput.select(), 50);
-
-  // Ajouter les event listeners pour le preview en temps réel
-  attachGradPreviewListeners();
 }
 
 // Attache les listeners pour mettre à jour le preview en temps réel
-function attachGradPreviewListeners() {
-  const updatePreview = () => {
-    if (_gradMode === 'disk') {
-      const radius = parseFloat(document.getElementById('gd-radius').value) || 75;
-      const count = parseInt(document.getElementById('gd-count').value) || 100;
-      const labelEvery = parseInt(document.getElementById('gd-label-every').value) || 10;
-      const gradScale = (parseFloat(document.getElementById('gd-grad-size').value) || 100) / 100;
-      const textScale = (parseFloat(document.getElementById('gd-text-size').value) || 100) / 100;
-      const pointX = parseFloat(document.getElementById('gd-point-x').value) || 0;
-      const pointY = parseFloat(document.getElementById('gd-point-y').value) || 0;
-      S._pendingGrad = { type:'grad_disk', radius, count, labelEvery, gradScale, textScale, pointX, pointY };
-    } else {
-      const length = parseFloat(document.getElementById('gr-length').value) || 200;
-      const width = parseFloat(document.getElementById('gr-width').value) || 30;
-      const count = parseInt(document.getElementById('gr-count').value) || 100;
-      const labelEvery = parseInt(document.getElementById('gr-label-every').value) || 10;
-      const gradScale = (parseFloat(document.getElementById('gr-grad-size').value) || 100) / 100;
-      const textScale = (parseFloat(document.getElementById('gr-text-size').value) || 100) / 100;
-      const pointX = parseFloat(document.getElementById('gr-point-x').value) || 0;
-      const pointY = parseFloat(document.getElementById('gr-point-y').value) || 0;
-      S._pendingGrad = { type:'grad_ruler', length, width, count, labelEvery, gradScale, textScale, pointX, pointY };
-    }
-    scheduleRender();
-  };
-
-  // Attaché les listeners sur tous les inputs du popup actif
-  const activeParams = _gradMode === 'disk'
-    ? document.getElementById('grad-disk-params')
-    : document.getElementById('grad-ruler-params');
-
-  if (activeParams) {
-    activeParams.querySelectorAll('input').forEach(input => {
-      input.removeEventListener('input', updatePreview); // Éviter les doublons
-      input.addEventListener('input', updatePreview);
-    });
-  }
-
-  // Déclencher un preview initial
-  updatePreview();
-}
-
 function closeGradPopup() {
   const popup = document.getElementById('grad-popup');
   if (popup) popup.classList.remove('show');
 }
 
 function applyGradDef() {
-  // Vérifier si on est en train d'éditer une entité existante
-  const editingEntId = S.selected.length === 1 ? S.selected[0] : null;
-  const editingEnt = editingEntId ? S.entities.find(e => e.id === editingEntId) : null;
-  const isEditing = editingEnt && (editingEnt.type === 'grad_disk' || editingEnt.type === 'grad_ruler') && editingEnt._isEditing;
-
   closeGradPopup();
 
   if (_gradMode === 'disk') {
@@ -109,32 +60,14 @@ function applyGradDef() {
     const labelEvery = parseInt(document.getElementById('gd-label-every').value)  || 10;
     const gradScale  = (parseFloat(document.getElementById('gd-grad-size').value) || 100) / 100;
     const textScale  = (parseFloat(document.getElementById('gd-text-size').value) || 100) / 100;
-    const pointX     = parseFloat(document.getElementById('gd-point-x').value)     || 0;
-    const pointY     = parseFloat(document.getElementById('gd-point-y').value)     || 0;
 
-    if (isEditing && editingEnt.type === 'grad_disk') {
-      // Édition : mettre à jour l'entité existante
-      addToHistory();
-      editingEnt.radius = radius;
-      editingEnt.count = count;
-      editingEnt.labelEvery = labelEvery;
-      editingEnt.gradScale = gradScale;
-      editingEnt.textScale = textScale;
-      editingEnt.pointX = pointX;
-      editingEnt.pointY = pointY;
-      delete editingEnt._isEditing;
-      termPrint('Disque gradué modifié', 'success');
-    } else {
-      // Nouvelle entité
-      const ent = { type:'grad_disk', id:S.nextId++, layer:S.currentLayer,
-                    cx:0, cy:0, radius, count, labelEvery, gradScale, textScale, pointX, pointY };
-      S.aiPendingEntities = [ent];
-      S.aiPendingCenter   = [0, 0];
-      S._pendingGrad = { type:'grad_disk', radius, count, labelEvery, gradScale, textScale, pointX, pointY };
-      setTool('grad_place');
-      startGradMouseTracking();
-      termPrint(`GRADISC — Disque Ø${(radius*2).toFixed(0)} mm, ${count} traits — Bougez la souris pour prévisualiser, cliquez pour placer (Échap=annuler)`, 'info');
-    }
+    const ent = { type:'grad_disk', id:S.nextId++, layer:S.currentLayer,
+                  cx:0, cy:0, radius, count, labelEvery, gradScale, textScale };
+    S.aiPendingEntities = [ent];
+    S._pendingGrad = { type:'grad_disk', radius, count, labelEvery, gradScale, textScale };
+    setTool('grad_place');
+    startGradMouseTracking();
+    termPrint(`GRADISC — Cliquez pour placer (Échap=annuler)`, 'info');
   } else {
     const length     = parseFloat(document.getElementById('gr-length').value)     || 200;
     const width      = parseFloat(document.getElementById('gr-width').value)      || 30;
@@ -142,33 +75,14 @@ function applyGradDef() {
     const labelEvery = parseInt(document.getElementById('gr-label-every').value)  || 10;
     const gradScale  = (parseFloat(document.getElementById('gr-grad-size').value) || 100) / 100;
     const textScale  = (parseFloat(document.getElementById('gr-text-size').value) || 100) / 100;
-    const pointX     = parseFloat(document.getElementById('gr-point-x').value)     || 0;
-    const pointY     = parseFloat(document.getElementById('gr-point-y').value)     || 0;
 
-    if (isEditing && editingEnt.type === 'grad_ruler') {
-      // Édition : mettre à jour l'entité existante
-      addToHistory();
-      editingEnt.length = length;
-      editingEnt.width = width;
-      editingEnt.count = count;
-      editingEnt.labelEvery = labelEvery;
-      editingEnt.gradScale = gradScale;
-      editingEnt.textScale = textScale;
-      editingEnt.pointX = pointX;
-      editingEnt.pointY = pointY;
-      delete editingEnt._isEditing;
-      termPrint('Règle graduée modifiée', 'success');
-    } else {
-      // Nouvelle entité
-      const ent = { type:'grad_ruler', id:S.nextId++, layer:S.currentLayer,
-                    x:0, y:0, length, width, count, labelEvery, gradScale, textScale, pointX, pointY };
-      S.aiPendingEntities = [ent];
-      S.aiPendingCenter   = [0, 0];
-      S._pendingGrad = { type:'grad_ruler', length, width, count, labelEvery, gradScale, textScale, pointX, pointY };
-      setTool('grad_place');
-      startGradMouseTracking();
-      termPrint(`GRADRULE — Règle ${length}×${width} mm, ${count} traits — Bougez la souris pour prévisualiser, cliquez pour placer (Échap=annuler)`, 'info');
-    }
+    const ent = { type:'grad_ruler', id:S.nextId++, layer:S.currentLayer,
+                  x:0, y:0, length, width, count, labelEvery, gradScale, textScale };
+    S.aiPendingEntities = [ent];
+    S._pendingGrad = { type:'grad_ruler', length, width, count, labelEvery, gradScale, textScale };
+    setTool('grad_place');
+    startGradMouseTracking();
+    termPrint(`GRADRULE — Cliquez pour placer (Échap=annuler)`, 'info');
   }
   scheduleRender();
 }
@@ -177,23 +91,9 @@ function applyGradDef() {
 const GRADRULE_RENDER_CASES = {
   grad_disk: function(e) {
     // ── Disque gradué ──────────────────────────────────────────────────
-    const { cx:gcx, cy:gcy, radius:gr, count:gn=100, labelEvery:gle=10, gradScale:ggs=1, textScale:gts=1, pointX:gpx=0, pointY:gpy=0 } = e;
-    const [scx2, scy2] = w2s(gcx + gpx, gcy + gpy); // Position du disque + offset du point
+    const { cx:gcx, cy:gcy, radius:gr, count:gn=100, labelEvery:gle=10, gradScale:ggs=1, textScale:gts=1 } = e;
+    const [scx2, scy2] = w2s(gcx, gcy);
     const sr = gr * S.zoom;
-
-    // Point d'insertion visible (petit croix)
-    const selected = S.selected.includes(e.id);
-    const isEditing = e._isEditing;
-    if (selected || isEditing) {
-      ctx.save();
-      ctx.strokeStyle = isEditing ? '#ff9800' : '#4488ff';
-      ctx.lineWidth = 2;
-      const sz = 8;
-      ctx.beginPath(); ctx.moveTo(scx2 - sz, scy2); ctx.lineTo(scx2 + sz, scy2); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(scx2, scy2 - sz); ctx.lineTo(scx2, scy2 + sz); ctx.stroke();
-      ctx.beginPath(); ctx.arc(scx2, scy2, 4, 0, Math.PI*2); ctx.stroke();
-      ctx.restore();
-    }
     // Cercle principal
     ctx.save();
     ctx.beginPath(); ctx.arc(scx2, scy2, sr, 0, Math.PI * 2); ctx.stroke();
@@ -234,24 +134,10 @@ const GRADRULE_RENDER_CASES = {
   grad_ruler: function(e) {
     // ── Règle graduée ─────────────────────────────────────────────────
     const { x:rx0, y:ry0, length:rlen=200, width:rwid=30, count:rn=100,
-             labelEvery:rle=10, gradScale:rgs=1, textScale:rts=1, pointX:rpx=0, pointY:rpy=0 } = e;
-    const [rsx, rsy] = w2s(rx0 + rpx, ry0 + rpy); // Position de la règle + offset du point
+             labelEvery:rle=10, gradScale:rgs=1, textScale:rts=1 } = e;
+    const [rsx, rsy] = w2s(rx0, ry0);
     const rlenpx = rlen * S.zoom, rwidpx = rwid * S.zoom;
     ctx.save();
-
-    // Point d'insertion visible (petit croix)
-    const selected = S.selected.includes(e.id);
-    const isEditing = e._isEditing;
-    if (selected || isEditing) {
-      ctx.save();
-      ctx.strokeStyle = isEditing ? '#ff9800' : '#4488ff';
-      ctx.lineWidth = 2;
-      const sz = 8;
-      ctx.beginPath(); ctx.moveTo(rsx - sz, rsy); ctx.lineTo(rsx + sz, rsy); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(rsx, rsy - sz); ctx.lineTo(rsx, rsy + sz); ctx.stroke();
-      ctx.beginPath(); ctx.arc(rsx, rsy, 4, 0, Math.PI*2); ctx.stroke();
-      ctx.restore();
-    }
 
     // Cadre de la règle
     ctx.beginPath(); ctx.rect(rsx, rsy, rlenpx, -rwidpx); ctx.stroke();
@@ -292,11 +178,11 @@ const GRADRULE_TOOL_HANDLERS = {
     if (pg.type === 'grad_disk') {
       ent = { type:'grad_disk', id:S.nextId++, layer:S.currentLayer,
         cx:x, cy:y, radius:pg.radius, count:pg.count, labelEvery:pg.labelEvery,
-        gradScale:pg.gradScale, textScale:pg.textScale, pointX:pg.pointX||0, pointY:pg.pointY||0 };
+        gradScale:pg.gradScale, textScale:pg.textScale };
     } else {
       ent = { type:'grad_ruler', id:S.nextId++, layer:S.currentLayer,
         x:x, y:y, length:pg.length, width:pg.width, count:pg.count,
-        labelEvery:pg.labelEvery, gradScale:pg.gradScale, textScale:pg.textScale, pointX:pg.pointX||0, pointY:pg.pointY||0 };
+        labelEvery:pg.labelEvery, gradScale:pg.gradScale, textScale:pg.textScale };
     }
     stopGradMouseTracking();
     addToHistory();
@@ -334,56 +220,6 @@ const GRADRULE_MOVE_HANDLERS = {
 };
 
 // ======== DOUBLE-CLIC POUR MODIFIER ========
-function handleGradDoubleClick() {
-  document.addEventListener('dblclick', (ev) => {
-    const [wx, wy] = s2w(ev.clientX, ev.clientY);
-    // Chercher une entité grad_disk ou grad_ruler
-    for (const e of S.entities) {
-      if (e.type === 'grad_disk') {
-        const dist = Math.hypot(wx - e.cx, wy - e.cy);
-        if (dist <= e.radius * 1.2) { // Clic dans/près du disque
-          selectAndEditGrad(e);
-          return;
-        }
-      } else if (e.type === 'grad_ruler') {
-        if (wx >= e.x && wx <= e.x + e.length && wy >= e.y - e.width && wy <= e.y) {
-          selectAndEditGrad(e);
-          return;
-        }
-      }
-    }
-  });
-}
-
-function selectAndEditGrad(ent) {
-  S.selected = [ent.id];
-  _gradMode = ent.type === 'grad_disk' ? 'disk' : 'ruler';
-  // Pré-remplir le popup avec les valeurs de l'entité
-  if (ent.type === 'grad_disk') {
-    document.getElementById('gd-radius').value = ent.radius;
-    document.getElementById('gd-count').value = ent.count;
-    document.getElementById('gd-label-every').value = ent.labelEvery;
-    document.getElementById('gd-grad-size').value = (ent.gradScale || 1) * 100;
-    document.getElementById('gd-text-size').value = (ent.textScale || 1) * 100;
-    document.getElementById('gd-point-x').value = ent.pointX || 0;
-    document.getElementById('gd-point-y').value = ent.pointY || 0;
-  } else {
-    document.getElementById('gr-length').value = ent.length;
-    document.getElementById('gr-width').value = ent.width;
-    document.getElementById('gr-count').value = ent.count;
-    document.getElementById('gr-label-every').value = ent.labelEvery;
-    document.getElementById('gr-grad-size').value = (ent.gradScale || 1) * 100;
-    document.getElementById('gr-text-size').value = (ent.textScale || 1) * 100;
-    document.getElementById('gr-point-x').value = ent.pointX || 0;
-    document.getElementById('gr-point-y').value = ent.pointY || 0;
-  }
-  // Ouvrir le popup en mode édition
-  ent._isEditing = true;
-  openGradPopup(ent.type === 'grad_disk' ? 'disk' : 'ruler');
-  updateProperties();
-  render();
-}
-
 // ======== HTML POPUP (à injecter dans HTML) ========
 const GRADRULE_HTML = `
 <div class="tube-def-popup" id="grad-popup">
@@ -394,8 +230,6 @@ const GRADRULE_HTML = `
     <div class="tdp-row"><span class="tdp-lbl">Label tous les</span><input type="text" inputmode="decimal" id="gd-label-every" value="10"><span class="tdp-unit">traits</span></div>
     <div class="tdp-row"><span class="tdp-lbl">Taille grad.</span><input type="text" inputmode="decimal" id="gd-grad-size" value="100"><span class="tdp-unit">%</span></div>
     <div class="tdp-row"><span class="tdp-lbl">Taille texte</span><input type="text" inputmode="decimal" id="gd-text-size" value="100"><span class="tdp-unit">%</span></div>
-    <div class="tdp-row"><span class="tdp-lbl">Point X</span><input type="text" inputmode="decimal" id="gd-point-x" value="0"><span class="tdp-unit">mm</span></div>
-    <div class="tdp-row"><span class="tdp-lbl">Point Y</span><input type="text" inputmode="decimal" id="gd-point-y" value="0"><span class="tdp-unit">mm</span></div>
   </div>
   <div id="grad-ruler-params" style="display:none">
     <div class="tdp-row"><span class="tdp-lbl">Longueur</span><input type="text" inputmode="decimal" id="gr-length" value="200"><span class="tdp-unit">mm</span></div>
@@ -404,8 +238,6 @@ const GRADRULE_HTML = `
     <div class="tdp-row"><span class="tdp-lbl">Label tous les</span><input type="text" inputmode="decimal" id="gr-label-every" value="10"><span class="tdp-unit">traits</span></div>
     <div class="tdp-row"><span class="tdp-lbl">Taille grad.</span><input type="text" inputmode="decimal" id="gr-grad-size" value="100"><span class="tdp-unit">%</span></div>
     <div class="tdp-row"><span class="tdp-lbl">Taille texte</span><input type="text" inputmode="decimal" id="gr-text-size" value="100"><span class="tdp-unit">%</span></div>
-    <div class="tdp-row"><span class="tdp-lbl">Point X</span><input type="text" inputmode="decimal" id="gr-point-x" value="0"><span class="tdp-unit">mm</span></div>
-    <div class="tdp-row"><span class="tdp-lbl">Point Y</span><input type="text" inputmode="decimal" id="gr-point-y" value="0"><span class="tdp-unit">mm</span></div>
   </div>
   <div style="display:flex;gap:6px;margin-top:8px">
     <button class="tdp-ok" id="grad-popup-ok">Insérer ↵</button>
@@ -541,9 +373,6 @@ window.GRADRULE_PLUGIN = {
         }
       }
     }
-
-    // Ajouter les event listeners pour le double-clic
-    handleGradDoubleClick();
 
     console.log('GRADRULE plugin loaded');
   }
