@@ -200,6 +200,15 @@ GTM_BLOCK = """\
     ifr.style.cssText='display:none;visibility:hidden';
     ns.appendChild(ifr);
     document.body.insertBefore(ns, document.body.firstChild);
+
+    // Meta (Facebook) Pixel — chargé uniquement après consentement
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
+    (window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1918542022065028');
+    fbq('track', 'PageView');
   }
 
   function hideBanner() {
@@ -239,7 +248,7 @@ COOKIE_BLOCK = """\
   if (!localStorage.getItem('minicad_cookie_consent')) {
     var b = document.getElementById('cookie-banner');
     b.style.display = 'flex';
-    b.innerHTML = '<p>Ce site utilise des cookies analytiques (Google Tag Manager) pour mesurer l\\'audience. Aucune donnée personnelle identifiable n\\'est collectée.</p>'
+    b.innerHTML = '<p>Ce site utilise des cookies analytiques et marketing (Google Tag Manager, Meta Pixel) pour mesurer l\\'audience et améliorer nos publicités. Ces traceurs ne sont chargés qu\\'après votre accord.</p>'
       + '<div class="cb-btns"><button id="cb-accept">Accepter</button><button id="cb-decline">Refuser</button></div>';
   }
 })();

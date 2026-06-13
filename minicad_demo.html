@@ -13,12 +13,20 @@
     --bg-panel: #16213e;
     --bg-canvas: #0f0f1a;
     --bg-terminal: #0a0a14;
+    --bg-elev: #1a2133;
+    --menu-bg: #000000dd;
+    --badge-bg: #00000088;
+    --input-bg: #0f0f1a;
+    --btn-bg: #2a2a3e;
+    --border: color-mix(in srgb, var(--ink) 13%, transparent);
+    --ink: #ffffff;
+    --on-accent: #000000;
     --accent: #00d4ff;
     --accent-dim: #00d4ff33;
     --grid: #1a2a4a;
     --grid-major: #253a5a;
     --text: #c8d6e5;
-    --text-dim: #576a80;
+    --text-dim: #8295ab;
     --text-bright: #f0f4f8;
     --success: #00e676;
     --warning: #ffab40;
@@ -39,6 +47,46 @@
     --module-text: #ff4081;
   }
 
+  /* Thème clair — proche du rendu papier ; couleurs assombries pour le contraste */
+  :root.theme-light {
+    --bg-dark: #e9ebef;
+    --bg-panel: #f5f6f8;
+    --bg-canvas: #fbfcfd;
+    --bg-terminal: #eef0f4;
+    --bg-elev: #ffffff;
+    --menu-bg: #ffffffee;
+    --badge-bg: #ffffffcc;
+    --input-bg: #ffffff;
+    --btn-bg: #e2e6ea;
+    --border: #00000024;
+    --ink: #13202e;
+    --on-accent: #ffffff;
+    --accent: #0072ad;
+    --accent-dim: #0072ad26;
+    --grid: #dde3eb;
+    --grid-major: #c6d0dd;
+    --text: #222e3c;
+    --text-dim: #5a6b7f;
+    --text-bright: #0a121c;
+    --success: #00873e;
+    --warning: #9a5b00;
+    --error: #c62828;
+    --snap-color: #c2185b;
+    --osnap-endpoint: #c2185b;
+    --osnap-midpoint: #00873e;
+    --osnap-center: #9a5b00;
+    --osnap-nearest: #2962ff;
+    --osnap-intersection: #9c27b0;
+    --osnap-perpendicular: #00707e;
+    --osnap-tangent: #d84315;
+    --osnap-quadrant: #7a7000;
+    --osnap-extension: #e65100;
+    --module-arch: #5e35b1;
+    --module-elec: #9a5b00;
+    --module-dim: #00873e;
+    --module-text: #c2185b;
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
@@ -55,7 +103,7 @@
   .menubar {
     height: 56px;
     background: var(--bg-panel);
-    border-bottom: 1px solid #ffffff10;
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     display: flex;
     align-items: center;
     padding: 0 12px;
@@ -77,16 +125,16 @@
   .menu-items { display: flex; gap: 2px; margin-left: 12px; }
   .menu-item {
     font-size: 14px; padding: 4px 12px; border-radius: 3px; cursor: pointer;
-    color: #d8e6f4; font-family: 'IBM Plex Sans', sans-serif;
+    color: var(--text); font-family: 'IBM Plex Sans', sans-serif;
   }
-  .menu-item:hover { background: #ffffff0a; color: #ffffff; }
-  .menu-item.open { background: #ffffff0f; color: #ffffff; }
+  .menu-item:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); color: var(--text-bright); }
+  .menu-item.open { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--text-bright); }
 
   .menu-dropdown { position: relative; }
   .menu-dropdown-list {
     position: fixed;
     background: var(--bg-panel);
-    border: 1px solid #ffffff20;
+    border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent);
     border-radius: 4px;
     padding: 4px 0;
     min-width: 210px;
@@ -107,10 +155,10 @@
     gap: 24px;
     white-space: nowrap;
   }
-  .menu-dropdown-item:hover { background: #ffffff0a; color: var(--text-bright); }
+  .menu-dropdown-item:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); color: var(--text-bright); }
   .menu-dropdown-item.disabled { opacity: 0.35; pointer-events: none; }
   .item-shortcut { color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
-  .menu-dropdown-sep { height: 1px; background: #ffffff10; margin: 4px 0; }
+  .menu-dropdown-sep { height: 1px; background: color-mix(in srgb, var(--ink) 6%, transparent); margin: 4px 0; }
 
   .topbar-right {
     margin-left: auto;
@@ -128,7 +176,7 @@
   /* === DOCK AREA === */
   .dock-area {
     background: var(--bg-panel);
-    border-bottom: 1px solid #ffffff10;
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -149,7 +197,7 @@
     flex-shrink: 0;
   }
   .cad-toolbar.docked {
-    border: 1px solid #ffffff06;
+    border: 1px solid color-mix(in srgb, var(--ink) 2%, transparent);
     margin: 0 1px;
   }
   .cad-toolbar.floating {
@@ -179,7 +227,7 @@
     flex-shrink: 0;
     padding: 0 1px;
   }
-  .tb-grip:hover { opacity: 0.8; background: #ffffff08; }
+  .tb-grip:hover { opacity: 0.8; background: color-mix(in srgb, var(--ink) 3%, transparent); }
   .tb-grip:active { cursor: grabbing; }
   .cad-toolbar.floating .tb-grip { display: none; }
 
@@ -188,8 +236,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 2px 4px 2px 8px;
-    background: #0d1a33;
-    border-bottom: 1px solid #ffffff10;
+    background: var(--bg-dark);
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     cursor: grab;
     border-radius: 3px 3px 0 0;
   }
@@ -216,7 +264,7 @@
     padding: 2px;
   }
   .tb-sep {
-    width: 1px; height: 20px; background: #ffffff10; margin: 0 2px; flex-shrink: 0;
+    width: 1px; height: 20px; background: color-mix(in srgb, var(--ink) 6%, transparent); margin: 0 2px; flex-shrink: 0;
   }
   .cad-toolbar.floating .tb-sep {
     width: 100%; height: 1px; margin: 2px 0;
@@ -226,7 +274,7 @@
   .tb-context {
     position: fixed; z-index: 300;
     background: var(--bg-panel);
-    border: 1px solid #ffffff20;
+    border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent);
     border-radius: 4px;
     padding: 4px 0;
     min-width: 160px;
@@ -258,14 +306,14 @@
   .tube-def-popup .tdp-row:last-of-type { margin-bottom: 16px; }
   .tube-def-popup .tdp-lbl { color: var(--text-dim); white-space: nowrap; }
   .tube-def-popup input[type=number] {
-    width: 100%; background: #0d1929; border: 1px solid #ffffff22;
+    width: 100%; background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent);
     border-radius: 4px; color: var(--text); font-family: inherit;
     font-size: 13px; padding: 5px 8px; text-align: right; box-sizing: border-box;
   }
   .tube-def-popup input[type=number]:focus { outline: none; border-color: var(--accent); }
   .tube-def-popup .tdp-unit { color: var(--text-dim); min-width: 20px; }
   .tube-def-popup .tdp-ok {
-    width: 100%; padding: 7px 0; background: var(--accent); color: #000;
+    width: 100%; padding: 7px 0; background: var(--accent); color: var(--on-accent);
     border: none; border-radius: 4px; font-family: inherit; font-size: 12px;
     font-weight: 600; cursor: pointer; letter-spacing: 0.3px;
   }
@@ -276,10 +324,10 @@
     font-size: 11px; color: var(--text); cursor: pointer;
     font-family: 'IBM Plex Sans', sans-serif;
   }
-  .tb-ctx-item:hover { background: #ffffff0a; }
+  .tb-ctx-item:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
   .tb-ctx-check { width: 14px; text-align: center; color: var(--accent); font-size: 12px; }
   .tb-ctx-item .ctx-shortcut { margin-left: auto; color: var(--text-dim); font-size: 10px; }
-  .tb-ctx-sep { height: 1px; background: #ffffff12; margin: 4px 0; }
+  .tb-ctx-sep { height: 1px; background: color-mix(in srgb, var(--ink) 7%, transparent); margin: 4px 0; }
   .tb-ctx-header { padding: 4px 12px 2px; font-size: 10px; color: var(--text-dim); letter-spacing: 0.5px; text-transform: uppercase; }
 
   .tool-btn {
@@ -295,7 +343,7 @@
     font-size: 14px;
     transition: all 0.15s;
   }
-  .tool-btn:hover { background: #ffffff0a; color: var(--text); border-color: #ffffff15; }
+  .tool-btn:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); color: var(--text); border-color: color-mix(in srgb, var(--ink) 8%, transparent); }
   .tool-btn.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
   .tool-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; }
   .tool-btn.text-btn { width: auto; padding: 0 6px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
@@ -305,14 +353,14 @@
   .side-panel {
     width: 220px;
     background: var(--bg-panel);
-    border-right: 1px solid #ffffff10;
+    border-right: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
     overflow-y: auto;
   }
 
-  .panel-section { border-bottom: 1px solid #ffffff08; }
+  .panel-section { border-bottom: 1px solid color-mix(in srgb, var(--ink) 3%, transparent); }
 
   .panel-header {
     padding: 8px 12px;
@@ -327,7 +375,7 @@
     justify-content: space-between;
     align-items: center;
   }
-  .panel-header:hover { background: #ffffff08; }
+  .panel-header:hover { background: color-mix(in srgb, var(--ink) 3%, transparent); }
   .panel-header .arrow { transition: transform 0.2s; }
   .panel-header.collapsed .arrow { transform: rotate(-90deg); }
 
@@ -339,7 +387,7 @@
     padding: 4px 6px; border-radius: 3px; cursor: pointer;
     font-size: 11px; transition: background 0.1s;
   }
-  .layer-item:hover { background: #ffffff08; }
+  .layer-item:hover { background: color-mix(in srgb, var(--ink) 3%, transparent); }
   .layer-item.active { background: var(--accent-dim); }
   .layer-item.assignable { cursor: crosshair; }
   .layer-item.assignable:hover { background: #00d4ff18; outline: 1px solid #00d4ff44; }
@@ -348,7 +396,7 @@
   .layer-vis:hover { opacity: 1; }
   .layer-mgr-btn {
     width: 100%; margin-top: 6px; padding: 5px; background: none;
-    border: 1px solid #ffffff18; border-radius: 3px; color: var(--text-dim);
+    border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent); border-radius: 3px; color: var(--text-dim);
     font-size: 10px; cursor: pointer; letter-spacing: 0.5px;
   }
   .layer-mgr-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -356,7 +404,7 @@
   /* Layer Manager Dialog */
   #layer-manager {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     z-index: 950; width: 560px; max-height: 80vh;
     box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     display: flex; flex-direction: column;
@@ -364,41 +412,41 @@
   }
   .lm-header {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 16px; border-bottom: 1px solid #ffffff18;
+    padding: 10px 16px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     font-weight: 600; letter-spacing: 1px; color: var(--accent);
   }
-  .lm-close { cursor: pointer; color: #ffffff55; font-size: 18px; line-height: 1; }
+  .lm-close { cursor: pointer; color: color-mix(in srgb, var(--ink) 33%, transparent); font-size: 18px; line-height: 1; }
   .lm-close:hover { color: #fff; }
-  .lm-toolbar { padding: 8px 12px; border-bottom: 1px solid #ffffff0a; }
+  .lm-toolbar { padding: 8px 12px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 4%, transparent); }
   .lm-add-btn {
     padding: 4px 12px; background: var(--accent-dim); border: 1px solid var(--accent);
     border-radius: 4px; color: var(--accent); font-size: 11px; cursor: pointer;
   }
-  .lm-add-btn:hover { background: var(--accent); color: #000; }
+  .lm-add-btn:hover { background: var(--accent); color: var(--on-accent); }
   .lm-table { overflow-y: auto; flex: 1; }
   table.lm-grid {
     width: 100%; border-collapse: collapse; font-size: 11px;
   }
   .lm-grid th {
     padding: 5px 8px; text-align: left; font-size: 9px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.8px; color: #ffffff44;
-    border-bottom: 1px solid #ffffff12; background: #0f1726; position: sticky; top: 0;
+    text-transform: uppercase; letter-spacing: 0.8px; color: color-mix(in srgb, var(--ink) 27%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 7%, transparent); background: var(--bg-elev); position: sticky; top: 0;
   }
-  .lm-grid td { padding: 4px 8px; border-bottom: 1px solid #ffffff08; vertical-align: middle; }
-  .lm-grid tr:hover td { background: #ffffff06; }
+  .lm-grid td { padding: 4px 8px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 3%, transparent); vertical-align: middle; }
+  .lm-grid tr:hover td { background: color-mix(in srgb, var(--ink) 2%, transparent); }
   .lm-grid tr.lm-current td { background: var(--accent-dim); }
   .lm-color-btn {
-    width: 22px; height: 16px; border-radius: 3px; border: 1px solid #ffffff30;
+    width: 22px; height: 16px; border-radius: 3px; border: 1px solid color-mix(in srgb, var(--ink) 19%, transparent);
     cursor: pointer; padding: 0; display: block;
   }
   .lm-name-input {
     background: transparent; border: none; color: var(--text); font-size: 11px;
     font-family: 'IBM Plex Sans', sans-serif; width: 100%; min-width: 100px;
   }
-  .lm-name-input:focus { outline: 1px solid var(--accent); border-radius: 2px; background: #ffffff08; }
+  .lm-name-input:focus { outline: 1px solid var(--accent); border-radius: 2px; background: color-mix(in srgb, var(--ink) 3%, transparent); }
   .lm-sel {
-    background: #0d1525; border: 1px solid #ffffff18; border-radius: 3px;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent); border-radius: 3px;
     color: var(--text); font-size: 10px; padding: 2px 4px; cursor: pointer; width: 100%;
   }
   .lm-sel:focus { outline: none; border-color: var(--accent); }
@@ -407,39 +455,39 @@
     cursor: pointer; font-size: 14px; padding: 0 4px;
   }
   .lm-del-btn:hover { opacity: 1; }
-  .lm-footer { padding: 10px 16px; border-top: 1px solid #ffffff12; text-align: right; }
+  .lm-footer { padding: 10px 16px; border-top: 1px solid color-mix(in srgb, var(--ink) 7%, transparent); text-align: right; }
   .lm-close-btn {
     padding: 5px 18px; background: var(--accent); border: none; border-radius: 4px;
-    color: #000; font-size: 11px; font-weight: 600; cursor: pointer;
+    color: var(--on-accent); font-size: 11px; font-weight: 600; cursor: pointer;
   }
   .lm-close-btn:hover { opacity: 0.85; }
 
   /* ===== CALCULATRICE ===== */
   #calc-dialog {
     position: fixed; top: 120px; right: 20px; z-index: 960;
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     box-shadow: 0 12px 48px rgba(0,0,0,0.8); font-family: 'IBM Plex Sans', sans-serif;
     display: none; flex-direction: column; width: 240px; user-select: none;
   }
   .calc-hdr {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 8px 12px; border-bottom: 1px solid #ffffff18; cursor: move;
+    padding: 8px 12px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 9%, transparent); cursor: move;
     font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
     letter-spacing: 1px; color: var(--accent);
   }
   .calc-hdr-btns { display: flex; gap: 6px; align-items: center; }
   .calc-mode-btn {
-    background: #0d1525; border: 1px solid #ffffff22; border-radius: 3px;
-    color: #ffffff66; font-size: 9px; font-weight: 700; letter-spacing: .5px;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 3px;
+    color: color-mix(in srgb, var(--ink) 40%, transparent); font-size: 9px; font-weight: 700; letter-spacing: .5px;
     padding: 2px 6px; cursor: pointer; font-family: 'JetBrains Mono', monospace;
     transition: border-color .15s, color .15s;
   }
   .calc-mode-btn.active { border-color: var(--accent); color: var(--accent); }
   .calc-display {
-    padding: 8px 10px 6px; background: #0d1525; border-bottom: 1px solid #ffffff12;
+    padding: 8px 10px 6px; background: var(--input-bg); border-bottom: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
   }
   .calc-expr-line {
-    font-size: 10px; color: #ffffff44; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: color-mix(in srgb, var(--ink) 27%, transparent); font-family: 'JetBrains Mono', monospace;
     min-height: 14px; text-align: right; overflow: hidden; text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -448,7 +496,7 @@
     text-align: right; padding: 2px 0; cursor: pointer; border-radius: 3px;
     transition: background .1s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  #calc-result:hover { background: #ffffff0d; }
+  #calc-result:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
   #calc-result.calc-error { color: #ff5252; font-size: 14px; }
   .calc-deg-btn {
     font-size: 9px; color: #ffab4066; font-family: 'JetBrains Mono', monospace;
@@ -459,18 +507,18 @@
   .calc-btns { padding: 8px; display: grid; gap: 5px; }
   .calc-btns.basic  { grid-template-columns: repeat(4, 1fr); }
   .calc-btns.paren  { grid-template-columns: 1fr 1fr; padding: 6px 8px 0; gap: 5px; display: grid; }
-  .calc-btns.sci    { grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #ffffff12; margin: 0 8px; padding: 8px 0; }
+  .calc-btns.sci    { grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid color-mix(in srgb, var(--ink) 7%, transparent); margin: 0 8px; padding: 8px 0; }
   .cb {
-    background: #0d1525; border: 1px solid #ffffff15; border-radius: 4px;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent); border-radius: 4px;
     color: var(--text); font-size: 13px; font-family: 'JetBrains Mono', monospace;
     padding: 7px 4px; cursor: pointer; text-align: center;
     transition: background .1s, border-color .1s;
   }
-  .cb:hover  { background: #ffffff18; border-color: #ffffff30; }
+  .cb:hover  { background: color-mix(in srgb, var(--ink) 9%, transparent); border-color: color-mix(in srgb, var(--ink) 19%, transparent); }
   .cb:active { background: #ffffff28; }
   .cb.op     { color: var(--accent); }
   .cb.fn     { color: #a0c4ff; font-size: 11px; }
-  .cb.eq     { background: var(--accent); color: #000; font-weight: 700; border-color: var(--accent); }
+  .cb.eq     { background: var(--accent); color: var(--on-accent); font-weight: 700; border-color: var(--accent); }
   .cb.eq:hover { opacity: .85; }
   .cb.clr    { color: #ff5252; }
   .cb.wide   { grid-column: span 2; }
@@ -478,21 +526,21 @@
   /* ===== ARRAY DIALOG ===== */
   #array-dialog, #polar-array-dialog {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     z-index: 952; width: 320px; box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     font-family: 'IBM Plex Sans', sans-serif; display: none; flex-direction: column;
   }
   .ar-header {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 16px; border-bottom: 1px solid #ffffff18;
+    padding: 10px 16px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     font-weight: 600; letter-spacing: 1px; color: var(--accent);
   }
   .ar-body { padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .ar-group { display: flex; flex-direction: column; gap: 4px; }
-  .ar-label { font-size: 9px; color: #ffffff55; text-transform: uppercase; letter-spacing: 0.6px; }
+  .ar-label { font-size: 9px; color: color-mix(in srgb, var(--ink) 33%, transparent); text-transform: uppercase; letter-spacing: 0.6px; }
   .ar-input {
-    background: #0d1525; border: 1px solid #ffffff18; border-radius: 4px;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent); border-radius: 4px;
     color: var(--text); font-size: 13px; padding: 6px 8px; width: 100%;
     font-family: 'JetBrains Mono', monospace; box-sizing: border-box;
   }
@@ -500,20 +548,20 @@
   .ar-pick-row { display: flex; gap: 4px; }
   .ar-pick-row .ar-input { flex: 1; min-width: 0; }
   .ar-pick-btn {
-    background: #0d1525; border: 1px solid #ffffff22; border-radius: 4px;
-    color: #ffffff66; font-size: 14px; padding: 0 7px; cursor: pointer; flex-shrink: 0;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 4px;
+    color: color-mix(in srgb, var(--ink) 40%, transparent); font-size: 14px; padding: 0 7px; cursor: pointer; flex-shrink: 0;
     display: flex; align-items: center; transition: border-color .15s, color .15s;
   }
   .ar-pick-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .ar-info { padding: 6px 16px 0; font-size: 10px; color: #ffffff44; text-align: center; }
+  .ar-info { padding: 6px 16px 0; font-size: 10px; color: color-mix(in srgb, var(--ink) 27%, transparent); text-align: center; }
   .ar-footer {
-    padding: 12px 16px; border-top: 1px solid #ffffff12;
+    padding: 12px 16px; border-top: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
     display: flex; justify-content: flex-end; gap: 8px;
   }
   .ar-btn { padding: 5px 18px; border: none; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; }
-  .ar-btn.cancel { background: #ffffff12; color: var(--text); }
-  .ar-btn.cancel:hover { background: #ffffff20; }
-  .ar-btn.ok { background: var(--accent); color: #000; }
+  .ar-btn.cancel { background: color-mix(in srgb, var(--ink) 7%, transparent); color: var(--text); }
+  .ar-btn.cancel:hover { background: color-mix(in srgb, var(--ink) 13%, transparent); }
+  .ar-btn.ok { background: var(--accent); color: var(--on-accent); }
   .ar-btn.ok:hover { opacity: 0.85; }
 
   /* ── BIBLIOTHÈQUE — menus cascadants ─────────── */
@@ -523,12 +571,12 @@
     cursor: pointer; white-space: nowrap;
     color: var(--text); font-size: 12px; user-select: none;
   }
-  .lib-sub-item:hover { background: #ffffff0a; color: var(--text-bright); }
+  .lib-sub-item:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); color: var(--text-bright); }
   .lib-sub-item::after { content: '►'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 8px; opacity: 0.45; }
   .lib-sub-item.disabled { opacity: 0.35; pointer-events: none; }
   .lib-sub-list {
     display: none; position: absolute; left: 100%; top: -1px;
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 4px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 4px;
     z-index: 1002; box-shadow: 4px 8px 24px rgba(0,0,0,0.7);
     min-width: 130px;
   }
@@ -540,7 +588,7 @@
     font-family: 'JetBrains Mono', monospace;
     display: flex; align-items: center; gap: 6px;
   }
-  .lib-leaf-item:hover { background: #ffffff0a; color: var(--text-bright); }
+  .lib-leaf-item:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); color: var(--text-bright); }
   .lib-leaf-item .lib-chk { color: var(--accent); opacity: 0; font-size: 10px; flex-shrink: 0; }
   .lib-leaf-item.selected .lib-chk { opacity: 1; }
   .lib-leaf-item.selected { color: var(--accent); }
@@ -548,7 +596,7 @@
   /* ===== AI ASSISTANT PANEL ===== */
   #ai-panel {
     position: fixed; top: 80px; right: 16px;
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     z-index: 950; width: 340px; height: 520px;
     box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     display: flex; flex-direction: column;
@@ -557,45 +605,45 @@
   }
   .ai-header {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 16px; border-bottom: 1px solid #ffffff18;
+    padding: 10px 16px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     font-weight: 600; letter-spacing: 1px; color: var(--accent);
     cursor: move; flex-shrink: 0;
   }
   .ai-header-btns { display: flex; gap: 8px; align-items: center; }
   .ai-settings-btn {
-    background: none; border: none; color: #ffffff55; font-size: 14px;
+    background: none; border: none; color: color-mix(in srgb, var(--ink) 33%, transparent); font-size: 14px;
     cursor: pointer; padding: 0 2px; line-height: 1;
   }
   .ai-settings-btn:hover { color: #fff; }
   .ai-settings-panel {
-    padding: 10px 14px; border-bottom: 1px solid #ffffff12;
-    background: #131b2e; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px;
+    padding: 10px 14px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
+    background: var(--bg-panel); flex-shrink: 0; display: flex; flex-direction: column; gap: 8px;
   }
   .ai-settings-row {
     display: flex; align-items: center; gap: 8px;
   }
-  .ai-settings-label { font-size: 9px; color: #ffffff55; text-transform: uppercase; letter-spacing: 0.6px; flex: 0 0 48px; }
+  .ai-settings-label { font-size: 9px; color: color-mix(in srgb, var(--ink) 33%, transparent); text-transform: uppercase; letter-spacing: 0.6px; flex: 0 0 48px; }
   .ai-settings-input {
-    flex: 1; background: #0d1525; border: 1px solid #ffffff18; border-radius: 3px;
+    flex: 1; background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent); border-radius: 3px;
     color: var(--text); font-size: 11px; padding: 4px 8px;
     font-family: 'JetBrains Mono', monospace;
   }
   .ai-settings-input:focus { outline: none; border-color: var(--accent); }
   .ai-settings-sel {
-    flex: 1; background: #0d1525; border: 1px solid #ffffff18; border-radius: 3px;
+    flex: 1; background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent); border-radius: 3px;
     color: var(--text); font-size: 11px; padding: 3px 6px; cursor: pointer;
   }
   .ai-settings-sel:focus { outline: none; border-color: var(--accent); }
   .ai-refresh-btn {
-    background: none; border: 1px solid #ffffff22; border-radius: 3px;
-    color: #ffffff88; font-size: 11px; cursor: pointer; padding: 3px 7px;
+    background: none; border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 3px;
+    color: color-mix(in srgb, var(--ink) 53%, transparent); font-size: 11px; cursor: pointer; padding: 3px 7px;
   }
   .ai-refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
   .ai-chat {
     flex: 1; overflow-y: auto; padding: 10px 12px;
     display: flex; flex-direction: column; gap: 8px;
-    scrollbar-width: thin; scrollbar-color: #ffffff18 transparent;
+    scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--ink) 9%, transparent) transparent;
   }
   .ai-msg {
     border-radius: 6px; padding: 7px 10px; font-size: 12px; line-height: 1.5;
@@ -607,26 +655,26 @@
     align-self: flex-end; text-align: right;
   }
   .ai-msg.assistant {
-    background: #ffffff08; border: 1px solid #ffffff12; color: var(--text);
+    background: color-mix(in srgb, var(--ink) 3%, transparent); border: 1px solid color-mix(in srgb, var(--ink) 7%, transparent); color: var(--text);
     align-self: flex-start;
   }
   .ai-msg.system-msg {
-    background: none; border: none; color: #ffffff33; font-size: 10px;
+    background: none; border: none; color: color-mix(in srgb, var(--ink) 20%, transparent); font-size: 10px;
     align-self: center; text-align: center; padding: 2px 6px;
   }
   .ai-msg .ai-entities-btn {
     display: inline-block; margin-top: 6px;
     padding: 3px 10px; background: var(--accent); border: none; border-radius: 4px;
-    color: #000; font-size: 10px; font-weight: 600; cursor: pointer;
+    color: var(--on-accent); font-size: 10px; font-weight: 600; cursor: pointer;
   }
   .ai-msg .ai-entities-btn:hover { opacity: 0.8; }
   .ai-input-area {
     display: flex; gap: 6px; padding: 8px 10px;
-    border-top: 1px solid #ffffff12; flex-shrink: 0;
+    border-top: 1px solid color-mix(in srgb, var(--ink) 7%, transparent); flex-shrink: 0;
     align-items: flex-end;
   }
   .ai-textarea {
-    flex: 1; background: #0d1525; border: 1px solid #ffffff18; border-radius: 4px;
+    flex: 1; background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent); border-radius: 4px;
     color: var(--text); font-size: 12px; padding: 6px 8px;
     font-family: 'IBM Plex Sans', sans-serif; resize: none;
     max-height: 80px; overflow-y: auto; min-height: 32px;
@@ -634,12 +682,12 @@
   .ai-textarea:focus { outline: none; border-color: var(--accent); }
   .ai-send-btn {
     background: var(--accent); border: none; border-radius: 4px;
-    color: #000; font-size: 16px; width: 32px; height: 32px;
+    color: var(--on-accent); font-size: 16px; width: 32px; height: 32px;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
   .ai-send-btn:hover { opacity: 0.85; }
-  .ai-send-btn:disabled { background: #ffffff22; color: #ffffff44; cursor: default; }
+  .ai-send-btn:disabled { background: color-mix(in srgb, var(--ink) 13%, transparent); color: color-mix(in srgb, var(--ink) 27%, transparent); cursor: default; }
   .ai-thinking {
     display: flex; gap: 4px; align-items: center; padding: 4px 0;
   }
@@ -651,7 +699,7 @@
   .ai-thinking span:nth-child(3) { animation-delay: 0.4s; }
   @keyframes aiDot { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
   .ai-toolbar-btn {
-    background: none; border: 1px solid #ffffff22; border-radius: 4px;
+    background: none; border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 4px;
     color: var(--accent); font-size: 13px; padding: 3px 8px;
     cursor: pointer; font-family: 'JetBrains Mono', monospace;
   }
@@ -668,8 +716,8 @@
     transition: all 0.15s;
     border: 1px solid transparent;
   }
-  .module-item:hover { background: #ffffff08; }
-  .module-item.loaded { border-color: #ffffff15; background: #ffffff06; }
+  .module-item:hover { background: color-mix(in srgb, var(--ink) 3%, transparent); }
+  .module-item.loaded { border-color: color-mix(in srgb, var(--ink) 8%, transparent); background: color-mix(in srgb, var(--ink) 2%, transparent); }
 
   .module-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 
@@ -689,7 +737,7 @@
     cursor: pointer;
     border-radius: 3px;
   }
-  .osnap-row:hover { background: #ffffff08; }
+  .osnap-row:hover { background: color-mix(in srgb, var(--ink) 3%, transparent); }
   .osnap-row .osnap-dot { width: 8px; height: 8px; flex-shrink: 0; }
   .osnap-row input { accent-color: var(--accent); }
 
@@ -710,8 +758,8 @@
   }
   .space-tab, .space-tab-add {
     padding: 3px 10px; cursor: pointer; user-select: none;
-    background: #00000088; backdrop-filter: blur(4px);
-    color: var(--text-dim); border: 1px solid #ffffff10;
+    background: var(--badge-bg); backdrop-filter: blur(4px);
+    color: var(--text-dim); border: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     border-bottom: none; border-radius: 4px 4px 0 0;
   }
   .space-tab:hover, .space-tab-add:hover { color: var(--text-bright); }
@@ -734,10 +782,61 @@
     font-size: 10px;
     padding: 3px 8px;
     border-radius: 3px;
-    background: #00000088;
+    background: var(--badge-bg);
     backdrop-filter: blur(4px);
-    border: 1px solid #ffffff10;
+    border: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
   }
+
+  /* ── Dialogue Préférences ───────────────────────────────────────────── */
+  #prefs-dialog {
+    position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+    width: 480px; max-height: calc(100vh - 110px);
+    display: flex; flex-direction: column;
+    background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 12px 40px #0008; z-index: 3000;
+    color: var(--text); font-size: 12px; font-family: 'IBM Plex Sans', sans-serif;
+  }
+  .pf-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 18px 11px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .pf-title { font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; }
+  .pf-close { cursor: pointer; color: var(--text-dim); font-size: 17px; line-height: 1; }
+  .pf-close:hover { color: var(--text-bright); }
+  .pf-body { overflow-y: auto; padding: 2px 18px 14px; }
+  .pf-sec-title {
+    font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--accent); margin: 16px 0 4px; padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .pf-row { display: flex; align-items: center; min-height: 27px; gap: 10px; }
+  .pf-lbl { flex: 1; }
+  .pf-hint { font-size: 10px; color: var(--text-dim); margin: -2px 0 4px; }
+  .pf-ctl input[type=number] { width: 76px; text-align: right; }
+  .pf-ctl input[type=text], .pf-ctl input[type=number], .pf-ctl select {
+    background: var(--input-bg); border: 1px solid var(--border); color: var(--text);
+    padding: 3px 6px; border-radius: 4px; font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .pf-ctl select { min-width: 110px; }
+  .pf-unit { width: 38px; color: var(--text-dim); font-size: 10px; }
+  #prefs-dialog input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+  .pf-os-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px 8px; margin: 6px 0 2px; }
+  .pf-os-grid label { display: flex; gap: 6px; align-items: center; cursor: pointer; font-size: 11px; }
+  .pf-foot {
+    display: flex; gap: 8px; align-items: center;
+    padding: 12px 18px; border-top: 1px solid var(--border); flex-shrink: 0;
+  }
+  .pf-spacer { flex: 1; }
+  .pf-btn {
+    background: var(--btn-bg); border: 1px solid var(--border); color: var(--text);
+    padding: 5px 13px; border-radius: 4px; cursor: pointer; font-size: 11px; font-family: inherit;
+  }
+  .pf-btn:hover { border-color: var(--text-dim); }
+  .pf-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+  .pf-btn.primary:hover { filter: brightness(1.15); }
+  .pf-btn.danger { background: none; border-color: var(--error); color: var(--error); }
+  .pf-btn.danger:hover { background: var(--error); color: #fff; }
 
   /* Dynamic Input near cursor — editable fields */
   #dynamic-input {
@@ -752,8 +851,8 @@
   #dynamic-input.visible { display: flex; }
   .di-field {
     display: flex; align-items: center; gap: 3px;
-    background: #000000dd;
-    border: 1px solid #ffffff30;
+    background: var(--menu-bg);
+    border: 1px solid color-mix(in srgb, var(--ink) 19%, transparent);
     border-radius: 3px;
     padding: 2px 6px;
   }
@@ -772,7 +871,7 @@
     padding: 1px 0;
   }
   .di-input::placeholder { color: var(--text-dim); opacity: 0.3; }
-  .di-input::selection { background: var(--accent); color: #000; }
+  .di-input::selection { background: var(--accent); color: var(--on-accent); }
   .di-unit { color: var(--text-dim); font-size: 9px; }
 
   /* Polar tracking guide line */
@@ -801,7 +900,7 @@
   .props-panel {
     width: 200px;
     background: var(--bg-panel);
-    border-left: 1px solid #ffffff10;
+    border-left: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     font-size: 11px;
     overflow-y: auto;
     flex-shrink: 0;
@@ -811,13 +910,13 @@
     display: flex;
     justify-content: space-between;
     padding: 4px 10px;
-    border-bottom: 1px solid #ffffff06;
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 2%, transparent);
   }
   .prop-label { color: var(--text-dim); }
   .prop-value { color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
   .prop-input {
     background: var(--bg-dark);
-    border: 1px solid #ffffff20;
+    border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent);
     border-radius: 3px;
     color: var(--text);
     font-family: 'JetBrains Mono', monospace;
@@ -829,7 +928,7 @@
   .prop-input:focus { outline: none; border-color: var(--accent); }
   .prop-select {
     background: var(--bg-dark);
-    border: 1px solid #ffffff20;
+    border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent);
     border-radius: 3px;
     color: var(--text);
     font-family: 'JetBrains Mono', monospace;
@@ -839,11 +938,11 @@
   }
   .prop-select:focus { outline: none; border-color: var(--accent); }
   .prop-color {
-    width: 30px; height: 18px; padding: 0; border: 1px solid #ffffff20;
+    width: 30px; height: 18px; padding: 0; border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent);
     border-radius: 3px; background: var(--bg-dark); cursor: pointer; vertical-align: middle;
   }
   .prop-mini {
-    background: var(--bg-dark); border: 1px solid #ffffff20; border-radius: 3px;
+    background: var(--bg-dark); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 3px;
     color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 9px;
     padding: 1px 5px; cursor: pointer; vertical-align: middle;
   }
@@ -863,7 +962,7 @@
     display: flex;
     align-items: center;
     padding: 4px 12px;
-    background: #ffffff06;
+    background: color-mix(in srgb, var(--ink) 2%, transparent);
     gap: 10px;
   }
 
@@ -888,7 +987,7 @@
     cursor: text;
   }
   .terminal-output::-webkit-scrollbar { width: 4px; }
-  .terminal-output::-webkit-scrollbar-thumb { background: #ffffff20; border-radius: 2px; }
+  .terminal-output::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 2px; }
 
   .term-line { display: flex; gap: 6px; }
   .term-prompt { color: var(--accent); white-space: nowrap; }
@@ -905,7 +1004,7 @@
     align-items: center;
     padding: 4px 12px 6px;
     gap: 6px;
-    border-top: 1px solid #ffffff08;
+    border-top: 1px solid color-mix(in srgb, var(--ink) 3%, transparent);
   }
 
   .terminal-input-row .prompt-icon {
@@ -930,7 +1029,7 @@
   .statusbar {
     height: 22px;
     background: var(--bg-panel);
-    border-top: 1px solid #ffffff10;
+    border-top: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     display: flex;
     align-items: center;
     padding: 0 12px;
@@ -943,13 +1042,13 @@
   .status-dot { width: 5px; height: 5px; border-radius: 50%; }
 
   .side-panel::-webkit-scrollbar, .props-panel::-webkit-scrollbar { width: 4px; }
-  .side-panel::-webkit-scrollbar-thumb, .props-panel::-webkit-scrollbar-thumb { background: #ffffff15; }
+  .side-panel::-webkit-scrollbar-thumb, .props-panel::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--ink) 8%, transparent); }
 
   /* TEXT PROPERTIES DIALOG */
   #print-dialog {
     position: fixed; display: none;
     top: 50%; left: 50%; transform: translate(-50%,-50%);
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     padding: 0; z-index: 960; width: 320px;
     box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     font-family: 'JetBrains Mono', monospace;
@@ -957,14 +1056,14 @@
   #vp-dialog, #ct-dialog, #cf-dialog, #kd-dialog, #kd-browser {
     position: fixed; display: none;
     top: 50%; left: 50%; transform: translate(-50%,-50%);
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     z-index: 960; width: 320px; box-shadow: 0 12px 48px rgba(0,0,0,0.8);
     font-family: 'JetBrains Mono', monospace;
   }
   #kd-browser { width: 400px; }
   #vp-dialog .pd-body input[type=number], #ct-dialog .pd-body input[type=number],
   #kd-dialog .pd-body input, #kd-browser .pd-body input {
-    background: #111827; border: 1px solid #ffffff22; color: #e0e0e0;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); color: var(--text);
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     border-radius: 4px; padding: 4px 7px; flex: 1; min-width: 0;
   }
@@ -972,25 +1071,25 @@
   .kd-breadcrumb a { color: var(--accent); cursor: pointer; }
   .kd-list { max-height: 300px; overflow-y: auto; border: 1px solid #ffffff14; border-radius: 4px; }
   .kd-item { display: flex; align-items: center; gap: 4px; padding: 5px 8px; cursor: pointer;
-    font-size: 11px; color: var(--text); border-bottom: 1px solid #ffffff08; }
+    font-size: 11px; color: var(--text); border-bottom: 1px solid color-mix(in srgb, var(--ink) 3%, transparent); }
   .kd-item .kd-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kd-item:hover { background: var(--accent-dim); color: var(--accent); }
-  .kd-ren { color: #777; padding: 0 4px; }
+  .kd-ren { color: var(--text-dim); padding: 0 4px; }
   .kd-ren:hover { color: var(--accent); }
   /* Menu « Nouvelle présentation depuis un modèle » */
   #ct-menu {
     position: fixed; display: none; z-index: 1000;
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 6px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 6px;
     box-shadow: 0 8px 28px rgba(0,0,0,0.7); padding: 4px;
     font-family: 'JetBrains Mono', monospace; font-size: 11px; min-width: 200px;
   }
   #ct-menu .ctm-item { padding: 6px 10px; cursor: pointer; border-radius: 4px; color: var(--text); white-space: nowrap; display: flex; align-items: center; }
   #ct-menu .ctm-item:hover { background: var(--accent-dim); color: var(--accent); }
-  #ct-menu .ctm-edit { margin-left: auto; padding-left: 12px; color: #777; }
+  #ct-menu .ctm-edit { margin-left: auto; padding-left: 12px; color: var(--text-dim); }
   #ct-menu .ctm-edit:hover { color: var(--accent); }
-  #ct-menu .ctm-del { padding-left: 8px; color: #777; }
+  #ct-menu .ctm-del { padding-left: 8px; color: var(--text-dim); }
   #ct-menu .ctm-del:hover { color: var(--error); }
-  #ct-menu .ctm-sep { height: 1px; background: #ffffff14; margin: 4px 2px; }
+  #ct-menu .ctm-sep { height: 1px; background: color-mix(in srgb, var(--ink) 8%, transparent); margin: 4px 2px; }
   #ct-menu .ctm-title { padding: 4px 10px; color: var(--text-dim); font-size: 9px; letter-spacing: .5px; }
   #paper-tools {
     position: absolute; top: 8px; right: 8px; z-index: 5; display: none; gap: 4px;
@@ -998,29 +1097,29 @@
   #paper-tools button {
     font-family: 'JetBrains Mono', monospace; font-size: 10px; cursor: pointer;
     background: #00000088; backdrop-filter: blur(4px); color: var(--text);
-    border: 1px solid #ffffff20; border-radius: 4px; padding: 4px 10px;
+    border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 4px; padding: 4px 10px;
   }
   #paper-tools button:hover { color: var(--accent); border-color: var(--accent); }
 
   .pd-header {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 14px 9px; border-bottom: 1px solid #ffffff18;
+    padding: 10px 14px 9px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
     font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #ff9800;
   }
   .pd-body { padding: 14px; }
   .pd-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-  .pd-label { font-size: 10px; color: #aaa; min-width: 70px; }
+  .pd-label { font-size: 10px; color: var(--text-dim); min-width: 70px; }
   .pd-body input[type=text], .pd-body select {
-    background: #111827; border: 1px solid #ffffff22; color: #e0e0e0;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); color: var(--text);
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     border-radius: 4px; padding: 4px 7px; flex: 1; min-width: 0;
   }
   .pd-zone-info {
-    background: #0d1526; border: 1px solid #ffffff15; border-radius: 4px;
-    padding: 5px 9px; font-size: 10px; color: #aaa; flex: 1;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent); border-radius: 4px;
+    padding: 5px 9px; font-size: 10px; color: var(--text-dim); flex: 1;
   }
   .pd-zone-info.set { color: #00d4ff; }
-  .pd-sep { height: 1px; background: #ffffff10; margin: 6px 0 10px; }
+  .pd-sep { height: 1px; background: color-mix(in srgb, var(--ink) 6%, transparent); margin: 6px 0 10px; }
   .pd-footer { display: flex; gap: 8px; padding: 0 14px 14px; justify-content: flex-end; }
   .pd-btn-print {
     background: #ff9800; color: #000; border: none; border-radius: 4px;
@@ -1029,66 +1128,66 @@
   }
   .pd-btn-print:hover { background: #ffb74d; }
   .pd-btn-sel {
-    background: #1e3a5f; color: #00d4ff; border: 1px solid #00d4ff44;
+    background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
     border-radius: 4px; padding: 4px 10px; font-size: 10px;
     font-family: 'JetBrains Mono',monospace; cursor: pointer;
   }
-  .pd-btn-sel:hover { background: #1e4a7a; }
+  .pd-btn-sel:hover { background: color-mix(in srgb, var(--accent) 25%, transparent); }
   #text-dialog {
     position: fixed;
-    background: #1a2133; border: 1px solid #ffffff22; border-radius: 8px;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     padding: 0; z-index: 900; width: 280px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.7);
     font-family: 'JetBrains Mono', monospace;
   }
   .td-header {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 14px 9px; border-bottom: 1px solid #ffffff18;
+    padding: 10px 14px 9px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
     font-size: 11px; font-weight: 600; letter-spacing: 1px; color: var(--accent);
   }
   .td-close {
-    cursor: pointer; color: #ffffff55; font-size: 16px; line-height: 1;
+    cursor: pointer; color: color-mix(in srgb, var(--ink) 33%, transparent); font-size: 16px; line-height: 1;
     width: 20px; text-align: center;
   }
   .td-close:hover { color: #fff; }
   .td-body { padding: 12px 14px 10px; display: flex; flex-direction: column; gap: 10px; }
   .td-symbols { display: flex; gap: 4px; flex-wrap: wrap; }
   .td-sym-btn {
-    min-width: 28px; height: 26px; background: #0d1525; border: 1px solid #ffffff1a;
-    color: #e8ecf4; font-size: 13px; cursor: pointer; border-radius: 4px;
+    min-width: 28px; height: 26px; background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+    color: var(--text); font-size: 13px; cursor: pointer; border-radius: 4px;
     display: flex; align-items: center; justify-content: center; padding: 0 5px;
     font-family: 'Share Tech', sans-serif;
   }
-  .td-sym-btn:hover { background: #1a2a44; border-color: var(--accent); color: var(--accent); }
+  .td-sym-btn:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); border-color: var(--accent); color: var(--accent); }
   .td-field { display: flex; flex-direction: column; gap: 4px; }
   .td-label {
     font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;
-    color: #ffffff44;
+    color: color-mix(in srgb, var(--ink) 27%, transparent);
   }
   .td-field input, .td-field select {
-    background: #0d1525; border: 1px solid #ffffff1a; border-radius: 4px;
+    background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); border-radius: 4px;
     color: #e8ecf4; font-family: 'JetBrains Mono', monospace; font-size: 12px;
     padding: 6px 9px; outline: none; width: 100%; box-sizing: border-box;
   }
   .td-field input:focus, .td-field select:focus { border-color: var(--accent); }
-  .td-field select option { background: #1a2133; }
+  .td-field select option { background: var(--bg-elev); }
   .td-row2 { display: flex; gap: 10px; }
   .td-row2 .td-field { flex: 1; }
   .td-styles { display: flex; gap: 6px; }
   .td-style-btn {
-    min-width: 36px; height: 30px; background: #0d1525; border: 1px solid #ffffff1a;
-    color: #ffffff88; font-size: 13px; cursor: pointer; border-radius: 4px;
+    min-width: 36px; height: 30px; background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+    color: color-mix(in srgb, var(--ink) 53%, transparent); font-size: 13px; cursor: pointer; border-radius: 4px;
     display: flex; align-items: center; justify-content: center; padding: 0 8px;
   }
   .td-style-btn.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
-  .td-style-btn:hover:not(.active) { border-color: #ffffff33; color: #fff; }
+  .td-style-btn:hover:not(.active) { border-color: color-mix(in srgb, var(--ink) 20%, transparent); color: #fff; }
   .td-footer { display: flex; gap: 8px; padding: 0 14px 12px; }
   .td-footer button {
     flex: 1; padding: 7px 10px; font-size: 11px; font-weight: 600; cursor: pointer;
-    border-radius: 5px; border: 1px solid #ffffff22; background: #0d1525;
+    border-radius: 5px; border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); background: var(--input-bg);
     color: #ffffffaa; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.3px;
   }
-  .td-footer button:hover { color: #fff; border-color: #ffffff44; }
+  .td-footer button:hover { color: #fff; border-color: color-mix(in srgb, var(--ink) 27%, transparent); }
   .td-ok { background: var(--accent-dim) !important; color: var(--accent) !important; border-color: var(--accent) !important; }
 </style>
 </head>
@@ -1138,6 +1237,9 @@
           <span>Imprimer / Export PDF</span><span class="item-shortcut">Ctrl+P</span>
         </div>
         <div class="menu-dropdown-sep"></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('THEME');closeMenus()">
+          <span>Thème clair / sombre</span>
+        </div>
         <div class="menu-dropdown-item" onclick="openPrefsDialog();closeMenus()">
           <span>Préférences…</span>
         </div>
@@ -1652,6 +1754,9 @@
       <button class="tool-btn" data-tool="pan" title="Panoramique" onclick="setTool('pan')">
         <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="3" fill="none"/></svg>
       </button>
+      <button class="tool-btn" id="theme-btn" title="Basculer le thème (THEME)" onclick="executeCommand('THEME')">
+        <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.5-.05-1-.13-1.45A7 7 0 0 1 11.45 3.13C11 3.05 12.5 3 12 3z"/><circle cx="12" cy="12" r="9" fill="none"/></svg>
+      </button>
     </div>
   </div>
 
@@ -1815,7 +1920,7 @@
 </div>
 
 <!-- DIM STYLE MANAGER -->
-<div id="dim-style-manager" style="display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:2000;background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;min-width:480px;box-shadow:0 8px 32px #0008;">
+<div id="dim-style-manager" style="display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:2000;background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;min-width:560px;box-shadow:0 8px 32px #0008;">
   <div class="lm-header">
     <span>STYLES DE COTES</span>
     <span class="lm-close" onclick="closeDimStyleManager()">×</span>
@@ -1826,7 +1931,7 @@
   <div class="lm-table">
     <table class="lm-grid">
       <thead><tr>
-        <th>Nom</th><th>Texte (mm)</th><th>Flèche (mm)</th><th>Attache (mm)</th><th>Déc.</th><th></th>
+        <th>Nom</th><th>Texte (mm)</th><th>Flèche (mm)</th><th>Attache (mm)</th><th>Retrait (mm)</th><th>Déc.</th><th></th>
       </tr></thead>
       <tbody id="dsm-body"></tbody>
     </table>
@@ -1899,7 +2004,7 @@
     </div>
   </div>
   <div style="padding:0 16px 10px">
-    <label style="display:flex;align-items:center;gap:7px;font-size:11px;color:#ffffff88;cursor:pointer;user-select:none">
+    <label style="display:flex;align-items:center;gap:7px;font-size:11px;color:color-mix(in srgb, var(--ink) 53%, transparent);cursor:pointer;user-select:none">
       <input id="par-rotate" type="checkbox" checked onchange="polarArrayPreviewUpdate()">
       Faire pivoter les éléments
     </label>
@@ -2002,28 +2107,28 @@
   </div>
 </div>
 
-<div id="dim-text-dialog" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2133;border:1px solid #ffffff22;border-radius:8px;z-index:951;width:340px;box-shadow:0 12px 48px rgba(0,0,0,0.8);font-family:'IBM Plex Sans',sans-serif">
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #ffffff18;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1px;color:var(--accent)">
+<div id="dim-text-dialog" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2133;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:8px;z-index:951;width:340px;box-shadow:0 12px 48px rgba(0,0,0,0.8);font-family:'IBM Plex Sans',sans-serif">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid color-mix(in srgb, var(--ink) 9%, transparent);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1px;color:var(--accent)">
     TEXTE DE COTE
-    <span onclick="closeDimTextDialog()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+    <span onclick="closeDimTextDialog()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
   </div>
   <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px">
-    <label style="font-size:10px;color:#ffffff55;letter-spacing:0.4px">Texte libre — utiliser &lt;&gt; pour la valeur mesurée</label>
+    <label style="font-size:10px;color:color-mix(in srgb, var(--ink) 33%, transparent);letter-spacing:0.4px">Texte libre — utiliser &lt;&gt; pour la valeur mesurée</label>
     <input id="dim-td-input" type="text" placeholder="<>" autocomplete="off"
-      style="background:#0d1525;border:1px solid #ffffff22;border-radius:3px;color:var(--text);font-size:13px;padding:6px 10px;font-family:'JetBrains Mono',monospace;outline:none"
+      style="background:var(--bg-elev);border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:3px;color:var(--text);font-size:13px;padding:6px 10px;font-family:'JetBrains Mono',monospace;outline:none"
       oninput="updateDimTextPreview()" onkeydown="if(event.key==='Enter')confirmDimTextDialog();if(event.key==='Escape')closeDimTextDialog()">
     <div id="dim-td-preview" style="font-size:12px;color:var(--accent);min-height:18px;font-family:'JetBrains Mono',monospace;padding-left:2px"></div>
   </div>
-  <div style="padding:8px 16px;border-top:1px solid #ffffff12;display:flex;justify-content:flex-end;gap:8px">
-    <button onclick="closeDimTextDialog()" style="padding:4px 16px;background:none;border:1px solid #ffffff22;border-radius:3px;color:var(--text-dim);font-size:11px;cursor:pointer">Annuler</button>
-    <button onclick="confirmDimTextDialog()" style="padding:4px 16px;background:var(--accent);border:none;border-radius:3px;color:#000;font-size:11px;font-weight:600;cursor:pointer">OK</button>
+  <div style="padding:8px 16px;border-top:1px solid color-mix(in srgb, var(--ink) 7%, transparent);display:flex;justify-content:flex-end;gap:8px">
+    <button onclick="closeDimTextDialog()" style="padding:4px 16px;background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:3px;color:var(--text-dim);font-size:11px;cursor:pointer">Annuler</button>
+    <button onclick="confirmDimTextDialog()" style="padding:4px 16px;background:var(--accent);border:none;border-radius:3px;color:var(--on-accent);font-size:11px;font-weight:600;cursor:pointer">OK</button>
   </div>
 </div>
 
 <div id="print-dialog">
   <div class="pd-header">
     EXPORT PDF
-    <span onclick="closePrintDialog()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+    <span onclick="closePrintDialog()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
   </div>
   <div class="pd-body">
     <div class="pd-row">
@@ -2070,14 +2175,14 @@
     </div>
   </div>
   <div class="pd-footer">
-    <button onclick="closePrintDialog()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button onclick="closePrintDialog()" style="background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:4px;padding:6px 14px;color:var(--text-dim);font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
     <button class="pd-btn-print" onclick="doPrint()">Télécharger PDF ↵</button>
   </div>
 </div>
 
 <div id="vp-dialog">
   <div class="pd-header">FENÊTRE
-    <span onclick="closeViewportDialog()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+    <span onclick="closeViewportDialog()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
   </div>
   <div class="pd-body">
     <div class="pd-row">
@@ -2109,14 +2214,14 @@
     <div class="pd-row"><span class="pd-label">Verrouillée</span><input id="vpd-lock" type="checkbox" style="flex:none"></div>
   </div>
   <div class="pd-footer">
-    <button onclick="closeViewportDialog()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button onclick="closeViewportDialog()" style="background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:4px;padding:6px 14px;color:var(--text-dim);font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
     <button class="pd-btn-print" onclick="applyViewportDialog()">Appliquer ↵</button>
   </div>
 </div>
 
 <div id="ct-dialog">
   <div class="pd-header">ENREGISTRER LE MODÈLE
-    <span onclick="closeSaveCartoucheDialog()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+    <span onclick="closeSaveCartoucheDialog()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
   </div>
   <div class="pd-body">
     <div class="pd-row"><span class="pd-label">Nom</span><input id="ct-name" type="text" placeholder="Mon cartouche"></div>
@@ -2138,7 +2243,7 @@
     <div style="font-size:9px;color:#888;line-height:1.5">Le dessin courant devient le modèle (cadre + cartouche).<br>Champs dynamiques dans les textes : {{titre}}, {{echelle}}, {{date}}, {{auteur}}, {{indice}}, {{numero}}, {{format}}, {{page}}.</div>
   </div>
   <div class="pd-footer">
-    <button onclick="closeSaveCartoucheDialog()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button onclick="closeSaveCartoucheDialog()" style="background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:4px;padding:6px 14px;color:var(--text-dim);font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
     <button class="pd-btn-sel" onclick="saveCartouche(false)">Ajouter à mes modèles</button>
     <button class="pd-btn-print" onclick="saveCartouche(true)">Exporter .pcad ↵</button>
   </div>
@@ -2146,11 +2251,11 @@
 
 <div id="cf-dialog">
   <div class="pd-header">CARTOUCHE
-    <span onclick="closeCartoucheFields()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+    <span onclick="closeCartoucheFields()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
   </div>
   <div class="pd-body" id="cf-fields"></div>
   <div class="pd-footer">
-    <button onclick="closeCartoucheFields()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button onclick="closeCartoucheFields()" style="background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:4px;padding:6px 14px;color:var(--text-dim);font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
     <button class="pd-btn-print" onclick="applyCartoucheFields()">Appliquer ↵</button>
   </div>
 </div>
@@ -2160,7 +2265,7 @@
 
 <div id="kd-dialog">
   <div class="pd-header">CONNEXION kDRIVE
-    <span onclick="closeKdriveConnect()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+    <span onclick="closeKdriveConnect()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
   </div>
   <div class="pd-body">
     <div class="pd-row"><span class="pd-label">Proxy (Worker)</span><input id="kd-worker" type="text"></div>
@@ -2170,15 +2275,15 @@
     <div class="pd-row"><span class="pd-label"></span><button class="pd-btn-sel" onclick="kdriveTest()">Tester</button> <span id="kd-status" style="font-size:10px;margin-left:6px"></span></div>
   </div>
   <div class="pd-footer">
-    <button onclick="kdriveForget()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Oublier</button>
-    <button onclick="closeKdriveConnect()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Fermer</button>
+    <button onclick="kdriveForget()" style="background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:4px;padding:6px 14px;color:var(--text-dim);font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Oublier</button>
+    <button onclick="closeKdriveConnect()" style="background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:4px;padding:6px 14px;color:var(--text-dim);font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Fermer</button>
     <button class="pd-btn-print" onclick="kdriveSaveConn()">Enregistrer ↵</button>
   </div>
 </div>
 
 <div id="kd-browser">
   <div class="pd-header"><span id="kd-br-title">kDRIVE</span>
-    <span onclick="closeKdriveBrowser()" style="cursor:pointer;color:#ffffff55;font-size:18px;line-height:1">×</span>
+    <span onclick="closeKdriveBrowser()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
   </div>
   <div class="pd-body">
     <div style="display:flex;align-items:center;gap:8px">
@@ -2189,7 +2294,7 @@
     <div class="pd-row" id="kd-save-row" style="display:none"><span class="pd-label">Nom</span><input id="kd-fname" type="text" placeholder="dessin.mcad"></div>
   </div>
   <div class="pd-footer">
-    <button onclick="closeKdriveBrowser()" style="background:none;border:1px solid #ffffff22;border-radius:4px;padding:6px 14px;color:#aaa;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
+    <button onclick="closeKdriveBrowser()" style="background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:4px;padding:6px 14px;color:var(--text-dim);font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">Annuler</button>
     <button id="kd-save-btn" class="pd-btn-print" style="display:none" onclick="kdriveDoSave()">Enregistrer ici</button>
   </div>
 </div>
@@ -2277,9 +2382,13 @@
 <script>
 // ===USER_PREFS_START===
 const USER_PREFS = {
+  theme: 'dark',
+  pickboxPx: 6,
+  osnapTolPx: 15,
   snap: true,
   snapSize: 20,
   gridSize: 20,
+  gridSizeY: 20,
   gridVis: true,
   osnapEnabled: true,
   osnapModes: { endpoint:true, midpoint:true, center:true, nearest:false, intersection:true, perpendicular:false, tangent:false, quadrant:true, extension:false },
@@ -2296,6 +2405,9 @@ const USER_PREFS = {
 
 // ===== STATE =====
 const S = {
+  theme: 'dark',
+  pickboxPx: 6,    // demi-côté du carré de sélection (px écran)
+  osnapTolPx: 15,  // portée d'accrochage OSNAP (px écran)
   entities: [],
   layers: [
     { name: '0 - Défaut',      color: '#00d4ff', printColor: '#000000', visible: true, lineWidth: 0.35, lineType: 'solid' },
@@ -2304,13 +2416,13 @@ const S = {
     { name: '3 - Texte',       color: '#ffab40', printColor: '#000000', visible: true, lineWidth: 0.25, lineType: 'solid' },
   ],
   dimStyles: [
-    { name: '1:1',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, decimals: 1 },
-    { name: '1:2',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, decimals: 1 },
-    { name: '1:5',   textHeight:   5, arrowSize:  3.0, extGap:  2.0, decimals: 1 },
-    { name: '1:10',  textHeight:  10, arrowSize:  6.0, extGap:  4.0, decimals: 0 },
-    { name: '1:20',  textHeight:  20, arrowSize: 12.0, extGap:  8.0, decimals: 0 },
-    { name: '1:50',  textHeight:  50, arrowSize: 30.0, extGap: 20.0, decimals: 0 },
-    { name: '1:100', textHeight: 100, arrowSize: 60.0, extGap: 40.0, decimals: 0 },
+    { name: '1:1',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, extOff:  2.0, decimals: 1 },
+    { name: '1:2',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, extOff:  4.0, decimals: 1 },
+    { name: '1:5',   textHeight:   5, arrowSize:  3.0, extGap:  2.0, extOff:  6.0, decimals: 1 },
+    { name: '1:10',  textHeight:  10, arrowSize:  6.0, extGap:  4.0, extOff: 10.0, decimals: 0 },
+    { name: '1:20',  textHeight:  20, arrowSize: 12.0, extGap:  8.0, extOff: 20.0, decimals: 0 },
+    { name: '1:50',  textHeight:  50, arrowSize: 30.0, extGap: 20.0, extOff: 20.0, decimals: 0 },
+    { name: '1:100', textHeight: 100, arrowSize: 60.0, extGap: 40.0, extOff: 20.0, decimals: 0 },
   ],
   currentDimStyle: '1:1',
   currentLayer: 0,
@@ -2321,6 +2433,7 @@ const S = {
   polarAngle: 15, // degrees increment for polar tracking
   gridVis: true,
   gridSize: 20,
+  gridSizeY: 20,
   zoom: 1,
   panX: 0, panY: 0,
   selected: [],
@@ -2497,7 +2610,7 @@ const S = {
 };
 
 // ===== OSNAP ENGINE =====
-const OSNAP_COLORS = {
+const OSNAP_COLORS_DARK = {
   endpoint: '#ff4081',
   midpoint: '#00e676',
   center: '#ffab40',
@@ -2508,6 +2621,73 @@ const OSNAP_COLORS = {
   quadrant: '#cddc39',
   extension: '#ff9800',
 };
+// Mêmes teintes, assombries pour rester lisibles sur fond clair
+const OSNAP_COLORS_LIGHT = {
+  endpoint: '#c2185b',
+  midpoint: '#00873e',
+  center: '#9a5b00',
+  nearest: '#2962ff',
+  intersection: '#9c27b0',
+  perpendicular: '#00707e',
+  tangent: '#d84315',
+  quadrant: '#7a7000',
+  extension: '#e65100',
+};
+let OSNAP_COLORS = OSNAP_COLORS_DARK;
+
+// ===== THÈME (sombre / clair) =====
+// Couleurs du canvas pilotées par le thème. `ink` = encre de chrome (réticule,
+// guides, marqueurs) ; les suffixes alpha hex y sont concaténés (TC.ink+'66').
+const CANVAS_THEMES = {
+  dark: {
+    ink: '#ffffff', accent: '#00d4ff', label: '#ffab40',
+    gridFine: '#141e35', grid: '#1a2a4a', gridMajor: '#253a5a',
+    pill: '#0d1525cc', atelier: '#0c0f17',
+    rbWin: '#00d4ff', rbCross: '#00e676',
+  },
+  light: {
+    ink: '#13202e', accent: '#0072ad', label: '#9a5b00',
+    gridFine: '#e9edf3', grid: '#dde3eb', gridMajor: '#c6d0dd',
+    pill: '#ffffffe6', atelier: '#c6cbd3',
+    rbWin: '#0072ad', rbCross: '#00873e',
+  },
+};
+let TC = CANVAS_THEMES.dark;
+
+// Adapte une couleur d'entité au fond clair : si trop lumineuse pour rester
+// lisible sur blanc (contraste < ~3:1), on la rabat vers le noir en conservant
+// la teinte. Cache par couleur, vidé au changement de thème.
+const _dispColorCache = new Map();
+function _srgb2lin(u){ u/=255; return u<=0.04045 ? u/12.92 : Math.pow((u+0.055)/1.055, 2.4); }
+function _lin2srgb(v){ v=Math.max(0,Math.min(1,v)); return Math.round(255*(v<=0.0031308 ? v*12.92 : 1.055*Math.pow(v,1/2.4)-0.055)); }
+function dispColor(c) {
+  if (S.theme !== 'light' || !c) return c;
+  let v = _dispColorCache.get(c);
+  if (v !== undefined) return v;
+  v = c;
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(c).trim());
+  if (m) {
+    let h = m[1]; if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    const r=_srgb2lin(parseInt(h.slice(0,2),16)), g=_srgb2lin(parseInt(h.slice(2,4),16)), b=_srgb2lin(parseInt(h.slice(4,6),16));
+    const L = 0.2126*r + 0.7152*g + 0.0722*b;
+    const Lmax = 0.28; // ≈ contraste 3:1 sur fond blanc
+    if (L > Lmax) {
+      const k = Lmax / L;
+      v = '#' + [r,g,b].map(x => _lin2srgb(x*k).toString(16).padStart(2,'0')).join('');
+    }
+  }
+  _dispColorCache.set(c, v);
+  return v;
+}
+
+function setTheme(t) {
+  S.theme = t === 'light' ? 'light' : 'dark';
+  document.documentElement.classList.toggle('theme-light', S.theme === 'light');
+  TC = CANVAS_THEMES[S.theme];
+  OSNAP_COLORS = S.theme === 'light' ? OSNAP_COLORS_LIGHT : OSNAP_COLORS_DARK;
+  _dispColorCache.clear();
+  render();
+}
 
 // Retourne les directions de tracking pour un point acquis selon Ortho/Polaire
 function getExtTrackDirs(acq) {
@@ -2605,7 +2785,7 @@ function findOsnap(wx, wy) {
     return _osnapCache.result;
   }
 
-  const tol = 15 / S.zoom;
+  const tol = (S.osnapTolPx || 15) / S.zoom;
   let best = null;
   let bestDist = tol;
 
@@ -3496,6 +3676,16 @@ const CMD = {
     termPrint(valid.length + ' objet(s) resélectionné(s) [Previous]', 'success');
     updateProperties(); render();
   }},
+  THEME: { alias: ['THM'], desc: 'Basculer thème sombre/clair (THEME [CLAIR|SOMBRE])', exec(args) {
+    const a = (args[0] || '').toUpperCase();
+    let t;
+    if (['CLAIR','LIGHT','L'].includes(a)) t = 'light';
+    else if (['SOMBRE','DARK','D'].includes(a)) t = 'dark';
+    else t = S.theme === 'dark' ? 'light' : 'dark';
+    setTheme(t);
+    autoSavePrefs();
+    termPrint('Thème : ' + (t === 'light' ? 'clair' : 'sombre'), 'info');
+  }},
   TRIM: { alias: ['TR'], desc: 'Couper une entité avec une ou plusieurs limites', exec() {
     S.trimStep=1; S.trimCuttingIds=[];
     setTool('trim');
@@ -3555,7 +3745,7 @@ const CMD = {
     if (args[0]) { const r=parseFloat(args[0]); if (!isNaN(r) && r>=0) S.filletRadius=r; }
     S.filletFirstId=null; S.filletFirstSeg=null; S.filletClickPos1=null; S.selected=[];
     setTool('fillet');
-    termPrint('RACCORD R='+S.filletRadius+' — Cliquer le 1er segment (Echap=fin)', 'info');
+    termPrint('RACCORD R='+S.filletRadius+' — Cliquer le 1er segment ou R pour modifier le rayon (Echap=fin)', 'info');
     setTimeout(smartFocus,0);
   }},
   CHAMFER: { alias: ['CHA','CHANFREIN'], desc: 'Chanfrein — CHAMFER [d1] [d2]', exec(args) {
@@ -3563,7 +3753,7 @@ const CMD = {
     if (args[1]) { const d=parseFloat(args[1]); if (!isNaN(d) && d>0) S.filletDist2=d; }
     S.filletFirstId=null; S.filletFirstSeg=null; S.filletClickPos1=null; S.selected=[];
     setTool('chamfer');
-    termPrint('CHANFREIN écart='+S.filletDist1+' — Cliquer le 1er segment (Echap=fin)', 'info');
+    termPrint('CHANFREIN EC='+S.filletDist1+'/'+S.filletDist2+' — Cliquer le 1er segment ou EC pour modifier l\'écart (Echap=fin)', 'info');
     setTimeout(smartFocus,0);
   }},
   UNDO: { alias: ['U','ANNULER'], desc: 'Annuler', exec: () => {
@@ -3625,9 +3815,19 @@ const CMD = {
     _fileHandle = null; _kdFile = null; localStorage.removeItem('minicad_autosave'); updateSaveIndicator('new');
     termPrint('Dessin effacé', 'success'); render();
   }},
-  GRID: { alias: ['GRILLE'], desc: 'Taille grille (GRID [n])', exec: (args) => {
-    if (args[0]) S.gridSize = Math.max(5, parseInt(args[0]) || 20);
-    S.gridVis = !S.gridVis; termPrint('Grille: ' + (S.gridVis ? 'ON' : 'OFF') + ' (' + S.gridSize + ')', 'info'); render();
+  GRID: { alias: ['GRILLE'], desc: 'Taille grille (GRID [x] [y] — ex: GRID 20 10)', exec: (args) => {
+    if (args[0]) {
+      const gx = Math.max(1, parseFloat(args[0]) || 20);
+      const gy = args[1] ? Math.max(1, parseFloat(args[1]) || gx) : gx;
+      S.gridSize = gx; S.gridSizeY = gy; S.gridVis = true;
+      const lbl = gx !== gy ? (gx + '×' + gy) : String(gx);
+      termPrint('Grille: ON (' + lbl + ')', 'info');
+    } else {
+      S.gridVis = !S.gridVis;
+      const lbl = S.gridSizeY !== S.gridSize ? (S.gridSize + '×' + S.gridSizeY) : String(S.gridSize);
+      termPrint('Grille: ' + (S.gridVis ? 'ON' : 'OFF') + ' (' + lbl + ')', 'info');
+    }
+    render();
   }},
   SNAP: { alias: ['ACCROCHAGE'], desc: 'Toggle snap grille', exec: () => toggleSnap() },
   ORTHO: { desc: 'Toggle ortho (90°)', exec: () => toggleOrtho() },
@@ -3951,8 +4151,8 @@ function s2w(sx, sy) { return [(sx - S.panX - canvasW / 2) / S.zoom, -(sy - S.pa
 
 function snapToGrid(wx, wy) {
   if (!S.snap) return [wx, wy];
-  const g = S.gridSize;
-  return [Math.round(wx / g) * g, Math.round(wy / g) * g];
+  const gx = S.gridSize, gy = S.gridSizeY || S.gridSize;
+  return [Math.round(wx / gx) * gx, Math.round(wy / gy) * gy];
 }
 
 function resolvePoint(wx, wy) {
@@ -4080,27 +4280,35 @@ function _drawStaticLayer() {
   ctx = staticCtx;
   ctx.clearRect(0, 0, staticCanvas.width, staticCanvas.height);
 
-  // Grid
+  // Grid (espacements X et Y indépendants)
   if (S.gridVis) {
-    const g = S.gridSize * S.zoom;
-    if (g > 4) {
-      const ox = (S.panX + canvasW/2) % g, oy = (S.panY + canvasH/2) % g;
-      ctx.strokeStyle = g > 15 ? '#1a2a4a' : '#141e35'; ctx.lineWidth = 0.5;
-      for (let x=ox; x<canvasW; x+=g){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvasH); ctx.stroke(); }
-      for (let y=oy; y<canvasH; y+=g){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvasW,y); ctx.stroke(); }
+    const gx = S.gridSize * S.zoom;
+    const gy = (S.gridSizeY || S.gridSize) * S.zoom;
+    ctx.lineWidth = 0.5;
+    ctx.strokeStyle = (gx > 15 && gy > 15) ? TC.grid : TC.gridFine;
+    if (gx > 4) {
+      const ox = (S.panX + canvasW/2) % gx;
+      for (let x=ox; x<canvasW; x+=gx){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvasH); ctx.stroke(); }
     }
-    const mg = g*5;
-    if (mg > 20) {
-      const ox2=(S.panX+canvasW/2)%mg, oy2=(S.panY+canvasH/2)%mg;
-      ctx.strokeStyle='#253a5a'; ctx.lineWidth=0.5;
-      for (let x=ox2; x<canvasW; x+=mg){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvasH); ctx.stroke(); }
-      for (let y=oy2; y<canvasH; y+=mg){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvasW,y); ctx.stroke(); }
+    if (gy > 4) {
+      const oy = (S.panY + canvasH/2) % gy;
+      for (let y=oy; y<canvasH; y+=gy){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvasW,y); ctx.stroke(); }
+    }
+    const mgx = gx*5, mgy = gy*5;
+    ctx.strokeStyle = TC.gridMajor;
+    if (mgx > 20) {
+      const ox2=(S.panX+canvasW/2)%mgx;
+      for (let x=ox2; x<canvasW; x+=mgx){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvasH); ctx.stroke(); }
+    }
+    if (mgy > 20) {
+      const oy2=(S.panY+canvasH/2)%mgy;
+      for (let y=oy2; y<canvasH; y+=mgy){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvasW,y); ctx.stroke(); }
     }
   }
 
   // Origine
   const [ox,oy] = w2s(0,0);
-  ctx.strokeStyle='#ffffff20'; ctx.lineWidth=1;
+  ctx.strokeStyle=TC.ink+'20'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(ox-20,oy); ctx.lineTo(ox+20,oy); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(ox,oy-20); ctx.lineTo(ox,oy+20); ctx.stroke();
 
@@ -4114,7 +4322,7 @@ function _drawStaticLayer() {
     if (!S.layers[e.layer]?.visible) return;
     if (!_inViewport(getEntityBBox(e), vp)) return;
     const layer = S.layers[e.layer];
-    const color = e.color || layer?.color || '#00d4ff';
+    const color = dispColor(e.color || layer?.color || '#00d4ff');
     ctx.strokeStyle = color; ctx.fillStyle = color;
     ctx.lineWidth = getLayerLineWidthPx(e.lineWidth ?? layer?.lineWidth);
     ctx.setLineDash(e.dash || getLayerLineDash(e.lineType || layer?.lineType || 'solid'));
@@ -4135,7 +4343,7 @@ function drawAiPlacementPreview() {
   ctx.globalAlpha = 0.55;
   S.aiPendingEntities.forEach(e => {
     const layer = S.layers[e.layer] || S.layers[S.currentLayer];
-    ctx.strokeStyle = layer?.color || '#00d4ff';
+    ctx.strokeStyle = dispColor(layer?.color || '#00d4ff');
     ctx.fillStyle = ctx.strokeStyle;
     ctx.lineWidth = Math.max(1, getLayerLineWidthPx(layer?.lineWidth));
     ctx.setLineDash([5, 4]);
@@ -4146,7 +4354,7 @@ function drawAiPlacementPreview() {
   // Croix au point d'ancrage (centre de la bbox)
   const [scx, scy] = w2s(cx + (mx - cx), cy + (my - cy)); // = w2s(mx, my)
   ctx.save();
-  ctx.strokeStyle = '#00d4ff';
+  ctx.strokeStyle = TC.accent;
   ctx.lineWidth = 1;
   const g = 8;
   ctx.beginPath();
@@ -4168,7 +4376,7 @@ function drawLibPreview() {
   ctx.setLineDash([5, 4]);
   ghosts.forEach(e => {
     const layer = S.layers[e.layer] || S.layers[S.currentLayer];
-    ctx.strokeStyle = layer?.color || '#00d4ff';
+    ctx.strokeStyle = dispColor(layer?.color || '#00d4ff');
     ctx.lineWidth = Math.max(1, getLayerLineWidthPx(layer?.lineWidth));
     drawEntity(e);
   });
@@ -4220,7 +4428,7 @@ function drawPastePreview() {
   ctx.setLineDash([5, 4]);
   S.clipboard.forEach(e => {
     const layer = S.layers[e.layer] || S.layers[S.currentLayer];
-    ctx.strokeStyle = layer?.color || '#00d4ff';
+    ctx.strokeStyle = dispColor(layer?.color || '#00d4ff');
     ctx.fillStyle = ctx.strokeStyle;
     ctx.lineWidth = Math.max(1, getLayerLineWidthPx(layer?.lineWidth));
     drawEntity(e);
@@ -4230,7 +4438,7 @@ function drawPastePreview() {
   // Crosshair at insertion point
   const [smx, smy] = w2s(wx, wy);
   ctx.save();
-  ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 1;
+  ctx.strokeStyle = TC.accent; ctx.lineWidth = 1;
   const g = 8;
   ctx.beginPath();
   ctx.moveTo(smx - g, smy); ctx.lineTo(smx + g, smy);
@@ -4264,12 +4472,25 @@ function _drawDynamicLayer() {
     const isTrimHover    = S.tool==='trim'   && e.id===S.hoverEntityId && !S.trimCuttingIds.includes(e.id);
     const isExtendBound  = S.tool==='extend' && S.extendBoundaryIds.includes(e.id);
     const isExtendHover  = S.tool==='extend' && e.id===S.hoverEntityId && !S.extendBoundaryIds.includes(e.id);
+    const isStretchAffected = S.tool==='stretch' && S.stretchRect && (() => {
+      const { minX, minY, maxX, maxY } = S.stretchRect;
+      const inB = (x,y) => x>=minX && x<=maxX && y>=minY && y<=maxY;
+      const bb = getEntityBBox(e);
+      if (bb && bb.minX>=minX && bb.maxX<=maxX && bb.minY>=minY && bb.maxY<=maxY) return true;
+      if (e.type==='line'||e.type==='wall') return inB(e.x1,e.y1)||inB(e.x2,e.y2);
+      if (e.type==='polyline'||e.type==='cable'||e.type==='spline') return e.points.some(p=>inB(p[0],p[1]));
+      if (e.type==='rect') return inB(e.x1,e.y1)||inB(e.x2,e.y1)||inB(e.x2,e.y2)||inB(e.x1,e.y2);
+      if (e.type==='circle'||e.type==='arc') return inB(e.cx,e.cy);
+      return false;
+    })();
+    const isScaleSelected  = S.tool==='scale'   && S.scaleIds.includes(e.id);
     const highlighted = sel||isOffsetTarget||isOffsetHover||isFilletFirst||isFilletHover||
-                        isJoinSelected||isJoinHover||isTrimCutting||isTrimHover||isExtendBound||isExtendHover||isHatchHover;
+                        isJoinSelected||isJoinHover||isTrimCutting||isTrimHover||isExtendBound||isExtendHover||isHatchHover||
+                        isStretchAffected||isScaleSelected;
     if (!highlighted) return;
     let color = '#448aff';
-    if (isOffsetTarget||isFilletFirst||isJoinSelected||isTrimCutting||isExtendBound) color='#ffab40';
-    if (isOffsetHover ||isFilletHover ||isJoinHover  ||isTrimHover  ||isExtendHover||isHatchHover) color='#ffffff';
+    if (isOffsetTarget||isFilletFirst||isJoinSelected||isTrimCutting||isExtendBound||isStretchAffected||isScaleSelected) color=TC.label;
+    if (isOffsetHover ||isFilletHover ||isJoinHover  ||isTrimHover  ||isExtendHover||isHatchHover) color=TC.ink;
     ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=2;
     ctx.setLineDash(e.dash||[]); drawEntity(e); ctx.setLineDash([]);
     if (sel) drawGrips(e);
@@ -4286,9 +4507,9 @@ function _drawDynamicLayer() {
   if (S.tool==='dist' && S.distPt1 && mouseOnCanvas) {
     const [x1,y1]=S.distPt1,[mx,my]=S.mouseWorld;
     const [sx1,sy1]=w2s(x1,y1),[smx,smy]=w2s(mx,my);
-    ctx.save(); ctx.strokeStyle='#ffab40'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+    ctx.save(); ctx.strokeStyle=TC.label; ctx.lineWidth=1; ctx.setLineDash([4,4]);
     ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(smx,smy); ctx.stroke();
-    ctx.fillStyle='#ffab40'; ctx.font='10px JetBrains Mono';
+    ctx.fillStyle=TC.label; ctx.font='10px JetBrains Mono';
     ctx.textAlign='left'; ctx.textBaseline='bottom';
     ctx.fillText(Math.hypot(mx-x1,my-y1).toFixed(2),(sx1+smx)/2+4,(sy1+smy)/2-4);
     ctx.setLineDash([]); ctx.restore();
@@ -4296,7 +4517,7 @@ function _drawDynamicLayer() {
   if (S.tool === 'area' && S._areaMode === 'points' && S._areaPoints.length > 0 && mouseOnCanvas) {
     const pts = S._areaPoints;
     const [mx, my] = S.mouseWorld;
-    ctx.save(); ctx.strokeStyle = '#ffab40'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+    ctx.save(); ctx.strokeStyle = TC.label; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
     ctx.beginPath();
     const [s0x, s0y] = w2s(pts[0][0], pts[0][1]);
     ctx.moveTo(s0x, s0y);
@@ -4306,13 +4527,13 @@ function _drawDynamicLayer() {
     if (pts.length >= 2) ctx.lineTo(s0x, s0y); // closing dashed line
     ctx.stroke(); ctx.setLineDash([]);
     // Vertex dots
-    ctx.fillStyle = '#ffab40';
+    ctx.fillStyle = TC.label;
     pts.forEach(p => { const [spx, spy] = w2s(p[0], p[1]); ctx.fillRect(spx-3, spy-3, 6, 6); });
     // Live area label
     if (pts.length >= 2) {
       const tmpPts = [...pts, [mx, my]];
       const a = _shoelace(tmpPts);
-      ctx.fillStyle = '#ffab40'; ctx.font = '10px JetBrains Mono';
+      ctx.fillStyle = TC.label; ctx.font = '10px JetBrains Mono';
       ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
       ctx.fillText('S≈' + a.toFixed(2), smx + 6, smy - 4);
     }
@@ -4326,9 +4547,9 @@ function _drawDynamicLayer() {
     const [x1,y1]=S.offsetDistPt1, [mx,my]=S.mouseWorld;
     const [sx1,sy1]=w2s(x1,y1), [smx,smy]=w2s(mx,my);
     const d=Math.hypot(mx-x1,my-y1);
-    ctx.save(); ctx.strokeStyle='#ffab40'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+    ctx.save(); ctx.strokeStyle=TC.label; ctx.lineWidth=1; ctx.setLineDash([4,4]);
     ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(smx,smy); ctx.stroke();
-    ctx.setLineDash([]); ctx.fillStyle='#ffab40'; ctx.font='11px JetBrains Mono';
+    ctx.setLineDash([]); ctx.fillStyle=TC.label; ctx.font='11px JetBrains Mono';
     ctx.textAlign='left'; ctx.textBaseline='bottom';
     ctx.fillText(d.toFixed(1),(sx1+smx)/2+6,(sy1+smy)/2-4);
     ctx.restore();
@@ -4422,7 +4643,7 @@ function _drawDynamicLayer() {
       const rw=Math.abs(dsx), rh=Math.abs(dsy);
       const isWin = rbEnd.wx >= rbStart.wx;
       ctx.save();
-      ctx.strokeStyle=isWin?'#00d4ffaa':'#00e676aa'; ctx.fillStyle=isWin?'#00d4ff0d':'#00e6760d';
+      ctx.strokeStyle=(isWin?TC.rbWin:TC.rbCross)+'aa'; ctx.fillStyle=(isWin?TC.rbWin:TC.rbCross)+'0d';
       ctx.lineWidth=1; if(!isWin) ctx.setLineDash([4,4]);
       ctx.beginPath(); ctx.rect(rx,ry,rw,rh); ctx.fill(); ctx.stroke();
       ctx.setLineDash([]); ctx.restore();
@@ -4452,8 +4673,8 @@ function drawArrayPreview() {
   if (!sources.length) return;
   ctx.save();
   ctx.globalAlpha = 0.45;
-  ctx.strokeStyle = '#00d4ff';
-  ctx.fillStyle = '#00d4ff';
+  ctx.strokeStyle = TC.accent;
+  ctx.fillStyle = TC.accent;
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
   for (let r = 0; r < p.rows; r++) {
@@ -4482,7 +4703,7 @@ function drawPolarArrayPreview() {
 
   ctx.save();
   ctx.globalAlpha = 0.45;
-  ctx.strokeStyle = '#00d4ff'; ctx.fillStyle = '#00d4ff';
+  ctx.strokeStyle = TC.accent; ctx.fillStyle = TC.accent;
   ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
   for (let i = 1; i < p.count; i++) {
     const theta = totalRad * i / p.count;
@@ -4504,7 +4725,7 @@ function drawPolarArrayPreview() {
   const r = Math.hypot(bx - p.cx, by - p.cy) * S.zoom;
   if (r > 3) { ctx.beginPath(); ctx.arc(scx, scy, r, 0, Math.PI*2); ctx.stroke(); }
   ctx.setLineDash([]); ctx.globalAlpha = 0.75;
-  ctx.strokeStyle = '#ffab40'; const cs = 7;
+  ctx.strokeStyle = TC.label; const cs = 7;
   ctx.beginPath(); ctx.moveTo(scx-cs,scy); ctx.lineTo(scx+cs,scy); ctx.moveTo(scx,scy-cs); ctx.lineTo(scx,scy+cs); ctx.stroke();
   ctx.restore();
 }
@@ -4519,7 +4740,7 @@ function _drawMeasureLine(wx1, wy1, wx2, wy2, alpha) {
   ctx.save(); ctx.globalAlpha = alpha;
 
   // Ligne principale
-  ctx.strokeStyle = '#ffab40'; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+  ctx.strokeStyle = TC.label; ctx.lineWidth = 1.5; ctx.setLineDash([]);
   ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(sx2,sy2); ctx.stroke();
 
   // Petites barres perpendiculaires aux extrémités
@@ -4549,14 +4770,14 @@ function _drawMeasureLine(wx1, wy1, wx2, wy2, alpha) {
   const bh = lines.length * lh + pad;
   const bLeft = bx - maxW/2, bTop = by - bh/2;
 
-  ctx.fillStyle = '#0d1525cc';
-  ctx.strokeStyle = '#ffab4088'; ctx.lineWidth = 1; ctx.setLineDash([]);
+  ctx.fillStyle = TC.pill;
+  ctx.strokeStyle = TC.label+'88'; ctx.lineWidth = 1; ctx.setLineDash([]);
   ctx.beginPath();
   ctx.roundRect ? ctx.roundRect(bLeft, bTop, maxW, bh, 4)
                 : ctx.rect(bLeft, bTop, maxW, bh);
   ctx.fill(); ctx.stroke();
 
-  ctx.fillStyle = '#ffab40'; ctx.font = 'bold 11px JetBrains Mono';
+  ctx.fillStyle = TC.label; ctx.font = 'bold 11px JetBrains Mono';
   ctx.textAlign = 'left'; ctx.textBaseline = 'top';
   lines.forEach((l, i) => ctx.fillText(l, bLeft + pad, bTop + pad/2 + i * lh));
 
@@ -4575,7 +4796,7 @@ function drawMeasureOverlay() {
     _drawMeasureLine(S.measurePt1[0], S.measurePt1[1], mx, my, 1.0);
     // Point d'ancrage
     const [spx,spy] = w2s(S.measurePt1[0], S.measurePt1[1]);
-    ctx.save(); ctx.fillStyle = '#ffab40'; ctx.globalAlpha = 1;
+    ctx.save(); ctx.fillStyle = TC.label; ctx.globalAlpha = 1;
     ctx.beginPath(); ctx.arc(spx, spy, 4, 0, Math.PI*2); ctx.fill();
     ctx.restore();
   }
@@ -4720,7 +4941,7 @@ function _drawPaperSpace(layout) {
   ctx = mainCtx;
   ctx.save(); ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
   ctx.clearRect(0, 0, canvasW, canvasH);
-  ctx.fillStyle = '#0c0f17'; ctx.fillRect(0, 0, canvasW, canvasH); // fond atelier
+  ctx.fillStyle = TC.atelier; ctx.fillRect(0, 0, canvasW, canvasH); // fond atelier
   if (!layout) { ctx.restore(); return; }
 
   const Z = S.paperView.zoom, PX = S.paperView.panX, PY = S.paperView.panY;
@@ -4768,7 +4989,7 @@ function _drawViewport(vp, p2s, Z, opts) {
     S.entities.forEach(e => {
       const lyr = S.layers[e.layer];
       if (!lyr || !lyr.visible) return;
-      const color = opts.print ? (lyr.printColor || '#000000') : (e.color || lyr.color || '#00d4ff');
+      const color = opts.print ? (lyr.printColor || '#000000') : dispColor(e.color || lyr.color || '#00d4ff');
       ctx.strokeStyle = color; ctx.fillStyle = color;
       const _lw = e.lineWidth ?? lyr.lineWidth;
       ctx.lineWidth = opts.print ? Math.max(0.13*MM2PX96, (_lw || 0.25)*MM2PX96)
@@ -4796,7 +5017,7 @@ function _vpHandlePts(vx, vy, vw, vh) {
 }
 function _drawVpHandles(vx, vy, vw, vh) {
   const pts = _vpHandlePts(vx, vy, vw, vh);
-  ctx.setLineDash([]); ctx.fillStyle = '#00d4ff'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
+  ctx.setLineDash([]); ctx.fillStyle = TC.accent; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
   Object.values(pts).forEach(([x,y]) => { ctx.fillRect(x-3, y-3, 6, 6); ctx.strokeRect(x-3, y-3, 6, 6); });
 }
 
@@ -5464,7 +5685,7 @@ function drawEllipsePreview() {
   else { [mx,my]=snapToGrid(mx,my); if(S.ortho)[mx,my]=applyOrtho(cx,cy,mx,my); else if(S.polar)[mx,my]=applyPolar(cx,cy,mx,my); }
 
   ctx.save();
-  ctx.strokeStyle='#ffffff66'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+  ctx.strokeStyle=TC.ink+'66'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
 
   if (S._ellipStep === 1) {
     // Rubber-band axe 1
@@ -5482,7 +5703,7 @@ function drawEllipsePreview() {
       ctx.ellipse(scx,scy, rx*S.zoom, ry*S.zoom, -a, 0, Math.PI*2);
       ctx.stroke();
       // Axes en pointillés légers
-      ctx.setLineDash([2,5]); ctx.strokeStyle='#ffffff33';
+      ctx.setLineDash([2,5]); ctx.strokeStyle=TC.ink+'33';
       const [ax1,ay1]=w2s(cx+rx*Math.cos(a),cy+rx*Math.sin(a));
       const [ax2,ay2]=w2s(cx-rx*Math.cos(a),cy-rx*Math.sin(a));
       ctx.beginPath(); ctx.moveTo(ax1,ay1); ctx.lineTo(ax2,ay2); ctx.stroke();
@@ -5533,7 +5754,7 @@ function drawPolygonPreview() {
   const R = S._polyMode === 'C' ? r / Math.cos(Math.PI / n) : r;
   const startAngle = -Math.PI / 2;
   ctx.save();
-  ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = TC.ink+'66'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
   ctx.beginPath();
   for (let i = 0; i <= n; i++) {
     const a = startAngle + (2 * Math.PI * i) / n;
@@ -5543,12 +5764,12 @@ function drawPolygonPreview() {
   ctx.stroke();
   // Cercle de référence en pointillés légers
   ctx.setLineDash([2, 5]);
-  ctx.strokeStyle = '#ffffff22';
+  ctx.strokeStyle = TC.ink+'22';
   const [scx, scy] = w2s(cx, cy);
   ctx.beginPath(); ctx.arc(scx, scy, r * S.zoom, 0, Math.PI * 2); ctx.stroke();
   // Ligne centre → curseur
   ctx.setLineDash([]);
-  ctx.strokeStyle = '#ffffff44';
+  ctx.strokeStyle = TC.ink+'44';
   const [smx, smy] = w2s(mx, my);
   ctx.beginPath(); ctx.moveTo(scx, scy); ctx.lineTo(smx, smy); ctx.stroke();
   ctx.restore();
@@ -5712,9 +5933,9 @@ function openTubeEditDialog(ent) {
 
   const dlg = document.createElement('div');
   dlg.id = 'tube-edit-dialog';
-  dlg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1a1a2e;border:1px solid #334;border-radius:6px;padding:16px 20px;z-index:3000;min-width:480px;max-width:560px;box-shadow:0 8px 32px #000c;color:var(--text);font-family:var(--font-mono,monospace);font-size:11px;';
-  const inp     = 'width:72px;background:#0f0f1a;border:1px solid #334;color:var(--text);padding:2px 5px;border-radius:3px;font-size:11px;text-align:right;';
-  const btnBase = 'border:1px solid #334;padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:.5px;';
+  dlg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:var(--bg-dark);border:1px solid var(--border);border-radius:6px;padding:16px 20px;z-index:3000;min-width:480px;max-width:560px;box-shadow:0 8px 32px #000c;color:var(--text);font-family:var(--font-mono,monospace);font-size:11px;';
+  const inp     = 'width:72px;background:var(--input-bg);border:1px solid var(--border);color:var(--text);padding:2px 5px;border-radius:3px;font-size:11px;text-align:right;';
+  const btnBase = 'border:1px solid var(--border);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:.5px;';
 
   dlg.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -5741,18 +5962,18 @@ function openTubeEditDialog(ent) {
       <tbody id="te-tbody"></tbody>
     </table>
     <div style="margin-bottom:10px">
-      <button id="te-add" style="background:#2a2a3e;border:1px solid #334;color:var(--accent);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;width:100%">+ Ajouter une section</button>
+      <button id="te-add" style="background:var(--btn-bg);border:1px solid var(--border);color:var(--accent);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;width:100%">+ Ajouter une section</button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:6px 0;border-top:1px solid #334">
       <span style="color:var(--text-dim)">Long. développée AXE</span>
       <span id="te-devlen" style="color:var(--accent);font-weight:bold">${data.totalLen.toFixed(1)} mm</span>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button id="te-cancel" style="background:#2a2a3e;border:1px solid #334;color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Annuler</button>
-      <button id="te-delcote" style="background:#2a2a3e;border:1px solid #644;color:#c88;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">✕ Cotes</button>
-      <button id="te-cote" style="background:#2a2a3e;border:1px solid #556;color:#aac;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Coter</button>
-      <button id="te-preview" style="background:#2a2a3e;border:1px solid var(--accent);color:var(--accent);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Prévisualiser</button>
-      <button id="te-ok" style="background:var(--accent);border:none;color:#000;padding:4px 14px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold">Appliquer ↵</button>
+      <button id="te-cancel" style="background:var(--btn-bg);border:1px solid var(--border);color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Annuler</button>
+      <button id="te-delcote" style="background:var(--btn-bg);border:1px solid #644;color:#c88;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">✕ Cotes</button>
+      <button id="te-cote" style="background:var(--btn-bg);border:1px solid #556;color:#aac;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Coter</button>
+      <button id="te-preview" style="background:var(--btn-bg);border:1px solid var(--accent);color:var(--accent);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Prévisualiser</button>
+      <button id="te-ok" style="background:var(--accent);border:none;color:var(--on-accent);padding:4px 14px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold">Appliquer ↵</button>
     </div>`;
   document.body.appendChild(dlg);
 
@@ -5845,7 +6066,7 @@ function openTubeEditDialog(ent) {
         ? `<span style="color:var(--text-dim);padding:0 6px">—</span>`
         : `<span style="display:inline-flex;gap:3px;align-items:center">
             <input class="te-ang" value="${Math.abs(row.angle??90).toFixed(1)}" style="${inpNarrow}">
-            <button class="te-side" title="Inverser le sens du coude" style="background:#2a2a3e;border:1px solid #334;color:var(--accent);width:22px;height:22px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1;padding:0">${row.side >= 0 ? '⟳' : '⟲'}</button>
+            <button class="te-side" title="Inverser le sens du coude" style="background:var(--btn-bg);border:1px solid var(--border);color:var(--accent);width:22px;height:22px;border-radius:3px;cursor:pointer;font-size:13px;line-height:1;padding:0">${row.side >= 0 ? '⟳' : '⟲'}</button>
            </span>`;
       const arcCell = isLast
         ? `<span style="color:var(--text-dim);padding:0 6px">—</span>`
@@ -6449,6 +6670,7 @@ function drawEntity(e) {
       const tpx = Math.max(5, ds.textHeight * S.zoom);
       const asz = Math.max(3, ds.arrowSize * S.zoom);
       const egap = ds.extGap * S.zoom;
+      const eoff = (ds.extOff || 0) * S.zoom;
       const off = e.offset || 30;
       const to = e.textOffset || 0;
       const isHoriz = e.isHoriz !== undefined ? e.isHoriz : (Math.abs(e.x2-e.x1) >= Math.abs(e.y2-e.y1));
@@ -6456,8 +6678,9 @@ function drawEntity(e) {
         const dimY = (e.y1 + e.y2) / 2 + off;
         const [a1, b1] = w2s(e.x1, dimY), [a2, b2] = w2s(e.x2, dimY);
         const [e1a, e1b] = w2s(e.x1, e.y1), [e2a, e2b] = w2s(e.x2, e.y2);
-        ctx.beginPath(); ctx.moveTo(e1a, e1b); ctx.lineTo(a1, b1 - egap*Math.sign(off||1)); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(e2a, e2b); ctx.lineTo(a2, b2 - egap*Math.sign(off||1)); ctx.stroke();
+        const d1 = Math.sign(b1 - e1b) || 1, d2 = Math.sign(b2 - e2b) || 1;
+        ctx.beginPath(); ctx.moveTo(e1a, e1b + d1*eoff); ctx.lineTo(a1, b1 - egap*Math.sign(off||1)); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(e2a, e2b + d2*eoff); ctx.lineTo(a2, b2 - egap*Math.sign(off||1)); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(a1, b1); ctx.lineTo(a2, b2); ctx.stroke();
         drawArrowHead(a1, b1, a2, b2, asz); drawArrowHead(a2, b2, a1, b1, asz);
         const dist = Math.abs(e.x2 - e.x1);
@@ -6468,8 +6691,9 @@ function drawEntity(e) {
         const dimX = (e.x1 + e.x2) / 2 + off;
         const [a1, b1] = w2s(dimX, e.y1), [a2, b2] = w2s(dimX, e.y2);
         const [e1a, e1b] = w2s(e.x1, e.y1), [e2a, e2b] = w2s(e.x2, e.y2);
-        ctx.beginPath(); ctx.moveTo(e1a, e1b); ctx.lineTo(a1 + egap*Math.sign(off||1), b1); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(e2a, e2b); ctx.lineTo(a2 + egap*Math.sign(off||1), b2); ctx.stroke();
+        const d1 = Math.sign(a1 - e1a) || 1, d2 = Math.sign(a2 - e2a) || 1;
+        ctx.beginPath(); ctx.moveTo(e1a + d1*eoff, e1b); ctx.lineTo(a1 + egap*Math.sign(off||1), b1); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(e2a + d2*eoff, e2b); ctx.lineTo(a2 + egap*Math.sign(off||1), b2); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(a1, b1); ctx.lineTo(a2, b2); ctx.stroke();
         drawArrowHead(a1, b1, a2, b2, asz); drawArrowHead(a2, b2, a1, b1, asz);
         const dist = Math.abs(e.y2 - e.y1);
@@ -6488,9 +6712,11 @@ function drawEntity(e) {
       const angle = Math.atan2(b2 - b1, a2 - a1);
       const perp = angle + Math.PI / 2;
       const off = (e.offset || 30) * S.zoom;
+      const eoff = (ds.extOff || 0) * S.zoom;
       const ox = Math.cos(perp) * off, oy = Math.sin(perp) * off;
-      ctx.beginPath(); ctx.moveTo(a1, b1); ctx.lineTo(a1 + ox * 1.15, b1 + oy * 1.15); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(a2, b2); ctx.lineTo(a2 + ox * 1.15, b2 + oy * 1.15); ctx.stroke();
+      const ux = Math.cos(perp) * Math.sign(off||1), uy = Math.sin(perp) * Math.sign(off||1);
+      ctx.beginPath(); ctx.moveTo(a1 + ux*eoff, b1 + uy*eoff); ctx.lineTo(a1 + ox * 1.15, b1 + oy * 1.15); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(a2 + ux*eoff, b2 + uy*eoff); ctx.lineTo(a2 + ox * 1.15, b2 + oy * 1.15); ctx.stroke();
       const dx1 = a1 + ox, dy1 = b1 + oy, dx2 = a2 + ox, dy2 = b2 + oy;
       ctx.beginPath(); ctx.moveTo(dx1, dy1); ctx.lineTo(dx2, dy2); ctx.stroke();
       drawArrowHead(dx1, dy1, dx2, dy2, asz); drawArrowHead(dx2, dy2, dx1, dy1, asz);
@@ -6610,7 +6836,7 @@ function drawEntity(e) {
       const savedStroke = ctx.strokeStyle, savedFill = ctx.fillStyle, savedLW = ctx.lineWidth;
       for (const child of e.entities) {
         const layer = S.layers[child.layer] || S.layers[S.currentLayer];
-        ctx.strokeStyle = child.color || layer?.color || '#00d4ff';
+        ctx.strokeStyle = dispColor(child.color || layer?.color || '#00d4ff');
         ctx.fillStyle = ctx.strokeStyle;
         ctx.lineWidth = getLayerLineWidthPx(child.lineWidth ?? layer?.lineWidth);
         ctx.setLineDash(child.dash || getLayerLineDash(child.lineType || layer?.lineType || 'solid'));
@@ -6981,8 +7207,8 @@ function drawGripPreview() {
 
   ctx.save();
   ctx.globalAlpha = 0.6;
-  ctx.strokeStyle = '#ffffff88';
-  ctx.fillStyle = '#ffffff88';
+  ctx.strokeStyle = TC.ink+'88';
+  ctx.fillStyle = TC.ink+'88';
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
   drawEntity(clone);
@@ -7025,8 +7251,8 @@ function drawGripSelected() {
 
   ctx.save();
   ctx.globalAlpha = 0.6;
-  ctx.strokeStyle = '#ffffff88';
-  ctx.fillStyle = '#ffffff88';
+  ctx.strokeStyle = TC.ink+'88';
+  ctx.fillStyle = TC.ink+'88';
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
   drawEntity(clone);
@@ -7043,7 +7269,7 @@ function drawGripSelected() {
 
   // Grip armé : carré orange vif
   ctx.fillStyle = '#ff6b35';
-  ctx.strokeStyle = '#fff';
+  ctx.strokeStyle = TC.ink;
   ctx.lineWidth = 1.5;
   ctx.fillRect(ox - 5, oy - 5, 10, 10);
   ctx.strokeRect(ox - 5, oy - 5, 10, 10);
@@ -7083,20 +7309,22 @@ function computeDimOffset(tool, p1, p2, mousePos) {
 function drawDimPreview(tool, p1, p2, mouseWorld) {
   const off = computeDimOffset(tool, p1, p2, mouseWorld);
   ctx.save();
-  ctx.strokeStyle = '#ffffff88'; ctx.fillStyle = '#ffffff88'; ctx.lineWidth = 1; ctx.setLineDash([]);
+  ctx.strokeStyle = TC.ink+'88'; ctx.fillStyle = TC.ink+'88'; ctx.lineWidth = 1; ctx.setLineDash([]);
 
   const _ds = getDimStyle(null);
   const _tpx = Math.max(5, _ds.textHeight * S.zoom);
   const _asz = Math.max(3, _ds.arrowSize * S.zoom);
   const _egap = _ds.extGap * S.zoom;
+  const _eoff = (_ds.extOff || 0) * S.zoom;
   if (tool === 'dim_linear') {
     const isHoriz = dimIsHoriz(p1, p2, mouseWorld);
     if (isHoriz) {
       const dimY = (p1[1] + p2[1]) / 2 + off;
       const [a1,b1]=w2s(p1[0],dimY), [a2,b2]=w2s(p2[0],dimY);
       const [e1a,e1b]=w2s(p1[0],p1[1]), [e2a,e2b]=w2s(p2[0],p2[1]);
-      ctx.beginPath(); ctx.moveTo(e1a,e1b); ctx.lineTo(a1,b1-_egap*Math.sign(off||1)); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(e2a,e2b); ctx.lineTo(a2,b2-_egap*Math.sign(off||1)); ctx.stroke();
+      const _d1=Math.sign(b1-e1b)||1, _d2=Math.sign(b2-e2b)||1;
+      ctx.beginPath(); ctx.moveTo(e1a,e1b+_d1*_eoff); ctx.lineTo(a1,b1-_egap*Math.sign(off||1)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(e2a,e2b+_d2*_eoff); ctx.lineTo(a2,b2-_egap*Math.sign(off||1)); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(a1,b1); ctx.lineTo(a2,b2); ctx.stroke();
       drawArrowHead(a2,b2,a1,b1,_asz); drawArrowHead(a1,b1,a2,b2,_asz);
       ctx.font=_tpx+'px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='bottom';
@@ -7107,8 +7335,9 @@ function drawDimPreview(tool, p1, p2, mouseWorld) {
       const dimX = (p1[0] + p2[0]) / 2 + off;
       const [a1,b1]=w2s(dimX,p1[1]), [a2,b2]=w2s(dimX,p2[1]);
       const [e1a,e1b]=w2s(p1[0],p1[1]), [e2a,e2b]=w2s(p2[0],p2[1]);
-      ctx.beginPath(); ctx.moveTo(e1a,e1b); ctx.lineTo(a1+_egap*Math.sign(off||1),b1); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(e2a,e2b); ctx.lineTo(a2+_egap*Math.sign(off||1),b2); ctx.stroke();
+      const _d1=Math.sign(a1-e1a)||1, _d2=Math.sign(a2-e2a)||1;
+      ctx.beginPath(); ctx.moveTo(e1a+_d1*_eoff,e1b); ctx.lineTo(a1+_egap*Math.sign(off||1),b1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(e2a+_d2*_eoff,e2b); ctx.lineTo(a2+_egap*Math.sign(off||1),b2); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(a1,b1); ctx.lineTo(a2,b2); ctx.stroke();
       drawArrowHead(a2,b2,a1,b1,_asz); drawArrowHead(a1,b1,a2,b2,_asz);
       ctx.save(); ctx.translate((a1+a2)/2,(b1+b2)/2); ctx.rotate(-Math.PI/2);
@@ -7123,8 +7352,9 @@ function drawDimPreview(tool, p1, p2, mouseWorld) {
     const perp=angle+Math.PI/2;
     const offPx=off*S.zoom;
     const ox=Math.cos(perp)*offPx, oy=Math.sin(perp)*offPx;
-    ctx.beginPath(); ctx.moveTo(a1,b1); ctx.lineTo(a1+ox*1.15,b1+oy*1.15); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(a2,b2); ctx.lineTo(a2+ox*1.15,b2+oy*1.15); ctx.stroke();
+    const ux=Math.cos(perp)*Math.sign(offPx||1), uy=Math.sin(perp)*Math.sign(offPx||1);
+    ctx.beginPath(); ctx.moveTo(a1+ux*_eoff,b1+uy*_eoff); ctx.lineTo(a1+ox*1.15,b1+oy*1.15); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(a2+ux*_eoff,b2+uy*_eoff); ctx.lineTo(a2+ox*1.15,b2+oy*1.15); ctx.stroke();
     const dx1=a1+ox, dy1=b1+oy, dx2=a2+ox, dy2=b2+oy;
     ctx.beginPath(); ctx.moveTo(dx1,dy1); ctx.lineTo(dx2,dy2); ctx.stroke();
     drawArrowHead(dx2,dy2,dx1,dy1,_asz); drawArrowHead(dx1,dy1,dx2,dy2,_asz);
@@ -7145,7 +7375,7 @@ function drawPreview() {
   if (osnap) { mx = osnap.x; my = osnap.y; S.currentOsnap = osnap; }
   else { [mx, my] = snapToGrid(mx, my); S.currentOsnap = null; }
 
-  ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+  ctx.strokeStyle = TC.ink+'66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
   const tool = S.tool;
 
   if (['line','wall','dim_linear','dim_aligned','leader'].includes(tool) && pts.length === 1) {
@@ -7156,7 +7386,7 @@ function drawPreview() {
     // Draw polar tracking guide line (dashed green) through the whole canvas
     if (S.polar && !S.ortho && tool !== 'dim_aligned') drawPolarGuides(p1[0],p1[1],tx,ty);
     const [x1,y1]=w2s(p1[0],p1[1]), [x2,y2]=w2s(tx,ty);
-    ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+    ctx.strokeStyle = TC.ink+'66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
     ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
   } else if (tool==='rect' && pts.length===1) {
     const [x1,y1]=w2s(pts[0][0],pts[0][1]), [x2,y2]=w2s(mx,my);
@@ -7169,9 +7399,9 @@ function drawPreview() {
     ctx.beginPath(); ctx.rect(Math.min(sx1,sx2),Math.min(sy1,sy2),Math.abs(sx2-sx1),Math.abs(sy2-sy1)); ctx.stroke();
     // Croix sur le centre
     const [scx,scy]=w2s(cx,cy); const cs=6;
-    ctx.setLineDash([]); ctx.strokeStyle='#ffab4088';
+    ctx.setLineDash([]); ctx.strokeStyle=TC.label+'88';
     ctx.beginPath(); ctx.moveTo(scx-cs,scy); ctx.lineTo(scx+cs,scy); ctx.moveTo(scx,scy-cs); ctx.lineTo(scx,scy+cs); ctx.stroke();
-    ctx.setLineDash([4,4]); ctx.strokeStyle='#ffffff66';
+    ctx.setLineDash([4,4]); ctx.strokeStyle=TC.ink+'66';
   } else if (tool==='circle' && pts.length===1) {
     const dist=Math.hypot(mx-pts[0][0],my-pts[0][1]);
     const r = S.circleDiamMode ? dist/2 : dist;
@@ -7195,9 +7425,9 @@ function drawPreview() {
       }
       // Croix sur le centre
       const[ccx,ccy]=w2s(pts[1][0],pts[1][1]);
-      ctx.setLineDash([]); ctx.strokeStyle='#ffaa0099';
+      ctx.setLineDash([]); ctx.strokeStyle=TC.label+'99';
       ctx.beginPath();ctx.moveTo(ccx-6,ccy);ctx.lineTo(ccx+6,ccy);ctx.moveTo(ccx,ccy-6);ctx.lineTo(ccx,ccy+6);ctx.stroke();
-      ctx.setLineDash([4,4]); ctx.strokeStyle='#ffffff66';
+      ctx.setLineDash([4,4]); ctx.strokeStyle=TC.ink+'66';
     } else if (pts.length===2 && mode==='ser') {
       // Preview SER : corde P1-P2 + ligne vers souris (future position centre approx)
       const[x1,y1]=w2s(pts[0][0],pts[0][1]),[x2,y2]=w2s(pts[1][0],pts[1][1]);
@@ -7219,10 +7449,10 @@ function drawPreview() {
     }
 
     // Segment rubber-band (dernier point → souris) → pointillés
-    ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+    ctx.strokeStyle = TC.ink+'66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
     if (S.polar && !S.ortho) {
       drawPolarGuides(last[0],last[1],tx,ty);
-      ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+      ctx.strokeStyle = TC.ink+'66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
     }
     const[lx,ly]=w2s(last[0],last[1]), [ex,ey]=w2s(tx,ty);
     ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(ex,ey); ctx.stroke();
@@ -7237,7 +7467,7 @@ function drawPreview() {
       let tMin=-1e9, tMax=1e9;
       if(Math.abs(sdx)>1e-10){const t1=-bsx/sdx,t2=(W-bsx)/sdx;tMin=Math.max(tMin,Math.min(t1,t2));tMax=Math.min(tMax,Math.max(t1,t2));}
       if(Math.abs(sdy)>1e-10){const t1=-bsy/sdy,t2=(H-bsy)/sdy;tMin=Math.max(tMin,Math.min(t1,t2));tMax=Math.min(tMax,Math.max(t1,t2));}
-      ctx.strokeStyle='#ffffff66'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+      ctx.strokeStyle=TC.ink+'66'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
       ctx.beginPath();
       if (tool==='ray'||tool==='ray_rev') { ctx.moveTo(bsx,bsy); ctx.lineTo(bsx+tMax*sdx,bsy+tMax*sdy); }
       else { ctx.moveTo(bsx+tMin*sdx,bsy+tMin*sdy); ctx.lineTo(bsx+tMax*sdx,bsy+tMax*sdy); }
@@ -7260,7 +7490,7 @@ function drawPreview() {
     }
 
     // Rubber-band vers la souris
-    ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+    ctx.strokeStyle = TC.ink+'66'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
     const[lx,ly]=w2s(last[0],last[1]), [ex,ey]=w2s(tx,ty);
     ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(ex,ey); ctx.stroke();
   } else if (tool === 'dim_angular') {
@@ -7271,7 +7501,7 @@ function drawPreview() {
       const r = Math.max(20 * S.zoom, Math.hypot(mx - vtx[0], my - vtx[1]) * S.zoom);
       const [vsx, vsy] = w2s(vtx[0], vtx[1]);
       const sa = sec.startAngle, ea = sa + sec.angle;
-      ctx.strokeStyle = '#ffffff88'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+      ctx.strokeStyle = TC.ink+'88'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
       const rayLen = r * 1.4;
       ctx.beginPath(); ctx.moveTo(vsx,vsy); ctx.lineTo(vsx+rayLen*Math.cos(-sa),vsy+rayLen*Math.sin(-sa)); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(vsx,vsy); ctx.lineTo(vsx+rayLen*Math.cos(-ea),vsy+rayLen*Math.sin(-ea)); ctx.stroke();
@@ -7280,16 +7510,16 @@ function drawPreview() {
       const _pds = getDimStyle(null);
       const _ptpx = Math.max(5, _pds.textHeight * S.zoom);
       const midA = -(sa + sec.angle/2);
-      ctx.font=_ptpx+'px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#ffffff88';
+      ctx.font=_ptpx+'px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle=TC.ink+'88';
       ctx.fillText((sec.angle*180/Math.PI).toFixed(1)+'°', vsx+(r+_ptpx*1.2)*Math.cos(midA), vsy+(r+_ptpx*1.2)*Math.sin(midA));
     } else if (S._dimAngLine1) {
       // Étape 1: 1ère ligne sélectionnée, la surligner en orange
       const e1 = S._dimAngLine1;
       const [sx1,sy1] = w2s(e1.x1,e1.y1), [sx2,sy2] = w2s(e1.x2,e1.y2);
-      ctx.strokeStyle = '#ffaa00cc'; ctx.lineWidth = 3; ctx.setLineDash([]);
+      ctx.strokeStyle = TC.label+'cc'; ctx.lineWidth = 3; ctx.setLineDash([]);
       ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(sx2,sy2); ctx.stroke();
       const [msx,msy] = w2s(mx,my);
-      ctx.strokeStyle = '#ffffff44'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+      ctx.strokeStyle = TC.ink+'44'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
       ctx.beginPath(); ctx.moveTo((sx1+sx2)/2,(sy1+sy2)/2); ctx.lineTo(msx,msy); ctx.stroke();
       ctx.setLineDash([]);
     }
@@ -7300,7 +7530,7 @@ function drawPreview() {
     const c = S._dimCircle;
     const a = Math.atan2(my - c.cy, mx - c.cx);
     ctx.setLineDash([]);
-    ctx.strokeStyle = '#ffffff88'; ctx.fillStyle = '#ffffff88'; ctx.lineWidth = 1;
+    ctx.strokeStyle = TC.ink+'88'; ctx.fillStyle = TC.ink+'88'; ctx.lineWidth = 1;
     const [csx,csy] = w2s(c.cx, c.cy);
     const [esx,esy] = w2s(c.cx + c.r*Math.cos(a), c.cy + c.r*Math.sin(a));
     const _rpds = getDimStyle(null);
@@ -7359,7 +7589,7 @@ function drawPreview() {
     } else {
       // Only 1 point: simple rubber-band
       const [lx, ly] = w2s(last[0], last[1]), [ex, ey] = w2s(tx, ty);
-      ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = TC.ink+'66'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
       ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(ex, ey); ctx.stroke();
       ctx.setLineDash([]);
     }
@@ -7377,7 +7607,7 @@ function drawPreview() {
     const [lx1,ly1]=w2s(ax-ext*Math.cos(angle),ay-ext*Math.sin(angle));
     const [lx2,ly2]=w2s(ax+ext*Math.cos(angle),ay+ext*Math.sin(angle));
     ctx.save();
-    ctx.strokeStyle='#ffab4099'; ctx.lineWidth=1; ctx.setLineDash([10,5]);
+    ctx.strokeStyle=TC.label+'99'; ctx.lineWidth=1; ctx.setLineDash([10,5]);
     ctx.beginPath(); ctx.moveTo(lx1,ly1); ctx.lineTo(lx2,ly2); ctx.stroke();
     ctx.globalAlpha=0.45;
     S.selected.forEach(id=>{
@@ -7458,7 +7688,7 @@ function drawTextLivePreview() {
   ctx.fillText(p.content || '', tx, ty);
   // Petite croix sur le point d'ancrage
   ctx.globalAlpha = 0.5;
-  ctx.strokeStyle = '#00d4ff';
+  ctx.strokeStyle = TC.accent;
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(tx - 5, ty); ctx.lineTo(tx + 5, ty);
@@ -7975,7 +8205,7 @@ function openHatchDialog(pts, layer, existingEntity, sourceId) {
 
   const dlg = document.createElement('div');
   dlg.id = 'hatch-dialog';
-  dlg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1a2e;border:1px solid #334;border-radius:6px;padding:16px;z-index:3000;min-width:310px;color:var(--text);font-family:JetBrains Mono,monospace;font-size:12px;box-shadow:0 4px 20px #000a';
+  dlg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-dark);border:1px solid var(--border);border-radius:6px;padding:16px;z-index:3000;min-width:310px;color:var(--text);font-family:JetBrains Mono,monospace;font-size:12px;box-shadow:0 4px 20px #000a';
 
   const patList = MINICAD_HATCHES.length ? MINICAD_HATCHES : [
     {id:'ANSI31',label:'Acier',defaultAngle:45,category:'Métal',families:[{angleOffset:0}]},
@@ -7997,7 +8227,7 @@ function openHatchDialog(pts, layer, existingEntity, sourceId) {
       <span style="font-size:9px;text-align:center;line-height:1.1;max-width:52px">${h.label}</span>
     </div>`;
   const patsHtml = catOrder.map(cat =>
-    `<div style="grid-column:1/-1;font-size:9px;color:#ffffff55;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px">${cat}</div>` +
+    `<div style="grid-column:1/-1;font-size:9px;color:color-mix(in srgb, var(--ink) 33%, transparent);text-transform:uppercase;letter-spacing:0.5px;margin-top:4px">${cat}</div>` +
     catMap[cat].map(tileHtml).join('')
   ).join('');
 
@@ -8007,15 +8237,15 @@ function openHatchDialog(pts, layer, existingEntity, sourceId) {
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
       <div id="h-angle-row" style="display:${initDef.showAngle===false?'none':'flex'};align-items:center;gap:10px">
         <span style="width:90px;flex-shrink:0">Angle (°)</span>
-        <input id="h-angle" type="number" value="${initAngle}" style="background:#12122a;border:1px solid #334;color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
+        <input id="h-angle" type="number" value="${initAngle}" style="background:var(--bg-elev);border:1px solid var(--border);color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
       </div>
       <div id="h-spacing-row" style="display:flex;align-items:center;gap:10px">
         <span style="width:90px;flex-shrink:0">Espacement</span>
-        <input id="h-spacing" type="number" value="${initSpacing}" min="0.1" style="background:#12122a;border:1px solid #334;color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
+        <input id="h-spacing" type="number" value="${initSpacing}" min="0.1" style="background:var(--bg-elev);border:1px solid var(--border);color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
       </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button id="h-cancel" style="background:#223;border:1px solid #334;color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer">Annuler</button>
+      <button id="h-cancel" style="background:var(--bg-elev);border:1px solid var(--border);color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer">Annuler</button>
       <button id="h-ok" style="background:#00d4ff22;border:1px solid #00d4ff66;color:#00d4ff;padding:4px 12px;border-radius:3px;cursor:pointer">OK ↵</button>
     </div>`;
 
@@ -8077,7 +8307,7 @@ function drawRotatePreview() {
   const [bsx, bsy] = w2s(bx, by), [msx, msy] = w2s(mx, my);
   ctx.save();
   ctx.globalAlpha = 0.55;
-  ctx.strokeStyle = '#00d4ff';
+  ctx.strokeStyle = TC.accent;
   ctx.lineWidth = 1.2;
   ctx.setLineDash([4, 4]);
   S.rotateIds.forEach(id => {
@@ -8088,13 +8318,13 @@ function drawRotatePreview() {
     drawEntity(g);
   });
   ctx.setLineDash([2, 4]);
-  ctx.strokeStyle = '#ffffff44';
+  ctx.strokeStyle = TC.ink+'44';
   ctx.lineWidth = 1;
   ctx.globalAlpha = 0.8;
   ctx.beginPath(); ctx.moveTo(bsx, bsy); ctx.lineTo(msx, msy); ctx.stroke();
   // Angle label
   ctx.globalAlpha = 1;
-  ctx.fillStyle = '#ffab40';
+  ctx.fillStyle = TC.label;
   ctx.font = '10px JetBrains Mono';
   ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
   ctx.fillText((angle*180/Math.PI).toFixed(1)+'°', msx+6, msy-4);
@@ -8122,6 +8352,10 @@ function applyOrtho(x1,y1,x2,y2) {
 }
 
 function applyPolar(x1,y1,x2,y2) {
+  // La grille prime sur le polaire (comme AutoCAD : accrochage grille et polaire
+  // sont des types d'accrochage mutuellement exclusifs). Si la grille est active,
+  // on accroche au point de grille au lieu de projeter sur un angle polaire.
+  if (S.snap) return snapToGrid(x2, y2);
   const inc = S.polarAngle * Math.PI / 180;
   const angle = Math.atan2(y2-y1, x2-x1);
   const dist = Math.hypot(x2-x1, y2-y1);
@@ -8138,6 +8372,9 @@ function applyConstraint(x1,y1,x2,y2) {
 }
 
 function drawPolarGuides(bx, by, tx, ty) {
+  // Grille prime sur le polaire : pas de guide polaire quand l'accrochage grille est actif
+  // (le point retenu est un point de grille, pas un angle polaire).
+  if (S.snap) return;
   // Draw a dashed green line extending beyond the point to show the polar axis
   const angle = Math.atan2(ty-by, tx-bx);
   const ext = 4000 / S.zoom; // extend far
@@ -8626,7 +8863,7 @@ function drawCursor() {
   if (!mouseOnCanvas) return;
   const [sx, sy] = S.mouseScreen;
   const mode = getCursorMode();
-  const pickHalf = 6;
+  const pickHalf = S.pickboxPx || 6;
   const gap = pickHalf + 2;
 
   ctx.save();
@@ -8635,7 +8872,7 @@ function drawCursor() {
 
   if (mode === 'idle' || mode === 'draw') {
     // Réticule — avec ou sans gap selon présence du carré
-    ctx.strokeStyle = '#ffffffaa';
+    ctx.strokeStyle = TC.ink+'aa';
     ctx.beginPath();
     if (mode === 'idle') {
       ctx.moveTo(0, sy);       ctx.lineTo(sx - gap, sy);
@@ -8657,7 +8894,7 @@ function drawCursor() {
   if (mode === 'idle' || mode === 'pick') {
     // Carré de sélection — vert + marque pinceau quand des propriétés sont prêtes à coller
     const matchPaste = S.tool === 'matchprop' && S.matchSource;
-    ctx.strokeStyle = matchPaste ? '#00e676' : '#ffffffcc';
+    ctx.strokeStyle = matchPaste ? '#00e676' : TC.ink+'cc';
     ctx.strokeRect(sx - pickHalf, sy - pickHalf, pickHalf * 2, pickHalf * 2);
     if (matchPaste) {
       ctx.fillStyle = '#00e676';
@@ -9698,7 +9935,9 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     const hitSeg = getHitSeg(hit, rawWx, rawWy);
     if (S.filletFirstId === null) {
       S.filletFirstId = hit.id; S.filletFirstSeg = hitSeg; S.filletClickPos1 = [rawWx, rawWy]; S.selected = [hit.id];
-      const label = tool==='fillet' ? 'RACCORD' : 'CHANFREIN';
+      const label = tool==='fillet'
+        ? 'RACCORD R='+S.filletRadius
+        : 'CHANFREIN EC='+S.filletDist1+'/'+S.filletDist2;
       termPrint(label+' — Cliquer le 2ème segment (Echap=fin)', 'info');
       render(); return;
     } else {
@@ -9708,7 +9947,9 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       }
       applyFilletChamfer(S.filletFirstSeg, S.filletClickPos1[0], S.filletClickPos1[1], hitSeg, rawWx, rawWy, tool);
       S.filletFirstId=null; S.filletFirstSeg=null; S.filletClickPos1=null; S.selected=[];
-      const label = tool==='fillet' ? 'RACCORD' : 'CHANFREIN';
+      const label = tool==='fillet'
+        ? 'RACCORD R='+S.filletRadius
+        : 'CHANFREIN EC='+S.filletDist1+'/'+S.filletDist2;
       termPrint(label+' — Cliquer le 1er segment (Echap=fin)', 'info');
       render(); return;
     }
@@ -10813,7 +11054,7 @@ function drawExtendPreview() {
     const g = JSON.parse(JSON.stringify(ent));
     if (!applyExtendArc(g, prims, mx, my)) return;
     ctx.save();
-    ctx.strokeStyle='#00d4ff'; ctx.lineWidth=1.5; ctx.globalAlpha=0.7; ctx.setLineDash([6,4]);
+    ctx.strokeStyle=TC.accent; ctx.lineWidth=1.5; ctx.globalAlpha=0.7; ctx.setLineDash([6,4]);
     drawEntity(g);
     ctx.restore();
     return;
@@ -10821,7 +11062,7 @@ function drawExtendPreview() {
     const g = JSON.parse(JSON.stringify(ent));
     if (!applyExtendEllipse(g, prims, mx, my)) return;
     ctx.save();
-    ctx.strokeStyle='#00d4ff'; ctx.lineWidth=1.5; ctx.globalAlpha=0.7; ctx.setLineDash([6,4]);
+    ctx.strokeStyle=TC.accent; ctx.lineWidth=1.5; ctx.globalAlpha=0.7; ctx.setLineDash([6,4]);
     drawEntity(g);
     ctx.restore();
     return;
@@ -10829,12 +11070,12 @@ function drawExtendPreview() {
 
   const [sx1,sy1]=w2s(fromX,fromY), [sx2,sy2]=w2s(toX,toY);
   ctx.save();
-  ctx.strokeStyle='#00d4ff'; ctx.lineWidth=1.5; ctx.globalAlpha=0.7;
+  ctx.strokeStyle=TC.accent; ctx.lineWidth=1.5; ctx.globalAlpha=0.7;
   ctx.setLineDash([6,4]);
   ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(sx2,sy2); ctx.stroke();
   ctx.setLineDash([]);
   // Point d'arrivée
-  ctx.globalAlpha=1; ctx.fillStyle='#00d4ff';
+  ctx.globalAlpha=1; ctx.fillStyle=TC.accent;
   ctx.beginPath(); ctx.arc(sx2,sy2,3,0,Math.PI*2); ctx.fill();
   ctx.restore();
 }
@@ -11046,7 +11287,7 @@ function drawScalePreview() {
   const [bsx, bsy] = w2s(bx, by), [msx, msy] = w2s(mx, my);
   ctx.save();
   ctx.globalAlpha = 0.55;
-  ctx.strokeStyle = '#00d4ff';
+  ctx.strokeStyle = TC.accent;
   ctx.lineWidth = 1.2;
   ctx.setLineDash([4, 4]);
   S.scaleIds.forEach(id => {
@@ -11057,12 +11298,12 @@ function drawScalePreview() {
     drawEntity(g);
   });
   ctx.setLineDash([2, 4]);
-  ctx.strokeStyle = '#ffffff44';
+  ctx.strokeStyle = TC.ink+'44';
   ctx.lineWidth = 1;
   ctx.globalAlpha = 0.8;
   ctx.beginPath(); ctx.moveTo(bsx, bsy); ctx.lineTo(msx, msy); ctx.stroke();
   ctx.globalAlpha = 1;
-  ctx.fillStyle = '#ffab40';
+  ctx.fillStyle = TC.label;
   ctx.font = '10px JetBrains Mono';
   ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
   ctx.fillText('×'+factor.toFixed(3), msx+6, msy-4);
@@ -11465,7 +11706,7 @@ function closeSpline() {
 }
 
 function hitTest(wx,wy,filter) {
-  const tol=8/S.zoom;
+  const tol=((S.pickboxPx||6)+2)/S.zoom; // pickbox + marge (8px par défaut)
   let best=null, bestDist=Infinity;
   // Record candidate only if closer than current best
   function tryHit(e,dist){ if(dist<tol && dist<bestDist){bestDist=dist;best=e;} }
@@ -12547,6 +12788,8 @@ function refreshDimStyleManagerTable() {
         ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsProp('+i+',\'arrowSize\',+this.value)"></td>'+
       '<td><input type="number" class="lm-name-input" style="width:60px" step="0.1" min="0" value="'+ds.extGap.toFixed(1)+'"'+
         ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsProp('+i+',\'extGap\',+this.value)"></td>'+
+      '<td><input type="number" class="lm-name-input" style="width:60px" step="0.1" min="0" value="'+(ds.extOff != null ? ds.extOff : 0).toFixed(1)+'"'+
+        ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsProp('+i+',\'extOff\',+this.value)"></td>'+
       '<td><input type="number" class="lm-name-input" style="width:44px" step="1" min="0" max="6" value="'+(ds.decimals != null ? ds.decimals : 1)+'"'+
         ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsDecimals('+i+',+this.value)"></td>'+
       '<td><button class="lm-del-btn" onclick="event.stopPropagation();_dsDelete('+i+')" title="Supprimer">✕</button></td>'+
@@ -12561,7 +12804,7 @@ function _dsSet(name) {
 }
 function _dsAdd() {
   const n = 'Style ' + (S.dimStyles.length + 1);
-  S.dimStyles.push({ name: n, textHeight: 3.5, arrowSize: 3.5, extGap: 1.5, decimals: 1 });
+  S.dimStyles.push({ name: n, textHeight: 3.5, arrowSize: 3.5, extGap: 1.5, extOff: 1.5, decimals: 1 });
   refreshDimStylePanel(); refreshDimStyleManagerTable(); autoSave();
 }
 function _dsDecimals(i, v) {
@@ -12585,7 +12828,9 @@ function _dsName(i, v) {
   refreshDimStylePanel(); autoSave();
 }
 function _dsProp(i, prop, v) {
-  if (!isNaN(v) && v > 0 && S.dimStyles[i]) { S.dimStyles[i][prop] = v; render(); autoSave(); }
+  // extGap (dépassement) et extOff (retrait) acceptent 0 ; les autres doivent être > 0
+  const minOk = (prop === 'extGap' || prop === 'extOff') ? v >= 0 : v > 0;
+  if (!isNaN(v) && minOk && S.dimStyles[i]) { S.dimStyles[i][prop] = v; render(); autoSave(); }
 }
 function _propChangeDimStyle(id, val) {
   const e = S.entities.find(en => en.id === id);
@@ -14659,7 +14904,7 @@ function executeCommand(input) {
   if(S.tool==='fillet'){
     if(S.filletAwaitRadius){
       const r=parseFloat(raw);
-      if(!isNaN(r)&&r>=0){ S.filletRadius=r; termPrint('RACCORD R='+r+' — Cliquer la 1ère ligne','info'); }
+      if(!isNaN(r)&&r>=0){ S.filletRadius=r; termPrint('RACCORD R='+r+' — Cliquer le 1er segment ou R pour modifier le rayon (Echap=fin)','info'); }
       else termPrint('Rayon invalide','warning');
       S.filletAwaitRadius=false; return;
     }
@@ -14668,26 +14913,26 @@ function executeCommand(input) {
       termPrint('Nouveau rayon <'+S.filletRadius+'> :','info'); return;
     }
     const r=parseFloat(raw);
-    if(!isNaN(r)&&r>=0){ S.filletRadius=r; termPrint('RACCORD R='+r+' — Cliquer la 1ère ligne','info'); return; }
+    if(!isNaN(r)&&r>=0){ S.filletRadius=r; termPrint('RACCORD R='+r+' — Cliquer le 1er segment ou R pour modifier le rayon (Echap=fin)','info'); return; }
   }
-  // ---- CHAMFER : ECART/EC → D1 puis D2, ou nombre seul → D1=D2 ----
+  // ---- CHAMFER : EC → EC1 puis EC2, ou nombre seul → EC1=EC2 (comme FILLET avec R) ----
   if(S.tool==='chamfer'){
     if(S._chamferAwaitD===1){
       const d=parseFloat(raw);
-      if(!isNaN(d)&&d>0){ S.filletDist1=d; S._chamferAwaitD=2; termPrint('D2 <'+S.filletDist2+'> :','info'); }
+      if(!isNaN(d)&&d>0){ S.filletDist1=d; S._chamferAwaitD=2; termPrint('EC2 <'+S.filletDist2+'> :','info'); }
       else termPrint('Distance invalide','warning');
       return;
     }
     if(S._chamferAwaitD===2){
       const d=parseFloat(raw);
-      if(!isNaN(d)&&d>0){ S.filletDist2=d; termPrint('CHANFREIN '+S.filletDist1+'/'+S.filletDist2+' — Cliquer le 1er segment','info'); }
+      if(!isNaN(d)&&d>0){ S.filletDist2=d; termPrint('CHANFREIN EC='+S.filletDist1+'/'+S.filletDist2+' — Cliquer le 1er segment (Echap=fin)','info'); }
       else termPrint('Distance invalide','warning');
       S._chamferAwaitD=0; return;
     }
     const uRaw=raw.toUpperCase();
-    if(uRaw==='ECART'||uRaw==='EC'){ S._chamferAwaitD=1; termPrint('D1 <'+S.filletDist1+'> :','info'); return; }
+    if(uRaw==='ECART'||uRaw==='EC'){ S._chamferAwaitD=1; termPrint('EC1 <'+S.filletDist1+'> :','info'); return; }
     const d=parseFloat(raw);
-    if(!isNaN(d)&&d>0){ S.filletDist1=d; S.filletDist2=d; termPrint('CHANFREIN '+d+'/'+d+' — Cliquer le 1er segment','info'); return; }
+    if(!isNaN(d)&&d>0){ S.filletDist1=d; S.filletDist2=d; termPrint('CHANFREIN EC='+d+'/'+d+' — Cliquer le 1er segment ou EC pour modifier l\'écart (Echap=fin)','info'); return; }
   }
 
   // ---- OFFSET : mise à jour distance pendant outil actif ----
@@ -16142,7 +16387,7 @@ function buildSaveData(name) {
     layers: S.layers, entities: S.entities,
     currentLayer: S.currentLayer, nextId: S.nextId,
     modules: Object.fromEntries(Object.entries(modules).map(([k,m])=>[k,m.loaded])),
-    gridSize: S.gridSize,
+    gridSize: S.gridSize, gridSizeY: S.gridSizeY,
     dimStyles: S.dimStyles, currentDimStyle: S.currentDimStyle,
     layouts: S.layouts, space: S.space,
   };
@@ -16159,9 +16404,13 @@ function autoSave() {
 
 function captureUserPrefs() {
   return {
+    theme: S.theme,
+    pickboxPx: S.pickboxPx,
+    osnapTolPx: S.osnapTolPx,
     snap: S.snap,
     snapSize: S.gridSize,
     gridSize: S.gridSize,
+    gridSizeY: S.gridSizeY,
     gridVis: S.gridVis,
     osnapEnabled: S.osnapEnabled,
     osnapModes: { ...S.osnapModes },
@@ -16188,8 +16437,12 @@ function _isOldIsoStyleSet(styles) {
 
 function applyUserPrefs(prefs) {
   if (!prefs) return;
+  if (prefs.theme !== undefined && prefs.theme !== S.theme) setTheme(prefs.theme);
+  if (prefs.pickboxPx !== undefined)    S.pickboxPx = Math.max(3, Math.min(20, prefs.pickboxPx));
+  if (prefs.osnapTolPx !== undefined)   S.osnapTolPx = Math.max(5, Math.min(40, prefs.osnapTolPx));
   if (prefs.snap !== undefined)         S.snap = prefs.snap;
   if (prefs.gridSize !== undefined)     S.gridSize = prefs.gridSize;
+  if (prefs.gridSizeY !== undefined)    S.gridSizeY = prefs.gridSizeY;
   if (prefs.gridVis !== undefined)      S.gridVis = prefs.gridVis;
   if (prefs.osnapEnabled !== undefined) S.osnapEnabled = prefs.osnapEnabled;
   if (prefs.osnapModes)                 Object.assign(S.osnapModes, prefs.osnapModes);
@@ -16263,60 +16516,95 @@ function resetUserPrefs() {
   termPrint('Préférences réinitialisées aux valeurs par défaut', 'info');
 }
 
+const _PD_OS_MODES = ['endpoint','midpoint','center','nearest','intersection','perpendicular','tangent','quadrant','extension'];
+
 function openPrefsDialog() {
   const existing = document.getElementById('prefs-dialog');
   if (existing) { existing.remove(); return; }
   const p = captureUserPrefs();
+  const osLabels = {
+    endpoint: `Extrémité`, midpoint: `Milieu`, center: `Centre`,
+    nearest: `Le plus proche`, intersection: `Intersection`, perpendicular: `Perpendiculaire`,
+    tangent: `Tangente`, quadrant: `Quadrant`, extension: `Extension`,
+  };
   const dlg = document.createElement('div');
   dlg.id = 'prefs-dialog';
-  dlg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1a1a2e;border:1px solid var(--border);border-radius:6px;padding:16px 20px;z-index:3000;min-width:340px;max-width:420px;box-shadow:0 8px 32px #000c;color:var(--text);font-family:var(--font-mono);font-size:11px;';
-  function row(label, content) { return `<div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0;gap:8px"><span style="color:var(--text-dim);min-width:140px">${label}</span>${content}</div>`; }
-  function chk(id, val, lbl) { return `<label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="pd-${id}" ${val?'checked':''}> ${lbl||''}</label>`; }
-  function num(id, val, step, min) { return `<input type="number" id="pd-${id}" value="${val}" step="${step||1}" min="${min||0}" style="width:70px;background:var(--input-bg,#1e1e1e);border:1px solid var(--border);color:var(--text);padding:2px 5px;border-radius:3px;font-size:11px;">`; }
-  function sel(id, opts, val) { return `<select id="pd-${id}" style="background:var(--input-bg,#1e1e1e);border:1px solid var(--border);color:var(--text);padding:2px 5px;border-radius:3px;font-size:11px;">${opts.map(o=>`<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('')}</select>`; }
+  const row = (label, ctl, unit) => `<div class="pf-row"><span class="pf-lbl">${label}</span><span class="pf-ctl">${ctl}</span><span class="pf-unit">${unit||''}</span></div>`;
+  const chk = (id, val) => `<input type="checkbox" id="pd-${id}" ${val?'checked':''}>`;
+  const num = (id, val, step, min, max) => `<input type="number" id="pd-${id}" value="${val}" step="${step||1}" min="${min??0}"${max!==undefined?` max="${max}"`:''}>`;
+  const sel = (id, opts, val) => `<select id="pd-${id}">${opts.map(o=>`<option value="${o.v}" ${o.v===val?'selected':''}>${o.l}</option>`).join('')}</select>`;
+  const sec = (t) => `<div class="pf-sec-title">${t}</div>`;
   dlg.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <span style="font-size:13px;font-weight:bold;letter-spacing:1px">PRÉFÉRENCES UTILISATEUR</span>
-      <span onclick="document.getElementById('prefs-dialog').remove()" style="cursor:pointer;opacity:.6;font-size:16px">✕</span>
+    <div class="pf-head">
+      <span class="pf-title">Préférences utilisateur</span>
+      <span class="pf-close" onclick="document.getElementById('prefs-dialog').remove()">✕</span>
     </div>
-    <div style="font-size:10px;color:var(--text-dim);margin-bottom:10px;letter-spacing:.5px">ACCROCHAGE &amp; GRILLE</div>
-    ${row('Snap grille', chk('snap', p.snap))}
-    ${row('Taille grille / snap', num('gridSize', p.gridSize, 5, 1))}
-    ${row('Grille visible', chk('gridVis', p.gridVis))}
-    ${row('OSNAP', chk('osnapEnabled', p.osnapEnabled))}
-    <div style="margin:4px 0 4px 148px;display:flex;flex-wrap:wrap;gap:4px" id="pd-osmodes">
-      ${['endpoint','midpoint','center','nearest','intersection','perpendicular','tangent','quadrant','extension'].map(m=>
-        `<label style="cursor:pointer;font-size:10px;white-space:nowrap"><input type="checkbox" id="pd-os-${m}" ${p.osnapModes[m]?'checked':''}> ${m}</label>`
-      ).join('')}
+    <div class="pf-body">
+      ${sec(`Apparence`)}
+      ${row(`Thème`, sel('theme', [{v:'dark',l:`Sombre`},{v:'light',l:`Clair`}], p.theme||'dark'))}
+
+      ${sec(`Grille`)}
+      ${row(`Afficher la grille`, chk('gridVis', p.gridVis))}
+      ${row(`Accrochage à la grille (Snap)`, chk('snap', p.snap))}
+      ${row(`Pas de la grille (X)`, num('gridSize', p.gridSize, 1, 0.1), `unités`)}
+      ${row(`Pas de la grille (Y)`, num('gridSizeY', p.gridSizeY ?? p.gridSize, 1, 0.1), `unités`)}
+
+      ${sec(`Accrochage aux objets (OSNAP)`)}
+      ${row(`Accrochage actif`, chk('osnapEnabled', p.osnapEnabled))}
+      ${row(`Portée de détection`, num('osnapTolPx', p.osnapTolPx ?? 15, 1, 5, 40), 'px')}
+      <div class="pf-os-grid">
+        ${_PD_OS_MODES.map(m =>
+          `<label><input type="checkbox" id="pd-os-${m}" ${p.osnapModes[m]?'checked':''}>${osLabels[m]}</label>`
+        ).join('')}
+      </div>
+
+      ${sec(`Saisie & curseur`)}
+      ${row(`Mode ortho <span class="pf-unit">F8</span>`, chk('ortho', p.ortho))}
+      ${row(`Accrochage polaire <span class="pf-unit">F10</span>`, chk('polar', p.polar))}
+      ${row(`Incrément polaire`, num('polarAngle', p.polarAngle, 5, 1, 90), '°')}
+      ${row(`Taille du pickbox`, num('pickboxPx', p.pickboxPx ?? 6, 1, 3, 20), 'px')}
+
+      ${sec(`Cotation`)}
+      ${row(`Style de cote actif`, sel('dimStyle', S.dimStyles.map(s=>({v:s.name,l:s.name})), p.currentDimStyle))}
+
+      ${sec(`Tube & tuyauterie`)}
+      ${row(`Diamètre extérieur Ø`, num('tubeDiameter', p.tubeDiameter, 5, 1), `unités`)}
+      ${row(`Rayon de coude`, num('tubeBendRadius', p.tubeBendRadius, 5, 1), `unités`)}
+      ${row(`Ligne de référence`, sel('tubeRef', [
+        {v:'axe', l:`Axe`},
+        {v:'ext', l:`Extérieur`},
+        {v:'int', l:`Intérieur`},
+      ], p.tubeRef))}
     </div>
-    <div style="font-size:10px;color:var(--text-dim);margin:10px 0 6px;letter-spacing:.5px">CONTRAINTES</div>
-    ${row('Ortho (F8)', chk('ortho', p.ortho))}
-    ${row('Polaire (F10)', chk('polar', p.polar))}
-    ${row('Incrément polaire', num('polarAngle', p.polarAngle, 5, 1) + ' <span style="color:var(--text-dim)">°</span>')}
-    <div style="font-size:10px;color:var(--text-dim);margin:10px 0 6px;letter-spacing:.5px">TUBE</div>
-    ${row('Diamètre tube (Ø)', num('tubeDiameter', p.tubeDiameter, 5, 1))}
-    ${row('Rayon coude', num('tubeBendRadius', p.tubeBendRadius, 5, 1))}
-    ${row('Référence tube', sel('tubeRef', ['axe','ext','int'], p.tubeRef))}
-    <div style="font-size:10px;color:var(--text-dim);margin:10px 0 6px;letter-spacing:.5px">COTATION</div>
-    ${row('Style de cote', sel('dimStyle', ['1:1','1:2','1:5','1:10','1:20','1:50','1:100'], p.currentDimStyle))}
-    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
-      <button onclick="resetUserPrefs();document.getElementById('prefs-dialog').remove()" style="background:var(--danger,#e53935);border:none;color:#fff;padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px;">Réinitialiser</button>
-      <button onclick="importPrefsFromFile();document.getElementById('prefs-dialog').remove()" style="background:#2a2a3e;border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px;">Importer…</button>
-      <button onclick="savePrefsToFile()" style="background:#2a2a3e;border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px;">Exporter…</button>
-      <button id="pd-apply-btn" style="background:var(--accent);border:none;color:#000;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold;">Appliquer</button>
+    <div class="pf-foot">
+      <button class="pf-btn danger" id="pd-reset-btn">Réinitialiser</button>
+      <button class="pf-btn" onclick="importPrefsFromFile();document.getElementById('prefs-dialog').remove()">Importer…</button>
+      <button class="pf-btn" onclick="savePrefsToFile()">Exporter…</button>
+      <span class="pf-spacer"></span>
+      <button class="pf-btn" onclick="document.getElementById('prefs-dialog').remove()">Annuler</button>
+      <button class="pf-btn primary" id="pd-apply-btn">Appliquer</button>
     </div>`;
   document.body.appendChild(dlg);
+  document.getElementById('pd-reset-btn').onclick = () => {
+    if (!confirm(`Réinitialiser toutes les préférences aux valeurs par défaut ?`)) return;
+    resetUserPrefs();
+    dlg.remove();
+  };
   document.getElementById('pd-apply-btn').onclick = () => {
     const g = id => document.getElementById('pd-' + id);
     const prefs = {
+      theme: g('theme').value,
       snap: g('snap').checked,
       gridSize: parseFloat(g('gridSize').value) || 20,
+      gridSizeY: parseFloat(g('gridSizeY').value) || parseFloat(g('gridSize').value) || 20,
       gridVis: g('gridVis').checked,
       osnapEnabled: g('osnapEnabled').checked,
-      osnapModes: Object.fromEntries(['endpoint','midpoint','center','nearest','intersection','perpendicular','tangent','quadrant','extension'].map(m => [m, document.getElementById('pd-os-'+m).checked])),
+      osnapTolPx: parseFloat(g('osnapTolPx').value) || 15,
+      osnapModes: Object.fromEntries(_PD_OS_MODES.map(m => [m, document.getElementById('pd-os-'+m).checked])),
       ortho: g('ortho').checked,
       polar: g('polar').checked,
       polarAngle: parseFloat(g('polarAngle').value) || 15,
+      pickboxPx: parseFloat(g('pickboxPx').value) || 6,
       tubeDiameter: parseFloat(g('tubeDiameter').value) || 40,
       tubeBendRadius: parseFloat(g('tubeBendRadius').value) || 67,
       tubeRef: g('tubeRef').value,
@@ -16356,6 +16644,7 @@ function loadFromLocalStorage() {
     if (data.currentLayer !== undefined) S.currentLayer = data.currentLayer;
     if (data.nextId) S.nextId = data.nextId;
     if (data.gridSize) S.gridSize = data.gridSize;
+    S.gridSizeY = data.gridSizeY || data.gridSize || S.gridSizeY;
     if (data.modules) Object.entries(data.modules).forEach(([k,l]) => { if(modules[k]) modules[k].loaded = l; });
     if (data.dimStyles && data.dimStyles.length && !_isOldIsoStyleSet(data.dimStyles)) S.dimStyles = data.dimStyles;
     if (data.currentDimStyle) S.currentDimStyle = _migrateDimStyle(data.currentDimStyle);
@@ -16472,6 +16761,7 @@ function openJSON(content, filename) {
   if (data.currentLayer !== undefined) S.currentLayer = data.currentLayer;
   if (data.nextId) S.nextId = data.nextId;
   if (data.gridSize) S.gridSize = data.gridSize;
+  S.gridSizeY = data.gridSizeY || data.gridSize || S.gridSizeY;
   if (data.modules) {
     Object.entries(data.modules).forEach(([k, loaded]) => {
       if (modules[k]) modules[k].loaded = loaded;
@@ -16874,7 +17164,7 @@ function showTBContext(ev) {
   });
   // Add "Tout réinitialiser"
   const sep = document.createElement('div');
-  sep.style.cssText = 'height:1px;background:#ffffff10;margin:4px 0;';
+  sep.style.cssText = 'height:1px;background:color-mix(in srgb, var(--ink) 6%, transparent);margin:4px 0;';
   menu.appendChild(sep);
   const reset = document.createElement('div');
   reset.className = 'tb-ctx-item';
@@ -17235,7 +17525,7 @@ if (['minicad.org','www.minicad.org'].includes(window.location.hostname)) {
     'align-items:center',
     'gap:6px',
     'padding:7px 14px',
-    'background:#0d1b2a',
+    'background:var(--bg-panel)',
     'border:1px solid #00d4ff',
     'border-radius:20px',
     'color:#00d4ff',

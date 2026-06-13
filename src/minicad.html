@@ -236,7 +236,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 2px 4px 2px 8px;
-    background: #0d1a33;
+    background: var(--bg-dark);
     border-bottom: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     cursor: grab;
     border-radius: 3px 3px 0 0;
@@ -306,7 +306,7 @@
   .tube-def-popup .tdp-row:last-of-type { margin-bottom: 16px; }
   .tube-def-popup .tdp-lbl { color: var(--text-dim); white-space: nowrap; }
   .tube-def-popup input[type=number] {
-    width: 100%; background: #0d1929; border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent);
+    width: 100%; background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent);
     border-radius: 4px; color: var(--text); font-family: inherit;
     font-size: 13px; padding: 5px 8px; text-align: right; box-sizing: border-box;
   }
@@ -431,7 +431,7 @@
   .lm-grid th {
     padding: 5px 8px; text-align: left; font-size: 9px; font-weight: 600;
     text-transform: uppercase; letter-spacing: 0.8px; color: color-mix(in srgb, var(--ink) 27%, transparent);
-    border-bottom: 1px solid color-mix(in srgb, var(--ink) 7%, transparent); background: #0f1726; position: sticky; top: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 7%, transparent); background: var(--bg-elev); position: sticky; top: 0;
   }
   .lm-grid td { padding: 4px 8px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 3%, transparent); vertical-align: middle; }
   .lm-grid tr:hover td { background: color-mix(in srgb, var(--ink) 2%, transparent); }
@@ -618,7 +618,7 @@
   .ai-settings-btn:hover { color: #fff; }
   .ai-settings-panel {
     padding: 10px 14px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
-    background: #131b2e; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px;
+    background: var(--bg-panel); flex-shrink: 0; display: flex; flex-direction: column; gap: 8px;
   }
   .ai-settings-row {
     display: flex; align-items: center; gap: 8px;
@@ -1089,7 +1089,7 @@
   #ct-menu .ctm-edit:hover { color: var(--accent); }
   #ct-menu .ctm-del { padding-left: 8px; color: var(--text-dim); }
   #ct-menu .ctm-del:hover { color: var(--error); }
-  #ct-menu .ctm-sep { height: 1px; background: #ffffff14; margin: 4px 2px; }
+  #ct-menu .ctm-sep { height: 1px; background: color-mix(in srgb, var(--ink) 8%, transparent); margin: 4px 2px; }
   #ct-menu .ctm-title { padding: 4px 10px; color: var(--text-dim); font-size: 9px; letter-spacing: .5px; }
   #paper-tools {
     position: absolute; top: 8px; right: 8px; z-index: 5; display: none; gap: 4px;
@@ -1108,15 +1108,15 @@
   }
   .pd-body { padding: 14px; }
   .pd-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-  .pd-label { font-size: 10px; color: #aaa; min-width: 70px; }
+  .pd-label { font-size: 10px; color: var(--text-dim); min-width: 70px; }
   .pd-body input[type=text], .pd-body select {
     background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); color: var(--text);
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
     border-radius: 4px; padding: 4px 7px; flex: 1; min-width: 0;
   }
   .pd-zone-info {
-    background: #0d1526; border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent); border-radius: 4px;
-    padding: 5px 9px; font-size: 10px; color: #aaa; flex: 1;
+    background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent); border-radius: 4px;
+    padding: 5px 9px; font-size: 10px; color: var(--text-dim); flex: 1;
   }
   .pd-zone-info.set { color: #00d4ff; }
   .pd-sep { height: 1px; background: color-mix(in srgb, var(--ink) 6%, transparent); margin: 6px 0 10px; }
@@ -1128,11 +1128,11 @@
   }
   .pd-btn-print:hover { background: #ffb74d; }
   .pd-btn-sel {
-    background: #1e3a5f; color: #00d4ff; border: 1px solid #00d4ff44;
+    background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
     border-radius: 4px; padding: 4px 10px; font-size: 10px;
     font-family: 'JetBrains Mono',monospace; cursor: pointer;
   }
-  .pd-btn-sel:hover { background: #1e4a7a; }
+  .pd-btn-sel:hover { background: color-mix(in srgb, var(--accent) 25%, transparent); }
   #text-dialog {
     position: fixed;
     background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
@@ -1154,11 +1154,11 @@
   .td-symbols { display: flex; gap: 4px; flex-wrap: wrap; }
   .td-sym-btn {
     min-width: 28px; height: 26px; background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
-    color: #e8ecf4; font-size: 13px; cursor: pointer; border-radius: 4px;
+    color: var(--text); font-size: 13px; cursor: pointer; border-radius: 4px;
     display: flex; align-items: center; justify-content: center; padding: 0 5px;
     font-family: 'Share Tech', sans-serif;
   }
-  .td-sym-btn:hover { background: #1a2a44; border-color: var(--accent); color: var(--accent); }
+  .td-sym-btn:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); border-color: var(--accent); color: var(--accent); }
   .td-field { display: flex; flex-direction: column; gap: 4px; }
   .td-label {
     font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;
@@ -1920,7 +1920,7 @@
 </div>
 
 <!-- DIM STYLE MANAGER -->
-<div id="dim-style-manager" style="display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:2000;background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;min-width:480px;box-shadow:0 8px 32px #0008;">
+<div id="dim-style-manager" style="display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:2000;background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;min-width:560px;box-shadow:0 8px 32px #0008;">
   <div class="lm-header">
     <span>STYLES DE COTES</span>
     <span class="lm-close" onclick="closeDimStyleManager()">×</span>
@@ -1931,7 +1931,7 @@
   <div class="lm-table">
     <table class="lm-grid">
       <thead><tr>
-        <th>Nom</th><th>Texte (mm)</th><th>Flèche (mm)</th><th>Attache (mm)</th><th>Déc.</th><th></th>
+        <th>Nom</th><th>Texte (mm)</th><th>Flèche (mm)</th><th>Attache (mm)</th><th>Retrait (mm)</th><th>Déc.</th><th></th>
       </tr></thead>
       <tbody id="dsm-body"></tbody>
     </table>
@@ -2115,7 +2115,7 @@
   <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px">
     <label style="font-size:10px;color:color-mix(in srgb, var(--ink) 33%, transparent);letter-spacing:0.4px">Texte libre — utiliser &lt;&gt; pour la valeur mesurée</label>
     <input id="dim-td-input" type="text" placeholder="<>" autocomplete="off"
-      style="background:#0d1525;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:3px;color:var(--text);font-size:13px;padding:6px 10px;font-family:'JetBrains Mono',monospace;outline:none"
+      style="background:var(--bg-elev);border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:3px;color:var(--text);font-size:13px;padding:6px 10px;font-family:'JetBrains Mono',monospace;outline:none"
       oninput="updateDimTextPreview()" onkeydown="if(event.key==='Enter')confirmDimTextDialog();if(event.key==='Escape')closeDimTextDialog()">
     <div id="dim-td-preview" style="font-size:12px;color:var(--accent);min-height:18px;font-family:'JetBrains Mono',monospace;padding-left:2px"></div>
   </div>
@@ -2388,6 +2388,7 @@ const USER_PREFS = {
   snap: true,
   snapSize: 20,
   gridSize: 20,
+  gridSizeY: 20,
   gridVis: true,
   osnapEnabled: true,
   osnapModes: { endpoint:true, midpoint:true, center:true, nearest:false, intersection:true, perpendicular:false, tangent:false, quadrant:true, extension:false },
@@ -2415,13 +2416,13 @@ const S = {
     { name: '3 - Texte',       color: '#ffab40', printColor: '#000000', visible: true, lineWidth: 0.25, lineType: 'solid' },
   ],
   dimStyles: [
-    { name: '1:1',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, decimals: 1 },
-    { name: '1:2',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, decimals: 1 },
-    { name: '1:5',   textHeight:   5, arrowSize:  3.0, extGap:  2.0, decimals: 1 },
-    { name: '1:10',  textHeight:  10, arrowSize:  6.0, extGap:  4.0, decimals: 0 },
-    { name: '1:20',  textHeight:  20, arrowSize: 12.0, extGap:  8.0, decimals: 0 },
-    { name: '1:50',  textHeight:  50, arrowSize: 30.0, extGap: 20.0, decimals: 0 },
-    { name: '1:100', textHeight: 100, arrowSize: 60.0, extGap: 40.0, decimals: 0 },
+    { name: '1:1',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, extOff:  2.0, decimals: 1 },
+    { name: '1:2',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, extOff:  4.0, decimals: 1 },
+    { name: '1:5',   textHeight:   5, arrowSize:  3.0, extGap:  2.0, extOff:  6.0, decimals: 1 },
+    { name: '1:10',  textHeight:  10, arrowSize:  6.0, extGap:  4.0, extOff: 10.0, decimals: 0 },
+    { name: '1:20',  textHeight:  20, arrowSize: 12.0, extGap:  8.0, extOff: 20.0, decimals: 0 },
+    { name: '1:50',  textHeight:  50, arrowSize: 30.0, extGap: 20.0, extOff: 20.0, decimals: 0 },
+    { name: '1:100', textHeight: 100, arrowSize: 60.0, extGap: 40.0, extOff: 20.0, decimals: 0 },
   ],
   currentDimStyle: '1:1',
   currentLayer: 0,
@@ -2432,6 +2433,7 @@ const S = {
   polarAngle: 15, // degrees increment for polar tracking
   gridVis: true,
   gridSize: 20,
+  gridSizeY: 20,
   zoom: 1,
   panX: 0, panY: 0,
   selected: [],
@@ -3743,7 +3745,7 @@ const CMD = {
     if (args[0]) { const r=parseFloat(args[0]); if (!isNaN(r) && r>=0) S.filletRadius=r; }
     S.filletFirstId=null; S.filletFirstSeg=null; S.filletClickPos1=null; S.selected=[];
     setTool('fillet');
-    termPrint('RACCORD R='+S.filletRadius+' — Cliquer le 1er segment (Echap=fin)', 'info');
+    termPrint('RACCORD R='+S.filletRadius+' — Cliquer le 1er segment ou R pour modifier le rayon (Echap=fin)', 'info');
     setTimeout(smartFocus,0);
   }},
   CHAMFER: { alias: ['CHA','CHANFREIN'], desc: 'Chanfrein — CHAMFER [d1] [d2]', exec(args) {
@@ -3751,7 +3753,7 @@ const CMD = {
     if (args[1]) { const d=parseFloat(args[1]); if (!isNaN(d) && d>0) S.filletDist2=d; }
     S.filletFirstId=null; S.filletFirstSeg=null; S.filletClickPos1=null; S.selected=[];
     setTool('chamfer');
-    termPrint('CHANFREIN écart='+S.filletDist1+' — Cliquer le 1er segment (Echap=fin)', 'info');
+    termPrint('CHANFREIN EC='+S.filletDist1+'/'+S.filletDist2+' — Cliquer le 1er segment ou EC pour modifier l\'écart (Echap=fin)', 'info');
     setTimeout(smartFocus,0);
   }},
   UNDO: { alias: ['U','ANNULER'], desc: 'Annuler', exec: () => {
@@ -3813,9 +3815,19 @@ const CMD = {
     _fileHandle = null; _kdFile = null; localStorage.removeItem('minicad_autosave'); updateSaveIndicator('new');
     termPrint('Dessin effacé', 'success'); render();
   }},
-  GRID: { alias: ['GRILLE'], desc: 'Taille grille (GRID [n])', exec: (args) => {
-    if (args[0]) S.gridSize = Math.max(5, parseInt(args[0]) || 20);
-    S.gridVis = !S.gridVis; termPrint('Grille: ' + (S.gridVis ? 'ON' : 'OFF') + ' (' + S.gridSize + ')', 'info'); render();
+  GRID: { alias: ['GRILLE'], desc: 'Taille grille (GRID [x] [y] — ex: GRID 20 10)', exec: (args) => {
+    if (args[0]) {
+      const gx = Math.max(1, parseFloat(args[0]) || 20);
+      const gy = args[1] ? Math.max(1, parseFloat(args[1]) || gx) : gx;
+      S.gridSize = gx; S.gridSizeY = gy; S.gridVis = true;
+      const lbl = gx !== gy ? (gx + '×' + gy) : String(gx);
+      termPrint('Grille: ON (' + lbl + ')', 'info');
+    } else {
+      S.gridVis = !S.gridVis;
+      const lbl = S.gridSizeY !== S.gridSize ? (S.gridSize + '×' + S.gridSizeY) : String(S.gridSize);
+      termPrint('Grille: ' + (S.gridVis ? 'ON' : 'OFF') + ' (' + lbl + ')', 'info');
+    }
+    render();
   }},
   SNAP: { alias: ['ACCROCHAGE'], desc: 'Toggle snap grille', exec: () => toggleSnap() },
   ORTHO: { desc: 'Toggle ortho (90°)', exec: () => toggleOrtho() },
@@ -4139,8 +4151,8 @@ function s2w(sx, sy) { return [(sx - S.panX - canvasW / 2) / S.zoom, -(sy - S.pa
 
 function snapToGrid(wx, wy) {
   if (!S.snap) return [wx, wy];
-  const g = S.gridSize;
-  return [Math.round(wx / g) * g, Math.round(wy / g) * g];
+  const gx = S.gridSize, gy = S.gridSizeY || S.gridSize;
+  return [Math.round(wx / gx) * gx, Math.round(wy / gy) * gy];
 }
 
 function resolvePoint(wx, wy) {
@@ -4268,21 +4280,29 @@ function _drawStaticLayer() {
   ctx = staticCtx;
   ctx.clearRect(0, 0, staticCanvas.width, staticCanvas.height);
 
-  // Grid
+  // Grid (espacements X et Y indépendants)
   if (S.gridVis) {
-    const g = S.gridSize * S.zoom;
-    if (g > 4) {
-      const ox = (S.panX + canvasW/2) % g, oy = (S.panY + canvasH/2) % g;
-      ctx.strokeStyle = g > 15 ? TC.grid : TC.gridFine; ctx.lineWidth = 0.5;
-      for (let x=ox; x<canvasW; x+=g){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvasH); ctx.stroke(); }
-      for (let y=oy; y<canvasH; y+=g){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvasW,y); ctx.stroke(); }
+    const gx = S.gridSize * S.zoom;
+    const gy = (S.gridSizeY || S.gridSize) * S.zoom;
+    ctx.lineWidth = 0.5;
+    ctx.strokeStyle = (gx > 15 && gy > 15) ? TC.grid : TC.gridFine;
+    if (gx > 4) {
+      const ox = (S.panX + canvasW/2) % gx;
+      for (let x=ox; x<canvasW; x+=gx){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvasH); ctx.stroke(); }
     }
-    const mg = g*5;
-    if (mg > 20) {
-      const ox2=(S.panX+canvasW/2)%mg, oy2=(S.panY+canvasH/2)%mg;
-      ctx.strokeStyle=TC.gridMajor; ctx.lineWidth=0.5;
-      for (let x=ox2; x<canvasW; x+=mg){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvasH); ctx.stroke(); }
-      for (let y=oy2; y<canvasH; y+=mg){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvasW,y); ctx.stroke(); }
+    if (gy > 4) {
+      const oy = (S.panY + canvasH/2) % gy;
+      for (let y=oy; y<canvasH; y+=gy){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvasW,y); ctx.stroke(); }
+    }
+    const mgx = gx*5, mgy = gy*5;
+    ctx.strokeStyle = TC.gridMajor;
+    if (mgx > 20) {
+      const ox2=(S.panX+canvasW/2)%mgx;
+      for (let x=ox2; x<canvasW; x+=mgx){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvasH); ctx.stroke(); }
+    }
+    if (mgy > 20) {
+      const oy2=(S.panY+canvasH/2)%mgy;
+      for (let y=oy2; y<canvasH; y+=mgy){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvasW,y); ctx.stroke(); }
     }
   }
 
@@ -6650,6 +6670,7 @@ function drawEntity(e) {
       const tpx = Math.max(5, ds.textHeight * S.zoom);
       const asz = Math.max(3, ds.arrowSize * S.zoom);
       const egap = ds.extGap * S.zoom;
+      const eoff = (ds.extOff || 0) * S.zoom;
       const off = e.offset || 30;
       const to = e.textOffset || 0;
       const isHoriz = e.isHoriz !== undefined ? e.isHoriz : (Math.abs(e.x2-e.x1) >= Math.abs(e.y2-e.y1));
@@ -6657,8 +6678,9 @@ function drawEntity(e) {
         const dimY = (e.y1 + e.y2) / 2 + off;
         const [a1, b1] = w2s(e.x1, dimY), [a2, b2] = w2s(e.x2, dimY);
         const [e1a, e1b] = w2s(e.x1, e.y1), [e2a, e2b] = w2s(e.x2, e.y2);
-        ctx.beginPath(); ctx.moveTo(e1a, e1b); ctx.lineTo(a1, b1 - egap*Math.sign(off||1)); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(e2a, e2b); ctx.lineTo(a2, b2 - egap*Math.sign(off||1)); ctx.stroke();
+        const d1 = Math.sign(b1 - e1b) || 1, d2 = Math.sign(b2 - e2b) || 1;
+        ctx.beginPath(); ctx.moveTo(e1a, e1b + d1*eoff); ctx.lineTo(a1, b1 - egap*Math.sign(off||1)); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(e2a, e2b + d2*eoff); ctx.lineTo(a2, b2 - egap*Math.sign(off||1)); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(a1, b1); ctx.lineTo(a2, b2); ctx.stroke();
         drawArrowHead(a1, b1, a2, b2, asz); drawArrowHead(a2, b2, a1, b1, asz);
         const dist = Math.abs(e.x2 - e.x1);
@@ -6669,8 +6691,9 @@ function drawEntity(e) {
         const dimX = (e.x1 + e.x2) / 2 + off;
         const [a1, b1] = w2s(dimX, e.y1), [a2, b2] = w2s(dimX, e.y2);
         const [e1a, e1b] = w2s(e.x1, e.y1), [e2a, e2b] = w2s(e.x2, e.y2);
-        ctx.beginPath(); ctx.moveTo(e1a, e1b); ctx.lineTo(a1 + egap*Math.sign(off||1), b1); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(e2a, e2b); ctx.lineTo(a2 + egap*Math.sign(off||1), b2); ctx.stroke();
+        const d1 = Math.sign(a1 - e1a) || 1, d2 = Math.sign(a2 - e2a) || 1;
+        ctx.beginPath(); ctx.moveTo(e1a + d1*eoff, e1b); ctx.lineTo(a1 + egap*Math.sign(off||1), b1); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(e2a + d2*eoff, e2b); ctx.lineTo(a2 + egap*Math.sign(off||1), b2); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(a1, b1); ctx.lineTo(a2, b2); ctx.stroke();
         drawArrowHead(a1, b1, a2, b2, asz); drawArrowHead(a2, b2, a1, b1, asz);
         const dist = Math.abs(e.y2 - e.y1);
@@ -6689,9 +6712,11 @@ function drawEntity(e) {
       const angle = Math.atan2(b2 - b1, a2 - a1);
       const perp = angle + Math.PI / 2;
       const off = (e.offset || 30) * S.zoom;
+      const eoff = (ds.extOff || 0) * S.zoom;
       const ox = Math.cos(perp) * off, oy = Math.sin(perp) * off;
-      ctx.beginPath(); ctx.moveTo(a1, b1); ctx.lineTo(a1 + ox * 1.15, b1 + oy * 1.15); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(a2, b2); ctx.lineTo(a2 + ox * 1.15, b2 + oy * 1.15); ctx.stroke();
+      const ux = Math.cos(perp) * Math.sign(off||1), uy = Math.sin(perp) * Math.sign(off||1);
+      ctx.beginPath(); ctx.moveTo(a1 + ux*eoff, b1 + uy*eoff); ctx.lineTo(a1 + ox * 1.15, b1 + oy * 1.15); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(a2 + ux*eoff, b2 + uy*eoff); ctx.lineTo(a2 + ox * 1.15, b2 + oy * 1.15); ctx.stroke();
       const dx1 = a1 + ox, dy1 = b1 + oy, dx2 = a2 + ox, dy2 = b2 + oy;
       ctx.beginPath(); ctx.moveTo(dx1, dy1); ctx.lineTo(dx2, dy2); ctx.stroke();
       drawArrowHead(dx1, dy1, dx2, dy2, asz); drawArrowHead(dx2, dy2, dx1, dy1, asz);
@@ -7290,14 +7315,16 @@ function drawDimPreview(tool, p1, p2, mouseWorld) {
   const _tpx = Math.max(5, _ds.textHeight * S.zoom);
   const _asz = Math.max(3, _ds.arrowSize * S.zoom);
   const _egap = _ds.extGap * S.zoom;
+  const _eoff = (_ds.extOff || 0) * S.zoom;
   if (tool === 'dim_linear') {
     const isHoriz = dimIsHoriz(p1, p2, mouseWorld);
     if (isHoriz) {
       const dimY = (p1[1] + p2[1]) / 2 + off;
       const [a1,b1]=w2s(p1[0],dimY), [a2,b2]=w2s(p2[0],dimY);
       const [e1a,e1b]=w2s(p1[0],p1[1]), [e2a,e2b]=w2s(p2[0],p2[1]);
-      ctx.beginPath(); ctx.moveTo(e1a,e1b); ctx.lineTo(a1,b1-_egap*Math.sign(off||1)); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(e2a,e2b); ctx.lineTo(a2,b2-_egap*Math.sign(off||1)); ctx.stroke();
+      const _d1=Math.sign(b1-e1b)||1, _d2=Math.sign(b2-e2b)||1;
+      ctx.beginPath(); ctx.moveTo(e1a,e1b+_d1*_eoff); ctx.lineTo(a1,b1-_egap*Math.sign(off||1)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(e2a,e2b+_d2*_eoff); ctx.lineTo(a2,b2-_egap*Math.sign(off||1)); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(a1,b1); ctx.lineTo(a2,b2); ctx.stroke();
       drawArrowHead(a2,b2,a1,b1,_asz); drawArrowHead(a1,b1,a2,b2,_asz);
       ctx.font=_tpx+'px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='bottom';
@@ -7308,8 +7335,9 @@ function drawDimPreview(tool, p1, p2, mouseWorld) {
       const dimX = (p1[0] + p2[0]) / 2 + off;
       const [a1,b1]=w2s(dimX,p1[1]), [a2,b2]=w2s(dimX,p2[1]);
       const [e1a,e1b]=w2s(p1[0],p1[1]), [e2a,e2b]=w2s(p2[0],p2[1]);
-      ctx.beginPath(); ctx.moveTo(e1a,e1b); ctx.lineTo(a1+_egap*Math.sign(off||1),b1); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(e2a,e2b); ctx.lineTo(a2+_egap*Math.sign(off||1),b2); ctx.stroke();
+      const _d1=Math.sign(a1-e1a)||1, _d2=Math.sign(a2-e2a)||1;
+      ctx.beginPath(); ctx.moveTo(e1a+_d1*_eoff,e1b); ctx.lineTo(a1+_egap*Math.sign(off||1),b1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(e2a+_d2*_eoff,e2b); ctx.lineTo(a2+_egap*Math.sign(off||1),b2); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(a1,b1); ctx.lineTo(a2,b2); ctx.stroke();
       drawArrowHead(a2,b2,a1,b1,_asz); drawArrowHead(a1,b1,a2,b2,_asz);
       ctx.save(); ctx.translate((a1+a2)/2,(b1+b2)/2); ctx.rotate(-Math.PI/2);
@@ -7324,8 +7352,9 @@ function drawDimPreview(tool, p1, p2, mouseWorld) {
     const perp=angle+Math.PI/2;
     const offPx=off*S.zoom;
     const ox=Math.cos(perp)*offPx, oy=Math.sin(perp)*offPx;
-    ctx.beginPath(); ctx.moveTo(a1,b1); ctx.lineTo(a1+ox*1.15,b1+oy*1.15); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(a2,b2); ctx.lineTo(a2+ox*1.15,b2+oy*1.15); ctx.stroke();
+    const ux=Math.cos(perp)*Math.sign(offPx||1), uy=Math.sin(perp)*Math.sign(offPx||1);
+    ctx.beginPath(); ctx.moveTo(a1+ux*_eoff,b1+uy*_eoff); ctx.lineTo(a1+ox*1.15,b1+oy*1.15); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(a2+ux*_eoff,b2+uy*_eoff); ctx.lineTo(a2+ox*1.15,b2+oy*1.15); ctx.stroke();
     const dx1=a1+ox, dy1=b1+oy, dx2=a2+ox, dy2=b2+oy;
     ctx.beginPath(); ctx.moveTo(dx1,dy1); ctx.lineTo(dx2,dy2); ctx.stroke();
     drawArrowHead(dx2,dy2,dx1,dy1,_asz); drawArrowHead(dx1,dy1,dx2,dy2,_asz);
@@ -8208,15 +8237,15 @@ function openHatchDialog(pts, layer, existingEntity, sourceId) {
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
       <div id="h-angle-row" style="display:${initDef.showAngle===false?'none':'flex'};align-items:center;gap:10px">
         <span style="width:90px;flex-shrink:0">Angle (°)</span>
-        <input id="h-angle" type="number" value="${initAngle}" style="background:#12122a;border:1px solid var(--border);color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
+        <input id="h-angle" type="number" value="${initAngle}" style="background:var(--bg-elev);border:1px solid var(--border);color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
       </div>
       <div id="h-spacing-row" style="display:flex;align-items:center;gap:10px">
         <span style="width:90px;flex-shrink:0">Espacement</span>
-        <input id="h-spacing" type="number" value="${initSpacing}" min="0.1" style="background:#12122a;border:1px solid var(--border);color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
+        <input id="h-spacing" type="number" value="${initSpacing}" min="0.1" style="background:var(--bg-elev);border:1px solid var(--border);color:var(--text);padding:3px 6px;border-radius:3px;width:80px">
       </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button id="h-cancel" style="background:#223;border:1px solid var(--border);color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer">Annuler</button>
+      <button id="h-cancel" style="background:var(--bg-elev);border:1px solid var(--border);color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer">Annuler</button>
       <button id="h-ok" style="background:#00d4ff22;border:1px solid #00d4ff66;color:#00d4ff;padding:4px 12px;border-radius:3px;cursor:pointer">OK ↵</button>
     </div>`;
 
@@ -9906,7 +9935,9 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     const hitSeg = getHitSeg(hit, rawWx, rawWy);
     if (S.filletFirstId === null) {
       S.filletFirstId = hit.id; S.filletFirstSeg = hitSeg; S.filletClickPos1 = [rawWx, rawWy]; S.selected = [hit.id];
-      const label = tool==='fillet' ? 'RACCORD' : 'CHANFREIN';
+      const label = tool==='fillet'
+        ? 'RACCORD R='+S.filletRadius
+        : 'CHANFREIN EC='+S.filletDist1+'/'+S.filletDist2;
       termPrint(label+' — Cliquer le 2ème segment (Echap=fin)', 'info');
       render(); return;
     } else {
@@ -9916,7 +9947,9 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       }
       applyFilletChamfer(S.filletFirstSeg, S.filletClickPos1[0], S.filletClickPos1[1], hitSeg, rawWx, rawWy, tool);
       S.filletFirstId=null; S.filletFirstSeg=null; S.filletClickPos1=null; S.selected=[];
-      const label = tool==='fillet' ? 'RACCORD' : 'CHANFREIN';
+      const label = tool==='fillet'
+        ? 'RACCORD R='+S.filletRadius
+        : 'CHANFREIN EC='+S.filletDist1+'/'+S.filletDist2;
       termPrint(label+' — Cliquer le 1er segment (Echap=fin)', 'info');
       render(); return;
     }
@@ -12755,6 +12788,8 @@ function refreshDimStyleManagerTable() {
         ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsProp('+i+',\'arrowSize\',+this.value)"></td>'+
       '<td><input type="number" class="lm-name-input" style="width:60px" step="0.1" min="0" value="'+ds.extGap.toFixed(1)+'"'+
         ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsProp('+i+',\'extGap\',+this.value)"></td>'+
+      '<td><input type="number" class="lm-name-input" style="width:60px" step="0.1" min="0" value="'+(ds.extOff != null ? ds.extOff : 0).toFixed(1)+'"'+
+        ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsProp('+i+',\'extOff\',+this.value)"></td>'+
       '<td><input type="number" class="lm-name-input" style="width:44px" step="1" min="0" max="6" value="'+(ds.decimals != null ? ds.decimals : 1)+'"'+
         ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsDecimals('+i+',+this.value)"></td>'+
       '<td><button class="lm-del-btn" onclick="event.stopPropagation();_dsDelete('+i+')" title="Supprimer">✕</button></td>'+
@@ -12769,7 +12804,7 @@ function _dsSet(name) {
 }
 function _dsAdd() {
   const n = 'Style ' + (S.dimStyles.length + 1);
-  S.dimStyles.push({ name: n, textHeight: 3.5, arrowSize: 3.5, extGap: 1.5, decimals: 1 });
+  S.dimStyles.push({ name: n, textHeight: 3.5, arrowSize: 3.5, extGap: 1.5, extOff: 1.5, decimals: 1 });
   refreshDimStylePanel(); refreshDimStyleManagerTable(); autoSave();
 }
 function _dsDecimals(i, v) {
@@ -12793,7 +12828,9 @@ function _dsName(i, v) {
   refreshDimStylePanel(); autoSave();
 }
 function _dsProp(i, prop, v) {
-  if (!isNaN(v) && v > 0 && S.dimStyles[i]) { S.dimStyles[i][prop] = v; render(); autoSave(); }
+  // extGap (dépassement) et extOff (retrait) acceptent 0 ; les autres doivent être > 0
+  const minOk = (prop === 'extGap' || prop === 'extOff') ? v >= 0 : v > 0;
+  if (!isNaN(v) && minOk && S.dimStyles[i]) { S.dimStyles[i][prop] = v; render(); autoSave(); }
 }
 function _propChangeDimStyle(id, val) {
   const e = S.entities.find(en => en.id === id);
@@ -14294,7 +14331,7 @@ function executeCommand(input) {
   if(S.tool==='fillet'){
     if(S.filletAwaitRadius){
       const r=parseFloat(raw);
-      if(!isNaN(r)&&r>=0){ S.filletRadius=r; termPrint('RACCORD R='+r+' — Cliquer la 1ère ligne','info'); }
+      if(!isNaN(r)&&r>=0){ S.filletRadius=r; termPrint('RACCORD R='+r+' — Cliquer le 1er segment ou R pour modifier le rayon (Echap=fin)','info'); }
       else termPrint('Rayon invalide','warning');
       S.filletAwaitRadius=false; return;
     }
@@ -14303,26 +14340,26 @@ function executeCommand(input) {
       termPrint('Nouveau rayon <'+S.filletRadius+'> :','info'); return;
     }
     const r=parseFloat(raw);
-    if(!isNaN(r)&&r>=0){ S.filletRadius=r; termPrint('RACCORD R='+r+' — Cliquer la 1ère ligne','info'); return; }
+    if(!isNaN(r)&&r>=0){ S.filletRadius=r; termPrint('RACCORD R='+r+' — Cliquer le 1er segment ou R pour modifier le rayon (Echap=fin)','info'); return; }
   }
-  // ---- CHAMFER : ECART/EC → D1 puis D2, ou nombre seul → D1=D2 ----
+  // ---- CHAMFER : EC → EC1 puis EC2, ou nombre seul → EC1=EC2 (comme FILLET avec R) ----
   if(S.tool==='chamfer'){
     if(S._chamferAwaitD===1){
       const d=parseFloat(raw);
-      if(!isNaN(d)&&d>0){ S.filletDist1=d; S._chamferAwaitD=2; termPrint('D2 <'+S.filletDist2+'> :','info'); }
+      if(!isNaN(d)&&d>0){ S.filletDist1=d; S._chamferAwaitD=2; termPrint('EC2 <'+S.filletDist2+'> :','info'); }
       else termPrint('Distance invalide','warning');
       return;
     }
     if(S._chamferAwaitD===2){
       const d=parseFloat(raw);
-      if(!isNaN(d)&&d>0){ S.filletDist2=d; termPrint('CHANFREIN '+S.filletDist1+'/'+S.filletDist2+' — Cliquer le 1er segment','info'); }
+      if(!isNaN(d)&&d>0){ S.filletDist2=d; termPrint('CHANFREIN EC='+S.filletDist1+'/'+S.filletDist2+' — Cliquer le 1er segment (Echap=fin)','info'); }
       else termPrint('Distance invalide','warning');
       S._chamferAwaitD=0; return;
     }
     const uRaw=raw.toUpperCase();
-    if(uRaw==='ECART'||uRaw==='EC'){ S._chamferAwaitD=1; termPrint('D1 <'+S.filletDist1+'> :','info'); return; }
+    if(uRaw==='ECART'||uRaw==='EC'){ S._chamferAwaitD=1; termPrint('EC1 <'+S.filletDist1+'> :','info'); return; }
     const d=parseFloat(raw);
-    if(!isNaN(d)&&d>0){ S.filletDist1=d; S.filletDist2=d; termPrint('CHANFREIN '+d+'/'+d+' — Cliquer le 1er segment','info'); return; }
+    if(!isNaN(d)&&d>0){ S.filletDist1=d; S.filletDist2=d; termPrint('CHANFREIN EC='+d+'/'+d+' — Cliquer le 1er segment ou EC pour modifier l\'écart (Echap=fin)','info'); return; }
   }
 
   // ---- OFFSET : mise à jour distance pendant outil actif ----
@@ -15777,7 +15814,7 @@ function buildSaveData(name) {
     layers: S.layers, entities: S.entities,
     currentLayer: S.currentLayer, nextId: S.nextId,
     modules: Object.fromEntries(Object.entries(modules).map(([k,m])=>[k,m.loaded])),
-    gridSize: S.gridSize,
+    gridSize: S.gridSize, gridSizeY: S.gridSizeY,
     dimStyles: S.dimStyles, currentDimStyle: S.currentDimStyle,
     layouts: S.layouts, space: S.space,
   };
@@ -15800,6 +15837,7 @@ function captureUserPrefs() {
     snap: S.snap,
     snapSize: S.gridSize,
     gridSize: S.gridSize,
+    gridSizeY: S.gridSizeY,
     gridVis: S.gridVis,
     osnapEnabled: S.osnapEnabled,
     osnapModes: { ...S.osnapModes },
@@ -15831,6 +15869,7 @@ function applyUserPrefs(prefs) {
   if (prefs.osnapTolPx !== undefined)   S.osnapTolPx = Math.max(5, Math.min(40, prefs.osnapTolPx));
   if (prefs.snap !== undefined)         S.snap = prefs.snap;
   if (prefs.gridSize !== undefined)     S.gridSize = prefs.gridSize;
+  if (prefs.gridSizeY !== undefined)    S.gridSizeY = prefs.gridSizeY;
   if (prefs.gridVis !== undefined)      S.gridVis = prefs.gridVis;
   if (prefs.osnapEnabled !== undefined) S.osnapEnabled = prefs.osnapEnabled;
   if (prefs.osnapModes)                 Object.assign(S.osnapModes, prefs.osnapModes);
@@ -15934,7 +15973,8 @@ function openPrefsDialog() {
       ${sec(`{{prefs.grid}}`)}
       ${row(`{{prefs.grid_visible}}`, chk('gridVis', p.gridVis))}
       ${row(`{{prefs.grid_snap}}`, chk('snap', p.snap))}
-      ${row(`{{prefs.grid_size}}`, num('gridSize', p.gridSize, 5, 1), `{{prefs.unit_drawing}}`)}
+      ${row(`{{prefs.grid_size}}`, num('gridSize', p.gridSize, 1, 0.1), `{{prefs.unit_drawing}}`)}
+      ${row(`{{prefs.grid_size_y}}`, num('gridSizeY', p.gridSizeY ?? p.gridSize, 1, 0.1), `{{prefs.unit_drawing}}`)}
 
       ${sec(`{{prefs.osnap}}`)}
       ${row(`{{prefs.osnap_enabled}}`, chk('osnapEnabled', p.osnapEnabled))}
@@ -15983,6 +16023,7 @@ function openPrefsDialog() {
       theme: g('theme').value,
       snap: g('snap').checked,
       gridSize: parseFloat(g('gridSize').value) || 20,
+      gridSizeY: parseFloat(g('gridSizeY').value) || parseFloat(g('gridSize').value) || 20,
       gridVis: g('gridVis').checked,
       osnapEnabled: g('osnapEnabled').checked,
       osnapTolPx: parseFloat(g('osnapTolPx').value) || 15,
@@ -16030,6 +16071,7 @@ function loadFromLocalStorage() {
     if (data.currentLayer !== undefined) S.currentLayer = data.currentLayer;
     if (data.nextId) S.nextId = data.nextId;
     if (data.gridSize) S.gridSize = data.gridSize;
+    S.gridSizeY = data.gridSizeY || data.gridSize || S.gridSizeY;
     if (data.modules) Object.entries(data.modules).forEach(([k,l]) => { if(modules[k]) modules[k].loaded = l; });
     if (data.dimStyles && data.dimStyles.length && !_isOldIsoStyleSet(data.dimStyles)) S.dimStyles = data.dimStyles;
     if (data.currentDimStyle) S.currentDimStyle = _migrateDimStyle(data.currentDimStyle);
@@ -16146,6 +16188,7 @@ function openJSON(content, filename) {
   if (data.currentLayer !== undefined) S.currentLayer = data.currentLayer;
   if (data.nextId) S.nextId = data.nextId;
   if (data.gridSize) S.gridSize = data.gridSize;
+  S.gridSizeY = data.gridSizeY || data.gridSize || S.gridSizeY;
   if (data.modules) {
     Object.entries(data.modules).forEach(([k, loaded]) => {
       if (modules[k]) modules[k].loaded = loaded;
@@ -16909,7 +16952,7 @@ if (['minicad.org','www.minicad.org'].includes(window.location.hostname)) {
     'align-items:center',
     'gap:6px',
     'padding:7px 14px',
-    'background:#0d1b2a',
+    'background:var(--bg-panel)',
     'border:1px solid #00d4ff',
     'border-radius:20px',
     'color:#00d4ff',
