@@ -65,11 +65,12 @@ function applyGradDef() {
     const ent = { type:'grad_disk', id:S.nextId++, layer:S.currentLayer,
                   cx:0, cy:0, radius, count, labelEvery, gradScale, textScale };
     S.aiPendingEntities = [ent];
+    S.aiPendingCenter = [0, 0];
     S._pendingGrad = { type:'grad_disk', radius, count, labelEvery, gradScale, textScale };
     console.log('[GRADRULE] Setting tool to grad_place');
     setTool('grad_place');
     startGradMouseTracking();
-    termPrint(`GRADISC — Cliquez pour placer (Échap=annuler)`, 'info');
+    termPrint(`GRADISC — Bougez la souris pour prévisualiser, cliquez pour placer (Échap=annuler)`, 'info');
   } else {
     const length     = parseFloat(document.getElementById('gr-length').value)     || 200;
     const width      = parseFloat(document.getElementById('gr-width').value)      || 30;
@@ -81,10 +82,11 @@ function applyGradDef() {
     const ent = { type:'grad_ruler', id:S.nextId++, layer:S.currentLayer,
                   x:0, y:0, length, width, count, labelEvery, gradScale, textScale };
     S.aiPendingEntities = [ent];
+    S.aiPendingCenter = [0, 0];
     S._pendingGrad = { type:'grad_ruler', length, width, count, labelEvery, gradScale, textScale };
     setTool('grad_place');
     startGradMouseTracking();
-    termPrint(`GRADRULE — Cliquez pour placer (Échap=annuler)`, 'info');
+    termPrint(`GRADRULE — Bougez la souris pour prévisualiser, cliquez pour placer (Échap=annuler)`, 'info');
   }
   scheduleRender();
 }
