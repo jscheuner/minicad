@@ -4452,11 +4452,24 @@ function _drawDynamicLayer() {
     const isTrimHover    = S.tool==='trim'   && e.id===S.hoverEntityId && !S.trimCuttingIds.includes(e.id);
     const isExtendBound  = S.tool==='extend' && S.extendBoundaryIds.includes(e.id);
     const isExtendHover  = S.tool==='extend' && e.id===S.hoverEntityId && !S.extendBoundaryIds.includes(e.id);
+    const isStretchAffected = S.tool==='stretch' && S.stretchRect && (() => {
+      const { minX, minY, maxX, maxY } = S.stretchRect;
+      const inB = (x,y) => x>=minX && x<=maxX && y>=minY && y<=maxY;
+      const bb = getEntityBBox(e);
+      if (bb && bb.minX>=minX && bb.maxX<=maxX && bb.minY>=minY && bb.maxY<=maxY) return true;
+      if (e.type==='line'||e.type==='wall') return inB(e.x1,e.y1)||inB(e.x2,e.y2);
+      if (e.type==='polyline'||e.type==='cable'||e.type==='spline') return e.points.some(p=>inB(p[0],p[1]));
+      if (e.type==='rect') return inB(e.x1,e.y1)||inB(e.x2,e.y1)||inB(e.x2,e.y2)||inB(e.x1,e.y2);
+      if (e.type==='circle'||e.type==='arc') return inB(e.cx,e.cy);
+      return false;
+    })();
+    const isScaleSelected  = S.tool==='scale'   && S.scaleIds.includes(e.id);
     const highlighted = sel||isOffsetTarget||isOffsetHover||isFilletFirst||isFilletHover||
-                        isJoinSelected||isJoinHover||isTrimCutting||isTrimHover||isExtendBound||isExtendHover||isHatchHover;
+                        isJoinSelected||isJoinHover||isTrimCutting||isTrimHover||isExtendBound||isExtendHover||isHatchHover||
+                        isStretchAffected||isScaleSelected;
     if (!highlighted) return;
     let color = '#448aff';
-    if (isOffsetTarget||isFilletFirst||isJoinSelected||isTrimCutting||isExtendBound) color=TC.label;
+    if (isOffsetTarget||isFilletFirst||isJoinSelected||isTrimCutting||isExtendBound||isStretchAffected||isScaleSelected) color=TC.label;
     if (isOffsetHover ||isFilletHover ||isJoinHover  ||isTrimHover  ||isExtendHover||isHatchHover) color=TC.ink;
     ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=2;
     ctx.setLineDash(e.dash||[]); drawEntity(e); ctx.setLineDash([]);
@@ -8310,6 +8323,10 @@ function applyOrtho(x1,y1,x2,y2) {
 }
 
 function applyPolar(x1,y1,x2,y2) {
+  // La grille prime sur le polaire (comme AutoCAD : accrochage grille et polaire
+  // sont des types d'accrochage mutuellement exclusifs). Si la grille est active,
+  // on accroche au point de grille au lieu de projeter sur un angle polaire.
+  if (S.snap) return snapToGrid(x2, y2);
   const inc = S.polarAngle * Math.PI / 180;
   const angle = Math.atan2(y2-y1, x2-x1);
   const dist = Math.hypot(x2-x1, y2-y1);
@@ -8326,6 +8343,9 @@ function applyConstraint(x1,y1,x2,y2) {
 }
 
 function drawPolarGuides(bx, by, tx, ty) {
+  // Grille prime sur le polaire : pas de guide polaire quand l'accrochage grille est actif
+  // (le point retenu est un point de grille, pas un angle polaire).
+  if (S.snap) return;
   // Draw a dashed green line extending beyond the point to show the polar axis
   const angle = Math.atan2(ty-by, tx-bx);
   const ext = 4000 / S.zoom; // extend far
