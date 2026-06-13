@@ -4,6 +4,8 @@
     "name": "Français"
   },
   "app.title": "MiniCAD",
+  "seo.title": "MiniCAD — Dessin technique 2D & CAO en ligne, gratuit et sans installation",
+  "seo.description": "Logiciel de dessin technique 2D (CAO) gratuit, directement dans le navigateur, sans installation : lignes, cotation, calques, export DXF et SVG.",
   "menu.file": "Fichier",
   "menu.library": "Bibliothèque",
   "menu.draw": "Dessin",
@@ -73,6 +75,7 @@
   "tool.dim_angular": "Cote angulaire",
   "tool.dim_radius": "Cote rayon",
   "tool.dim_diameter": "Cote diamètre",
+  "tool.dim_arc": "Cote longueur d'arc",
   "tool.array": "Réseau rectangulaire (AR)",
   "tool.array_polar": "Réseau polaire (APO)",
   "tool.measure": "Mesurer (ME)",

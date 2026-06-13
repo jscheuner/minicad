@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MiniCAD v0.1</title>
+<title>{{seo.title}}</title>
+<meta name="description" content="{{seo.description}}">
+<meta name="application-name" content="MiniCAD">
+<meta name="theme-color" content="#16213e">
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAADX0lEQVRYhe2XTWhUVxiGn3PunZkkM6kmaBInHTOa+NNAFRf1p2o1ENpEumiJ0EVXpSgB3aRm1S5a6DK4saHSElApFKURAlK1f1GHTlEihQTFamZEa2JyZxKCNQlx5t45XdhcHefOmMB1uvFdne97zz3ve79zvns5gqdQFd74DpJ2UNuAKkDgDjLAfYH6RUh5eDw2eH2eEADhcLhkVi7pAfWhS4KFkFaCzmR86AiABuCtrDteJHEATUCrv6I6MTNlXBXL6ze0CMW5Iok/jUdCV41aoKKmC1j/PxjQyQifBPXmQp8I+P14vd68vM/nI+D3L8ZEqw4sKzRj/doGPjm4n6a3tvNKeQCAu/dG6Dtznu5vjyGE4MD+j3j/3RZWhmoB+OfhNBciUQ5/9Q03h+OFln9VVK3eoPKxLc1N9HR34fF4HPnY7TtIKVkdXunIp1IpPj7Yyc+/XconofIaqA2uIHL+9GJLmoOH0zPsfPs9xoyEowHNX1H9hRPTcWAfO7ZutuM/rlzlu5O9DPw5SLguRHkg29jo2Dg9J77nQiSKruuEaoMA+Lxe0qZJJHrF0WDeCvx65hSvNz5ujlux2+ze04ZlZQB4bd0aLp7tffIaSrGrtc3eb13TuHjuNGvqVwHw160Yu1rbHCsgHW0BoeAKexy9PGCLA9y4OczI6JgdJycmsw6baVn0X/rdjhvqVyGls5RjtqyslKVLl9ix0/4ZiaQ9vj9uOPAT9ljXtJwtK2igtKQkK56be5QzJ22aBXnTsrJiXdcXbqCYeGngpYGco/mGX9K+PAVHPrdze+/ewFOt022Yz05330CdDyqlgi277VwyNsLOckl3bru7bwBg1JKwpcmO7/T9RL372vkNpNMmnZ99acepa9dzDHzdc4Levh8BSExM8Cwi0ctZa0zPzDoayPkZ7a2UbAtoHPo7bee2BiQdNTofxFLPeZ9FQzlWYKNf8mnwCRX0uHU9yIXO40uD3Y6Ds4ofJrO/45Om4t4DixeAjK5gVEBoPjM8pxiec7/dnKESUqDOFknNASIqkaoLcP10LUhecFQmYtfiQEfRxVHHjPhQvwYwM2UMlFVWTwlo5r/74osWX1aaaU8mk1ZWf9U0bGpUGfOQQjQDtS6ayYAyQESF4KgRH+qfJ/4FnbEd/FDgNcoAAAAASUVORK5CYII=">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=Oswald:wght@300;400;500&family=Share+Tech&display=swap');
@@ -517,7 +520,7 @@
   .cb:hover  { background: color-mix(in srgb, var(--ink) 9%, transparent); border-color: color-mix(in srgb, var(--ink) 19%, transparent); }
   .cb:active { background: #ffffff28; }
   .cb.op     { color: var(--accent); }
-  .cb.fn     { color: #a0c4ff; font-size: 11px; }
+  .cb.fn     { color: var(--accent); font-size: 11px; }
   .cb.eq     { background: var(--accent); color: var(--on-accent); font-weight: 700; border-color: var(--accent); }
   .cb.eq:hover { opacity: .85; }
   .cb.clr    { color: #ff5252; }
@@ -1318,6 +1321,7 @@
         <div class="menu-dropdown-item" onclick="executeCommand('DIMANGULAR');closeMenus()"><span data-i18n="tool.dim_angular">{{tool.dim_angular}}</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('DIMRADIUS');closeMenus()"><span data-i18n="tool.dim_radius">{{tool.dim_radius}}</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('DIMDIAMETER');closeMenus()"><span data-i18n="tool.dim_diameter">{{tool.dim_diameter}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMARC');closeMenus()"><span data-i18n="tool.dim_arc">{{tool.dim_arc}}</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('DIMSTYLE');closeMenus()"><span data-i18n="tool.dimstyle">{{tool.dimstyle}}</span></div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="executeCommand('TEXT');closeMenus()"><span data-i18n="tool.text">{{tool.text}}</span></div>
@@ -1688,6 +1692,9 @@
       </button>
       <button class="tool-btn" title="{{tool.dim_diameter}}" data-i18n-title="tool.dim_diameter" onclick="executeCommand('LOAD dim');executeCommand('DIMDIAMETER')">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><line x1="5" y1="16" x2="19" y2="8"/><text x="10" y="11" font-size="7" fill="currentColor" stroke="none">Ø</text></svg>
+      </button>
+      <button class="tool-btn" title="{{tool.dim_arc}}" data-i18n-title="tool.dim_arc" onclick="executeCommand('LOAD dim');executeCommand('DIMARC')">
+        <svg viewBox="0 0 24 24"><path d="M4 17 A 10 10 0 0 1 20 17"/><path d="M4 17l3.2 0.6M4 17l1.2-3M20 17l-3.2 0.6M20 17l-1.2-3"/><path d="M9 8 A 5 5 0 0 1 15 8" stroke-width="1.2"/></svg>
       </button>
       <button class="tool-btn" data-tool="measure" title="{{tool.measure}}" data-i18n-title="tool.measure" onclick="setTool('measure')">
         <svg viewBox="0 0 24 24" fill="none">
@@ -3544,6 +3551,7 @@ modules.dimensioning.commands = {
   }},
   DIMRADIUS: { alias: ['DIMRAD'], desc: 'Cote de rayon (cliquer un cercle/arc)', exec() { termPrint('RAYON: Cliquez sur un cercle ou un arc', 'info'); setTool('dim_radius'); }},
   DIMDIAMETER: { alias: ['DIMDIA','DIMDIAM'], desc: 'Cote de diamètre (cliquer un cercle/arc)', exec() { termPrint('DIAMÈTRE: Cliquez sur un cercle ou un arc', 'info'); setTool('dim_diameter'); }},
+  DIMARC: { alias: ['DIMARCLEN','DIMLONGARC','LONGARC'], desc: 'Cote de longueur d\'arc (cliquer un arc)', exec() { termPrint('LONGUEUR D\'ARC: Cliquez sur un arc', 'info'); setTool('dim_arc'); }},
   DIMSTYLE: { alias: ['DS'], desc: 'Gérer les styles de cotes (DIMSTYLE [nom])', exec(args) {
     if (args[0]) {
       const found = S.dimStyles.find(d => d.name.toLowerCase() === args[0].toLowerCase());
@@ -3613,6 +3621,7 @@ const CMD = {
     termPrint('DÉPLACER: Point de base, puis destination', 'info'); setTool('move_obj');
   }},
   STRETCH: { alias: ['ET','ETIRER'], desc: 'Étirer les objets (fenêtre croisante)', exec: () => {
+    S.selected = [];  // désélectionner avant de tracer la fenêtre croisante
     S.stretchRect = null; S.stretchStep = 0;
     setTool('stretch');
     termPrint('ÉTIRER: 1er coin de la fenêtre croisante', 'info');
@@ -3656,7 +3665,7 @@ const CMD = {
       return;
     }
     S.offsetPending = true; S.selected = [];
-    termPrint('DÉCALER (' + S.offsetDist + ') — Sélectionner les objets, puis Entrée (Echap=fin)', 'info');
+    termPrint('DÉCALER (' + S.offsetDist + ') — Sélectionner les objets (Echap=fin)', 'info');
     setTool('select');
   }},
   MIRROR: { alias: ['MI','MIROIR'], desc: 'Miroir par rapport à un axe', exec: () => {
@@ -4190,6 +4199,11 @@ function getEntityBBox(e, tight) {
     case 'circle': case 'dim_radius': case 'dim_diameter':
       return { minX:(e.cx||0)-(e.r||50)-pad, maxX:(e.cx||0)+(e.r||50)+pad,
                minY:(e.cy||0)-(e.r||50)-pad, maxY:(e.cy||0)+(e.r||50)+pad };
+    case 'dim_arc': {
+      const rr = (e.r||50) + Math.abs(e.offset||0) + (getDimStyle(e).textHeight||10)*1.5;
+      return { minX:(e.cx||0)-rr-pad, maxX:(e.cx||0)+rr+pad,
+               minY:(e.cy||0)-rr-pad, maxY:(e.cy||0)+rr+pad };
+    }
     case 'arc': {
       // Bbox serrée : uniquement la portion d'arc, pas le cercle entier
       const sa=e.startAngle, ea=e.endAngle, cx=e.cx||0, cy=e.cy||0, r=e.r||50;
@@ -6806,6 +6820,12 @@ function drawEntity(e) {
       ctx.restore();
       break;
     }
+    case 'dim_arc': {
+      ctx.save();
+      _renderDimArc(e);
+      ctx.restore();
+      break;
+    }
     case 'text': {
       const [tx,ty] = w2s(e.x,e.y);
       const px = Math.max(4, (e.size||14) * S.zoom);
@@ -6883,6 +6903,50 @@ function drawArrowHead(fromX, fromY, toX, toY, sz) {
   ctx.lineTo(toX - sz * Math.cos(a + 0.35), toY - sz * Math.sin(a + 0.35));
   ctx.closePath();
   ctx.fill();
+}
+
+// Rendu d'une cote de longueur d'arc (dim_arc). Le contexte (couleur, save/restore)
+// est géré par l'appelant. e = {cx,cy,r,startAngle,endAngle,offset,[textWx,textWy,text,dimStyle]}.
+function _renderDimArc(e) {
+  const ds = getDimStyle(e);
+  const tpx = Math.max(5, ds.textHeight * S.zoom);
+  const asz = Math.max(3, ds.arrowSize * S.zoom);
+  const gap = Math.max(2, ds.extGap * S.zoom) / S.zoom; // en unités monde
+  const sa = e.startAngle, ea = e.endAngle;
+  const span = arcSpan(sa, ea);
+  const off = e.offset || 0;
+  const rd = e.r + off;                 // rayon de la ligne de cote (monde)
+  if (rd <= 0 || span <= 1e-6) return;
+  const dir = off >= 0 ? 1 : -1;
+  const [csx, csy] = w2s(e.cx, e.cy);
+  // Lignes d'attache : du bord de l'arc jusqu'à un léger dépassement de la ligne de cote
+  const r0 = e.r + dir * gap;
+  const rExt = rd + dir * gap * 1.5;
+  for (const a of [sa, ea]) {
+    const ca = Math.cos(a), sn = Math.sin(a);
+    const [x0,y0] = w2s(e.cx + r0*ca, e.cy + r0*sn);
+    const [x1,y1] = w2s(e.cx + rExt*ca, e.cy + rExt*sn);
+    ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+  }
+  // Ligne de cote = arc concentrique (convention canvas : -ea → -sa, Y inversé)
+  ctx.beginPath(); ctx.arc(csx, csy, rd * S.zoom, -ea, -sa); ctx.stroke();
+  // Flèches tangentes aux deux extrémités
+  const da = Math.min(0.22, span * 0.45);
+  const t1 = w2s(e.cx + rd*Math.cos(sa),    e.cy + rd*Math.sin(sa));
+  const b1 = w2s(e.cx + rd*Math.cos(sa+da), e.cy + rd*Math.sin(sa+da));
+  drawArrowHead(b1[0], b1[1], t1[0], t1[1], asz);
+  const t2 = w2s(e.cx + rd*Math.cos(ea),    e.cy + rd*Math.sin(ea));
+  const b2 = w2s(e.cx + rd*Math.cos(ea-da), e.cy + rd*Math.sin(ea-da));
+  drawArrowHead(b2[0], b2[1], t2[0], t2[1], asz);
+  // Texte : longueur d'arc précédée du symbole ⌒, au milieu de l'arc, déplaçable
+  const midA = sa + span/2;
+  const rTxt = rd + dir * (tpx*0.9)/S.zoom;
+  const twx = e.textWx !== undefined ? e.textWx : e.cx + rTxt*Math.cos(midA);
+  const twy = e.textWy !== undefined ? e.textWy : e.cy + rTxt*Math.sin(midA);
+  const [tsx, tsy] = w2s(twx, twy);
+  ctx.font = tpx + 'px JetBrains Mono';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('⌒' + dimText(e, e.r * span), tsx, tsy);
 }
 
 // Legacy drawArrow (bidirectional) for compatibility
@@ -7031,6 +7095,28 @@ function getGripPoints(e) {
       const _twx = e.textWx !== undefined ? e.textWx : e.cx + e.r * 0.55 * Math.cos(_a);
       const _twy = e.textWy !== undefined ? e.textWy : e.cy + e.r * 0.55 * Math.sin(_a);
       gp(_twx, _twy, (ent, nx, ny) => { ent.textWx = nx; ent.textWy = ny; });
+      break;
+    }
+    case 'dim_arc': {
+      // Grip centre — déplace l'ensemble (texte compris)
+      gp(e.cx, e.cy, (ent, nx, ny) => {
+        const dx = nx - ent.cx, dy = ny - ent.cy;
+        if (ent.textWx !== undefined) { ent.textWx += dx; ent.textWy += dy; }
+        ent.cx = nx; ent.cy = ny;
+      });
+      // Grip sur la ligne de cote (milieu de l'arc) — change le décalage (offset)
+      const _span = arcSpan(e.startAngle, e.endAngle);
+      const _midA = e.startAngle + _span/2;
+      const _rd = e.r + (e.offset || 0);
+      gp(e.cx + _rd*Math.cos(_midA), e.cy + _rd*Math.sin(_midA), (ent, nx, ny) => {
+        ent.offset = Math.hypot(nx - ent.cx, ny - ent.cy) - ent.r;
+      });
+      // Grip texte — déplace uniquement le label
+      const _dir = (e.offset || 0) >= 0 ? 1 : -1;
+      const _rTxt = _rd + _dir * getDimStyle(e).textHeight * 0.9;
+      const _atwx = e.textWx !== undefined ? e.textWx : e.cx + _rTxt*Math.cos(_midA);
+      const _atwy = e.textWy !== undefined ? e.textWy : e.cy + _rTxt*Math.sin(_midA);
+      gp(_atwx, _atwy, (ent, nx, ny) => { ent.textWx = nx; ent.textWy = ny; });
       break;
     }
     case 'polyline': case 'cable': {
@@ -7557,6 +7643,14 @@ function drawPreview() {
     ctx.rotate(lineAngle);
     ctx.font = _rtpx+'px JetBrains Mono'; ctx.textAlign='center'; ctx.textBaseline='bottom';
     ctx.fillText((isDiam ? 'Ø' : 'R') + c.r*(isDiam?2:1)|0, 0, -_rtpx*0.2);
+    ctx.restore();
+  } else if (tool === 'dim_arc' && S._dimArc && pts.length >= 1) {
+    const c = S._dimArc;
+    ctx.save();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = TC.ink+'88'; ctx.fillStyle = TC.ink+'88'; ctx.lineWidth = 1;
+    _renderDimArc({ cx:c.cx, cy:c.cy, r:c.r, startAngle:c.startAngle, endAngle:c.endAngle,
+                    offset: Math.hypot(my - c.cy, mx - c.cx) - c.r });
     ctx.restore();
   } else if (tool === 'tube' && S.tubePoints && S.tubePoints.length >= 1) {
     // Tube preview: build full tube with mouse as last point
@@ -8302,7 +8396,10 @@ function openHatchDialog(pts, layer, existingEntity, sourceId) {
 function drawRotatePreview() {
   if (!S.rotateBase || S.rotateStep !== 2) return;
   const [bx, by] = S.rotateBase;
-  const [mx, my] = S.mouseWorld;
+  let [mx, my] = S.mouseWorld;
+  // Ortho/Polaire ont priorité sur OSNAP pour l'angle de rotation
+  if (S.ortho) [mx, my] = applyOrtho(bx, by, mx, my);
+  else if (S.polar) { [mx, my] = applyPolar(bx, by, mx, my); drawPolarGuides(bx, by, mx, my); }
   const angle = Math.atan2(my - by, mx - bx);
   const [bsx, bsy] = w2s(bx, by), [msx, msy] = w2s(mx, my);
   ctx.save();
@@ -8564,6 +8661,13 @@ diDist.addEventListener('keydown', (ev) => {
     ev.preventDefault(); ev.stopPropagation();
     diDist.blur(); diAngle.blur(); S.diLocked = false;
     cancelDrawing();
+  } else if (ev.key === 'Delete' && diDist.value === '' && !S.drawing && !S.gripEdit && S.selected.length > 0) {
+    // Focus resté coincé sur la bulle DI alors qu'on ne dessine plus :
+    // Suppr doit effacer la sélection (et non être avalé comme une frappe) + rendre le focus
+    ev.preventDefault(); ev.stopPropagation();
+    S.diLocked = false; diDist.blur(); diAngle.blur();
+    CMD.ERASE.exec();
+    setTimeout(smartFocus, 0);
   } else if (ev.key.length === 1 || ev.key === 'Backspace' || ev.key === 'Delete') {
     S.diLocked = true; // l'utilisateur commence à taper → verrouiller
   }
@@ -8583,6 +8687,13 @@ diAngle.addEventListener('keydown', (ev) => {
     ev.preventDefault(); ev.stopPropagation();
     diDist.blur(); diAngle.blur(); S.diLocked = false;
     cancelDrawing();
+  } else if (ev.key === 'Delete' && diAngle.value === '' && !S.drawing && !S.gripEdit && S.selected.length > 0) {
+    // Focus resté coincé sur la bulle DI alors qu'on ne dessine plus :
+    // Suppr doit effacer la sélection (et non être avalé comme une frappe) + rendre le focus
+    ev.preventDefault(); ev.stopPropagation();
+    S.diLocked = false; diDist.blur(); diAngle.blur();
+    CMD.ERASE.exec();
+    setTimeout(smartFocus, 0);
   } else if (ev.key.length === 1 || ev.key === 'Backspace' || ev.key === 'Delete') {
     S.diLocked = true;
   }
@@ -8853,6 +8964,7 @@ function getCursorMode() {
   if (t === 'dim_angular' && !S._dimAngVtx) return 'pick';
   if ((t === 'dim_linear' || t === 'dim_aligned') && S._dimPick) return 'pick';
   if ((t === 'dim_radius' || t === 'dim_diameter') && !S._dimCircle) return 'pick';
+  if (t === 'dim_arc' && !S._dimArc) return 'pick';
   if (t === 'divide_pick') return 'pick';
   if (t === 'matchprop') return 'pick';
   if (t === 'point' || t === 'measure') return 'draw';
@@ -9154,7 +9266,7 @@ canvas.addEventListener('mousedown', (ev) => {
       S.offsetAwaitDist = false;
       S._offsetJustApplied = true;
       S.offsetPending = true; S.selected = [];
-      termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets, puis Entrée (Echap=fin)', 'info');
+      termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets (Echap=fin)', 'info');
       setTool('select');
     }
     render(); return;
@@ -9184,6 +9296,15 @@ canvas.addEventListener('mousedown', (ev) => {
       if (hit) {
         // Entité trouvée → sélection immédiate sans attendre mouseup
         S._selectHitOnMousedown = true;
+        // OFFSET : un clic sur un objet passe directement au choix du côté (sans Entrée)
+        if (S.offsetPending && !rbShiftKey) {
+          S.selected = [hit.id];
+          S.offsetPending = false;
+          termPrint('DÉCALER: Cliquer du côté à décaler', 'info');
+          setTool('offset');
+          updateProperties(); render(); setTimeout(smartFocus, 0);
+          return;
+        }
         if (rbShiftKey || isPending) { const idx = S.selected.indexOf(hit.id); if (idx >= 0) S.selected.splice(idx, 1); else S.selected.push(hit.id); }
         else S.selected = [hit.id];
         updateProperties(); render(); setTimeout(smartFocus, 0);
@@ -9244,9 +9365,14 @@ canvas.addEventListener('mousedown', (ev) => {
 // l'utilisateur ne tape pas. Quand il tape un chiffre/lettre, le handler keydown
 // global route automatiquement vers diDist.
 function smartFocus() {
-  if (S.diLocked) return;
+  // Ne pas voler le focus pendant que l'utilisateur tape une valeur dans la bulle DI.
+  // MAIS hors dessin et en mode sélection, la bulle ne doit jamais rester verrouillée :
+  // sinon le focus reste coincé sur diDist/diAngle et avale les touches (ex. Suppr) jusqu'au
+  // rechargement de la page.
+  if (S.diLocked && (S.drawing || S.tool !== 'select')) return;
   // Pendant le dessin avec au moins un point → focus automatique sur DI
   if (S.drawing && S.drawPoints.length > 0) { diDist.focus(); diDist.select(); return; }
+  S.diLocked = false;
   cmdInput.focus();
 }
 
@@ -9832,6 +9958,33 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     render(); return;
   }
 
+  // Cote de longueur d'arc : cliquer un arc → déplacer pour choisir le rayon de cote → cliquer
+  if (tool === 'dim_arc') {
+    if (!S.drawing) {
+      const hit = findArcEntity(rawWx, rawWy);
+      if (!hit) { termPrint('Cliquez sur le tracé d\'un arc', 'warning'); return; }
+      S.drawing = true;
+      S._dimArc = { cx:hit.cx, cy:hit.cy, r:hit.r, startAngle:hit.startAngle, endAngle:hit.endAngle };
+      S.drawPoints = [[hit.cx, hit.cy]];
+      const L = hit.r * arcSpan(hit.startAngle, hit.endAngle);
+      termPrint('Arc L='+L.toFixed(1)+' — Cliquez pour placer la cote', 'info');
+    } else {
+      pushUndo();
+      const c = S._dimArc;
+      const ent = { type:'dim_arc', cx:c.cx, cy:c.cy, r:c.r,
+                    startAngle:c.startAngle, endAngle:c.endAngle,
+                    offset: Math.hypot(wy - c.cy, wx - c.cx) - c.r,
+                    dimStyle: S.currentDimStyle, id:S.nextId++, layer:S.currentLayer };
+      S.entities.push(ent);
+      const L = c.r * arcSpan(c.startAngle, c.endAngle);
+      termPrint('#'+ent.id+' dim_arc L='+L.toFixed(1), 'success');
+      S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
+      S._dimArc = null;
+      setTool('select');
+    }
+    render(); return;
+  }
+
   // Polyline / cable
   if (['polyline','cable'].includes(tool)) {
     if (!S.drawing) {
@@ -9904,7 +10057,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     // Retour à la sélection pour décaler autre chose
     S._offsetJustApplied = true;
     S.offsetPending=true; S.selected=[];
-    termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets, puis Entrée (Echap=fin)','info');
+    termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets (Echap=fin)','info');
     setTool('select'); render(); return;
   }
 
@@ -10184,7 +10337,12 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       render(); return;
     }
     if (S.rotateStep === 2) {
-      const angle = Math.atan2(wy - S.rotateBase[1], wx - S.rotateBase[0]);
+      const [bx, by] = S.rotateBase;
+      // Ortho/Polaire ont priorité sur OSNAP pour l'angle (coordonnées brutes)
+      let cx = wx, cy = wy;
+      if (S.ortho) [cx, cy] = applyOrtho(bx, by, rawWx ?? wx, rawWy ?? wy);
+      else if (S.polar) [cx, cy] = applyPolar(bx, by, rawWx ?? wx, rawWy ?? wy);
+      const angle = Math.atan2(cy - by, cx - bx);
       applyRotate(angle); return;
     }
   }
@@ -10575,6 +10733,10 @@ function angleInArc(a,sa,ea) {
   let ang=a;  while(ang<sa) ang+=Math.PI*2;
   return ang<=end+1e-9;
 }
+
+// Amplitude angulaire d'un arc (de sa à ea, sens trigo), normalisée dans [0, 2π].
+// Sert à la cote de longueur d'arc : longueur = r * arcSpan(sa, ea).
+function arcSpan(sa, ea) { let end = ea; while (end < sa - 1e-12) end += Math.PI*2; return end - sa; }
 
 // ── Copier les propriétés (MATCHPROP) ──
 function captureMatchProps(e){
@@ -11260,6 +11422,7 @@ function scaleEntityInPlace(e, cx, cy, f) {
   if (e.x1!==undefined) { [e.x1,e.y1]=sp(e.x1,e.y1); }
   if (e.x2!==undefined) { [e.x2,e.y2]=sp(e.x2,e.y2); }
   if (e.cx!==undefined) { [e.cx,e.cy]=sp(e.cx,e.cy); if(e.r!==undefined) e.r*=f; }
+  if (e.type==='dim_arc') { if(e.offset!==undefined) e.offset*=f; if(e.textWx!==undefined){[e.textWx,e.textWy]=sp(e.textWx,e.textWy);} }
   if (e.x!==undefined&&e.x1===undefined) { [e.x,e.y]=sp(e.x,e.y); if(e.size) e.size*=f; }
   if (e.vx!==undefined) { [e.vx,e.vy]=sp(e.vx,e.vy); }
   if (e.thickness!==undefined) e.thickness*=f;
@@ -11326,6 +11489,7 @@ function rotateEntityInPlace(e, cx, cy, angle) {
   if (e.x!==undefined&&e.x1===undefined) { [e.x,e.y]=rp(e.x,e.y); }
   if (e.vx!==undefined) { [e.vx,e.vy]=rp(e.vx,e.vy); }
   if (e.type==='arc') { e.startAngle+=angle; e.endAngle+=angle; }
+  if (e.type==='dim_arc') { e.startAngle+=angle; e.endAngle+=angle; if(e.textWx!==undefined){[e.textWx,e.textWy]=rp(e.textWx,e.textWy);} }
   if (e.angle!==undefined&&e.x!==undefined) { e.angle=(e.angle||0)+angle; }
   if (e.points) { e.points=e.points.map(p=>{const[nx,ny]=rp(p[0],p[1]);return p.length>2?[nx,ny,p[2]]:[nx,ny];}); }
   if (e.p1) { const [nx,ny]=rp(e.p1[0],e.p1[1]); e.p1=[nx,ny]; }
@@ -11368,6 +11532,13 @@ function mirrorEntity(src,ax,ay,bx,by) {
     const la=Math.atan2(by-ay,bx-ax);
     const ns=2*la-e.endAngle, ne2=2*la-e.startAngle;
     e.startAngle=ns; e.endAngle=ne2;
+  }
+  // dim_arc : réflexion + inversion start/end (comme un arc), texte miroité
+  if(e.type==='dim_arc'){
+    const la=Math.atan2(by-ay,bx-ax);
+    const ns=2*la-e.endAngle, ne2=2*la-e.startAngle;
+    e.startAngle=ns; e.endAngle=ne2;
+    if(e.textWx!==undefined){[e.textWx,e.textWy]=m(e.textWx,e.textWy);}
   }
   return e;
 }
@@ -11887,6 +12058,19 @@ function hitTest(wx,wy,filter) {
       const td=Math.hypot(wx-twx,wy-twy); if(td<tol*6) d=Math.min(d,td/6);
       tryHit(e,d);
     }
+    else if(e.type==='dim_arc'){
+      const rd=e.r+(e.offset||0);
+      // Distance à la ligne de cote (arc), limitée à la portion d'arc cotée
+      let d = angleInArc(Math.atan2(wy-e.cy,wx-e.cx), e.startAngle, e.endAngle)
+              ? Math.abs(Math.hypot(wx-e.cx,wy-e.cy)-rd) : Infinity;
+      const span=arcSpan(e.startAngle,e.endAngle), midA=e.startAngle+span/2;
+      const dir=(e.offset||0)>=0?1:-1;
+      const rTxt=rd+dir*getDimStyle(e).textHeight*0.9;
+      const twx=e.textWx!==undefined?e.textWx:e.cx+rTxt*Math.cos(midA);
+      const twy=e.textWy!==undefined?e.textWy:e.cy+rTxt*Math.sin(midA);
+      const td=Math.hypot(wx-twx,wy-twy); if(td<tol*6) d=Math.min(d,td/6);
+      tryHit(e,d);
+    }
     else if(e.type==='leader'){
       const ds=getDimStyle(e);
       const dir=(e.x2>=e.x1)?1:-1;
@@ -12126,6 +12310,21 @@ function distToSeg(px,py,x1,y1,x2,y2){
   return Math.hypot(px-(x1+t*dx),py-(y1+t*dy));
 }
 
+// Cherche une entité 'arc' dont le tracé passe par (wx,wy) — pour la cote de longueur d'arc.
+// Retourne {cx,cy,r,startAngle,endAngle} ou null.
+function findArcEntity(wx, wy) {
+  const tol = 12 / S.zoom;
+  for (let i = S.entities.length - 1; i >= 0; i--) {
+    const e = S.entities[i];
+    if (!S.layers[e.layer]?.visible) continue;
+    if (e.type === 'arc' &&
+        Math.abs(Math.hypot(wx - e.cx, wy - e.cy) - e.r) < tol &&
+        angleInArc(Math.atan2(wy - e.cy, wx - e.cx), e.startAngle, e.endAngle))
+      return { cx:e.cx, cy:e.cy, r:e.r, startAngle:e.startAngle, endAngle:e.endAngle };
+  }
+  return null;
+}
+
 function findCircleEntity(wx, wy) {
   const tol = 12 / S.zoom;
   for (let i = S.entities.length - 1; i >= 0; i--) {
@@ -12232,6 +12431,7 @@ function setTool(t) {
   S.tool=t; S.drawing=false; S.drawPoints=[]; S.awaitingInput=false;
   if(t !== 'tube') S.tubePoints=[];
   if(t !== 'dim_angular') { S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null; S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null; }
+  if(t !== 'dim_arc') S._dimArc=null;
   S._dimPick = false; // mode « sélection d'objet » des cotes linéaire/parallèle (Espace)
   if(t !== 'matchprop') S.matchSource = null;
   if(t !== 'measure' && t !== 'select') { S.measurePt1=null; S.measureResult=null; }
@@ -12536,7 +12736,7 @@ function _updatePropertiesSingle(e) {
     const nbStr   = (e.segments||[]).filter(s=>s.type==='straight').length;
     h += row('Segments', '<span class="prop-value">'+nbStr+' droits, '+nbBends+' coudes</span>');
   }
-  if (['dim_linear','dim_aligned','dim_angular','dim_radius','dim_diameter','leader'].includes(e.type)) {
+  if (['dim_linear','dim_aligned','dim_angular','dim_radius','dim_diameter','dim_arc','leader'].includes(e.type)) {
     const dsSel = '<select class="prop-select" onchange="_propChangeDimStyle('+id+',this.value)">'+
       S.dimStyles.map(ds=>'<option value="'+ds.name+'"'+(e.dimStyle===ds.name?' selected':'')+'>'+ds.name+'</option>').join('')+
       '</select>';
@@ -12654,7 +12854,7 @@ function _updatePropertiesMulti(ents) {
     if (hasField('points')) h += row('Points', '<span class="prop-value">'+
       (common('points') !== null ? ents[0].points.length : '*Valeurs différentes*')+'</span>');
     // Style de cote
-    if (['dim_linear','dim_aligned','dim_angular','dim_radius','dim_diameter','leader'].includes(type)) {
+    if (['dim_linear','dim_aligned','dim_angular','dim_radius','dim_diameter','dim_arc','leader'].includes(type)) {
       const ds = common('dimStyle');
       const dsSel = '<select class="prop-select" onchange="_propChangeDimStyleMulti(this.value)">'+
         (ds === null ? '<option value="" disabled selected>*Valeurs différentes*</option>' : '')+
@@ -13627,6 +13827,8 @@ function updateDimTextPreview() {
     measured = e.r;
   } else if (e.type === 'dim_diameter') {
     measured = e.r * 2;
+  } else if (e.type === 'dim_arc') {
+    measured = e.r * arcSpan(e.startAngle, e.endAngle);
   } else {
     measured = 0;
   }
@@ -14052,11 +14254,12 @@ function showHelp() {
 function _confirmMirrorDelete(yes) {
   if(yes){
     S.entities=S.entities.filter(e=>!S.mirrorSourceIds.includes(e.id));
-    S.selected=S.selected.filter(id=>!S.mirrorSourceIds.includes(id));
     termPrint('Objets sources supprimés','success');
   } else {
     termPrint('Objets sources conservés','info');
   }
+  // Désélectionner les objets sources une fois le miroir terminé
+  S.selected=[];
   S.mirrorAwaitDelete=false; S.mirrorSourceIds=[];
   updateProperties(); render();
 }
@@ -14070,7 +14273,7 @@ function executeCommand(input) {
     if(S.offsetAwaitDist){
       S.offsetAwaitDist=false;
       S.offsetPending=true; S.selected=[];
-      termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets, puis Entrée (Echap=fin)','info');
+      termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets (Echap=fin)','info');
       setTool('select'); render(); return;
     }
     // Entrée vide en mode JOIN → confirmer la fusion
@@ -14264,7 +14467,7 @@ function executeCommand(input) {
     }
     S.offsetAwaitDist=false;
     S.offsetPending=true; S.selected=[];
-    termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets, puis Entrée (Echap=fin)','info');
+    termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets (Echap=fin)','info');
     setTool('select'); render(); return;
   }
   // ---- JOIN : Entrée confirme la fusion ----
@@ -15277,6 +15480,35 @@ async function exportDXF() {
         break;
       }
 
+      case 'dim_arc': {
+        // Pas de AcDbArcDimension fiable en R2000 → géométrie éclatée (arc + attaches + texte)
+        const _ds = getDimStyle(e);
+        const sa = e.startAngle, ea = e.endAngle, span = arcSpan(sa, ea);
+        const off = e.offset || 0, rd = e.r + off, dir = off >= 0 ? 1 : -1;
+        const gp_ = _ds.extGap || 2, th = _ds.textHeight || 10;
+        // Ligne de cote = arc concentrique
+        w('0'); w('ARC'); wEnt(layerName,col); w('100'); w('AcDbCircle');
+        w('10'); w(f(e.cx)); w('20'); w(f(e.cy)); w('30'); w('0.0'); w('40'); w(f(rd));
+        w('100'); w('AcDbArc');
+        w('50'); w(f(sa*180/Math.PI)); w('51'); w(f(ea*180/Math.PI));
+        // Lignes d'attache
+        const r0 = e.r + dir*gp_, rExt = rd + dir*gp_*1.5;
+        for (const a of [sa, ea]) {
+          w('0'); w('LINE'); wEnt(layerName,col); w('100'); w('AcDbLine');
+          w('10'); w(f(e.cx+r0*Math.cos(a)));   w('20'); w(f(e.cy+r0*Math.sin(a)));   w('30'); w('0.0');
+          w('11'); w(f(e.cx+rExt*Math.cos(a)));  w('21'); w(f(e.cy+rExt*Math.sin(a)));  w('31'); w('0.0');
+        }
+        // Texte longueur d'arc
+        const midA = sa + span/2, rTxt = rd + dir*th;
+        const tx = e.textWx !== undefined ? e.textWx : e.cx + rTxt*Math.cos(midA);
+        const ty = e.textWy !== undefined ? e.textWy : e.cy + rTxt*Math.sin(midA);
+        w('0'); w('TEXT'); wEnt(layerName,col); w('100'); w('AcDbText');
+        w('10'); w(f(tx)); w('20'); w(f(ty)); w('30'); w('0.0');
+        w('40'); w(f(th)); w('1'); w(dimText(e, e.r*span));
+        w('100'); w('AcDbText');
+        break;
+      }
+
       case 'rect': {
         w('0'); w('LWPOLYLINE'); wEnt(layerName,col); w('100'); w('AcDbPolyline');
         w('90'); w('4'); w('70'); w('1');
@@ -15538,6 +15770,11 @@ function exportDWG() {
       const a=e.angle||0;
       w2('0');w2('CIRCLE');w2('8');w2(layerName);w2('62');w2(String(col));
       w2('10');w2(String(e.cx));w2('20');w2(String(e.cy));w2('30');w2('0.0');w2('40');w2(String(e.r));
+    }else if(e.type==='dim_arc'){
+      const rd=e.r+(e.offset||0);
+      w2('0');w2('ARC');w2('8');w2(layerName);w2('62');w2(String(col));
+      w2('10');w2(String(e.cx));w2('20');w2(String(e.cy));w2('30');w2('0.0');w2('40');w2(String(rd));
+      w2('50');w2(String((e.startAngle||0)*180/Math.PI));w2('51');w2(String((e.endAngle||Math.PI)*180/Math.PI));
     }else if(e.type==='rect'){
       w2('0');w2('LWPOLYLINE');w2('8');w2(layerName);w2('62');w2(String(col));
       w2('90');w2('4');w2('70');w2('1');
@@ -16647,7 +16884,7 @@ canvas.addEventListener('dblclick', (ev) => {
     S._textFont = 'sans-serif'; S._textBold = false; S._textItalic = false;
     showTextDialog(rect.left + sx, rect.top + sy);
     termPrint('Modifier le repère — Valider ↵ ou Echap pour annuler', 'info');
-  } else if (['dim_linear','dim_aligned','dim_angular','dim_radius','dim_diameter'].includes(hit.type)) {
+  } else if (['dim_linear','dim_aligned','dim_angular','dim_radius','dim_diameter','dim_arc'].includes(hit.type)) {
     showDimTextDialog(hit);
     termPrint('Double-clic cote — taper le texte, utiliser <> pour la valeur mesurée', 'info');
   } else if (hit.type === 'tube') {
@@ -16787,7 +17024,7 @@ canvas.addEventListener('contextmenu', (ev) => {
   // Saisie distance offset en attente → valider la valeur actuelle
   if (S.offsetAwaitDist) {
     S.offsetAwaitDist=false; S.offsetPending=true; S.selected=[];
-    termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets, puis Entrée (Echap=fin)','info');
+    termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets (Echap=fin)','info');
     setTool('select'); render(); return;
   }
 

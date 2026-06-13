@@ -4,6 +4,8 @@
     "name": "English"
   },
   "app.title": "MiniCAD",
+  "seo.title": "MiniCAD — Free online 2D technical drawing & CAD, no installation",
+  "seo.description": "Free 2D technical drawing (CAD) software running directly in your browser, no installation: lines, dimensioning, layers, DXF and SVG export.",
   "menu.file": "File",
   "menu.library": "Library",
   "menu.draw": "Draw",
@@ -73,6 +75,7 @@
   "tool.dim_angular": "Angular Dimension",
   "tool.dim_radius": "Radius Dimension",
   "tool.dim_diameter": "Diameter Dimension",
+  "tool.dim_arc": "Arc Length Dimension",
   "tool.array": "Rectangular Array (AR)",
   "tool.array_polar": "Polar Array (APO)",
   "tool.measure": "Measure (ME)",
