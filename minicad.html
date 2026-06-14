@@ -305,7 +305,7 @@
     border-radius: 8px; box-shadow: 0 8px 28px #000000aa; display: none; overflow: hidden;
   }
   #tb-palette.tb-drop-hover { outline: 2px solid var(--accent); }
-  .tb-pal-head { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); flex-wrap: wrap; }
+  .tb-pal-head { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); flex-wrap: wrap; cursor: move; user-select: none; }
   .tb-pal-head b { flex: 1; font-size: 12px; }
   .tb-pal-head button { background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent); border-radius: 4px; color: var(--text); cursor: pointer; font-size: 11px; padding: 3px 8px; }
   .tb-pal-head button:hover { border-color: var(--accent); color: var(--accent); }
@@ -1353,6 +1353,7 @@
         <div class="menu-dropdown-item" onclick="executeCommand('JOIN');closeMenus()"><span>Joindre en polyligne (J)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('STRETCH');closeMenus()"><span>Étirer (ET)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('DIVIDE');closeMenus()"><span>Diviser (DIV)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMCENTER');closeMenus()"><span>Axes de cercle</span></div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="executeCommand('EXPLODE');closeMenus()"><span>Éclater (X)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('MATCHPROP');closeMenus()"><span>Copier les propriétés</span></div>
@@ -1605,6 +1606,14 @@
           <line x1="4" y1="12" x2="20" y2="12"/>
           <circle cx="9" cy="12" r="2" fill="currentColor" stroke="none"/>
           <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
+      <!-- Axes de cercle (repère de centre) -->
+      <button class="tool-btn" title="Axes de cercle (DIMCENTER)" onclick="executeCommand('DIMCENTER')">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="6" fill="none"/>
+          <line x1="2" y1="12" x2="22" y2="12" stroke-dasharray="4,2"/>
+          <line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="4,2"/>
         </svg>
       </button>
       <div class="tb-sep"></div>
@@ -2634,6 +2643,11 @@ const S = {
   offsetAwaitDist: false,
   offsetDistPt1: null,
   offsetPending: false,
+  // DIMCENTER (axes H/V de cercle)
+  axisAwaitDist: false,
+  axisOverPending: false,
+  axisOverDist: 5,
+  axisDistPt1: null,   // 1er point pour mesurer le dépassement à l'écran
   // Hover pour highlight (offset, trim, etc.)
   hoverEntityId: null,
   // BIBLIOTHÈQUE
@@ -3981,6 +3995,13 @@ const CMD = {
     setTool('divide_pick');
     termPrint('DIVISER: Sélectionner l\'entité à diviser', 'info');
   }},
+  DIMCENTER: { alias: ['AXECERCLE','AXESCERCLE','AXESCERCLES','REPCENTRE','CENTERMARK'], desc: 'Tracer les axes H/V des cercles (DIMCENTER [dépassement])', exec: (args) => {
+    if (args[0]) { const d = parseFloat(args[0]); if (!isNaN(d) && d >= 0) S.axisOverDist = d; }
+    S.axisOverPending = false;
+    S.axisAwaitDist = true;
+    setTool('select');
+    termPrint('AXES CERCLE — Dépassement <'+S.axisOverDist+'> (Entrée ou clic droit pour valider) :', 'info');
+  }},
   TUBE: { alias: ['TUYAU'], desc: 'Tube 2 traits + axe (TUBE [formule] ex: 1000+90R67+500)', exec: (args) => {
     const formula = args.join('').toUpperCase().replace(/\s+/g,'');
     if (formula) {
@@ -4624,6 +4645,17 @@ function _drawDynamicLayer() {
   if (S.polarArrayPreview) drawPolarArrayPreview();
   if (S.offsetDistPt1 && mouseOnCanvas) {
     const [x1,y1]=S.offsetDistPt1, [mx,my]=S.mouseWorld;
+    const [sx1,sy1]=w2s(x1,y1), [smx,smy]=w2s(mx,my);
+    const d=Math.hypot(mx-x1,my-y1);
+    ctx.save(); ctx.strokeStyle=TC.label; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(smx,smy); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle=TC.label; ctx.font='11px JetBrains Mono';
+    ctx.textAlign='left'; ctx.textBaseline='bottom';
+    ctx.fillText(d.toFixed(1),(sx1+smx)/2+6,(sy1+smy)/2-4);
+    ctx.restore();
+  }
+  if (S.axisDistPt1 && mouseOnCanvas) {
+    const [x1,y1]=S.axisDistPt1, [mx,my]=S.mouseWorld;
     const [sx1,sy1]=w2s(x1,y1), [smx,smy]=w2s(mx,my);
     const d=Math.hypot(mx-x1,my-y1);
     ctx.save(); ctx.strokeStyle=TC.label; ctx.lineWidth=1; ctx.setLineDash([4,4]);
@@ -9049,6 +9081,7 @@ let mouseOnCanvas = false;
 function getCursorMode() {
   const t = S.tool;
   if (S.offsetAwaitDist) return 'draw';
+  if (S.axisAwaitDist) return 'draw';
   if (S.arrayPickAxis) return 'draw';
   if (S.polarArrayPickCenter) return 'draw';
   if (S.libPending) return 'draw';
@@ -9056,7 +9089,7 @@ function getCursorMode() {
   if (t === 'area') return S._areaMode === 'points' ? 'draw' : 'pick';
   if (t === 'polygon') return 'draw';
   if (t === 'ellipse') return 'draw';
-  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.groupPending || S.ungroupPending || S.arrayPending || S.polarArrayPending) ? 'pick' : 'idle';
+  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.groupPending || S.ungroupPending || S.arrayPending || S.polarArrayPending || S.axisOverPending) ? 'pick' : 'idle';
   if (t === 'stretch' && S.stretchStep === 0) return 'pick';
   if (t === 'trim' || t === 'extend') return 'pick';
   if (t === 'fillet' || t === 'chamfer' || t === 'join' || t === 'hatch') return 'pick';
@@ -9372,6 +9405,23 @@ canvas.addEventListener('mousedown', (ev) => {
     render(); return;
   }
 
+  // DIMCENTER — saisie du dépassement par 2 clics sur le canvas
+  if (ev.button === 0 && S.axisAwaitDist) {
+    const osnap = findOsnap(wx, wy);
+    const [rwx, rwy] = osnap ? [osnap.x, osnap.y] : s2w(sx, sy);
+    if (!S.axisDistPt1) {
+      S.axisDistPt1 = [rwx, rwy];
+      termPrint('Point 2 pour définir le dépassement', 'info');
+    } else {
+      const dist = Math.hypot(rwx - S.axisDistPt1[0], rwy - S.axisDistPt1[1]);
+      S.axisOverDist = parseFloat(dist.toFixed(2));
+      S.axisDistPt1 = null;
+      S._axisJustApplied = true;
+      armCircleAxesSelection();
+    }
+    render(); return;
+  }
+
   // Mode select : hitTest sur mousedown pour feedback immédiat sur les entités
   // Le rubber band reste géré dans mouseup (évite démarrage+finalisation dans le même clic)
   if (ev.button === 0 && S.tool === 'select' && !S.gripEdit && !S.drawing) {
@@ -9391,7 +9441,7 @@ canvas.addEventListener('mousedown', (ev) => {
     rbShiftKey = ev.shiftKey;
     S._selectHitOnMousedown = false;
     if (!isRubberBand) {
-      const isPending = S.movePending || S.copyPending || S.rotatePending || S.scalePending || S.mirrorPending || S.offsetPending;
+      const isPending = S.movePending || S.copyPending || S.rotatePending || S.scalePending || S.mirrorPending || S.offsetPending || S.axisOverPending;
       const hit = hitTest(wx, wy);
       if (hit) {
         // Entité trouvée → sélection immédiate sans attendre mouseup
@@ -9510,6 +9560,9 @@ canvas.addEventListener('mouseup', (ev) => {
   // Ignore mouseup that follows an offset application or distance pick (mousedown handled it already)
   if (ev.button === 0 && S._offsetJustApplied) { S._offsetJustApplied = false; return; }
   if (ev.button === 0 && S.offsetAwaitDist) return;
+  // Ignore le mouseup qui suit un clic de mesure du dépassement (DIMCENTER)
+  if (ev.button === 0 && S._axisJustApplied) { S._axisJustApplied = false; return; }
+  if (ev.button === 0 && S.axisAwaitDist) return;
 
   // STRETCH — fenêtre de sélection croisante (step 0)
   if (ev.button === 0 && S.tool === 'stretch' && S.stretchStep === 0 && !isRubberBand) {
@@ -9569,7 +9622,7 @@ canvas.addEventListener('mouseup', (ev) => {
       render();
     } else if (!S._selectHitOnMousedown) {
       // Pas d'entité touchée en mousedown → démarrer le rubber band ici
-      const isPending = S.movePending || S.copyPending || S.rotatePending || S.scalePending || S.mirrorPending || S.offsetPending;
+      const isPending = S.movePending || S.copyPending || S.rotatePending || S.scalePending || S.mirrorPending || S.offsetPending || S.axisOverPending;
       const hit = hitTest(wx, wy);
       if (hit) {
         if (rbShiftKey || isPending) { const idx = S.selected.indexOf(hit.id); if (idx >= 0) S.selected.splice(idx, 1); else S.selected.push(hit.id); }
@@ -9700,6 +9753,13 @@ function _dimPickSegment(hit, wx, wy) {
     return b ? { x1:b[0], y1:b[1], x2:b[2], y2:b[3] } : null;
   }
   return _dimAngExtractLine(hit, wx, wy);
+}
+
+// Types d'entités piochables comme "ligne" par DIMANGULAR. Sert de filtre à hitTest
+// pour ignorer les cotes (et autres entités) qui recouvrent la ligne réelle.
+function _isDimAngLineCandidate(e) {
+  return e.type === 'line' || e.type === 'wall' || e.type === 'tube'
+      || e.type === 'polyline' || e.type === 'cable';
 }
 
 function _dimAngExtractLine(hit, wx, wy) {
@@ -10000,15 +10060,16 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
         render(); return;
       }
       // Étape 0: pick 1ère ligne (ligne, mur ou segment de polyligne)
-      const hit = hitTest(rawWx, rawWy);
+      // Filtre line-like : ignore les cotes déjà posées qui recouvrent la ligne.
+      const hit = hitTest(rawWx, rawWy, _isDimAngLineCandidate);
       const lineEnt = _dimAngExtractLine(hit, rawWx, rawWy);
       if (!lineEnt) { termPrint('DIMANGULAR: cliquez sur une ligne, un mur, un segment de polyligne ou un arc', 'warning'); render(); return; }
       S._dimAngLine1 = lineEnt; S._dimAngClick1 = [wx, wy];
       S.drawing = true; S.awaitingInput = true; S.drawPoints = [[wx, wy]];
       termPrint('Segment 1 sélectionné — Cliquez le 2ème segment', 'info');
     } else if (!S._dimAngVtx) {
-      // Étape 1: pick 2ème ligne
-      const _h2 = hitTest(rawWx, rawWy);
+      // Étape 1: pick 2ème ligne (même filtre line-like)
+      const _h2 = hitTest(rawWx, rawWy, _isDimAngLineCandidate);
       const lineEnt2 = _dimAngExtractLine(_h2, rawWx, rawWy);
       // Rejeter si même segment (comparer coordonnées)
       const isSameSeg = lineEnt2 &&
@@ -12564,6 +12625,7 @@ function setTool(t) {
   if(t !== 'select' && t !== 'move_obj') S.movePending=false;
   if(t !== 'select' && t !== 'scale') S.scalePending=false;
   if(t !== 'offset' && t !== 'select') { S.offsetTargetId=null; S.offsetAwaitDist=false; S.offsetPending=false; }
+  if(t !== 'select') { S.axisOverPending=false; S.axisAwaitDist=false; S.axisDistPt1=null; }
   if(t !== 'stretch') { S.stretchRect=null; S.stretchStep=0; }
   if(t !== 'divide_pick') { S.divideStep=0; S.divideEntId=null; }
   if(_toolCmdName[t]) S.lastCmdRaw = _toolCmdName[t];
@@ -12645,6 +12707,38 @@ function pushUndo() {
   if(S.history.length>50)S.history.shift();
   S.redoStack=[];
   autoSave();
+}
+
+// DIMCENTER — passe de la saisie du dépassement à la sélection des cercles.
+// _axisArmNow protège contre le double-déclenchement : la même touche Entrée qui
+// valide la valeur remonte ensuite au keydown global ; le drapeau le neutralise.
+function armCircleAxesSelection() {
+  S.axisAwaitDist = false; S.axisDistPt1 = null;
+  S.axisOverPending = true; S.selected = [];
+  S._axisArmNow = true; setTimeout(() => { S._axisArmNow = false; }, 0);
+  termPrint('AXES CERCLE ('+S.axisOverDist+') — Sélectionner les cercles, puis Entrée ou clic droit (Echap=fin)', 'info');
+  setTool('select'); render();
+}
+
+// DIMCENTER — trace les axes horizontal/vertical des cercles (et arcs) sélectionnés.
+// Chaque axe dépasse le rayon de S.axisOverDist de chaque côté.
+function applyCircleAxes() {
+  if (!S.axisOverPending) return;
+  const d = S.axisOverDist || 0;
+  const circles = S.entities.filter(e => S.selected.includes(e.id) && (e.type === 'circle' || e.type === 'arc'));
+  if (!circles.length) { termPrint('Aucun cercle sélectionné', 'warning'); return; }
+  pushUndo();
+  circles.forEach(c => {
+    const ext = c.r + d;
+    S.entities.push({ type:'line', id:S.nextId++, layer:S.currentLayer, lineType:'center',
+      x1:c.cx - ext, y1:c.cy, x2:c.cx + ext, y2:c.cy });
+    S.entities.push({ type:'line', id:S.nextId++, layer:S.currentLayer, lineType:'center',
+      x1:c.cx, y1:c.cy - ext, x2:c.cx, y2:c.cy + ext });
+  });
+  const n = circles.length;
+  S.axisOverPending = false; S.selected = [];
+  termPrint('Axes tracés sur '+n+' cercle'+(n>1?'s':''), 'success');
+  setTool('select'); render();
 }
 
 function zoomExtents() {
@@ -14991,6 +15085,13 @@ function executeCommand(input) {
       termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets (Echap=fin)','info');
       setTool('select'); render(); return;
     }
+    // Entrée vide sur saisie dépassement axes → garder valeur actuelle, passer à la sélection
+    if(S.axisAwaitDist){ armCircleAxesSelection(); return; }
+    // Entrée vide pendant la sélection des cercles → tracer les axes
+    if(S.axisOverPending){
+      if(!S.selected.length){ termPrint('Aucun cercle sélectionné','warning'); return; }
+      applyCircleAxes(); return;
+    }
     // Entrée vide en mode JOIN → confirmer la fusion
     if(S.tool==='join'){ applyJoin(); return; }
     // Entrée vide en mode POLYGON étape 0 → garder nb côtés courant
@@ -15184,6 +15285,14 @@ function executeCommand(input) {
     S.offsetPending=true; S.selected=[];
     termPrint('DÉCALER ('+S.offsetDist+') — Sélectionner les objets (Echap=fin)','info');
     setTool('select'); render(); return;
+  }
+  // ---- DIMCENTER : saisie du dépassement (valeur tapée) ----
+  if(S.axisAwaitDist){
+    const d=parseFloat(raw);
+    if(isNaN(d)||d<0){ termPrint('Dépassement invalide — réessayez','warning'); return; }
+    S.axisOverDist=d;
+    armCircleAxesSelection();
+    return;
   }
   // ---- JOIN : Entrée confirme la fusion ----
   if(S.tool==='join'){ applyJoin(); return; }
@@ -15509,6 +15618,7 @@ cmdInput.addEventListener('keydown',(ev)=>{
     if(S.mirrorAwaitDelete){ _confirmMirrorDelete(false); return; }
     if(S.copyPending){ S.copyPending=false; termPrint('Copie annulée','warning'); setTool('select'); return; }
     if(S.offsetAwaitDist){ S.offsetAwaitDist=false; termPrint('Décalage annulé','warning'); setTool('select'); return; }
+    if(S.axisAwaitDist || S.axisOverPending){ S.axisAwaitDist=false; S.axisOverPending=false; S.axisDistPt1=null; S.selected=[]; termPrint('AXES CERCLE annulé','warning'); setTool('select'); render(); return; }
     if(S.tool==='offset'){ S.offsetTargetId=null; S.drawing=false; termPrint('Décalage terminé','info'); setTool('select'); render(); return; }
     if(S.tool==='fillet'||S.tool==='chamfer'){ S.filletFirstId=null; S.filletFirstSeg=null; S.filletClickPos1=null; S.filletAwaitRadius=false; S._chamferAwaitD=0; S.selected=[]; setTool('select'); render(); return; }
     if(S.tool==='matchprop'){ S.matchSource=null; setTool('select'); termPrint('Copier propriétés terminé','info'); render(); return; }
@@ -15627,6 +15737,12 @@ document.addEventListener('keydown',(ev)=>{
     openPolarArrayDialog();
     return;
   }
+  if(ev.key==='Enter' && S.axisOverPending){
+    ev.preventDefault();
+    if(S._axisArmNow) return; // même touche que la validation du dépassement
+    applyCircleAxes();
+    return;
+  }
 
   // Enter global: valider sélection copyPending / mirrorPending / rotatePending / movePending
   if(ev.key==='Enter' && (S.copyPending || S.mirrorPending || S.rotatePending || S.movePending || S.scalePending)){
@@ -15703,6 +15819,10 @@ document.addEventListener('keydown',(ev)=>{
   }
   if(ev.key==='Escape' && S.polarArrayPending){
     S.polarArrayPending=false; termPrint('RÉSEAU POLAIRE annulé','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && (S.axisOverPending || S.axisAwaitDist)){
+    S.axisOverPending=false; S.axisAwaitDist=false; S.axisDistPt1=null; S.selected=[];
+    termPrint('AXES CERCLE annulé','warning'); setTool('select'); return;
   }
   if(ev.key==='Escape' && S.copyPending){
     S.copyPending=false; termPrint('Copie annulée','warning'); setTool('select'); return;
@@ -17804,12 +17924,39 @@ function tbResetToolbars(){
 }
 
 /* ---------- Palette (catalogue de toutes les icônes) ---------- */
+// Rend la popup « Personnaliser les barres » déplaçable par son entête.
+// Délégation sur l'élément (l'entête est recréé à chaque ouverture via innerHTML).
+function _tbMakePaletteDraggable(p){
+  let ox=0, oy=0, dragging=false;
+  p.addEventListener('mousedown', ev=>{
+    if(ev.button!==0) return;
+    const head = ev.target.closest('.tb-pal-head');
+    if(!head || !p.contains(head)) return;     // démarrage uniquement depuis l'entête
+    if(ev.target.closest('button')) return;    // laisser cliquer les boutons
+    dragging=true;
+    const rc=p.getBoundingClientRect();
+    ox=ev.clientX-rc.left; oy=ev.clientY-rc.top;
+    // Passe d'un ancrage right/bottom à un positionnement left/top
+    p.style.left=rc.left+'px'; p.style.top=rc.top+'px';
+    p.style.right='auto'; p.style.bottom='auto';
+    ev.preventDefault();
+  });
+  document.addEventListener('mousemove', ev=>{
+    if(!dragging) return;
+    const w=p.offsetWidth, h=p.offsetHeight;
+    const nx=Math.max(0, Math.min(ev.clientX-ox, window.innerWidth -w));
+    const ny=Math.max(0, Math.min(ev.clientY-oy, window.innerHeight-h));
+    p.style.left=nx+'px'; p.style.top=ny+'px';
+  });
+  document.addEventListener('mouseup', ()=>{ dragging=false; });
+}
 function _tbOpenPalette(){
   let p=document.getElementById('tb-palette');
   if(!p){ p=document.createElement('div'); p.id='tb-palette'; document.body.appendChild(p);
     p.addEventListener('dragover', e=>{ if(_tbDnd){ e.preventDefault(); p.classList.add('tb-drop-hover'); } });
     p.addEventListener('dragleave', ()=>p.classList.remove('tb-drop-hover'));
     p.addEventListener('drop', _tbDropRemove);
+    _tbMakePaletteDraggable(p);
   }
   const groups={};
   Object.entries(TB_REGISTRY).forEach(([id,r])=>{ (groups[r.group]=groups[r.group]||[]).push([id,r]); });
@@ -18203,6 +18350,13 @@ canvas.addEventListener('contextmenu', (ev) => {
     else if (S.scalePending)   { S.scalePending=false;   S.scaleIds=[...S.selected]; S.scaleStep=1; S.scaleBase=null; termPrint('SCALE: Cliquer le point de base','info'); setTool('scale'); }
     else if (S.offsetPending)  { S.offsetPending=false;  termPrint('DÉCALER: Cliquer du côté à décaler','info'); setTool('offset'); }
     render(); return;
+  }
+
+  // DIMCENTER : clic droit valide la saisie du dépassement, puis confirme la sélection
+  if (S.axisAwaitDist) { armCircleAxesSelection(); return; }
+  if (S.axisOverPending) {
+    if (!S.selected.length) { termPrint('Aucun cercle sélectionné','warning'); return; }
+    applyCircleAxes(); return;
   }
 
   // Saisie distance offset en attente → valider la valeur actuelle

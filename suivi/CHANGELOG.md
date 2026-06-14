@@ -7,6 +7,12 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.1] — 2026-06-07 — Version courante
 
 ### Ajouté
+- **Axes de cercle (`DIMCENTER`)** — trace les axes horizontal et vertical des cercles
+  (et arcs) sélectionnés, en trait d'axe (type de ligne `center`). Alias `AXECERCLE`,
+  `REPCENTRE`, `CENTERMARK`. Workflow : commande → saisie du **dépassement** (longueur
+  dont chaque axe dépasse le rayon) validée par Entrée/clic droit → sélection d'un ou
+  plusieurs cercles → Entrée/clic droit pour tracer. Bouton dans la barre d'outils et
+  entrée dans le menu Modification. `DIMCENTER 10` pré-règle le dépassement.
 - **Thème clair** — commande `THEME` (alias `THM`, `THEME CLAIR|SOMBRE`), bouton dans la
   barre Vue, entrée menu Fichier ; persistance dans les préférences (localStorage)
   - Palette claire type « papier » : variables CSS surchargées via `:root.theme-light`
@@ -59,6 +65,10 @@ Format : `[version] — YYYY-MM-DD — Description`
   (Cloudflare Worker, CORS), navigateur de dossiers (créer/renommer), `Ctrl+S` → kDrive
 
 ### Corrigé
+- **Cote angulaire — sélection des lignes recouvertes par une cote** : la pioche des
+  2 lignes filtre désormais les entités line-like (`hitTest(..., _isDimAngLineCandidate)`),
+  donc une cote angulaire déjà posée (arc, lignes d'attache) n'intercepte plus le clic.
+  On peut enchaîner plusieurs cotes angulaires partageant une même ligne sans difficulté.
 - **TRIM ne fragmente plus le reste de l'entité** : la coupe se fait uniquement aux
   2 intersections adjacentes au clic (ligne, arc, cercle, ellipse, polyligne ouverte) ;
   cercle et ellipse fermée laissent désormais UN seul arc au lieu de N morceaux
