@@ -3201,6 +3201,10 @@ function findOsnap(wx, wy) {
         }
       }
     }
+
+    // Accroche objet pour entités plugin (grad_disk, grad_arc, grad_ruler…)
+    const _sh = pluginSnapHandler(e.type);
+    if (_sh) _sh(e, wx, wy, check, S.osnapModes);
   }
 
   // OSNAP sur la polyligne/ligne en cours de tracé (drawPoints pas encore dans S.entities)
@@ -4067,7 +4071,7 @@ const CMD = {
     render();
   }},
   EXPLODE: { alias: ['X','ECLATER','ÉCLATER'], desc: 'Éclater un bloc, polyligne ou tube en primitives', exec: () => {
-    const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && (e.type === 'block' || e.type === 'polyline' || e.type === 'cable' || e.type === 'tube' || e.type === 'rect'));
+    const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && (e.type === 'block' || e.type === 'polyline' || e.type === 'cable' || e.type === 'tube' || e.type === 'rect' || pluginExplodeHandler(e.type)));
     if (!targets.length) {
       S.explodePending = true; setTool('select');
       termPrint('ÉCLATER: Sélectionner les objets à éclater, puis Entrée', 'warning'); return;
@@ -4137,6 +4141,15 @@ const CMD = {
           S.entities.push(line); newIds.push(line.id);
         });
         termPrint('Rectangle → 4 lignes', 'success');
+      } else if (pluginExplodeHandler(ent.type)) {
+        // Entité de plugin (ex. disque/règle gradué) → primitives natives
+        const parts = pluginExplodeHandler(ent.type)(ent) || [];
+        parts.forEach(p => {
+          if (p.layer === undefined) p.layer = ent.layer;
+          p.id = S.nextId++;
+          S.entities.push(p); newIds.push(p.id);
+        });
+        termPrint(ent.type + ' → ' + parts.length + ' entités', 'success');
       } else {
         // polyline / cable → lignes + arcs individuels (bulge → arc) — même logique que le rendu
         const pts = ent.points;
@@ -4362,12 +4375,16 @@ function getEntityBBox(e, tight) {
       });
       return x0===Infinity ? null : { minX:x0, maxX:x1, minY:y0, maxY:y1 };
     }
-    default:
+    default: {
+      // Entités de plugin : utiliser le handler de bbox exact s'il existe
+      const pb = (typeof invokePluginBbox === 'function') ? invokePluginBbox(e.type, e) : null;
+      if (pb) return { minX:pb.xmin-pad, maxX:pb.xmax+pad, minY:pb.ymin-pad, maxY:pb.ymax+pad };
       if (e.cx!==undefined) return { minX:e.cx-80, maxX:e.cx+80, minY:e.cy-80, maxY:e.cy+80 };
       if (e.x !==undefined) return { minX:e.x-10,  maxX:e.x+300, minY:e.y-30,  maxY:e.y+30  };
       if (e.x1!==undefined) return { minX:Math.min(e.x1,e.x2)-pad, maxX:Math.max(e.x1,e.x2)+pad,
                                      minY:Math.min(e.y1,e.y2)-pad, maxY:Math.max(e.y1,e.y2)+pad };
       return null;
+    }
   }
 }
 
@@ -4417,9 +4434,11 @@ function _drawStaticLayer() {
   const vp = { minX:Math.min(vpx0,vpx1), maxX:Math.max(vpx0,vpx1),
                minY:Math.min(vpy0,vpy1), maxY:Math.max(vpy0,vpy1) };
 
-  // Entités (toutes — les surbrillances sont ajoutées dessus dans la couche dynamique)
+  // Entités non-sélectionnées — les entités sélectionnées sont redessinées en surbrillance
+  // par la couche dynamique ; les exclure ici évite le fantôme résiduel après un déplacement.
   S.entities.forEach(e => {
     if (!S.layers[e.layer]?.visible) return;
+    if (S.selected.includes(e.id)) return;
     if (!_inViewport(getEntityBBox(e), vp)) return;
     const layer = S.layers[e.layer];
     const color = dispColor(e.color || layer?.color || '#00d4ff');
@@ -7344,8 +7363,12 @@ function getGripPoints(e) {
       }
       break;
     }
-    default:
-      if (e.x !== undefined) gp(e.x, e.y, (ent, nx, ny) => { ent.x = nx; ent.y = ny; });
+    default: {
+      // Entités de plugin : poignées déléguées au plugin (ex. disque/règle/arc gradué)
+      const gh = pluginGripHandler(e.type);
+      if (gh) { (gh(e) || []).forEach(g => gp(g.x, g.y, g.apply)); }
+      else if (e.x !== undefined) gp(e.x, e.y, (ent, nx, ny) => { ent.x = nx; ent.y = ny; });
+    }
   }
   return grips;
 }
@@ -11605,6 +11628,8 @@ function applyExtend(extendedId, prims, clickWx, clickWy) {
 
 function scaleEntityInPlace(e, cx, cy, f) {
   function sp(px, py) { return [cx+(px-cx)*f, cy+(py-cy)*f]; }
+  const _th = pluginTransformHandler(e.type);
+  if (_th) { _th(e, sp, 'scale'); return; }
   if (e.x1!==undefined) { [e.x1,e.y1]=sp(e.x1,e.y1); }
   if (e.x2!==undefined) { [e.x2,e.y2]=sp(e.x2,e.y2); }
   if (e.cx!==undefined) { [e.cx,e.cy]=sp(e.cx,e.cy); if(e.r!==undefined) e.r*=f; }
@@ -11662,6 +11687,8 @@ function drawScalePreview() {
 function rotateEntityInPlace(e, cx, cy, angle) {
   const cos = Math.cos(angle), sin = Math.sin(angle);
   function rp(px, py) { const dx=px-cx, dy=py-cy; return [cx+dx*cos-dy*sin, cy+dx*sin+dy*cos]; }
+  const _th = pluginTransformHandler(e.type);
+  if (_th) { _th(e, rp, 'rotate'); return; }
   if (e.type === 'rect') {
     const [ax1,ay1]=rp(e.x1,e.y1), [ax2,ay2]=rp(e.x2,e.y1);
     const [ax3,ay3]=rp(e.x2,e.y2), [ax4,ay4]=rp(e.x1,e.y2);
@@ -11701,6 +11728,8 @@ function mirrorPt(px,py,ax,ay,bx,by) {
 function mirrorEntity(src,ax,ay,bx,by) {
   const e=JSON.parse(JSON.stringify(src));
   const m=(px,py)=>mirrorPt(px,py,ax,ay,bx,by);
+  const _th=pluginTransformHandler(e.type);
+  if(_th){ _th(e, m, 'mirror'); return e; }
   if(e.x1!==undefined){[e.x1,e.y1]=m(e.x1,e.y1);}
   if(e.x2!==undefined){[e.x2,e.y2]=m(e.x2,e.y2);}
   if(e.cx!==undefined){[e.cx,e.cy]=m(e.cx,e.cy);}
@@ -12293,23 +12322,15 @@ function hitTest(wx,wy,filter) {
         }
       }
     }
-    else if(e.type==='grad_disk'){
-      // Disque gradué : sélectionner via la bbox
-      const d=Math.hypot(wx-e.cx,wy-e.cy);
-      if(d<=e.radius*1.1) tryHit(e, d);
-    }
-    else if(e.type==='grad_ruler'){
-      // Règle graduée : sélectionner via la bbox
-      if(wx>=e.x-tol && wx<=e.x+e.length+tol && wy>=e.y-e.width-tol && wy<=e.y+tol){
-        const d=Math.min(
-          Math.abs(wy-e.y), Math.abs(wy-e.y+e.width),
-          Math.abs(wx-e.x), Math.abs(wx-e.x-e.length)
-        );
-        tryHit(e, d);
+    else {
+      // Entités de plugin : détection déléguée au plugin (ex. disque/règle/arc gradué)
+      const hh = pluginHitHandler(e.type);
+      if (hh) {
+        const d = hh(e, wx, wy, tol);
+        if (d != null) tryHit(e, d);
+      } else if(e.x!==undefined){
+        const d=Math.hypot(wx-e.x,wy-e.y); if(d<tol*2) tryHit(e,d/2);
       }
-    }
-    else if(e.x!==undefined){
-      const d=Math.hypot(wx-e.x,wy-e.y); if(d<tol*2) tryHit(e,d/2);
     }
   }
   return best;
@@ -14124,10 +14145,23 @@ function doPrint() {
   } else {
     let mnx=Infinity, mny=Infinity, mxx=-Infinity, mxy=-Infinity;
     S.entities.forEach(e => {
-      getEntitySegments(e).forEach(([a,b,c,d]) => {
-        mnx=Math.min(mnx,a,c); mny=Math.min(mny,b,d);
-        mxx=Math.max(mxx,a,c); mxy=Math.max(mxy,b,d);
-      });
+      const lyr = S.layers[e.layer];
+      if (lyr && !lyr.visible) return;
+      const segs = getEntitySegments(e);
+      if (segs.length) {
+        segs.forEach(([a,b,c,d]) => {
+          mnx=Math.min(mnx,a,c); mny=Math.min(mny,b,d);
+          mxx=Math.max(mxx,a,c); mxy=Math.max(mxy,b,d);
+        });
+      } else {
+        // Entités sans segments (cercle, arc, texte, disque/règle gradué…) :
+        // utiliser la bbox géométrique pour qu'elles soient incluses dans la zone imprimée.
+        const bb = getEntityBBox(e, true);
+        if (bb) {
+          mnx=Math.min(mnx,bb.minX); mny=Math.min(mny,bb.minY);
+          mxx=Math.max(mxx,bb.maxX); mxy=Math.max(mxy,bb.maxY);
+        }
+      }
     });
     if (!isFinite(mnx)) { termPrint('Aucune entité à imprimer', 'warning'); return; }
     wx1=mnx; wy1=mny; wx2=mxx; wy2=mxy;
@@ -17422,7 +17456,7 @@ const _pluginsInFlight = {}; // garde anti-race : chargements async en cours
 
 // Lister les plugins disponibles (dans src/plugins/)
 const AVAILABLE_PLUGINS = [
-  { name: 'gradrule', label: 'Disques & Règles graduées (GRADISC, GRADRULE)' },
+  { name: 'gradrule', label: 'Disques, règles & arcs gradués (GRADISC, GRADRULE, GRADARC)' },
 ];
 
 // Charger un plugin dynamiquement (fetch + eval)
@@ -17543,6 +17577,60 @@ function invokePluginMove(type, e, dx, dy) {
       return plugin.moveHandlers[type](e, dx, dy);
     }
   }
+}
+
+// Retourne le handler d'éclatement d'un type d'entité de plugin (ou null).
+function pluginExplodeHandler(type) {
+  for (const [name, plugin] of Object.entries(PLUGINS)) {
+    if (plugin.explodeHandlers && plugin.explodeHandlers[type]) {
+      return plugin.explodeHandlers[type];
+    }
+  }
+  return null;
+}
+
+// Retourne le handler de détection (hitTest) d'un type d'entité de plugin (ou null).
+// Le handler reçoit (e, wx, wy, tol) et renvoie une distance (pour tryHit) ou null.
+function pluginHitHandler(type) {
+  for (const [name, plugin] of Object.entries(PLUGINS)) {
+    if (plugin.hitTestHandlers && plugin.hitTestHandlers[type]) {
+      return plugin.hitTestHandlers[type];
+    }
+  }
+  return null;
+}
+
+// Retourne le handler de poignées (grips) d'un type d'entité de plugin (ou null).
+// Le handler reçoit (e) et renvoie un tableau [{x, y, apply(ent,nx,ny)}].
+function pluginGripHandler(type) {
+  for (const [name, plugin] of Object.entries(PLUGINS)) {
+    if (plugin.gripHandlers && plugin.gripHandlers[type]) {
+      return plugin.gripHandlers[type];
+    }
+  }
+  return null;
+}
+
+// Retourne le handler de transformation (scale/rotate/mirror) d'un type de plugin (ou null).
+// Le handler reçoit (e, tf, kind) où tf(px,py)->[nx,ny] est la transformation de point
+// fournie par le cœur, et kind ∈ {'scale','rotate','mirror'}. Mute e en place.
+function pluginTransformHandler(type) {
+  for (const [name, plugin] of Object.entries(PLUGINS)) {
+    if (plugin.transformHandlers && plugin.transformHandlers[type]) {
+      return plugin.transformHandlers[type];
+    }
+  }
+  return null;
+}
+
+// Retourne le handler d'accroche objet (OSNAP) d'un type d'entité de plugin (ou null).
+// Le handler reçoit (e, wx, wy, check, modes) et appelle check(x, y, type, e) pour chaque
+// point candidat. check est la fonction interne de findOsnap (retient le plus proche).
+function pluginSnapHandler(type) {
+  for (const [name, plugin] of Object.entries(PLUGINS)) {
+    if (plugin.snapHandlers && plugin.snapHandlers[type]) return plugin.snapHandlers[type];
+  }
+  return null;
 }
 
 /* ============================================================

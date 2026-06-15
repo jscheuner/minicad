@@ -4,9 +4,45 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [0.1] — 2026-06-07 — Version courante
+## [0.1] — 2026-06-15 — Version courante
 
 ### Ajouté
+- **GRADISC/GRADARC/GRADRULE — accroche objet (OSNAP)** : nouveaux hook plugin
+  `snapHandlers` + `pluginSnapHandler()` dans `findOsnap()`. Points d'accroche :
+  centre + 4 quadrants pour `grad_disk` ; centre + extrémités + milieu + quadrants
+  dans la plage angulaire pour `grad_arc` ; 4 coins + 4 milieux de côtés pour `grad_ruler`.
+
+### Corrigé
+- **Ghost résiduel après déplacement (grip) des entités sélectionnées** : `_drawStaticLayer()`
+  excluait désormais les entités dans `S.selected[]` — elles sont toujours redessinées
+  en surbrillance par la couche dynamique, ce qui élimine le fantôme résiduel à l'ancienne
+  position lors d'un déplacement par poignée.
+
+---
+
+## [0.1] — 2026-06-07
+
+### Ajouté
+- **GRADISC/GRADRULE/GRADARC — poignées + transformations** : poignées (grips) sur les
+  trois types (déplacement + redimensionnement/orientation) ; le disque et l'arc en avaient
+  zéro. MIROIR, ROTATION et ÉCHELLE fonctionnent désormais correctement (taille, position
+  ET orientation). Le disque et la règle ont un champ `rotation`, l'arc utilise `startAngle`.
+  Nouveaux hooks plugin génériques `gripHandlers` + `transformHandlers` (méthode par points
+  de contrôle, réutilise la transformation du cœur) ; aucun code spécifique ajouté au cœur.
+- **GRADARC — arc gradué** : nouvelle commande (alias `GA`, `ARCGRADUE`) du plugin
+  gradrule. Graduation circulaire partielle avec champ **Angle** (degrés) ; bouton
+  d'inversion de sens. Bouton dans la barre « Graduations ». Éclatable et exporté en PDF.
+- **GRADISC/GRADRULE/GRADARC — bouton d'inversion de sens** : disque & arc
+  horaire ↔ antihoraire ; règle « 0 à gauche » ↔ « 0 à droite » (numérotation miroir).
+  Pris en compte au rendu, à l'éclatement et au placement.
+- **GRADRULE/GRADISC — éclatement (EXPLODE)** : les disques et règles gradués peuvent
+  être éclatés en primitives natives (cercle/rectangle + lignes de graduation + textes),
+  fidèles au rendu. Nouveau hook plugin `explodeHandlers` + `pluginExplodeHandler()` dans
+  EXPLODE. Les entités éclatées sont prises en compte par l'export PDF.
+- **Plugins — hook `hitTestHandlers`** : la détection (sélection) des entités de plugin
+  est déléguée au plugin via `pluginHitHandler()`. Le code spécifique aux disques/règles/arcs
+  a quitté `minicad.html` pour vivre entièrement dans `gradrule.js` (cœur allégé).
+  Disque sélectionnable sur son cercle (avant : centre uniquement).
 - **Axes de cercle (`DIMCENTER`)** — trace les axes horizontal et vertical des cercles
   (et arcs) sélectionnés, en trait d'axe (type de ligne `center`). Alias `AXECERCLE`,
   `REPCENTRE`, `CENTERMARK`. Workflow : commande → saisie du **dépassement** (longueur
@@ -65,6 +101,15 @@ Format : `[version] — YYYY-MM-DD — Description`
   (Cloudflare Worker, CORS), navigateur de dossiers (créer/renommer), `Ctrl+S` → kDrive
 
 ### Corrigé
+- **GRADRULE — texte dédoublé** : la règle graduée n'affiche plus qu'un seul label par
+  graduation, centré verticalement. Auparavant deux labels (bord haut + bord bas) qui se
+  superposaient dès ~50% de taille de texte.
+- **GRADRULE — sélection & bbox** : la règle est dessinée vers le haut (monde y ∈ [y, y+width]) ;
+  le `hitTest` et la bbox suivent désormais le rendu (avant : décalés de la hauteur, règle
+  difficile à sélectionner). `getEntityBBox` utilise la bbox exacte des entités de plugin.
+- **Export PDF — entités sans segments** : la zone imprimée (auto-ajustée) inclut désormais
+  les entités qui ne produisent pas de segments (cercle, arc, texte, disque/règle gradué…)
+  via `getEntityBBox`, et ignore les calques masqués. Elles n'étaient plus rognées/exclues.
 - **Cote angulaire — sélection des lignes recouvertes par une cote** : la pioche des
   2 lignes filtre désormais les entités line-like (`hitTest(..., _isDimAngLineCandidate)`),
   donc une cote angulaire déjà posée (arc, lignes d'attache) n'intercepte plus le clic.
