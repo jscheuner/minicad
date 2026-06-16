@@ -4,7 +4,19 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [0.1] — 2026-06-15 — Version courante
+## [0.1] — 2026-06-16 — Version courante
+
+### Ajouté
+- **GRADISC/GRADARC/GRADRULE — édition dans le panneau Propriétés** : toutes les
+  propriétés du dessin (comme dans le popup de création) sont désormais modifiables
+  après coup — rayon/longueur/largeur, angle & angle de départ (arc), nombre de
+  graduations, label tous les N, taille grad. & texte (en %), sens, position (CX/CY
+  ou X/Y) et rotation. Nouveau hook plugin générique `propsHandlers` +
+  `pluginPropsHandler()` ; tout le code spécifique grad vit dans `gradrule.js`.
+  Au passage, corrige un plantage du panneau sur `grad_disk`/`grad_arc` (le cœur
+  lisait `e.r` au lieu de `e.radius`).
+
+## [0.1] — 2026-06-15
 
 ### Ajouté
 - **GRADISC/GRADARC/GRADRULE — accroche objet (OSNAP)** : nouveaux hook plugin
