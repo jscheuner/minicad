@@ -23,6 +23,10 @@ Format : `[version] — YYYY-MM-DD — Description`
   Au passage, corrige un plantage du panneau sur `grad_disk`/`grad_arc` (le cœur
   lisait `e.r` au lieu de `e.radius`).
 
+### Modifié
+- **Icône Zoom étendu** : remplacée par 4 flèches pointant vers les coins
+  (icône « ajuster à l'écran » classique), à la place du rectangle barré d'une croix.
+
 ### Corrigé
 - **Dialogue ÉDITER LE TUBE — boutons illisibles en thème clair** : couleurs codées
   en dur remplacées par des variables de thème (boutons AXE/EXT/INT, séparateur,
