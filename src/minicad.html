@@ -1828,7 +1828,7 @@
     </div>
     <div class="tb-buttons">
       <button class="tool-btn" title="{{tool.zoom_extents}}" data-i18n-title="tool.zoom_extents" onclick="zoomExtents()">
-        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+        <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 4 L4 4 L4 10 M4 4 L10 10 M14 4 L20 4 L20 10 M20 4 L14 10 M4 14 L4 20 L10 20 M4 20 L10 14 M20 14 L20 20 L14 20 M20 20 L14 14"/></svg>
       </button>
       <button class="tool-btn" data-tool="pan" title="Panoramique" onclick="setTool('pan')">
         <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="3" fill="none"/></svg>
@@ -3080,6 +3080,27 @@ function findOsnap(wx, wy) {
       check(e.cx - e.rx*cos,  e.cy - e.rx*sin,  'quadrant', e);
       check(e.cx - e.ry*sin,  e.cy + e.ry*cos,  'quadrant', e);
       check(e.cx + e.ry*sin,  e.cy - e.ry*cos,  'quadrant', e);
+    }
+    if (S.osnapModes.quadrant && e.type === 'tube') {
+      // Quadrants des arcs de coude : axe (R) + parois interne (R−tr) / externe (R+tr),
+      // arcs concentriques au centre du coude. Seuls les points cardinaux dans la
+      // plage angulaire de l'arc sont retenus.
+      const tr = e.tubeRadius || 20;
+      const TWO_PI = Math.PI * 2;
+      // qa appartient-il à [lo,hi] (mod 2π) ? Robuste aux bornes négatives.
+      const inSpan = (qa, lo, hi) => {
+        let a = (qa - lo) % TWO_PI; if (a < 0) a += TWO_PI;
+        return a <= (hi - lo) + 1e-9;
+      };
+      _tubeWalkBends(e, (bcx, bcy, R, seg, aStart, aEnd) => {
+        const lo = Math.min(aStart, aEnd), hi = Math.max(aStart, aEnd);
+        for (const rr of [R - tr, R, R + tr]) {
+          if (rr <= 1e-6) continue;
+          for (const qa of [0, Math.PI/2, Math.PI, 3*Math.PI/2]) {
+            if (inSpan(qa, lo, hi)) check(bcx + rr*Math.cos(qa), bcy + rr*Math.sin(qa), 'quadrant', e);
+          }
+        }
+      });
     }
 
     // INTERSECTION (segment-segment + cercle) — restreint à _nearbyX (curseur près du tracé)
@@ -6076,9 +6097,9 @@ function openTubeEditDialog(ent) {
       <label style="display:flex;align-items:center;gap:5px;color:var(--text-dim)">Ø&nbsp;<input id="te-d" value="${data.d.toFixed(1)}" style="${inp}">&nbsp;mm</label>
       <label style="display:flex;align-items:center;gap:5px;color:var(--text-dim)">RM&nbsp;<input id="te-r" value="${(data.r || S.tubeBendRadius || 67).toFixed(1)}" style="${inp}">&nbsp;mm</label>
       <div style="display:flex;gap:3px;margin-left:auto">
-        <button id="te-ref-axe" style="${btnBase}background:${activeRef==='axe'?'var(--accent)':'#2a2a3e'};color:${activeRef==='axe'?'#000':'var(--text)'}">AXE</button>
-        <button id="te-ref-ext" style="${btnBase}background:${activeRef==='ext'?'var(--accent)':'#2a2a3e'};color:${activeRef==='ext'?'#000':'var(--text)'}">EXT</button>
-        <button id="te-ref-int" style="${btnBase}background:${activeRef==='int'?'var(--accent)':'#2a2a3e'};color:${activeRef==='int'?'#000':'var(--text)'}">INT</button>
+        <button id="te-ref-axe" style="${btnBase}background:${activeRef==='axe'?'var(--accent)':'var(--btn-bg)'};color:${activeRef==='axe'?'var(--on-accent)':'var(--text)'}">AXE</button>
+        <button id="te-ref-ext" style="${btnBase}background:${activeRef==='ext'?'var(--accent)':'var(--btn-bg)'};color:${activeRef==='ext'?'var(--on-accent)':'var(--text)'}">EXT</button>
+        <button id="te-ref-int" style="${btnBase}background:${activeRef==='int'?'var(--accent)':'var(--btn-bg)'};color:${activeRef==='int'?'var(--on-accent)':'var(--text)'}">INT</button>
       </div>
     </div>
     <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
@@ -6094,14 +6115,14 @@ function openTubeEditDialog(ent) {
     <div style="margin-bottom:10px">
       <button id="te-add" style="background:var(--btn-bg);border:1px solid var(--border);color:var(--accent);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;width:100%">+ Ajouter une section</button>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:6px 0;border-top:1px solid #334">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:6px 0;border-top:1px solid var(--border)">
       <span style="color:var(--text-dim)">Long. développée AXE</span>
       <span id="te-devlen" style="color:var(--accent);font-weight:bold">${data.totalLen.toFixed(1)} mm</span>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button id="te-cancel" style="background:var(--btn-bg);border:1px solid var(--border);color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Annuler</button>
-      <button id="te-delcote" style="background:var(--btn-bg);border:1px solid #644;color:#c88;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">✕ Cotes</button>
-      <button id="te-cote" style="background:var(--btn-bg);border:1px solid #556;color:#aac;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Coter</button>
+      <button id="te-delcote" style="background:var(--btn-bg);border:1px solid color-mix(in srgb, #e0524f 40%, var(--border));color:color-mix(in srgb, #e0524f 62%, var(--ink));padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">✕ Cotes</button>
+      <button id="te-cote" style="background:var(--btn-bg);border:1px solid color-mix(in srgb, var(--accent) 50%, var(--border));color:var(--accent);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Coter</button>
       <button id="te-preview" style="background:var(--btn-bg);border:1px solid var(--accent);color:var(--accent);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Prévisualiser</button>
       <button id="te-ok" style="background:var(--accent);border:none;color:var(--on-accent);padding:4px 14px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold">Appliquer ↵</button>
     </div>`;
@@ -6204,11 +6225,11 @@ function openTubeEditDialog(ent) {
       const delDis  = editRows.length <= 1 ? 'opacity:.3;cursor:default;' : 'cursor:pointer;';
       const domTr   = document.createElement('tr');
       domTr.innerHTML = `
-        <td style="text-align:center;color:#fff;padding:3px 6px">${i+1}</td>
+        <td style="text-align:center;color:var(--text);padding:3px 6px">${i+1}</td>
         <td style="padding:3px 4px"><input class="te-straight" value="${saisieAt(i,R,tr,activeRef).toFixed(1)}" style="${inp}"></td>
         <td style="padding:3px 4px;text-align:center">${angCell}</td>
         <td style="padding:3px 4px;text-align:right">${arcCell}</td>
-        <td style="padding:3px 4px;text-align:center"><span class="te-del" style="color:#ff5252;font-size:13px;${delDis}">×</span></td>`;
+        <td style="padding:3px 4px;text-align:center"><span class="te-del" style="color:color-mix(in srgb, #e0524f 62%, var(--ink));font-size:13px;${delDis}">×</span></td>`;
       tbody.appendChild(domTr);
 
       const strEl  = domTr.querySelector('.te-straight');
@@ -6272,8 +6293,8 @@ function openTubeEditDialog(ent) {
       activeRef = ref;
       ['axe','ext','int'].forEach(r => {
         const b = document.getElementById('te-ref-'+r);
-        b.style.background = r === ref ? 'var(--accent)' : '#2a2a3e';
-        b.style.color       = r === ref ? '#000' : 'var(--text)';
+        b.style.background = r === ref ? 'var(--accent)' : 'var(--btn-bg)';
+        b.style.color       = r === ref ? 'var(--on-accent)' : 'var(--text)';
       });
       refreshAllSaisie(); refreshArcAndTotal(); updateRefLabels();
     };
@@ -7340,6 +7361,17 @@ function getGripPoints(e) {
     }
     case 'tube':
       gp(e.startX, e.startY, (ent, nx, ny) => { ent.startX = nx; ent.startY = ny; });
+      // Poignée d'étirement au bout de chaque tronçon droit (sur l'axe) :
+      // glisser projette le curseur sur l'axe du tronçon → nouvelle longueur
+      // (la direction reste fixe, les segments suivants suivent).
+      _tubeWalkStraights(e, (x1, y1, x2, y2, theta, si) => {
+        gp(x2, y2, (ent, nx, ny) => {
+          const seg = ent.segments[si];
+          if (!seg || seg.type !== 'straight') return;
+          const newLen = (nx - x1) * Math.cos(theta) + (ny - y1) * Math.sin(theta);
+          seg.length = Math.max(1, newLen);
+        });
+      });
       if (e.showLabel && e.labelX !== undefined) {
         // Poignée déplacement (coin haut-gauche)
         gp(e.labelX, e.labelY, (ent, nx, ny) => { ent.labelX = nx; ent.labelY = ny; });
@@ -9699,13 +9731,15 @@ canvas.addEventListener('wheel', (ev) => {
 // Extrait un segment {x1,y1,x2,y2} depuis une entité pour DIMANGULAR.
 // Retourne l'entité elle-même pour line/wall, ou le segment le plus proche pour polyline/cable.
 // Walk tube segments, call cb(x1,y1,x2,y2,theta) for each straight section axis
+// Parcourt les tronçons droits → cb(x1,y1, x2,y2, theta, segIdx).
+// segIdx = index du segment dans e.segments (utile pour éditer sa longueur).
 function _tubeWalkStraights(e, cb) {
   let cx = e.startX, cy = e.startY, theta = e.startAngle;
-  for (const seg of e.segments) {
+  e.segments.forEach((seg, si) => {
     if (seg.type === 'straight') {
       const ex = cx + seg.length * Math.cos(theta);
       const ey = cy + seg.length * Math.sin(theta);
-      cb(cx, cy, ex, ey, theta);
+      cb(cx, cy, ex, ey, theta, si);
       cx = ex; cy = ey;
     } else if (seg.type === 'bend') {
       const { angle: phi, bendRadius: R, side } = seg;
@@ -9715,10 +9749,12 @@ function _tubeWalkStraights(e, cb) {
       cx = bcx + R * Math.cos(arcEnd); cy = bcy + R * Math.sin(arcEnd);
       theta += side * phi;
     }
-  }
+  });
 }
 
-// Parcourt les coudes du tube → centre d'arc (bcx,bcy), rayon R, segment
+// Parcourt les coudes du tube → cb(bcx,bcy, R, seg, aStart, aEnd).
+// (bcx,bcy)=centre d'arc, R=rayon de l'axe, aStart/aEnd=angles (depuis le centre)
+// du début/fin de l'arc, en coords monde (sens trigo ; aEnd<aStart si coude horaire).
 function _tubeWalkBends(e, cb) {
   let cx = e.startX, cy = e.startY, theta = e.startAngle;
   for (const seg of e.segments) {
@@ -9728,9 +9764,10 @@ function _tubeWalkBends(e, cb) {
       const { angle: phi, bendRadius: R, side } = seg;
       const bcx = cx - side * R * Math.sin(theta);
       const bcy = cy + side * R * Math.cos(theta);
-      cb(bcx, bcy, R, seg);
-      const arcEnd = (theta - side * Math.PI / 2) + side * phi;
-      cx = bcx + R * Math.cos(arcEnd); cy = bcy + R * Math.sin(arcEnd);
+      const aStart = theta - side * Math.PI / 2;
+      const aEnd   = aStart + side * phi;
+      cb(bcx, bcy, R, seg, aStart, aEnd);
+      cx = bcx + R * Math.cos(aEnd); cy = bcy + R * Math.sin(aEnd);
       theta += side * phi;
     }
   }

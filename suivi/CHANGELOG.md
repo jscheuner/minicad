@@ -7,6 +7,13 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.1] — 2026-06-16 — Version courante
 
 ### Ajouté
+- **TUBE — accroche objet quadrant sur les coudes** : les points cardinaux (N/E/S/O)
+  des arcs de coude sont désormais accrochables (mode OSNAP quadrant), sur l'axe et
+  sur les deux parois (rayons R−tr, R et R+tr) — seuls les cardinaux compris dans la
+  plage angulaire de l'arc sont retenus.
+- **TUBE — poignées d'étirement des tronçons droits** : une poignée sur l'axe au bout
+  de chaque tronçon droit permet de l'étirer (glisser projette le curseur sur l'axe du
+  tronçon → nouvelle longueur ; les segments suivants suivent). Longueur minimale 1 mm.
 - **GRADISC/GRADARC/GRADRULE — édition dans le panneau Propriétés** : toutes les
   propriétés du dessin (comme dans le popup de création) sont désormais modifiables
   après coup — rayon/longueur/largeur, angle & angle de départ (arc), nombre de
@@ -15,6 +22,16 @@ Format : `[version] — YYYY-MM-DD — Description`
   `pluginPropsHandler()` ; tout le code spécifique grad vit dans `gradrule.js`.
   Au passage, corrige un plantage du panneau sur `grad_disk`/`grad_arc` (le cœur
   lisait `e.r` au lieu de `e.radius`).
+
+### Modifié
+- **Icône Zoom étendu** : remplacée par 4 flèches pointant vers les coins
+  (icône « ajuster à l'écran » classique), à la place du rectangle barré d'une croix.
+
+### Corrigé
+- **Dialogue ÉDITER LE TUBE — boutons illisibles en thème clair** : couleurs codées
+  en dur remplacées par des variables de thème (boutons AXE/EXT/INT, séparateur,
+  numéros de ligne). Boutons « ✕ Cotes » et « × » de suppression en rouge adaptatif
+  (`color-mix` avec `--ink`), « Coter » en accent. Lisibles en thèmes clair et sombre.
 
 ## [0.1] — 2026-06-15
 
