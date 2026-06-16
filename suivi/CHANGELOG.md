@@ -23,6 +23,12 @@ Format : `[version] — YYYY-MM-DD — Description`
   Au passage, corrige un plantage du panneau sur `grad_disk`/`grad_arc` (le cœur
   lisait `e.r` au lieu de `e.radius`).
 
+### Corrigé
+- **Dialogue ÉDITER LE TUBE — boutons illisibles en thème clair** : couleurs codées
+  en dur remplacées par des variables de thème (boutons AXE/EXT/INT, séparateur,
+  numéros de ligne). Boutons « ✕ Cotes » et « × » de suppression en rouge adaptatif
+  (`color-mix` avec `--ink`), « Coter » en accent. Lisibles en thèmes clair et sombre.
+
 ## [0.1] — 2026-06-15
 
 ### Ajouté

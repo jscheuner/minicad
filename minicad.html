@@ -6097,9 +6097,9 @@ function openTubeEditDialog(ent) {
       <label style="display:flex;align-items:center;gap:5px;color:var(--text-dim)">Ø&nbsp;<input id="te-d" value="${data.d.toFixed(1)}" style="${inp}">&nbsp;mm</label>
       <label style="display:flex;align-items:center;gap:5px;color:var(--text-dim)">RM&nbsp;<input id="te-r" value="${(data.r || S.tubeBendRadius || 67).toFixed(1)}" style="${inp}">&nbsp;mm</label>
       <div style="display:flex;gap:3px;margin-left:auto">
-        <button id="te-ref-axe" style="${btnBase}background:${activeRef==='axe'?'var(--accent)':'#2a2a3e'};color:${activeRef==='axe'?'#000':'var(--text)'}">AXE</button>
-        <button id="te-ref-ext" style="${btnBase}background:${activeRef==='ext'?'var(--accent)':'#2a2a3e'};color:${activeRef==='ext'?'#000':'var(--text)'}">EXT</button>
-        <button id="te-ref-int" style="${btnBase}background:${activeRef==='int'?'var(--accent)':'#2a2a3e'};color:${activeRef==='int'?'#000':'var(--text)'}">INT</button>
+        <button id="te-ref-axe" style="${btnBase}background:${activeRef==='axe'?'var(--accent)':'var(--btn-bg)'};color:${activeRef==='axe'?'var(--on-accent)':'var(--text)'}">AXE</button>
+        <button id="te-ref-ext" style="${btnBase}background:${activeRef==='ext'?'var(--accent)':'var(--btn-bg)'};color:${activeRef==='ext'?'var(--on-accent)':'var(--text)'}">EXT</button>
+        <button id="te-ref-int" style="${btnBase}background:${activeRef==='int'?'var(--accent)':'var(--btn-bg)'};color:${activeRef==='int'?'var(--on-accent)':'var(--text)'}">INT</button>
       </div>
     </div>
     <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
@@ -6115,14 +6115,14 @@ function openTubeEditDialog(ent) {
     <div style="margin-bottom:10px">
       <button id="te-add" style="background:var(--btn-bg);border:1px solid var(--border);color:var(--accent);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;width:100%">+ Ajouter une section</button>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:6px 0;border-top:1px solid #334">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:6px 0;border-top:1px solid var(--border)">
       <span style="color:var(--text-dim)">Long. développée AXE</span>
       <span id="te-devlen" style="color:var(--accent);font-weight:bold">${data.totalLen.toFixed(1)} mm</span>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button id="te-cancel" style="background:var(--btn-bg);border:1px solid var(--border);color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Annuler</button>
-      <button id="te-delcote" style="background:var(--btn-bg);border:1px solid #644;color:#c88;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">✕ Cotes</button>
-      <button id="te-cote" style="background:var(--btn-bg);border:1px solid #556;color:#aac;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Coter</button>
+      <button id="te-delcote" style="background:var(--btn-bg);border:1px solid color-mix(in srgb, #e0524f 40%, var(--border));color:color-mix(in srgb, #e0524f 62%, var(--ink));padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">✕ Cotes</button>
+      <button id="te-cote" style="background:var(--btn-bg);border:1px solid color-mix(in srgb, var(--accent) 50%, var(--border));color:var(--accent);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Coter</button>
       <button id="te-preview" style="background:var(--btn-bg);border:1px solid var(--accent);color:var(--accent);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Prévisualiser</button>
       <button id="te-ok" style="background:var(--accent);border:none;color:var(--on-accent);padding:4px 14px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold">Appliquer ↵</button>
     </div>`;
@@ -6225,11 +6225,11 @@ function openTubeEditDialog(ent) {
       const delDis  = editRows.length <= 1 ? 'opacity:.3;cursor:default;' : 'cursor:pointer;';
       const domTr   = document.createElement('tr');
       domTr.innerHTML = `
-        <td style="text-align:center;color:#fff;padding:3px 6px">${i+1}</td>
+        <td style="text-align:center;color:var(--text);padding:3px 6px">${i+1}</td>
         <td style="padding:3px 4px"><input class="te-straight" value="${saisieAt(i,R,tr,activeRef).toFixed(1)}" style="${inp}"></td>
         <td style="padding:3px 4px;text-align:center">${angCell}</td>
         <td style="padding:3px 4px;text-align:right">${arcCell}</td>
-        <td style="padding:3px 4px;text-align:center"><span class="te-del" style="color:#ff5252;font-size:13px;${delDis}">×</span></td>`;
+        <td style="padding:3px 4px;text-align:center"><span class="te-del" style="color:color-mix(in srgb, #e0524f 62%, var(--ink));font-size:13px;${delDis}">×</span></td>`;
       tbody.appendChild(domTr);
 
       const strEl  = domTr.querySelector('.te-straight');
@@ -6293,8 +6293,8 @@ function openTubeEditDialog(ent) {
       activeRef = ref;
       ['axe','ext','int'].forEach(r => {
         const b = document.getElementById('te-ref-'+r);
-        b.style.background = r === ref ? 'var(--accent)' : '#2a2a3e';
-        b.style.color       = r === ref ? '#000' : 'var(--text)';
+        b.style.background = r === ref ? 'var(--accent)' : 'var(--btn-bg)';
+        b.style.color       = r === ref ? 'var(--on-accent)' : 'var(--text)';
       });
       refreshAllSaisie(); refreshArcAndTotal(); updateRefLabels();
     };
