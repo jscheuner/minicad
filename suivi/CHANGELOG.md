@@ -7,6 +7,13 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.1] — 2026-06-16 — Version courante
 
 ### Ajouté
+- **TUBE — accroche objet quadrant sur les coudes** : les points cardinaux (N/E/S/O)
+  des arcs de coude sont désormais accrochables (mode OSNAP quadrant), sur l'axe et
+  sur les deux parois (rayons R−tr, R et R+tr) — seuls les cardinaux compris dans la
+  plage angulaire de l'arc sont retenus.
+- **TUBE — poignées d'étirement des tronçons droits** : une poignée sur l'axe au bout
+  de chaque tronçon droit permet de l'étirer (glisser projette le curseur sur l'axe du
+  tronçon → nouvelle longueur ; les segments suivants suivent). Longueur minimale 1 mm.
 - **GRADISC/GRADARC/GRADRULE — édition dans le panneau Propriétés** : toutes les
   propriétés du dessin (comme dans le popup de création) sont désormais modifiables
   après coup — rayon/longueur/largeur, angle & angle de départ (arc), nombre de

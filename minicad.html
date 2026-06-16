@@ -3081,6 +3081,27 @@ function findOsnap(wx, wy) {
       check(e.cx - e.ry*sin,  e.cy + e.ry*cos,  'quadrant', e);
       check(e.cx + e.ry*sin,  e.cy - e.ry*cos,  'quadrant', e);
     }
+    if (S.osnapModes.quadrant && e.type === 'tube') {
+      // Quadrants des arcs de coude : axe (R) + parois interne (R−tr) / externe (R+tr),
+      // arcs concentriques au centre du coude. Seuls les points cardinaux dans la
+      // plage angulaire de l'arc sont retenus.
+      const tr = e.tubeRadius || 20;
+      const TWO_PI = Math.PI * 2;
+      // qa appartient-il à [lo,hi] (mod 2π) ? Robuste aux bornes négatives.
+      const inSpan = (qa, lo, hi) => {
+        let a = (qa - lo) % TWO_PI; if (a < 0) a += TWO_PI;
+        return a <= (hi - lo) + 1e-9;
+      };
+      _tubeWalkBends(e, (bcx, bcy, R, seg, aStart, aEnd) => {
+        const lo = Math.min(aStart, aEnd), hi = Math.max(aStart, aEnd);
+        for (const rr of [R - tr, R, R + tr]) {
+          if (rr <= 1e-6) continue;
+          for (const qa of [0, Math.PI/2, Math.PI, 3*Math.PI/2]) {
+            if (inSpan(qa, lo, hi)) check(bcx + rr*Math.cos(qa), bcy + rr*Math.sin(qa), 'quadrant', e);
+          }
+        }
+      });
+    }
 
     // INTERSECTION (segment-segment + cercle) — restreint à _nearbyX (curseur près du tracé)
     if (S.osnapModes.intersection && _nearbyXIdx.has(e)) {
@@ -7340,6 +7361,17 @@ function getGripPoints(e) {
     }
     case 'tube':
       gp(e.startX, e.startY, (ent, nx, ny) => { ent.startX = nx; ent.startY = ny; });
+      // Poignée d'étirement au bout de chaque tronçon droit (sur l'axe) :
+      // glisser projette le curseur sur l'axe du tronçon → nouvelle longueur
+      // (la direction reste fixe, les segments suivants suivent).
+      _tubeWalkStraights(e, (x1, y1, x2, y2, theta, si) => {
+        gp(x2, y2, (ent, nx, ny) => {
+          const seg = ent.segments[si];
+          if (!seg || seg.type !== 'straight') return;
+          const newLen = (nx - x1) * Math.cos(theta) + (ny - y1) * Math.sin(theta);
+          seg.length = Math.max(1, newLen);
+        });
+      });
       if (e.showLabel && e.labelX !== undefined) {
         // Poignée déplacement (coin haut-gauche)
         gp(e.labelX, e.labelY, (ent, nx, ny) => { ent.labelX = nx; ent.labelY = ny; });
@@ -9699,13 +9731,15 @@ canvas.addEventListener('wheel', (ev) => {
 // Extrait un segment {x1,y1,x2,y2} depuis une entité pour DIMANGULAR.
 // Retourne l'entité elle-même pour line/wall, ou le segment le plus proche pour polyline/cable.
 // Walk tube segments, call cb(x1,y1,x2,y2,theta) for each straight section axis
+// Parcourt les tronçons droits → cb(x1,y1, x2,y2, theta, segIdx).
+// segIdx = index du segment dans e.segments (utile pour éditer sa longueur).
 function _tubeWalkStraights(e, cb) {
   let cx = e.startX, cy = e.startY, theta = e.startAngle;
-  for (const seg of e.segments) {
+  e.segments.forEach((seg, si) => {
     if (seg.type === 'straight') {
       const ex = cx + seg.length * Math.cos(theta);
       const ey = cy + seg.length * Math.sin(theta);
-      cb(cx, cy, ex, ey, theta);
+      cb(cx, cy, ex, ey, theta, si);
       cx = ex; cy = ey;
     } else if (seg.type === 'bend') {
       const { angle: phi, bendRadius: R, side } = seg;
@@ -9715,10 +9749,12 @@ function _tubeWalkStraights(e, cb) {
       cx = bcx + R * Math.cos(arcEnd); cy = bcy + R * Math.sin(arcEnd);
       theta += side * phi;
     }
-  }
+  });
 }
 
-// Parcourt les coudes du tube → centre d'arc (bcx,bcy), rayon R, segment
+// Parcourt les coudes du tube → cb(bcx,bcy, R, seg, aStart, aEnd).
+// (bcx,bcy)=centre d'arc, R=rayon de l'axe, aStart/aEnd=angles (depuis le centre)
+// du début/fin de l'arc, en coords monde (sens trigo ; aEnd<aStart si coude horaire).
 function _tubeWalkBends(e, cb) {
   let cx = e.startX, cy = e.startY, theta = e.startAngle;
   for (const seg of e.segments) {
@@ -9728,9 +9764,10 @@ function _tubeWalkBends(e, cb) {
       const { angle: phi, bendRadius: R, side } = seg;
       const bcx = cx - side * R * Math.sin(theta);
       const bcy = cy + side * R * Math.cos(theta);
-      cb(bcx, bcy, R, seg);
-      const arcEnd = (theta - side * Math.PI / 2) + side * phi;
-      cx = bcx + R * Math.cos(arcEnd); cy = bcy + R * Math.sin(arcEnd);
+      const aStart = theta - side * Math.PI / 2;
+      const aEnd   = aStart + side * phi;
+      cb(bcx, bcy, R, seg, aStart, aEnd);
+      cx = bcx + R * Math.cos(aEnd); cy = bcy + R * Math.sin(aEnd);
       theta += side * phi;
     }
   }
