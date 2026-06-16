@@ -8343,6 +8343,20 @@ function drawPolyArcSegToPath(p1w, p2w, bulge) {
   ctx.arc(cxs, cys, rs, sa, ea, (b > 0) !== (Math.abs(b) > 1));
 }
 
+// Une entité est joignable (JOIN) si c'est une ligne / arc / polyligne / câble,
+// ou un ARC d'ellipse (pas une ellipse complète, qui forme une boucle fermée sans
+// extrémités à raccorder). Les arcs d'ellipse sont échantillonnés en segments droits
+// au moment du JOIN (la polyligne ne stocke que des arcs circulaires via bulge).
+function isJoinableEntity(e) {
+  if (!e) return false;
+  if (['line','wall','arc','polyline','cable'].includes(e.type)) return true;
+  if (e.type === 'ellipse' && e.startAngle !== undefined && e.endAngle !== undefined) {
+    const span = ((e.endAngle - e.startAngle) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
+    return span > 1e-6;  // exclut l'ellipse complète (360°)
+  }
+  return false;
+}
+
 function applyJoin() {
   const TOL = 1;
   const ents = S.joinSelection.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
@@ -8354,6 +8368,10 @@ function applyJoin() {
       s:[e.cx+e.r*Math.cos(e.startAngle), e.cy+e.r*Math.sin(e.startAngle)],
       e:[e.cx+e.r*Math.cos(e.endAngle),   e.cy+e.r*Math.sin(e.endAngle)]
     };
+    if (e.type==='ellipse') {
+      const el = {cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0};
+      return { s: ellipsePoint(el, e.startAngle), e: ellipsePoint(el, e.endAngle) };
+    }
     const p = e.points; return {s:p[0], e:p[p.length-1]};
   }
   function close(a,b){ return Math.hypot(a[0]-b[0],a[1]-b[1]) < TOL; }
@@ -8370,6 +8388,16 @@ function applyJoin() {
       const sign = ((e.cx - midX) * perpX + (e.cy - midY) * perpY) >= 0 ? 1 : -1;
       const b = sign * absBulge;
       return [[sx, sy, b], [ex, ey]];
+    }
+    if (e.type==='ellipse') {
+      // Arc d'ellipse → segments de droite (lissage ~5°/segment), comme au rendu.
+      const el = {cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0, sa:e.startAngle, ea:e.endAngle};
+      let sa=e.startAngle, ea=e.endAngle; while(ea<sa) ea+=Math.PI*2;
+      const n = Math.max(8, Math.ceil((ea-sa)/(Math.PI/36)));
+      const segs = ellipseSampleSegs(el, n);
+      const pts = [[segs[0][0], segs[0][1]]];
+      for (const sg of segs) pts.push([sg[2], sg[3]]);
+      return pts;
     }
     return e.points.map(p=>[...p]);
   }
@@ -9521,7 +9549,6 @@ canvas.addEventListener('mousedown', (ev) => {
 
   // JOIN mode : clic sur entité → toggle ; clic dans le vide → rubber band
   if (ev.button === 0 && S.tool === 'join') {
-    const supported = ['line','wall','arc','polyline','cable'];
     S._selectHitOnMousedown = false;
     if (isRubberBand) {
       // 2ème clic → finalise le rubber band
@@ -9530,7 +9557,7 @@ canvas.addEventListener('mousedown', (ev) => {
       const minX = Math.min(rbStart.wx, wx), maxX = Math.max(rbStart.wx, wx);
       const minY = Math.min(rbStart.wy, wy), maxY = Math.max(rbStart.wy, wy);
       const found = S.entities.filter(e =>
-        S.layers[e.layer]?.visible && supported.includes(e.type) &&
+        S.layers[e.layer]?.visible && isJoinableEntity(e) &&
         entityInRect(e, minX, minY, maxX, maxY, isWin)
       );
       found.forEach(e => { if (!S.joinSelection.includes(e.id)) S.joinSelection.push(e.id); });
@@ -9541,7 +9568,7 @@ canvas.addEventListener('mousedown', (ev) => {
       render();
     } else {
       const hit = hitTest(wx, wy);
-      if (hit && supported.includes(hit.type)) {
+      if (hit && isJoinableEntity(hit)) {
         S._selectHitOnMousedown = true;
         const idx = S.joinSelection.indexOf(hit.id);
         if (idx >= 0) {

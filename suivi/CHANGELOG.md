@@ -7,6 +7,10 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.1] — 2026-06-16 — Version courante
 
 ### Ajouté
+- **JOIN — prise en charge des arcs d'ellipse** : un arc d'ellipse peut désormais être
+  joint à des lignes/arcs/polylignes. Comme une polyligne ne stocke que des arcs
+  circulaires (bulge), l'arc d'ellipse est échantillonné en segments de droite (~5°
+  par segment, fidèle au tracé). L'ellipse complète (360°) reste exclue (boucle fermée).
 - **TUBE — accroche objet quadrant sur les coudes** : les points cardinaux (N/E/S/O)
   des arcs de coude sont désormais accrochables (mode OSNAP quadrant), sur l'axe et
   sur les deux parois (rayons R−tr, R et R+tr) — seuls les cardinaux compris dans la
