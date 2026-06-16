@@ -560,6 +560,91 @@ const GRADRULE_SNAP_HANDLERS = {
   }
 };
 
+// ======== PROPRIÉTÉS (panneau Propriétés — via pluginPropsHandler) ========
+// Chaque handler reçoit (e, {row, inp, id}) et renvoie une chaîne HTML de lignes
+// .prop-row éditables. `inp(field,val)` câble le _propChange générique du cœur
+// (champs numériques/texte directs). Les champs en % (gradScale/textScale) et le
+// sens (reverse) passent par des handlers dédiés exposés sur window (ci-dessous),
+// car les onchange inline sont résolus dans le scope global.
+// On expose ici TOUTES les propriétés du dessin (comme dans le popup de création)
+// + la position (CX/CY ou X/Y) et la rotation, qui définissent aussi le tracé.
+const GRADRULE_PROPS_HANDLERS = {
+  grad_disk: function(e, ui) {
+    const { row, inp, id } = ui;
+    let s  = row('CX', inp('cx', e.cx.toFixed(2)));
+    s += row('CY', inp('cy', e.cy.toFixed(2)));
+    s += row('Rayon', inp('radius', (e.radius || 0).toFixed(2)));
+    s += row('Graduations', inp('count', e.count ?? 100));
+    s += row('Label tous les', inp('labelEvery', e.labelEvery ?? 10));
+    s += row('Taille grad.', _gradPctInput(id, 'gradScale', e.gradScale));
+    s += row('Taille texte', _gradPctInput(id, 'textScale', e.textScale));
+    s += row('Rotation (°)', inp('rotation', (e.rotation || 0)));
+    s += row('Sens', _gradRevSelect(id, e.reverse, 'Horaire ↻', 'Antihoraire ↺'));
+    return s;
+  },
+  grad_arc: function(e, ui) {
+    const { row, inp, id } = ui;
+    let s  = row('CX', inp('cx', e.cx.toFixed(2)));
+    s += row('CY', inp('cy', e.cy.toFixed(2)));
+    s += row('Rayon', inp('radius', (e.radius || 0).toFixed(2)));
+    s += row('Angle (°)', inp('spanAngle', e.spanAngle ?? 180));
+    s += row('Angle départ (°)', inp('startAngle', e.startAngle || 0));
+    s += row('Graduations', inp('count', e.count ?? 50));
+    s += row('Label tous les', inp('labelEvery', e.labelEvery ?? 5));
+    s += row('Taille grad.', _gradPctInput(id, 'gradScale', e.gradScale));
+    s += row('Taille texte', _gradPctInput(id, 'textScale', e.textScale));
+    s += row('Sens', _gradRevSelect(id, e.reverse, 'Antihoraire ↺', 'Horaire ↻'));
+    return s;
+  },
+  grad_ruler: function(e, ui) {
+    const { row, inp, id } = ui;
+    let s  = row('X', inp('x', e.x.toFixed(2)));
+    s += row('Y', inp('y', e.y.toFixed(2)));
+    s += row('Longueur', inp('length', (e.length || 0).toFixed(2)));
+    s += row('Largeur', inp('width', (e.width || 0).toFixed(2)));
+    s += row('Graduations', inp('count', e.count ?? 100));
+    s += row('Label tous les', inp('labelEvery', e.labelEvery ?? 10));
+    s += row('Taille grad.', _gradPctInput(id, 'gradScale', e.gradScale));
+    s += row('Taille texte', _gradPctInput(id, 'textScale', e.textScale));
+    s += row('Rotation (°)', inp('rotation', (e.rotation || 0)));
+    s += row('Sens', _gradRevSelect(id, e.reverse, '0 à gauche →', '0 à droite ←'));
+    return s;
+  }
+};
+
+// — Helpers exposés sur window (appelés depuis les onchange inline du panneau) —
+
+// Champ pourcentage pour les échelles (stockées en ratio : 1 = 100 %).
+function _gradPctInput(id, field, ratio) {
+  const pct = Math.round((ratio == null ? 1 : ratio) * 100);
+  return '<input type="number" class="prop-input" step="any" value="' + pct +
+         '" onchange="_gradPropScale(' + id + ',\'' + field + '\',this.value)" />' +
+         '<span style="color:var(--text-dim);font-size:10px;margin-left:2px">%</span>';
+}
+window._gradPropScale = function(id, field, valPct) {
+  const e = S.entities.find(en => en.id === id);
+  if (!e) return;
+  const n = parseFloat(valPct);
+  if (isNaN(n) || n <= 0) return;
+  pushUndo();
+  e[field] = n / 100;
+  render(); autoSave();
+};
+
+// Sélecteur de sens (reverse) avec libellés propres au type.
+function _gradRevSelect(id, reverse, lbl0, lbl1) {
+  return '<select class="prop-select" onchange="_gradPropReverse(' + id + ',this.value)">' +
+    '<option value="false"' + (!reverse ? ' selected' : '') + '>' + lbl0 + '</option>' +
+    '<option value="true"'  + ( reverse ? ' selected' : '') + '>' + lbl1 + '</option></select>';
+}
+window._gradPropReverse = function(id, val) {
+  const e = S.entities.find(en => en.id === id);
+  if (!e) return;
+  pushUndo();
+  e.reverse = (val === 'true' || val === true);
+  render(); autoSave();
+};
+
 // ======== HTML POPUP (à injecter dans HTML) ========
 // Style du bouton d'inversion de sens (auto-contenu, pas de CSS dans minicad.html)
 const GRADRULE_REV_BTN_STYLE = 'flex:1;cursor:pointer;background:var(--input-bg);border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);border-radius:4px;color:var(--text);padding:3px 6px;font-size:11px';
@@ -660,6 +745,7 @@ window.GRADRULE_PLUGIN = {
   gripHandlers: GRADRULE_GRIP_HANDLERS,
   transformHandlers: GRADRULE_TRANSFORM_HANDLERS,
   snapHandlers: GRADRULE_SNAP_HANDLERS,
+  propsHandlers: GRADRULE_PROPS_HANDLERS,
   html: GRADRULE_HTML,
   init: function() {
     // Injecter le HTML du popup

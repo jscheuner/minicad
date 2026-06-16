@@ -12952,6 +12952,12 @@ function _updatePropertiesSingle(e) {
     '</select>';
   h += row('Calque', layerSel);
   h += _propStyleRows('['+id+']', e.color || S.layers[e.layer]?.color || '#00d4ff', e.color !== undefined, e.lineType, e.lineWidth);
+  // Entités de plugin (grad_disk, grad_arc, grad_ruler…) : le plugin fournit
+  // l'intégralité de ses lignes de géométrie éditables (cf. propsHandlers).
+  const _phRows = pluginPropsHandler(e.type);
+  if (_phRows) {
+    h += _phRows(e, { row, inp, id });
+  } else {
   if (e.x1 !== undefined) {
     h += row('X1', inp('x1', e.x1.toFixed(2)));
     h += row('Y1', inp('y1', e.y1.toFixed(2)));
@@ -13012,6 +13018,7 @@ function _updatePropertiesSingle(e) {
     if (e.profileStandard) h += row('Norme', '<span class="prop-value">'+e.profileStandard+'</span>');
     if (e.profileG != null) h += row('Poids/m', '<span class="prop-value">'+e.profileG+' kg/m</span>');
   }
+  }  // fin du bloc géométrie générique (cœur)
   // Mesures calculées (longueur/périmètre/circonférence + aire)
   const _len = computeEntityPerimeter(e);
   if (_len != null && e.type !== 'line' && e.type !== 'wall')   // ligne/mur ont déjà « Longueur »
@@ -18202,6 +18209,17 @@ function pluginTransformHandler(type) {
 function pluginSnapHandler(type) {
   for (const [name, plugin] of Object.entries(PLUGINS)) {
     if (plugin.snapHandlers && plugin.snapHandlers[type]) return plugin.snapHandlers[type];
+  }
+  return null;
+}
+
+// Retourne le handler de propriétés d'un type d'entité de plugin (ou null).
+// Le handler reçoit (e, ctx) avec ctx = { row, inp, id } (helpers du panneau) et
+// renvoie une chaîne HTML de lignes .prop-row décrivant toute la géométrie éditable
+// de l'entité. S'il existe, le panneau lui délègue entièrement les lignes de géométrie.
+function pluginPropsHandler(type) {
+  for (const [name, plugin] of Object.entries(PLUGINS)) {
+    if (plugin.propsHandlers && plugin.propsHandlers[type]) return plugin.propsHandlers[type];
   }
   return null;
 }
