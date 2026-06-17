@@ -305,7 +305,7 @@
     border-radius: 8px; box-shadow: 0 8px 28px #000000aa; display: none; overflow: hidden;
   }
   #tb-palette.tb-drop-hover { outline: 2px solid var(--accent); }
-  .tb-pal-head { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); flex-wrap: wrap; }
+  .tb-pal-head { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); flex-wrap: wrap; cursor: move; user-select: none; }
   .tb-pal-head b { flex: 1; font-size: 12px; }
   .tb-pal-head button { background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent); border-radius: 4px; color: var(--text); cursor: pointer; font-size: 11px; padding: 3px 8px; }
   .tb-pal-head button:hover { border-color: var(--accent); color: var(--accent); }
@@ -1014,10 +1014,21 @@
   .terminal {
     height: 160px;
     background: var(--bg-terminal);
-    border-top: 2px solid var(--accent);
+    border-top: none;
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
+  }
+  .terminal-resize-handle {
+    height: 5px;
+    cursor: ns-resize;
+    flex-shrink: 0;
+    background: var(--accent);
+    opacity: 0.35;
+    transition: opacity 0.15s;
+  }
+  .terminal-resize-handle:hover, .terminal-resize-handle.dragging {
+    opacity: 0.8;
   }
 
   .terminal-header {
@@ -1351,6 +1362,7 @@
         <div class="menu-dropdown-item" onclick="executeCommand('FILLET');closeMenus()"><span>Raccord (F)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('CHAMFER');closeMenus()"><span>Chanfrein (CHA)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('JOIN');closeMenus()"><span>Joindre en polyligne (J)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('SMOOTH');closeMenus()"><span>Lisser (polyligne)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('STRETCH');closeMenus()"><span>Étirer (ET)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('DIVIDE');closeMenus()"><span>Diviser (DIV)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('DIMCENTER');closeMenus()"><span>Axes de cercle</span></div>
@@ -1828,7 +1840,7 @@
     </div>
     <div class="tb-buttons">
       <button class="tool-btn" title="Zoom Étendue" onclick="zoomExtents()">
-        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+        <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 4 L4 4 L4 10 M4 4 L10 10 M14 4 L20 4 L20 10 M20 4 L14 10 M4 14 L4 20 L10 20 M4 20 L10 14 M20 14 L20 20 L14 20 M20 20 L14 14"/></svg>
       </button>
       <button class="tool-btn" data-tool="pan" title="Panoramique" onclick="setTool('pan')">
         <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="3" fill="none"/></svg>
@@ -2437,8 +2449,11 @@
   </div>
 </div>
 
+<!-- TERMINAL RESIZE HANDLE (sibling du terminal, pas à l'intérieur) -->
+<div class="terminal-resize-handle" id="terminal-resize-handle"></div>
+
 <!-- TERMINAL -->
-<div class="terminal">
+<div class="terminal" id="terminal">
   <div class="terminal-header">
     <div class="terminal-tab active">Commandes</div>
     <div class="terminal-tab" onclick="termPrint('Historique: ' + S.entities.length + ' objets au total', 'info')">Historique</div>
@@ -2481,6 +2496,7 @@ const USER_PREFS = {
   defaultLayers: null,
   toolbarLayout: null,
   loadedPlugins: null,
+  terminalHeight: 160,
 };
 // ===USER_PREFS_END===
 
@@ -3081,6 +3097,27 @@ function findOsnap(wx, wy) {
       check(e.cx - e.ry*sin,  e.cy + e.ry*cos,  'quadrant', e);
       check(e.cx + e.ry*sin,  e.cy - e.ry*cos,  'quadrant', e);
     }
+    if (S.osnapModes.quadrant && e.type === 'tube') {
+      // Quadrants des arcs de coude : axe (R) + parois interne (R−tr) / externe (R+tr),
+      // arcs concentriques au centre du coude. Seuls les points cardinaux dans la
+      // plage angulaire de l'arc sont retenus.
+      const tr = e.tubeRadius || 20;
+      const TWO_PI = Math.PI * 2;
+      // qa appartient-il à [lo,hi] (mod 2π) ? Robuste aux bornes négatives.
+      const inSpan = (qa, lo, hi) => {
+        let a = (qa - lo) % TWO_PI; if (a < 0) a += TWO_PI;
+        return a <= (hi - lo) + 1e-9;
+      };
+      _tubeWalkBends(e, (bcx, bcy, R, seg, aStart, aEnd) => {
+        const lo = Math.min(aStart, aEnd), hi = Math.max(aStart, aEnd);
+        for (const rr of [R - tr, R, R + tr]) {
+          if (rr <= 1e-6) continue;
+          for (const qa of [0, Math.PI/2, Math.PI, 3*Math.PI/2]) {
+            if (inSpan(qa, lo, hi)) check(bcx + rr*Math.cos(qa), bcy + rr*Math.sin(qa), 'quadrant', e);
+          }
+        }
+      });
+    }
 
     // INTERSECTION (segment-segment + cercle) — restreint à _nearbyX (curseur près du tracé)
     if (S.osnapModes.intersection && _nearbyXIdx.has(e)) {
@@ -3201,6 +3238,10 @@ function findOsnap(wx, wy) {
         }
       }
     }
+
+    // Accroche objet pour entités plugin (grad_disk, grad_arc, grad_ruler…)
+    const _sh = pluginSnapHandler(e.type);
+    if (_sh) _sh(e, wx, wy, check, S.osnapModes);
   }
 
   // OSNAP sur la polyligne/ligne en cours de tracé (drawPoints pas encore dans S.entities)
@@ -3824,6 +3865,16 @@ const CMD = {
     termPrint('JOIN — Cliquer les entités à joindre, Entrée pour confirmer (Echap=fin)','info');
     setTimeout(smartFocus,0);
   }},
+  SMOOTH: { alias: ['LISSER','LISSAGE'], desc: 'Lisser une polyligne (Catmull-Rom — augmente la précision)', exec() {
+    const polys = S.selected.map(id => S.entities.find(e => e.id === id))
+                            .filter(e => e && (e.type === 'polyline' || e.type === 'cable'));
+    if (!polys.length) { termPrint('LISSER — sélectionnez d\'abord une ou plusieurs polylignes','warning'); return; }
+    showValuePopup({
+      title: 'Lissage de polyligne', label: 'Points / segment', value: S.smoothLevel || 8,
+      okLabel: 'Lisser ↵',
+      onOk: v => { S.smoothLevel = Math.max(2, Math.round(v)); applySmooth(polys, S.smoothLevel); }
+    });
+  }},
   MATCHPROP: { alias: ['MA','MATCH','COPIERPROP','COPIERPROPRIETES','PINCEAU'], desc: 'Copier les propriétés d\'un objet vers d\'autres', exec() {
     S.matchSource=null; setTool('matchprop');
     termPrint('COPIER PROPRIÉTÉS — cliquez l\'objet source','info');
@@ -4067,7 +4118,7 @@ const CMD = {
     render();
   }},
   EXPLODE: { alias: ['X','ECLATER','ÉCLATER'], desc: 'Éclater un bloc, polyligne ou tube en primitives', exec: () => {
-    const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && (e.type === 'block' || e.type === 'polyline' || e.type === 'cable' || e.type === 'tube' || e.type === 'rect'));
+    const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && (e.type === 'block' || e.type === 'polyline' || e.type === 'cable' || e.type === 'tube' || e.type === 'rect' || pluginExplodeHandler(e.type)));
     if (!targets.length) {
       S.explodePending = true; setTool('select');
       termPrint('ÉCLATER: Sélectionner les objets à éclater, puis Entrée', 'warning'); return;
@@ -4137,6 +4188,15 @@ const CMD = {
           S.entities.push(line); newIds.push(line.id);
         });
         termPrint('Rectangle → 4 lignes', 'success');
+      } else if (pluginExplodeHandler(ent.type)) {
+        // Entité de plugin (ex. disque/règle gradué) → primitives natives
+        const parts = pluginExplodeHandler(ent.type)(ent) || [];
+        parts.forEach(p => {
+          if (p.layer === undefined) p.layer = ent.layer;
+          p.id = S.nextId++;
+          S.entities.push(p); newIds.push(p.id);
+        });
+        termPrint(ent.type + ' → ' + parts.length + ' entités', 'success');
       } else {
         // polyline / cable → lignes + arcs individuels (bulge → arc) — même logique que le rendu
         const pts = ent.points;
@@ -4318,7 +4378,7 @@ function getEntityBBox(e, tight) {
                minY:e.vy-armR-pad, maxY:e.vy+armR+pad };
     }
     case 'xline': case 'ray':
-      return { minX:e.x, maxX:e.x, minY:e.y, maxY:e.y };
+      return null; // infinies → jamais culled (null ⇒ _inViewport renvoie true)
     case 'polyline': case 'cable': case 'hatch': case 'spline': {
       if (!e.points?.length) return null;
       let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
@@ -4362,12 +4422,16 @@ function getEntityBBox(e, tight) {
       });
       return x0===Infinity ? null : { minX:x0, maxX:x1, minY:y0, maxY:y1 };
     }
-    default:
+    default: {
+      // Entités de plugin : utiliser le handler de bbox exact s'il existe
+      const pb = (typeof invokePluginBbox === 'function') ? invokePluginBbox(e.type, e) : null;
+      if (pb) return { minX:pb.xmin-pad, maxX:pb.xmax+pad, minY:pb.ymin-pad, maxY:pb.ymax+pad };
       if (e.cx!==undefined) return { minX:e.cx-80, maxX:e.cx+80, minY:e.cy-80, maxY:e.cy+80 };
       if (e.x !==undefined) return { minX:e.x-10,  maxX:e.x+300, minY:e.y-30,  maxY:e.y+30  };
       if (e.x1!==undefined) return { minX:Math.min(e.x1,e.x2)-pad, maxX:Math.max(e.x1,e.x2)+pad,
                                      minY:Math.min(e.y1,e.y2)-pad, maxY:Math.max(e.y1,e.y2)+pad };
       return null;
+    }
   }
 }
 
@@ -4417,9 +4481,11 @@ function _drawStaticLayer() {
   const vp = { minX:Math.min(vpx0,vpx1), maxX:Math.max(vpx0,vpx1),
                minY:Math.min(vpy0,vpy1), maxY:Math.max(vpy0,vpy1) };
 
-  // Entités (toutes — les surbrillances sont ajoutées dessus dans la couche dynamique)
+  // Entités non-sélectionnées — les entités sélectionnées sont redessinées en surbrillance
+  // par la couche dynamique ; les exclure ici évite le fantôme résiduel après un déplacement.
   S.entities.forEach(e => {
     if (!S.layers[e.layer]?.visible) return;
+    if (S.selected.includes(e.id)) return;
     if (!_inViewport(getEntityBBox(e), vp)) return;
     const layer = S.layers[e.layer];
     const color = dispColor(e.color || layer?.color || '#00d4ff');
@@ -6057,9 +6123,9 @@ function openTubeEditDialog(ent) {
       <label style="display:flex;align-items:center;gap:5px;color:var(--text-dim)">Ø&nbsp;<input id="te-d" value="${data.d.toFixed(1)}" style="${inp}">&nbsp;mm</label>
       <label style="display:flex;align-items:center;gap:5px;color:var(--text-dim)">RM&nbsp;<input id="te-r" value="${(data.r || S.tubeBendRadius || 67).toFixed(1)}" style="${inp}">&nbsp;mm</label>
       <div style="display:flex;gap:3px;margin-left:auto">
-        <button id="te-ref-axe" style="${btnBase}background:${activeRef==='axe'?'var(--accent)':'#2a2a3e'};color:${activeRef==='axe'?'#000':'var(--text)'}">AXE</button>
-        <button id="te-ref-ext" style="${btnBase}background:${activeRef==='ext'?'var(--accent)':'#2a2a3e'};color:${activeRef==='ext'?'#000':'var(--text)'}">EXT</button>
-        <button id="te-ref-int" style="${btnBase}background:${activeRef==='int'?'var(--accent)':'#2a2a3e'};color:${activeRef==='int'?'#000':'var(--text)'}">INT</button>
+        <button id="te-ref-axe" style="${btnBase}background:${activeRef==='axe'?'var(--accent)':'var(--btn-bg)'};color:${activeRef==='axe'?'var(--on-accent)':'var(--text)'}">AXE</button>
+        <button id="te-ref-ext" style="${btnBase}background:${activeRef==='ext'?'var(--accent)':'var(--btn-bg)'};color:${activeRef==='ext'?'var(--on-accent)':'var(--text)'}">EXT</button>
+        <button id="te-ref-int" style="${btnBase}background:${activeRef==='int'?'var(--accent)':'var(--btn-bg)'};color:${activeRef==='int'?'var(--on-accent)':'var(--text)'}">INT</button>
       </div>
     </div>
     <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
@@ -6075,14 +6141,14 @@ function openTubeEditDialog(ent) {
     <div style="margin-bottom:10px">
       <button id="te-add" style="background:var(--btn-bg);border:1px solid var(--border);color:var(--accent);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;width:100%">+ Ajouter une section</button>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:6px 0;border-top:1px solid #334">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:6px 0;border-top:1px solid var(--border)">
       <span style="color:var(--text-dim)">Long. développée AXE</span>
       <span id="te-devlen" style="color:var(--accent);font-weight:bold">${data.totalLen.toFixed(1)} mm</span>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button id="te-cancel" style="background:var(--btn-bg);border:1px solid var(--border);color:var(--text);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Annuler</button>
-      <button id="te-delcote" style="background:var(--btn-bg);border:1px solid #644;color:#c88;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">✕ Cotes</button>
-      <button id="te-cote" style="background:var(--btn-bg);border:1px solid #556;color:#aac;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Coter</button>
+      <button id="te-delcote" style="background:var(--btn-bg);border:1px solid color-mix(in srgb, #e0524f 40%, var(--border));color:color-mix(in srgb, #e0524f 62%, var(--ink));padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">✕ Cotes</button>
+      <button id="te-cote" style="background:var(--btn-bg);border:1px solid color-mix(in srgb, var(--accent) 50%, var(--border));color:var(--accent);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Coter</button>
       <button id="te-preview" style="background:var(--btn-bg);border:1px solid var(--accent);color:var(--accent);padding:4px 12px;border-radius:3px;cursor:pointer;font-size:11px">Prévisualiser</button>
       <button id="te-ok" style="background:var(--accent);border:none;color:var(--on-accent);padding:4px 14px;border-radius:3px;cursor:pointer;font-size:11px;font-weight:bold">Appliquer ↵</button>
     </div>`;
@@ -6185,11 +6251,11 @@ function openTubeEditDialog(ent) {
       const delDis  = editRows.length <= 1 ? 'opacity:.3;cursor:default;' : 'cursor:pointer;';
       const domTr   = document.createElement('tr');
       domTr.innerHTML = `
-        <td style="text-align:center;color:#fff;padding:3px 6px">${i+1}</td>
+        <td style="text-align:center;color:var(--text);padding:3px 6px">${i+1}</td>
         <td style="padding:3px 4px"><input class="te-straight" value="${saisieAt(i,R,tr,activeRef).toFixed(1)}" style="${inp}"></td>
         <td style="padding:3px 4px;text-align:center">${angCell}</td>
         <td style="padding:3px 4px;text-align:right">${arcCell}</td>
-        <td style="padding:3px 4px;text-align:center"><span class="te-del" style="color:#ff5252;font-size:13px;${delDis}">×</span></td>`;
+        <td style="padding:3px 4px;text-align:center"><span class="te-del" style="color:color-mix(in srgb, #e0524f 62%, var(--ink));font-size:13px;${delDis}">×</span></td>`;
       tbody.appendChild(domTr);
 
       const strEl  = domTr.querySelector('.te-straight');
@@ -6253,8 +6319,8 @@ function openTubeEditDialog(ent) {
       activeRef = ref;
       ['axe','ext','int'].forEach(r => {
         const b = document.getElementById('te-ref-'+r);
-        b.style.background = r === ref ? 'var(--accent)' : '#2a2a3e';
-        b.style.color       = r === ref ? '#000' : 'var(--text)';
+        b.style.background = r === ref ? 'var(--accent)' : 'var(--btn-bg)';
+        b.style.color       = r === ref ? 'var(--on-accent)' : 'var(--text)';
       });
       refreshAllSaisie(); refreshArcAndTotal(); updateRefLabels();
     };
@@ -7321,6 +7387,17 @@ function getGripPoints(e) {
     }
     case 'tube':
       gp(e.startX, e.startY, (ent, nx, ny) => { ent.startX = nx; ent.startY = ny; });
+      // Poignée d'étirement au bout de chaque tronçon droit (sur l'axe) :
+      // glisser projette le curseur sur l'axe du tronçon → nouvelle longueur
+      // (la direction reste fixe, les segments suivants suivent).
+      _tubeWalkStraights(e, (x1, y1, x2, y2, theta, si) => {
+        gp(x2, y2, (ent, nx, ny) => {
+          const seg = ent.segments[si];
+          if (!seg || seg.type !== 'straight') return;
+          const newLen = (nx - x1) * Math.cos(theta) + (ny - y1) * Math.sin(theta);
+          seg.length = Math.max(1, newLen);
+        });
+      });
       if (e.showLabel && e.labelX !== undefined) {
         // Poignée déplacement (coin haut-gauche)
         gp(e.labelX, e.labelY, (ent, nx, ny) => { ent.labelX = nx; ent.labelY = ny; });
@@ -7344,8 +7421,12 @@ function getGripPoints(e) {
       }
       break;
     }
-    default:
-      if (e.x !== undefined) gp(e.x, e.y, (ent, nx, ny) => { ent.x = nx; ent.y = ny; });
+    default: {
+      // Entités de plugin : poignées déléguées au plugin (ex. disque/règle/arc gradué)
+      const gh = pluginGripHandler(e.type);
+      if (gh) { (gh(e) || []).forEach(g => gp(g.x, g.y, g.apply)); }
+      else if (e.x !== undefined) gp(e.x, e.y, (ent, nx, ny) => { ent.x = nx; ent.y = ny; });
+    }
   }
   return grips;
 }
@@ -8288,10 +8369,37 @@ function drawPolyArcSegToPath(p1w, p2w, bulge) {
   ctx.arc(cxs, cys, rs, sa, ea, (b > 0) !== (Math.abs(b) > 1));
 }
 
-function applyJoin() {
+// Une entité est joignable (JOIN) si c'est une ligne / arc / polyligne / câble,
+// ou un ARC d'ellipse (pas une ellipse complète, qui forme une boucle fermée sans
+// extrémités à raccorder). Les arcs d'ellipse sont échantillonnés en segments droits
+// au moment du JOIN (la polyligne ne stocke que des arcs circulaires via bulge).
+function isJoinableEntity(e) {
+  if (!e) return false;
+  if (['line','wall','arc','polyline','cable'].includes(e.type)) return true;
+  if (e.type === 'ellipse' && e.startAngle !== undefined && e.endAngle !== undefined) {
+    const span = ((e.endAngle - e.startAngle) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
+    return span > 1e-6;  // exclut l'ellipse complète (360°)
+  }
+  return false;
+}
+
+function applyJoin(ellipseSegs) {
   const TOL = 1;
   const ents = S.joinSelection.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
   if (ents.length < 2) { termPrint('Sélectionner au moins 2 entités à joindre', 'warning'); return; }
+  // Arc d'ellipse dans la sélection → demander la précision (nombre de segments)
+  // avant de joindre (un seul popup ; la valeur s'applique à tous les arcs d'ellipse).
+  const hasEllipseArc = ents.some(e => e.type === 'ellipse');
+  if (hasEllipseArc && ellipseSegs === undefined) {
+    showValuePopup({
+      title: "Précision de l'arc d'ellipse",
+      label: 'Segments', value: S.joinEllipseSegs || 32,
+      okLabel: 'Joindre ↵',
+      onOk: v => { S.joinEllipseSegs = Math.max(2, Math.round(v)); applyJoin(S.joinEllipseSegs); }
+    });
+    return;
+  }
+  const ellSegN = Math.max(2, Math.round(ellipseSegs || 32));
 
   function endpts(e) {
     if (e.type==='line'||e.type==='wall') return {s:[e.x1,e.y1], e:[e.x2,e.y2]};
@@ -8299,6 +8407,10 @@ function applyJoin() {
       s:[e.cx+e.r*Math.cos(e.startAngle), e.cy+e.r*Math.sin(e.startAngle)],
       e:[e.cx+e.r*Math.cos(e.endAngle),   e.cy+e.r*Math.sin(e.endAngle)]
     };
+    if (e.type==='ellipse') {
+      const el = {cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0};
+      return { s: ellipsePoint(el, e.startAngle), e: ellipsePoint(el, e.endAngle) };
+    }
     const p = e.points; return {s:p[0], e:p[p.length-1]};
   }
   function close(a,b){ return Math.hypot(a[0]-b[0],a[1]-b[1]) < TOL; }
@@ -8315,6 +8427,14 @@ function applyJoin() {
       const sign = ((e.cx - midX) * perpX + (e.cy - midY) * perpY) >= 0 ? 1 : -1;
       const b = sign * absBulge;
       return [[sx, sy, b], [ex, ey]];
+    }
+    if (e.type==='ellipse') {
+      // Arc d'ellipse → segments de droite (lissage ~5°/segment), comme au rendu.
+      const el = {cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0, sa:e.startAngle, ea:e.endAngle};
+      const segs = ellipseSampleSegs(el, ellSegN);
+      const pts = [[segs[0][0], segs[0][1]]];
+      for (const sg of segs) pts.push([sg[2], sg[3]]);
+      return pts;
     }
     return e.points.map(p=>[...p]);
   }
@@ -8377,6 +8497,87 @@ function applyJoin() {
   termPrint('JOIN — '+chain.length+' entités fusionnées'+(closed?' (fermée)':''),'success');
   S.joinSelection=[]; S.selected=[]; setTool('select');
   updateSaveIndicator('modified'); autoSave(); render();
+}
+
+// Popup numérique générique (réutilise le style .tube-def-popup).
+// opts: { title, label, value, unit, okLabel, onOk(value) }. Accepte les expressions math.
+function showValuePopup(opts) {
+  const old = document.getElementById('value-popup');
+  if (old) old.remove();
+  const p = document.createElement('div');
+  p.className = 'tube-def-popup';
+  p.id = 'value-popup';
+  p.innerHTML =
+    '<div class="tdp-title">'+(opts.title||'')+'</div>'+
+    '<div class="tdp-row"><span class="tdp-lbl">'+(opts.label||'Valeur')+'</span>'+
+      '<input type="text" inputmode="decimal" id="vp-input" value="'+(opts.value!=null?opts.value:'')+'">'+
+      '<span class="tdp-unit">'+(opts.unit||'')+'</span></div>'+
+    '<div style="display:flex;gap:6px;margin-top:8px">'+
+      '<button class="tdp-ok" id="vp-ok">'+(opts.okLabel||'OK ↵')+'</button>'+
+      '<button class="tdp-cancel" id="vp-cancel">Annuler</button></div>';
+  document.body.appendChild(p);
+  p.classList.add('show');
+  const inp = p.querySelector('#vp-input');
+  const close = () => p.remove();
+  const ok = () => {
+    const raw = inp.value.trim();
+    const v = (safeEvalMath(raw) ?? parseFloat(raw));
+    if (v == null || isNaN(v)) { inp.style.borderColor = '#e0524f'; return; }
+    close(); opts.onOk(v);
+  };
+  p.querySelector('#vp-ok').onclick = ok;
+  p.querySelector('#vp-cancel').onclick = close;
+  inp.onkeydown = (ev) => {
+    if (ev.key === 'Enter')  { ev.preventDefault(); ok(); }
+    if (ev.key === 'Escape') { ev.preventDefault(); close(); }
+  };
+  setTimeout(() => { inp.focus(); inp.select(); }, 50);
+}
+
+// ── Lissage de polyligne (Catmull-Rom) ──────────────────────────────────────
+// Spline interpolante : la courbe passe EXACTEMENT par tous les sommets d'origine
+// et ajoute k points par segment → augmente la précision sans déformer la forme.
+function _catmullPoint(p0, p1, p2, p3, t) {
+  const t2 = t*t, t3 = t2*t;
+  const f = (a,b,c,d) => 0.5*((2*b) + (-a+c)*t + (2*a-5*b+4*c-d)*t2 + (-a+3*b-3*c+d)*t3);
+  return [f(p0[0],p1[0],p2[0],p3[0]), f(p0[1],p1[1],p2[1],p3[1])];
+}
+function catmullRomSmooth(pts, k, closed) {
+  let P = pts.map(p => [p[0], p[1]]);
+  // Polyligne fermée à doublon : retirer le dernier point (== premier) pour le wrap.
+  if (closed && P.length > 1 &&
+      Math.hypot(P[0][0]-P[P.length-1][0], P[0][1]-P[P.length-1][1]) < 1e-9) P.pop();
+  const n = P.length;
+  if (n < 3 || k < 2) return pts.map(p => [...p]);
+  const get = i => closed ? P[((i%n)+n)%n] : P[Math.max(0, Math.min(n-1, i))];
+  const out = [];
+  const segCount = closed ? n : n-1;
+  for (let i = 0; i < segCount; i++) {
+    const p0 = get(i-1), p1 = get(i), p2 = get(i+1), p3 = get(i+2);
+    for (let j = 0; j < k; j++) out.push(_catmullPoint(p0, p1, p2, p3, j/k)); // j=0 → sommet exact
+  }
+  out.push(closed ? [out[0][0], out[0][1]] : [P[n-1][0], P[n-1][1]]); // ferme ou ajoute la dernière extrémité
+  return out;
+}
+
+function applySmooth(polys, k) {
+  if (!polys.length) return;
+  pushUndo();
+  let count = 0;
+  for (const e of polys) {
+    const flat = flattenPolyPoints(e.points);   // résout d'abord les bulges en points
+    if (flat.length < 3) continue;
+    const isClosed = e.closed === true ||
+      (flat.length > 2 && Math.hypot(flat[0][0]-flat[flat.length-1][0], flat[0][1]-flat[flat.length-1][1]) < 1e-9);
+    e.points = catmullRomSmooth(flat, k, isClosed);
+    if (isClosed) e.closed = true;
+    delete e.dash;   // bulges résolus → plus d'arcs
+    count++;
+  }
+  if (count) {
+    updateSaveIndicator('modified'); autoSave(); render(); updateProperties();
+    termPrint('LISSER — '+count+' polyligne(s) lissée(s) ('+k+' pts/segment)', 'success');
+  }
 }
 
 function _drawHatchPreview(canvas, def, baseAngle) {
@@ -9466,7 +9667,6 @@ canvas.addEventListener('mousedown', (ev) => {
 
   // JOIN mode : clic sur entité → toggle ; clic dans le vide → rubber band
   if (ev.button === 0 && S.tool === 'join') {
-    const supported = ['line','wall','arc','polyline','cable'];
     S._selectHitOnMousedown = false;
     if (isRubberBand) {
       // 2ème clic → finalise le rubber band
@@ -9475,7 +9675,7 @@ canvas.addEventListener('mousedown', (ev) => {
       const minX = Math.min(rbStart.wx, wx), maxX = Math.max(rbStart.wx, wx);
       const minY = Math.min(rbStart.wy, wy), maxY = Math.max(rbStart.wy, wy);
       const found = S.entities.filter(e =>
-        S.layers[e.layer]?.visible && supported.includes(e.type) &&
+        S.layers[e.layer]?.visible && isJoinableEntity(e) &&
         entityInRect(e, minX, minY, maxX, maxY, isWin)
       );
       found.forEach(e => { if (!S.joinSelection.includes(e.id)) S.joinSelection.push(e.id); });
@@ -9486,7 +9686,7 @@ canvas.addEventListener('mousedown', (ev) => {
       render();
     } else {
       const hit = hitTest(wx, wy);
-      if (hit && supported.includes(hit.type)) {
+      if (hit && isJoinableEntity(hit)) {
         S._selectHitOnMousedown = true;
         const idx = S.joinSelection.indexOf(hit.id);
         if (idx >= 0) {
@@ -9676,13 +9876,15 @@ canvas.addEventListener('wheel', (ev) => {
 // Extrait un segment {x1,y1,x2,y2} depuis une entité pour DIMANGULAR.
 // Retourne l'entité elle-même pour line/wall, ou le segment le plus proche pour polyline/cable.
 // Walk tube segments, call cb(x1,y1,x2,y2,theta) for each straight section axis
+// Parcourt les tronçons droits → cb(x1,y1, x2,y2, theta, segIdx).
+// segIdx = index du segment dans e.segments (utile pour éditer sa longueur).
 function _tubeWalkStraights(e, cb) {
   let cx = e.startX, cy = e.startY, theta = e.startAngle;
-  for (const seg of e.segments) {
+  e.segments.forEach((seg, si) => {
     if (seg.type === 'straight') {
       const ex = cx + seg.length * Math.cos(theta);
       const ey = cy + seg.length * Math.sin(theta);
-      cb(cx, cy, ex, ey, theta);
+      cb(cx, cy, ex, ey, theta, si);
       cx = ex; cy = ey;
     } else if (seg.type === 'bend') {
       const { angle: phi, bendRadius: R, side } = seg;
@@ -9692,10 +9894,12 @@ function _tubeWalkStraights(e, cb) {
       cx = bcx + R * Math.cos(arcEnd); cy = bcy + R * Math.sin(arcEnd);
       theta += side * phi;
     }
-  }
+  });
 }
 
-// Parcourt les coudes du tube → centre d'arc (bcx,bcy), rayon R, segment
+// Parcourt les coudes du tube → cb(bcx,bcy, R, seg, aStart, aEnd).
+// (bcx,bcy)=centre d'arc, R=rayon de l'axe, aStart/aEnd=angles (depuis le centre)
+// du début/fin de l'arc, en coords monde (sens trigo ; aEnd<aStart si coude horaire).
 function _tubeWalkBends(e, cb) {
   let cx = e.startX, cy = e.startY, theta = e.startAngle;
   for (const seg of e.segments) {
@@ -9705,9 +9909,10 @@ function _tubeWalkBends(e, cb) {
       const { angle: phi, bendRadius: R, side } = seg;
       const bcx = cx - side * R * Math.sin(theta);
       const bcy = cy + side * R * Math.cos(theta);
-      cb(bcx, bcy, R, seg);
-      const arcEnd = (theta - side * Math.PI / 2) + side * phi;
-      cx = bcx + R * Math.cos(arcEnd); cy = bcy + R * Math.sin(arcEnd);
+      const aStart = theta - side * Math.PI / 2;
+      const aEnd   = aStart + side * phi;
+      cb(bcx, bcy, R, seg, aStart, aEnd);
+      cx = bcx + R * Math.cos(aEnd); cy = bcy + R * Math.sin(aEnd);
       theta += side * phi;
     }
   }
@@ -10872,6 +11077,16 @@ function applyStretchToEntity(e, minX, minY, maxX, maxY, dx, dy) {
     if (c3 && c4) e.y2 += dy;
     return true;
   }
+  // Cotes associatives : déplacer les points de définition pris dans la fenêtre.
+  // La valeur affichée est recalculée en direct depuis x1,y1,x2,y2 → mise à jour auto.
+  // (angulaire/rayon/diamètre/arc : valeur figée → seul le déplacement entier, géré
+  //  par le test bbox ci-dessus, a du sens.)
+  if (e.type === 'dim_linear' || e.type === 'dim_aligned') {
+    let moved = false;
+    if (inBox(e.x1, e.y1)) { e.x1 += dx; e.y1 += dy; moved = true; }
+    if (inBox(e.x2, e.y2)) { e.x2 += dx; e.y2 += dy; moved = true; }
+    return moved;
+  }
   return false;
 }
 
@@ -11605,6 +11820,8 @@ function applyExtend(extendedId, prims, clickWx, clickWy) {
 
 function scaleEntityInPlace(e, cx, cy, f) {
   function sp(px, py) { return [cx+(px-cx)*f, cy+(py-cy)*f]; }
+  const _th = pluginTransformHandler(e.type);
+  if (_th) { _th(e, sp, 'scale'); return; }
   if (e.x1!==undefined) { [e.x1,e.y1]=sp(e.x1,e.y1); }
   if (e.x2!==undefined) { [e.x2,e.y2]=sp(e.x2,e.y2); }
   if (e.cx!==undefined) { [e.cx,e.cy]=sp(e.cx,e.cy); if(e.r!==undefined) e.r*=f; }
@@ -11662,6 +11879,8 @@ function drawScalePreview() {
 function rotateEntityInPlace(e, cx, cy, angle) {
   const cos = Math.cos(angle), sin = Math.sin(angle);
   function rp(px, py) { const dx=px-cx, dy=py-cy; return [cx+dx*cos-dy*sin, cy+dx*sin+dy*cos]; }
+  const _th = pluginTransformHandler(e.type);
+  if (_th) { _th(e, rp, 'rotate'); return; }
   if (e.type === 'rect') {
     const [ax1,ay1]=rp(e.x1,e.y1), [ax2,ay2]=rp(e.x2,e.y1);
     const [ax3,ay3]=rp(e.x2,e.y2), [ax4,ay4]=rp(e.x1,e.y2);
@@ -11701,6 +11920,8 @@ function mirrorPt(px,py,ax,ay,bx,by) {
 function mirrorEntity(src,ax,ay,bx,by) {
   const e=JSON.parse(JSON.stringify(src));
   const m=(px,py)=>mirrorPt(px,py,ax,ay,bx,by);
+  const _th=pluginTransformHandler(e.type);
+  if(_th){ _th(e, m, 'mirror'); return e; }
   if(e.x1!==undefined){[e.x1,e.y1]=m(e.x1,e.y1);}
   if(e.x2!==undefined){[e.x2,e.y2]=m(e.x2,e.y2);}
   if(e.cx!==undefined){[e.cx,e.cy]=m(e.cx,e.cy);}
@@ -12293,23 +12514,15 @@ function hitTest(wx,wy,filter) {
         }
       }
     }
-    else if(e.type==='grad_disk'){
-      // Disque gradué : sélectionner via la bbox
-      const d=Math.hypot(wx-e.cx,wy-e.cy);
-      if(d<=e.radius*1.1) tryHit(e, d);
-    }
-    else if(e.type==='grad_ruler'){
-      // Règle graduée : sélectionner via la bbox
-      if(wx>=e.x-tol && wx<=e.x+e.length+tol && wy>=e.y-e.width-tol && wy<=e.y+tol){
-        const d=Math.min(
-          Math.abs(wy-e.y), Math.abs(wy-e.y+e.width),
-          Math.abs(wx-e.x), Math.abs(wx-e.x-e.length)
-        );
-        tryHit(e, d);
+    else {
+      // Entités de plugin : détection déléguée au plugin (ex. disque/règle/arc gradué)
+      const hh = pluginHitHandler(e.type);
+      if (hh) {
+        const d = hh(e, wx, wy, tol);
+        if (d != null) tryHit(e, d);
+      } else if(e.x!==undefined){
+        const d=Math.hypot(wx-e.x,wy-e.y); if(d<tol*2) tryHit(e,d/2);
       }
-    }
-    else if(e.x!==undefined){
-      const d=Math.hypot(wx-e.x,wy-e.y); if(d<tol*2) tryHit(e,d/2);
     }
   }
   return best;
@@ -12931,6 +13144,12 @@ function _updatePropertiesSingle(e) {
     '</select>';
   h += row('Calque', layerSel);
   h += _propStyleRows('['+id+']', e.color || S.layers[e.layer]?.color || '#00d4ff', e.color !== undefined, e.lineType, e.lineWidth);
+  // Entités de plugin (grad_disk, grad_arc, grad_ruler…) : le plugin fournit
+  // l'intégralité de ses lignes de géométrie éditables (cf. propsHandlers).
+  const _phRows = pluginPropsHandler(e.type);
+  if (_phRows) {
+    h += _phRows(e, { row, inp, id });
+  } else {
   if (e.x1 !== undefined) {
     h += row('X1', inp('x1', e.x1.toFixed(2)));
     h += row('Y1', inp('y1', e.y1.toFixed(2)));
@@ -12991,6 +13210,7 @@ function _updatePropertiesSingle(e) {
     if (e.profileStandard) h += row('Norme', '<span class="prop-value">'+e.profileStandard+'</span>');
     if (e.profileG != null) h += row('Poids/m', '<span class="prop-value">'+e.profileG+' kg/m</span>');
   }
+  }  // fin du bloc géométrie générique (cœur)
   // Mesures calculées (longueur/périmètre/circonférence + aire)
   const _len = computeEntityPerimeter(e);
   if (_len != null && e.type !== 'line' && e.type !== 'wall')   // ligne/mur ont déjà « Longueur »
@@ -14697,10 +14917,23 @@ function doPrint() {
   } else {
     let mnx=Infinity, mny=Infinity, mxx=-Infinity, mxy=-Infinity;
     S.entities.forEach(e => {
-      getEntitySegments(e).forEach(([a,b,c,d]) => {
-        mnx=Math.min(mnx,a,c); mny=Math.min(mny,b,d);
-        mxx=Math.max(mxx,a,c); mxy=Math.max(mxy,b,d);
-      });
+      const lyr = S.layers[e.layer];
+      if (lyr && !lyr.visible) return;
+      const segs = getEntitySegments(e);
+      if (segs.length) {
+        segs.forEach(([a,b,c,d]) => {
+          mnx=Math.min(mnx,a,c); mny=Math.min(mny,b,d);
+          mxx=Math.max(mxx,a,c); mxy=Math.max(mxy,b,d);
+        });
+      } else {
+        // Entités sans segments (cercle, arc, texte, disque/règle gradué…) :
+        // utiliser la bbox géométrique pour qu'elles soient incluses dans la zone imprimée.
+        const bb = getEntityBBox(e, true);
+        if (bb) {
+          mnx=Math.min(mnx,bb.minX); mny=Math.min(mny,bb.minY);
+          mxx=Math.max(mxx,bb.maxX); mxy=Math.max(mxy,bb.maxY);
+        }
+      }
     });
     if (!isFinite(mnx)) { termPrint('Aucune entité à imprimer', 'warning'); return; }
     wx1=mnx; wy1=mny; wx2=mxx; wy2=mxy;
@@ -16923,6 +17156,7 @@ function captureUserPrefs() {
     defaultLayers: JSON.parse(JSON.stringify(S.layers)),
     toolbarLayout: S.toolbarLayout ? JSON.parse(JSON.stringify(S.toolbarLayout)) : null,
     loadedPlugins: S.loadedPlugins ? S.loadedPlugins.slice() : null,
+    terminalHeight: parseInt(document.getElementById('terminal')?.style.height) || 160,
   };
 }
 
@@ -16956,6 +17190,11 @@ function applyUserPrefs(prefs) {
   if (prefs.currentDimStyle)            S.currentDimStyle = _migrateDimStyle(prefs.currentDimStyle);
   if (prefs.toolbarLayout !== undefined) S.toolbarLayout = prefs.toolbarLayout;
   if (prefs.loadedPlugins !== undefined) S.loadedPlugins = prefs.loadedPlugins;
+  if (prefs.terminalHeight) {
+    const h = Math.max(66, Math.min(prefs.terminalHeight, 600));
+    const el = document.getElementById('terminal');
+    if (el) el.style.height = h + 'px';
+  }
   _tbApplyLayout();
 }
 
@@ -17924,12 +18163,39 @@ function tbResetToolbars(){
 }
 
 /* ---------- Palette (catalogue de toutes les icônes) ---------- */
+// Rend la popup « Personnaliser les barres » déplaçable par son entête.
+// Délégation sur l'élément (l'entête est recréé à chaque ouverture via innerHTML).
+function _tbMakePaletteDraggable(p){
+  let ox=0, oy=0, dragging=false;
+  p.addEventListener('mousedown', ev=>{
+    if(ev.button!==0) return;
+    const head = ev.target.closest('.tb-pal-head');
+    if(!head || !p.contains(head)) return;     // démarrage uniquement depuis l'entête
+    if(ev.target.closest('button')) return;    // laisser cliquer les boutons
+    dragging=true;
+    const rc=p.getBoundingClientRect();
+    ox=ev.clientX-rc.left; oy=ev.clientY-rc.top;
+    // Passe d'un ancrage right/bottom à un positionnement left/top
+    p.style.left=rc.left+'px'; p.style.top=rc.top+'px';
+    p.style.right='auto'; p.style.bottom='auto';
+    ev.preventDefault();
+  });
+  document.addEventListener('mousemove', ev=>{
+    if(!dragging) return;
+    const w=p.offsetWidth, h=p.offsetHeight;
+    const nx=Math.max(0, Math.min(ev.clientX-ox, window.innerWidth -w));
+    const ny=Math.max(0, Math.min(ev.clientY-oy, window.innerHeight-h));
+    p.style.left=nx+'px'; p.style.top=ny+'px';
+  });
+  document.addEventListener('mouseup', ()=>{ dragging=false; });
+}
 function _tbOpenPalette(){
   let p=document.getElementById('tb-palette');
   if(!p){ p=document.createElement('div'); p.id='tb-palette'; document.body.appendChild(p);
     p.addEventListener('dragover', e=>{ if(_tbDnd){ e.preventDefault(); p.classList.add('tb-drop-hover'); } });
     p.addEventListener('dragleave', ()=>p.classList.remove('tb-drop-hover'));
     p.addEventListener('drop', _tbDropRemove);
+    _tbMakePaletteDraggable(p);
   }
   const groups={};
   Object.entries(TB_REGISTRY).forEach(([id,r])=>{ (groups[r.group]=groups[r.group]||[]).push([id,r]); });
@@ -17968,7 +18234,7 @@ const _pluginsInFlight = {}; // garde anti-race : chargements async en cours
 
 // Lister les plugins disponibles (dans src/plugins/)
 const AVAILABLE_PLUGINS = [
-  { name: 'gradrule', label: 'Disques & Règles graduées (GRADISC, GRADRULE)' },
+  { name: 'gradrule', label: 'Disques, règles & arcs gradués (GRADISC, GRADRULE, GRADARC)' },
 ];
 
 // Charger un plugin dynamiquement (fetch + eval)
@@ -18089,6 +18355,71 @@ function invokePluginMove(type, e, dx, dy) {
       return plugin.moveHandlers[type](e, dx, dy);
     }
   }
+}
+
+// Retourne le handler d'éclatement d'un type d'entité de plugin (ou null).
+function pluginExplodeHandler(type) {
+  for (const [name, plugin] of Object.entries(PLUGINS)) {
+    if (plugin.explodeHandlers && plugin.explodeHandlers[type]) {
+      return plugin.explodeHandlers[type];
+    }
+  }
+  return null;
+}
+
+// Retourne le handler de détection (hitTest) d'un type d'entité de plugin (ou null).
+// Le handler reçoit (e, wx, wy, tol) et renvoie une distance (pour tryHit) ou null.
+function pluginHitHandler(type) {
+  for (const [name, plugin] of Object.entries(PLUGINS)) {
+    if (plugin.hitTestHandlers && plugin.hitTestHandlers[type]) {
+      return plugin.hitTestHandlers[type];
+    }
+  }
+  return null;
+}
+
+// Retourne le handler de poignées (grips) d'un type d'entité de plugin (ou null).
+// Le handler reçoit (e) et renvoie un tableau [{x, y, apply(ent,nx,ny)}].
+function pluginGripHandler(type) {
+  for (const [name, plugin] of Object.entries(PLUGINS)) {
+    if (plugin.gripHandlers && plugin.gripHandlers[type]) {
+      return plugin.gripHandlers[type];
+    }
+  }
+  return null;
+}
+
+// Retourne le handler de transformation (scale/rotate/mirror) d'un type de plugin (ou null).
+// Le handler reçoit (e, tf, kind) où tf(px,py)->[nx,ny] est la transformation de point
+// fournie par le cœur, et kind ∈ {'scale','rotate','mirror'}. Mute e en place.
+function pluginTransformHandler(type) {
+  for (const [name, plugin] of Object.entries(PLUGINS)) {
+    if (plugin.transformHandlers && plugin.transformHandlers[type]) {
+      return plugin.transformHandlers[type];
+    }
+  }
+  return null;
+}
+
+// Retourne le handler d'accroche objet (OSNAP) d'un type d'entité de plugin (ou null).
+// Le handler reçoit (e, wx, wy, check, modes) et appelle check(x, y, type, e) pour chaque
+// point candidat. check est la fonction interne de findOsnap (retient le plus proche).
+function pluginSnapHandler(type) {
+  for (const [name, plugin] of Object.entries(PLUGINS)) {
+    if (plugin.snapHandlers && plugin.snapHandlers[type]) return plugin.snapHandlers[type];
+  }
+  return null;
+}
+
+// Retourne le handler de propriétés d'un type d'entité de plugin (ou null).
+// Le handler reçoit (e, ctx) avec ctx = { row, inp, id } (helpers du panneau) et
+// renvoie une chaîne HTML de lignes .prop-row décrivant toute la géométrie éditable
+// de l'entité. S'il existe, le panneau lui délègue entièrement les lignes de géométrie.
+function pluginPropsHandler(type) {
+  for (const [name, plugin] of Object.entries(PLUGINS)) {
+    if (plugin.propsHandlers && plugin.propsHandlers[type]) return plugin.propsHandlers[type];
+  }
+  return null;
 }
 
 /* ============================================================
@@ -18475,6 +18806,43 @@ function syncUIState() {
   document.getElementById('grid-btn').classList.toggle('active', S.gridVis);
 }
 
+// ===== TERMINAL RESIZE =====
+(function() {
+  const handle = document.getElementById('terminal-resize-handle');
+  const terminal = document.getElementById('terminal');
+  const MIN_H = 66;   // header + input-row uniquement (handle est hors du terminal)
+  const MAX_H = 600;
+  const DEFAULT_H = 160;
+  let startY, startH;
+
+  handle.addEventListener('mousedown', e => {
+    startY = e.clientY;
+    startH = terminal.offsetHeight;
+    handle.classList.add('dragging');
+    e.preventDefault();
+
+    const onMove = ev => {
+      const h = Math.max(MIN_H, Math.min(MAX_H, startH - (ev.clientY - startY)));
+      terminal.style.height = h + 'px';
+      resizeCanvas();
+    };
+    const onUp = () => {
+      handle.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      autoSavePrefs();
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  handle.addEventListener('dblclick', () => {
+    terminal.style.height = DEFAULT_H + 'px';
+    resizeCanvas();
+    autoSavePrefs();
+  });
+})();
+
 resizeCanvas();
 setTool('select');
 updateUI();
@@ -18483,8 +18851,11 @@ renderSpaceTabs();
 loadUserPrefs();
 syncUIState();
 loadSavedPlugins();
-// GRADRULE chargé par défaut (idempotent : gardes LOADED_PLUGINS/_pluginsInFlight)
-loadPlugin('gradrule').catch(err => console.warn('Failed to load gradrule plugin:', err));
+// Charger gradrule par défaut uniquement au tout premier lancement (aucune préférence sauvegardée).
+// Si S.loadedPlugins est un tableau (même vide), l'utilisateur a déjà fait un choix conscient.
+if (S.loadedPlugins === null) {
+  loadPlugin('gradrule').catch(err => console.warn('Failed to load gradrule plugin:', err));
+}
 window.addEventListener('beforeunload', autoSave);
 loadFromLocalStorage();
 

@@ -7,6 +7,25 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.1] — 2026-06-16 — Version courante
 
 ### Ajouté
+- **ÉTIRER (STRETCH) — cotes linéaires/alignées entraînées** : lors d'un étirement,
+  les points de définition d'une cote `dim_linear` / `dim_aligned` pris dans la fenêtre
+  croisante se déplacent avec la géométrie ; la valeur affichée, recalculée en direct
+  depuis ces points, se met à jour automatiquement. Comportement « non associatif »
+  (façon AutoCAD avant `DIMASSOC`) : la cote suit le cas courant (bande croisante sur
+  une arête), mais reste un objet indépendant — une fenêtre qui englobe ses deux
+  extrémités sans déplacer la géométrie correspondante peut encore la décoller.
+  Cotes angulaire/rayon/diamètre/arc : déplacement entier uniquement (valeur figée).
+- **JOIN — prise en charge des arcs d'ellipse** : un arc d'ellipse peut désormais être
+  joint à des lignes/arcs/polylignes. Comme une polyligne ne stocke que des arcs
+  circulaires (bulge), l'arc d'ellipse est échantillonné en segments de droite.
+  L'ellipse complète (360°) reste exclue (boucle fermée). Quand un arc d'ellipse est
+  détecté, un popup demande la **précision (nombre de segments)** avant de joindre.
+- **LISSER (SMOOTH) — lissage de polyligne** : nouvelle commande (alias `SMOOTH`,
+  `LISSAGE`) et entrée menu Modifier. Subdivise une polyligne sélectionnée par une
+  spline **Catmull-Rom interpolante** — la courbe passe exactement par tous les sommets
+  d'origine et ajoute N points par segment (popup « Points / segment »), augmentant la
+  précision sans déformer la forme. Gère les polylignes ouvertes et fermées ; les arcs
+  (bulge) sont d'abord résolus en points.
 - **TUBE — accroche objet quadrant sur les coudes** : les points cardinaux (N/E/S/O)
   des arcs de coude sont désormais accrochables (mode OSNAP quadrant), sur l'axe et
   sur les deux parois (rayons R−tr, R et R+tr) — seuls les cardinaux compris dans la
