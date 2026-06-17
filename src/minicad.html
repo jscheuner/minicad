@@ -1351,6 +1351,7 @@
         <div class="menu-dropdown-item" onclick="executeCommand('FILLET');closeMenus()"><span data-i18n="tool.fillet">{{tool.fillet}}</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('CHAMFER');closeMenus()"><span data-i18n="tool.chamfer">{{tool.chamfer}}</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('JOIN');closeMenus()"><span data-i18n="tool.join">{{tool.join}}</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('SMOOTH');closeMenus()"><span>Lisser (polyligne)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('STRETCH');closeMenus()"><span data-i18n="tool.stretch">{{tool.stretch}}</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('DIVIDE');closeMenus()"><span data-i18n="tool.divide">{{tool.divide}}</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('DIMCENTER');closeMenus()"><span>Axes de cercle</span></div>
@@ -3848,6 +3849,16 @@ const CMD = {
     setTool('join');
     termPrint('JOIN — Cliquer les entités à joindre, Entrée pour confirmer (Echap=fin)','info');
     setTimeout(smartFocus,0);
+  }},
+  SMOOTH: { alias: ['LISSER','LISSAGE'], desc: 'Lisser une polyligne (Catmull-Rom — augmente la précision)', exec() {
+    const polys = S.selected.map(id => S.entities.find(e => e.id === id))
+                            .filter(e => e && (e.type === 'polyline' || e.type === 'cable'));
+    if (!polys.length) { termPrint('LISSER — sélectionnez d\'abord une ou plusieurs polylignes','warning'); return; }
+    showValuePopup({
+      title: 'Lissage de polyligne', label: 'Points / segment', value: S.smoothLevel || 8,
+      okLabel: 'Lisser ↵',
+      onOk: v => { S.smoothLevel = Math.max(2, Math.round(v)); applySmooth(polys, S.smoothLevel); }
+    });
   }},
   MATCHPROP: { alias: ['MA','MATCH','COPIERPROP','COPIERPROPRIETES','PINCEAU'], desc: 'Copier les propriétés d\'un objet vers d\'autres', exec() {
     S.matchSource=null; setTool('matchprop');
@@ -8357,10 +8368,23 @@ function isJoinableEntity(e) {
   return false;
 }
 
-function applyJoin() {
+function applyJoin(ellipseSegs) {
   const TOL = 1;
   const ents = S.joinSelection.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
   if (ents.length < 2) { termPrint('Sélectionner au moins 2 entités à joindre', 'warning'); return; }
+  // Arc d'ellipse dans la sélection → demander la précision (nombre de segments)
+  // avant de joindre (un seul popup ; la valeur s'applique à tous les arcs d'ellipse).
+  const hasEllipseArc = ents.some(e => e.type === 'ellipse');
+  if (hasEllipseArc && ellipseSegs === undefined) {
+    showValuePopup({
+      title: "Précision de l'arc d'ellipse",
+      label: 'Segments', value: S.joinEllipseSegs || 32,
+      okLabel: 'Joindre ↵',
+      onOk: v => { S.joinEllipseSegs = Math.max(2, Math.round(v)); applyJoin(S.joinEllipseSegs); }
+    });
+    return;
+  }
+  const ellSegN = Math.max(2, Math.round(ellipseSegs || 32));
 
   function endpts(e) {
     if (e.type==='line'||e.type==='wall') return {s:[e.x1,e.y1], e:[e.x2,e.y2]};
@@ -8392,9 +8416,7 @@ function applyJoin() {
     if (e.type==='ellipse') {
       // Arc d'ellipse → segments de droite (lissage ~5°/segment), comme au rendu.
       const el = {cx:e.cx, cy:e.cy, rx:e.rx, ry:e.ry, ang:e.angle||0, sa:e.startAngle, ea:e.endAngle};
-      let sa=e.startAngle, ea=e.endAngle; while(ea<sa) ea+=Math.PI*2;
-      const n = Math.max(8, Math.ceil((ea-sa)/(Math.PI/36)));
-      const segs = ellipseSampleSegs(el, n);
+      const segs = ellipseSampleSegs(el, ellSegN);
       const pts = [[segs[0][0], segs[0][1]]];
       for (const sg of segs) pts.push([sg[2], sg[3]]);
       return pts;
@@ -8460,6 +8482,87 @@ function applyJoin() {
   termPrint('JOIN — '+chain.length+' entités fusionnées'+(closed?' (fermée)':''),'success');
   S.joinSelection=[]; S.selected=[]; setTool('select');
   updateSaveIndicator('modified'); autoSave(); render();
+}
+
+// Popup numérique générique (réutilise le style .tube-def-popup).
+// opts: { title, label, value, unit, okLabel, onOk(value) }. Accepte les expressions math.
+function showValuePopup(opts) {
+  const old = document.getElementById('value-popup');
+  if (old) old.remove();
+  const p = document.createElement('div');
+  p.className = 'tube-def-popup';
+  p.id = 'value-popup';
+  p.innerHTML =
+    '<div class="tdp-title">'+(opts.title||'')+'</div>'+
+    '<div class="tdp-row"><span class="tdp-lbl">'+(opts.label||'Valeur')+'</span>'+
+      '<input type="text" inputmode="decimal" id="vp-input" value="'+(opts.value!=null?opts.value:'')+'">'+
+      '<span class="tdp-unit">'+(opts.unit||'')+'</span></div>'+
+    '<div style="display:flex;gap:6px;margin-top:8px">'+
+      '<button class="tdp-ok" id="vp-ok">'+(opts.okLabel||'OK ↵')+'</button>'+
+      '<button class="tdp-cancel" id="vp-cancel">Annuler</button></div>';
+  document.body.appendChild(p);
+  p.classList.add('show');
+  const inp = p.querySelector('#vp-input');
+  const close = () => p.remove();
+  const ok = () => {
+    const raw = inp.value.trim();
+    const v = (safeEvalMath(raw) ?? parseFloat(raw));
+    if (v == null || isNaN(v)) { inp.style.borderColor = '#e0524f'; return; }
+    close(); opts.onOk(v);
+  };
+  p.querySelector('#vp-ok').onclick = ok;
+  p.querySelector('#vp-cancel').onclick = close;
+  inp.onkeydown = (ev) => {
+    if (ev.key === 'Enter')  { ev.preventDefault(); ok(); }
+    if (ev.key === 'Escape') { ev.preventDefault(); close(); }
+  };
+  setTimeout(() => { inp.focus(); inp.select(); }, 50);
+}
+
+// ── Lissage de polyligne (Catmull-Rom) ──────────────────────────────────────
+// Spline interpolante : la courbe passe EXACTEMENT par tous les sommets d'origine
+// et ajoute k points par segment → augmente la précision sans déformer la forme.
+function _catmullPoint(p0, p1, p2, p3, t) {
+  const t2 = t*t, t3 = t2*t;
+  const f = (a,b,c,d) => 0.5*((2*b) + (-a+c)*t + (2*a-5*b+4*c-d)*t2 + (-a+3*b-3*c+d)*t3);
+  return [f(p0[0],p1[0],p2[0],p3[0]), f(p0[1],p1[1],p2[1],p3[1])];
+}
+function catmullRomSmooth(pts, k, closed) {
+  let P = pts.map(p => [p[0], p[1]]);
+  // Polyligne fermée à doublon : retirer le dernier point (== premier) pour le wrap.
+  if (closed && P.length > 1 &&
+      Math.hypot(P[0][0]-P[P.length-1][0], P[0][1]-P[P.length-1][1]) < 1e-9) P.pop();
+  const n = P.length;
+  if (n < 3 || k < 2) return pts.map(p => [...p]);
+  const get = i => closed ? P[((i%n)+n)%n] : P[Math.max(0, Math.min(n-1, i))];
+  const out = [];
+  const segCount = closed ? n : n-1;
+  for (let i = 0; i < segCount; i++) {
+    const p0 = get(i-1), p1 = get(i), p2 = get(i+1), p3 = get(i+2);
+    for (let j = 0; j < k; j++) out.push(_catmullPoint(p0, p1, p2, p3, j/k)); // j=0 → sommet exact
+  }
+  out.push(closed ? [out[0][0], out[0][1]] : [P[n-1][0], P[n-1][1]]); // ferme ou ajoute la dernière extrémité
+  return out;
+}
+
+function applySmooth(polys, k) {
+  if (!polys.length) return;
+  pushUndo();
+  let count = 0;
+  for (const e of polys) {
+    const flat = flattenPolyPoints(e.points);   // résout d'abord les bulges en points
+    if (flat.length < 3) continue;
+    const isClosed = e.closed === true ||
+      (flat.length > 2 && Math.hypot(flat[0][0]-flat[flat.length-1][0], flat[0][1]-flat[flat.length-1][1]) < 1e-9);
+    e.points = catmullRomSmooth(flat, k, isClosed);
+    if (isClosed) e.closed = true;
+    delete e.dash;   // bulges résolus → plus d'arcs
+    count++;
+  }
+  if (count) {
+    updateSaveIndicator('modified'); autoSave(); render(); updateProperties();
+    termPrint('LISSER — '+count+' polyligne(s) lissée(s) ('+k+' pts/segment)', 'success');
+  }
 }
 
 function _drawHatchPreview(canvas, def, baseAngle) {

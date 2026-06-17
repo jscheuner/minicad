@@ -9,8 +9,15 @@ Format : `[version] — YYYY-MM-DD — Description`
 ### Ajouté
 - **JOIN — prise en charge des arcs d'ellipse** : un arc d'ellipse peut désormais être
   joint à des lignes/arcs/polylignes. Comme une polyligne ne stocke que des arcs
-  circulaires (bulge), l'arc d'ellipse est échantillonné en segments de droite (~5°
-  par segment, fidèle au tracé). L'ellipse complète (360°) reste exclue (boucle fermée).
+  circulaires (bulge), l'arc d'ellipse est échantillonné en segments de droite.
+  L'ellipse complète (360°) reste exclue (boucle fermée). Quand un arc d'ellipse est
+  détecté, un popup demande la **précision (nombre de segments)** avant de joindre.
+- **LISSER (SMOOTH) — lissage de polyligne** : nouvelle commande (alias `SMOOTH`,
+  `LISSAGE`) et entrée menu Modifier. Subdivise une polyligne sélectionnée par une
+  spline **Catmull-Rom interpolante** — la courbe passe exactement par tous les sommets
+  d'origine et ajoute N points par segment (popup « Points / segment »), augmentant la
+  précision sans déformer la forme. Gère les polylignes ouvertes et fermées ; les arcs
+  (bulge) sont d'abord résolus en points.
 - **TUBE — accroche objet quadrant sur les coudes** : les points cardinaux (N/E/S/O)
   des arcs de coude sont désormais accrochables (mode OSNAP quadrant), sur l'axe et
   sur les deux parois (rayons R−tr, R et R+tr) — seuls les cardinaux compris dans la
