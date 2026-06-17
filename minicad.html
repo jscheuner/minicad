@@ -1014,10 +1014,22 @@
   .terminal {
     height: 160px;
     background: var(--bg-terminal);
-    border-top: 2px solid var(--accent);
+    border-top: none;
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
+    overflow: hidden;
+  }
+  .terminal-resize-handle {
+    height: 5px;
+    cursor: ns-resize;
+    flex-shrink: 0;
+    background: var(--accent);
+    opacity: 0.35;
+    transition: opacity 0.15s;
+  }
+  .terminal-resize-handle:hover, .terminal-resize-handle.dragging {
+    opacity: 0.8;
   }
 
   .terminal-header {
@@ -1026,6 +1038,7 @@
     padding: 4px 12px;
     background: color-mix(in srgb, var(--ink) 2%, transparent);
     gap: 10px;
+    flex-shrink: 0;
   }
 
   .terminal-tab {
@@ -1041,13 +1054,16 @@
   .terminal-output {
     flex: 1;
     overflow-y: auto;
-    padding: 6px 12px;
+    padding: 0 12px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
     line-height: 1.6;
     user-select: text;
     cursor: text;
+    min-height: 0;
   }
+  .terminal-output > *:first-child { margin-top: 6px; }
+  .terminal-output > *:last-child  { margin-bottom: 6px; }
   .terminal-output::-webkit-scrollbar { width: 4px; }
   .terminal-output::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 2px; }
 
@@ -1067,6 +1083,7 @@
     padding: 4px 12px 6px;
     gap: 6px;
     border-top: 1px solid color-mix(in srgb, var(--ink) 3%, transparent);
+    flex-shrink: 0;
   }
 
   .terminal-input-row .prompt-icon {
@@ -2438,8 +2455,11 @@
   </div>
 </div>
 
+<!-- TERMINAL RESIZE HANDLE (sibling du terminal, pas à l'intérieur) -->
+<div class="terminal-resize-handle" id="terminal-resize-handle"></div>
+
 <!-- TERMINAL -->
-<div class="terminal">
+<div class="terminal" id="terminal">
   <div class="terminal-header">
     <div class="terminal-tab active">Commandes</div>
     <div class="terminal-tab" onclick="termPrint('Historique: ' + S.entities.length + ' objets au total', 'info')">Historique</div>
@@ -2482,6 +2502,7 @@ const USER_PREFS = {
   defaultLayers: null,
   toolbarLayout: null,
   loadedPlugins: null,
+  terminalHeight: 160,
 };
 // ===USER_PREFS_END===
 
@@ -4363,7 +4384,7 @@ function getEntityBBox(e, tight) {
                minY:e.vy-armR-pad, maxY:e.vy+armR+pad };
     }
     case 'xline': case 'ray':
-      return { minX:e.x, maxX:e.x, minY:e.y, maxY:e.y };
+      return null; // infinies → jamais culled (null ⇒ _inViewport renvoie true)
     case 'polyline': case 'cable': case 'hatch': case 'spline': {
       if (!e.points?.length) return null;
       let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
@@ -11062,6 +11083,16 @@ function applyStretchToEntity(e, minX, minY, maxX, maxY, dx, dy) {
     if (c3 && c4) e.y2 += dy;
     return true;
   }
+  // Cotes associatives : déplacer les points de définition pris dans la fenêtre.
+  // La valeur affichée est recalculée en direct depuis x1,y1,x2,y2 → mise à jour auto.
+  // (angulaire/rayon/diamètre/arc : valeur figée → seul le déplacement entier, géré
+  //  par le test bbox ci-dessus, a du sens.)
+  if (e.type === 'dim_linear' || e.type === 'dim_aligned') {
+    let moved = false;
+    if (inBox(e.x1, e.y1)) { e.x1 += dx; e.y1 += dy; moved = true; }
+    if (inBox(e.x2, e.y2)) { e.x2 += dx; e.y2 += dy; moved = true; }
+    return moved;
+  }
   return false;
 }
 
@@ -17131,6 +17162,7 @@ function captureUserPrefs() {
     defaultLayers: JSON.parse(JSON.stringify(S.layers)),
     toolbarLayout: S.toolbarLayout ? JSON.parse(JSON.stringify(S.toolbarLayout)) : null,
     loadedPlugins: S.loadedPlugins ? S.loadedPlugins.slice() : null,
+    terminalHeight: parseInt(document.getElementById('terminal')?.style.height) || 160,
   };
 }
 
@@ -17164,6 +17196,11 @@ function applyUserPrefs(prefs) {
   if (prefs.currentDimStyle)            S.currentDimStyle = _migrateDimStyle(prefs.currentDimStyle);
   if (prefs.toolbarLayout !== undefined) S.toolbarLayout = prefs.toolbarLayout;
   if (prefs.loadedPlugins !== undefined) S.loadedPlugins = prefs.loadedPlugins;
+  if (prefs.terminalHeight) {
+    const h = Math.max(58, Math.min(prefs.terminalHeight, 600));
+    const el = document.getElementById('terminal');
+    if (el) el.style.height = h + 'px';
+  }
   _tbApplyLayout();
 }
 
@@ -18775,6 +18812,43 @@ function syncUIState() {
   document.getElementById('grid-btn').classList.toggle('active', S.gridVis);
 }
 
+// ===== TERMINAL RESIZE =====
+(function() {
+  const handle = document.getElementById('terminal-resize-handle');
+  const terminal = document.getElementById('terminal');
+  const MIN_H = 58;   // header (~24px) + input-row (~34px), output clippé à 0 par overflow:hidden
+  const MAX_H = 600;
+  const DEFAULT_H = 160;
+  let startY, startH;
+
+  handle.addEventListener('mousedown', e => {
+    startY = e.clientY;
+    startH = terminal.offsetHeight;
+    handle.classList.add('dragging');
+    e.preventDefault();
+
+    const onMove = ev => {
+      const h = Math.max(MIN_H, Math.min(MAX_H, startH - (ev.clientY - startY)));
+      terminal.style.height = h + 'px';
+      resizeCanvas();
+    };
+    const onUp = () => {
+      handle.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      autoSavePrefs();
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  handle.addEventListener('dblclick', () => {
+    terminal.style.height = DEFAULT_H + 'px';
+    resizeCanvas();
+    autoSavePrefs();
+  });
+})();
+
 resizeCanvas();
 setTool('select');
 updateUI();
@@ -18783,8 +18857,11 @@ renderSpaceTabs();
 loadUserPrefs();
 syncUIState();
 loadSavedPlugins();
-// GRADRULE chargé par défaut (idempotent : gardes LOADED_PLUGINS/_pluginsInFlight)
-loadPlugin('gradrule').catch(err => console.warn('Failed to load gradrule plugin:', err));
+// Charger gradrule par défaut uniquement au tout premier lancement (aucune préférence sauvegardée).
+// Si S.loadedPlugins est un tableau (même vide), l'utilisateur a déjà fait un choix conscient.
+if (S.loadedPlugins === null) {
+  loadPlugin('gradrule').catch(err => console.warn('Failed to load gradrule plugin:', err));
+}
 window.addEventListener('beforeunload', autoSave);
 loadFromLocalStorage();
 

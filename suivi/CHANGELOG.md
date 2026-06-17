@@ -7,6 +7,14 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.1] — 2026-06-16 — Version courante
 
 ### Ajouté
+- **ÉTIRER (STRETCH) — cotes linéaires/alignées entraînées** : lors d'un étirement,
+  les points de définition d'une cote `dim_linear` / `dim_aligned` pris dans la fenêtre
+  croisante se déplacent avec la géométrie ; la valeur affichée, recalculée en direct
+  depuis ces points, se met à jour automatiquement. Comportement « non associatif »
+  (façon AutoCAD avant `DIMASSOC`) : la cote suit le cas courant (bande croisante sur
+  une arête), mais reste un objet indépendant — une fenêtre qui englobe ses deux
+  extrémités sans déplacer la géométrie correspondante peut encore la décoller.
+  Cotes angulaire/rayon/diamètre/arc : déplacement entier uniquement (valeur figée).
 - **JOIN — prise en charge des arcs d'ellipse** : un arc d'ellipse peut désormais être
   joint à des lignes/arcs/polylignes. Comme une polyligne ne stocke que des arcs
   circulaires (bulge), l'arc d'ellipse est échantillonné en segments de droite.
