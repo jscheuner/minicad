@@ -23,11 +23,12 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
   - Plan détaillé Phase 1 : voir [plan_presentations.md](plan_presentations.md) (≈ 600–700 lignes)
   - En cours : étape 1 (données + persistance) + étape 2 (onglets + feuille)
 
-- [ ] **Cotes vraiment associatives (DIMASSOC)** — lier les extrémités d'une cote au sommet
-  d'une entité (capture du lien à la création via OSNAP extrémité), recalcul auto après
-  toute édition (stretch/grip/move/scale…). Aujourd'hui : étirement par points seulement
-  (option A) → décolle pour certaines fenêtres. Points de vigilance : DXF, EXPLODE, undo,
-  suppression de l'hôte.
+- [x] **Cotes vraiment associatives (DIMASSOC)** ✅ — lien capturé à la création via accroche
+  OSNAP-sommet (extrémité/milieu/centre/quadrant) ; recalcul auto après stretch/grip/move/
+  scale/rotate (`refreshAssocDims`). Remap à la copie/collage, abandon au miroir, hôte
+  supprimé = cote figée (pas de crash). Limites connues : accroches *calculées*
+  (intersection/perp/tangente) non associatives ; EXPLODE de l'hôte (rect→polyligne) rompt
+  le lien ; déplacer une cote associative seule la recale sur l'hôte (régler l'offset par poignée).
 
 - [ ] **OSNAP Extension** — prolongement de ligne/polyligne (EXT comme un logiciel de CAO)
   - Acquisition du point d'extrémité au survol (marqueur "+")

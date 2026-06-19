@@ -7,6 +7,22 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.1] — 2026-06-16 — Version courante
 
 ### Ajouté
+- **Cotes vraiment associatives (DIMASSOC)** : à la création d'une cote `dim_linear` /
+  `dim_aligned`, si une extrémité est posée sur une accroche-**sommet** (extrémité, milieu,
+  centre, quadrant) d'une autre entité, le lien est mémorisé (`assoc.p1` / `assoc.p2`). La
+  cote se **recale automatiquement** sur la géométrie hôte après tout étirement, édition par
+  poignée, déplacement, échelle ou rotation (`refreshAssocDims`) — y compris quand l'hôte est
+  modifié sans que la cote soit sélectionnée. Le lien est remappé à la copie/au collage,
+  abandonné au miroir, et la suppression de l'hôte fige simplement la cote (aucun plantage).
+  Le recalcul se déclenche aussi depuis le **panneau Propriétés** (X/Y, rayon, et notamment
+  le champ **Longueur** d'une ligne) — `refreshAssocDims()` branché dans les `_propChange*`.
+  Les accroches *calculées* (intersection / perpendiculaire / tangente) restent non
+  associatives, et l'EXPLODE d'un rectangle hôte (→ polyligne) rompt le lien.
+  - **Sélection au clic corrigée** : le hitTest d'une cote `dim_linear` / `dim_aligned` ne
+    teste plus la *ligne de base* invisible entre les points de définition — seuls la ligne
+    de cote, les lignes d'attache et le texte sont cliquables. Sans ce correctif, une cote
+    associative (points de définition posés sur la géométrie) captait les clics destinés à
+    l'objet coté.
 - **ÉTIRER (STRETCH) — cotes linéaires/alignées entraînées** : lors d'un étirement,
   les points de définition d'une cote `dim_linear` / `dim_aligned` pris dans la fenêtre
   croisante se déplacent avec la géométrie ; la valeur affichée, recalculée en direct

@@ -415,12 +415,48 @@
   .side-panel {
     width: 220px;
     background: var(--bg-panel);
-    border-right: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
     overflow-y: auto;
+    overflow-x: hidden;
+    transition: width 0.15s;
   }
+  .side-panel.hidden { width: 0 !important; min-width: 0 !important; overflow: hidden; }
+  .side-panel-resize-handle {
+    width: 5px;
+    cursor: ew-resize;
+    flex-shrink: 0;
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: background 0.15s;
+  }
+  .side-panel-resize-handle:hover, .side-panel-resize-handle.dragging {
+    background: color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  .side-panel-toggle {
+    width: 16px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-radius: 2px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg-panel);
+    border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+    user-select: none;
+    z-index: 1;
+  }
+  .side-panel-toggle:hover { color: var(--accent); border-color: var(--accent); }
 
   .panel-section { border-bottom: 1px solid color-mix(in srgb, var(--ink) 3%, transparent); }
 
@@ -962,11 +998,47 @@
   .props-panel {
     width: 200px;
     background: var(--bg-panel);
-    border-left: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
     font-size: 11px;
     overflow-y: auto;
+    overflow-x: hidden;
     flex-shrink: 0;
+    transition: width 0.15s;
   }
+  .props-panel.hidden { width: 0 !important; min-width: 0 !important; overflow: hidden; }
+  .props-panel-resize-handle {
+    width: 5px;
+    cursor: ew-resize;
+    flex-shrink: 0;
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: background 0.15s;
+  }
+  .props-panel-resize-handle:hover, .props-panel-resize-handle.dragging {
+    background: color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  .props-panel-toggle {
+    width: 16px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-radius: 2px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg-panel);
+    border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+    user-select: none;
+    z-index: 1;
+  }
+  .props-panel-toggle:hover { color: var(--accent); border-color: var(--accent); }
 
   .prop-row {
     display: flex;
@@ -1934,7 +2006,7 @@
 
 <!-- MAIN -->
 <div class="main-area">
-  <div class="side-panel">
+  <div class="side-panel" id="side-panel">
     <div class="panel-section">
       <div class="panel-header" onclick="togglePanel(this)">Calques <span class="arrow">▾</span></div>
       <div class="panel-content" id="layers-list"></div>
@@ -1955,6 +2027,9 @@
       <div class="panel-header" onclick="togglePanel(this)">Objets <span class="arrow">▾</span></div>
       <div class="panel-content" id="objects-list" style="max-height:200px;overflow-y:auto;"></div>
     </div>
+  </div>
+  <div class="side-panel-resize-handle" id="side-panel-resize-handle">
+    <div class="side-panel-toggle" id="side-panel-toggle" title="Masquer/afficher le panneau">◀</div>
   </div>
 
   <div class="canvas-area" id="canvas-area">
@@ -1985,7 +2060,10 @@
     <div id="osnap-tooltip"></div>
   </div>
 
-  <div class="props-panel">
+  <div class="props-panel-resize-handle" id="props-panel-resize-handle">
+    <div class="props-panel-toggle" id="props-panel-toggle" title="Masquer/afficher les propriétés">▶</div>
+  </div>
+  <div class="props-panel" id="props-panel">
     <div class="panel-section">
       <div class="panel-header">Propriétés</div>
       <div id="props-content" style="padding:6px 0;"></div>
@@ -2503,6 +2581,10 @@ const USER_PREFS = {
   toolbarLayout: null,
   loadedPlugins: null,
   terminalHeight: 160,
+  sidePanelWidth: 220,
+  sidePanelVisible: true,
+  propsPanelWidth: 200,
+  propsPanelVisible: true,
 };
 // ===USER_PREFS_END===
 
@@ -6073,6 +6155,94 @@ function drawTubeLabel(e) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Régénère les cotes liées d'un tube (si elles existent déjà).
+// Appelé après toute modification géométrique du tube (grip, dialogue…).
+function refreshTubeLinkedDims(tubeEnt) {
+  if (!S.entities.some(e => e.linkedTubeId === tubeEnt.id)) return; // pas de cotes liées
+  const tr  = tubeEnt.tubeRadius || 20;
+  const ref = tubeEnt.tubeRef   || 'axe';
+  const segs = tubeEnt.segments || [];
+  const straights = [], bends = [];
+  for (const s of segs) {
+    if (s.type === 'straight') straights.push(s);
+    else if (s.type === 'bend') bends.push(s);
+  }
+  if (!straights.length) return;
+
+  function walkAXE() {
+    let jx = tubeEnt.startX, jy = tubeEnt.startY, jdir = tubeEnt.startAngle;
+    const out = [];
+    for (let i = 0; i < straights.length; i++) {
+      out.push({ x: jx, y: jy, dir: jdir });
+      const Rb   = i > 0 ? bends[i-1].bendRadius : 0;
+      const phib = i > 0 ? bends[i-1].angle       : 0;
+      const Ra   = i < bends.length ? bends[i].bendRadius : 0;
+      const phia = i < bends.length ? bends[i].angle       : 0;
+      const d = straights[i].length + Rb*Math.tan(phib/2) + Ra*Math.tan(phia/2);
+      jx += Math.cos(jdir)*d; jy += Math.sin(jdir)*d;
+      if (i < bends.length) jdir += bends[i].angle * bends[i].side;
+    }
+    out.push({ x: jx, y: jy, dir: jdir });
+    return out;
+  }
+
+  const axeCorners = walkAXE();
+
+  function computeOffsetCorners(sign) {
+    const axe = axeCorners, n = axe.length;
+    if (sign === 0) return axe.map(c => ({ x: c.x, y: c.y }));
+    function perp(i) { const th=axe[i].dir; return { px:sign*Math.sin(th), py:-sign*Math.cos(th) }; }
+    const res = [];
+    const p0 = perp(0);
+    res.push({ x: axe[0].x + tr*p0.px, y: axe[0].y + tr*p0.py });
+    for (let i = 0; i < n-2; i++) {
+      const pi=perp(i), pi1=perp(i+1);
+      const q1x=axe[i+1].x+tr*pi.px, q1y=axe[i+1].y+tr*pi.py;
+      const q2x=axe[i+1].x+tr*pi1.px,q2y=axe[i+1].y+tr*pi1.py;
+      const d1x=Math.cos(axe[i].dir),d1y=Math.sin(axe[i].dir);
+      const d2x=Math.cos(axe[i+1].dir),d2y=Math.sin(axe[i+1].dir);
+      const det=d1x*d2y-d1y*d2x;
+      if (Math.abs(det)<1e-10) { res.push({x:(q1x+q2x)/2,y:(q1y+q2y)/2}); }
+      else { const dxx=q2x-q1x,dyy=q2y-q1y,t=(dxx*d2y-dyy*d2x)/det; res.push({x:q1x+t*d1x,y:q1y+t*d1y}); }
+    }
+    const pL=perp(n-2); res.push({x:axe[n-1].x+tr*pL.px,y:axe[n-1].y+tr*pL.py});
+    return res;
+  }
+
+  let totalTurn = 0;
+  for (const b of bends) totalTurn += b.angle * b.side;
+  const handedness = totalTurn > 0 ? 1 : -1;
+  const refSign    = ref==='ext' ? handedness : ref==='int' ? -handedness : 0;
+  const corners    = computeOffsetCorners(refSign);
+  const extCorners = ref==='ext' ? corners : computeOffsetCorners(handedness);
+
+  S.entities = S.entities.filter(e => e.linkedTubeId !== tubeEnt.id);
+  const offsetDist = Math.max(40, tr*4);
+
+  // Ligne de construction
+  S.entities.push({
+    type:'polyline', points:corners.map(c=>[c.x,c.y]),
+    dash:[10,6], color:'#6080a0', id:S.nextId++,
+    layer:S.currentLayer, linkedTubeId:tubeEnt.id, isConstruction:true
+  });
+
+  // Cotes
+  for (let i = 0; i < straights.length; i++) {
+    const c1=corners[i],c2=corners[i+1],a1=axeCorners[i],a2=axeCorners[i+1];
+    const e1=extCorners[i],e2=extCorners[i+1];
+    const segAngle=Math.atan2(c2.y-c1.y,c2.x-c1.x);
+    const dpx=-Math.sin(segAngle),dpy=Math.cos(segAngle);
+    const farX=(e1.x+e2.x)/2-(a1.x+a2.x)/2, farY=(e1.y+e2.y)/2-(a1.y+a2.y)/2;
+    const sgn=-Math.sign((farX*dpx+farY*dpy)||1);
+    S.entities.push({
+      type:'dim_aligned', x1:c1.x,y1:c1.y,x2:c2.x,y2:c2.y,
+      offset:sgn*offsetDist, dimStyle:S.currentDimStyle,
+      linkedTubeId:tubeEnt.id, id:S.nextId++, layer:S.currentLayer
+    });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function openTubeEditDialog(ent) {
   const existing = document.getElementById('tube-edit-dialog');
@@ -7461,6 +7631,8 @@ function applyGripMove(nx, ny) {
   const grips = getGripPoints(ent);
   const grip = grips[S.gripEdit.gripIdx];
   if (grip) grip.apply(ent, nx, ny);
+  if (ent.type === 'tube') refreshTubeLinkedDims(ent);
+  refreshAssocDims();
 }
 
 // Espace pendant une poignée active → DÉPLACER l'objet entier (façon AutoCAD :
@@ -10062,6 +10234,8 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       const grips = getGripPoints(ent);
       const grip = grips[S.gripEdit.gripIdx];
       if (grip) grip.apply(ent, gx, gy);
+      if (ent.type === 'tube') refreshTubeLinkedDims(ent); // cotes liées → mise à jour auto
+      refreshAssocDims(); // cotes associatives → recalage sur la géométrie hôte
       const dist = Math.hypot(gx - S.gripEdit.origX, gy - S.gripEdit.origY);
       termPrint('Poignée déplacée: Δ' + dist.toFixed(1) + ' → (' + gx.toFixed(1) + ', ' + gy.toFixed(1) + ')', 'success');
     }
@@ -10224,16 +10398,21 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
         const seg = _dimPickSegment(hit, rawWx, rawWy);
         if (!seg) { termPrint('Cote: cliquez sur une ligne, polyligne ou rectangle', 'warning'); render(); return; }
         S.drawPoints = [[seg.x1, seg.y1], [seg.x2, seg.y2]];
+        S._dimAssoc1 = makeAssocFeature(hit, seg.x1, seg.y1);
+        S._dimAssoc2 = makeAssocFeature(hit, seg.x2, seg.y2);
         S.drawing = true; S.awaitingInput = false; S._dimPick = false; S.hoverEntityId = null;
         termPrint('Objet coté — positionnez la cote et cliquez', 'warning');
         render(); return;
       }
       S.drawing = true; S.drawPoints = [[wx, wy]]; S.awaitingInput = true;
+      S._dimAssoc1 = S.currentOsnap ? makeAssocFeature(S.currentOsnap.entity, wx, wy) : null;
+      S._dimAssoc2 = null;
       termPrint('Point 1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ') — Cliquez le 2ème point [Espace = sélectionner un objet]', 'info');
     } else if (S.drawPoints.length === 1) {
       let tx = wx, ty = wy;
       if (tool === 'dim_linear') [tx, ty] = applyConstraint(S.drawPoints[0][0], S.drawPoints[0][1], wx, wy);
       S.drawPoints.push([tx, ty]);
+      S._dimAssoc2 = S.currentOsnap ? makeAssocFeature(S.currentOsnap.entity, tx, ty) : null;
       S.awaitingInput = false;
       termPrint('Point 2: (' + tx.toFixed(1) + ', ' + ty.toFixed(1) + ') — Positionnez la cote et cliquez', 'warning');
     } else if (S.drawPoints.length === 2) {
@@ -10247,6 +10426,12 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
                     dimStyle: S.currentDimStyle,
                     id:S.nextId++, layer:S.currentLayer };
       if (isH !== null) ent.isHoriz = isH;
+      if (S._dimAssoc1 || S._dimAssoc2) {
+        ent.assoc = {};
+        if (S._dimAssoc1) ent.assoc.p1 = S._dimAssoc1;
+        if (S._dimAssoc2) ent.assoc.p2 = S._dimAssoc2;
+      }
+      S._dimAssoc1 = S._dimAssoc2 = null;
       S.entities.push(ent);
       const dist = tool === 'dim_linear'
         ? (isH ? Math.abs(p2[0]-p1[0]) : Math.abs(p2[1]-p1[1]))
@@ -10843,22 +11028,35 @@ function applyMove(ids, dx, dy) {
   S.entities.forEach(e => {
     if (e.type === 'tubelbl' && ids.includes(e.linkedTubeId)) offsetEntity(e, dx, dy);
   });
+  refreshAssocDims();
 }
 
-// Copier des entités + leur tubelbl lié (avec linkedTubeId mis à jour)
+// Copier des entités + leurs entités liées (tubelbl, dim_*, …) avec linkedTubeId mis à jour
 function applyCopy(ids, dx, dy) {
   const tubeIdMap = {}; // ancien id tube → nouveau id tube
+  const idMap = {};     // ancien id → nouveau id (toutes entités copiées)
+  const copiedSrcIds = new Set(ids);
+  const newEntities = [];
   ids.forEach(id => {
     const src = S.entities.find(e => e.id === id);
     if (!src) return;
     const ne = JSON.parse(JSON.stringify(src));
     ne.id = S.nextId++;
+    idMap[src.id] = ne.id;
     if (src.type === 'tube') tubeIdMap[src.id] = ne.id;
     offsetEntity(ne, dx, dy);
+    newEntities.push(ne);
     S.entities.push(ne);
   });
-  // Copier les tubelbl liés et mettre à jour linkedTubeId
-  S.entities.filter(e => e.type === 'tubelbl' && tubeIdMap[e.linkedTubeId] !== undefined)
+  // Remap linkedTubeId sur les entités déjà copiées (dim_aligned inclus)
+  newEntities.forEach(ne => {
+    if (ne.linkedTubeId !== undefined && tubeIdMap[ne.linkedTubeId] !== undefined)
+      ne.linkedTubeId = tubeIdMap[ne.linkedTubeId];
+    remapAssoc(ne, idMap);
+  });
+  // Auto-copier les entités liées NON sélectionnées (tubelbl, etc.)
+  S.entities
+    .filter(e => e.linkedTubeId !== undefined && tubeIdMap[e.linkedTubeId] !== undefined && !copiedSrcIds.has(e.id))
     .forEach(src => {
       const ne = JSON.parse(JSON.stringify(src));
       ne.id = S.nextId++;
@@ -10910,18 +11108,24 @@ function applyPaste(wx, wy) {
   const dx = wx - cx, dy = wy - cy;
   pushUndo();
   const tubeIdMap = {};
+  const idMap = {};
   const newIds = [];
+  const newEnts = [];
   S.clipboard.forEach(src => {
     const ne = JSON.parse(JSON.stringify(src));
     ne.id = S.nextId++;
+    idMap[src.id] = ne.id;
     if (src.type === 'tube') tubeIdMap[src.id] = ne.id;
     offsetEntity(ne, dx, dy);
     S.entities.push(ne);
     newIds.push(ne.id);
+    newEnts.push(ne);
   });
-  // Fix linkedTubeId for pasted tubelbl
-  S.entities.filter(e => e.type === 'tubelbl' && newIds.includes(e.id))
-    .forEach(e => { if (tubeIdMap[e.linkedTubeId] !== undefined) e.linkedTubeId = tubeIdMap[e.linkedTubeId]; });
+  // Remap linkedTubeId + assoc pour toutes les entités collées (dim_aligned, tubelbl, …)
+  newEnts.forEach(e => {
+    if (e.linkedTubeId !== undefined && tubeIdMap[e.linkedTubeId] !== undefined) e.linkedTubeId = tubeIdMap[e.linkedTubeId];
+    remapAssoc(e, idMap);
+  });
   S.selected = newIds;
   termPrint(newIds.length + ' objet(s) collé(s)', 'success');
   updateProperties(); render(); autoSave();
@@ -11102,7 +11306,117 @@ function applyStretch(minX, minY, maxX, maxY, dx, dy) {
     if (!S.layers[e.layer]?.visible) continue;
     if (applyStretchToEntity(e, minX, minY, maxX, maxY, dx, dy)) count++;
   }
+  refreshAssocDims();
   return count;
+}
+
+// ===== COTES ASSOCIATIVES (DIMASSOC) =====
+// Une cote linéaire/parallèle peut lier chacune de ses extrémités à un "sommet"
+// d'une autre entité (extrémité, milieu, centre, quadrant). Quand la géométrie
+// hôte change (stretch/grip/move/scale/rotate), la cote se recale automatiquement.
+// On n'associe QUE les accroches-sommet : intersection/perp/tangente/proche ne
+// correspondent à aucun point stocké → makeAssocFeature renvoie null.
+
+// Liste les points-sommet associables d'une entité, avec descripteur stable {k, i}.
+function assocFeatures(e) {
+  const F = [];
+  switch (e.type) {
+    case 'point':
+      F.push({k:'pt', x:e.x, y:e.y}); break;
+    case 'line': case 'wall': case 'leader':
+      F.push({k:'p1', x:e.x1, y:e.y1}, {k:'p2', x:e.x2, y:e.y2},
+             {k:'mid', x:(e.x1+e.x2)/2, y:(e.y1+e.y2)/2}); break;
+    case 'rect': {
+      const xs=[e.x1,e.x2,e.x2,e.x1], ys=[e.y1,e.y1,e.y2,e.y2];
+      for (let i=0;i<4;i++) F.push({k:'c', i, x:xs[i], y:ys[i]});
+      for (let i=0;i<4;i++){ const j=(i+1)%4; F.push({k:'cmid', i, x:(xs[i]+xs[j])/2, y:(ys[i]+ys[j])/2}); }
+      break; }
+    case 'polyline': case 'cable': case 'spline':
+      if (e.points) {
+        e.points.forEach((p,i)=>F.push({k:'v', i, x:p[0], y:p[1]}));
+        for (let i=0;i<e.points.length-1;i++){ const a=e.points[i],b=e.points[i+1]; F.push({k:'vmid', i, x:(a[0]+b[0])/2, y:(a[1]+b[1])/2}); }
+      }
+      break;
+    case 'circle':
+      F.push({k:'center', x:e.cx, y:e.cy});
+      [0,Math.PI/2,Math.PI,3*Math.PI/2].forEach((a,i)=>F.push({k:'quad', i, x:e.cx+e.r*Math.cos(a), y:e.cy+e.r*Math.sin(a)}));
+      break;
+    case 'arc':
+      F.push({k:'center', x:e.cx, y:e.cy},
+             {k:'astart', x:e.cx+e.r*Math.cos(e.startAngle), y:e.cy+e.r*Math.sin(e.startAngle)},
+             {k:'aend',   x:e.cx+e.r*Math.cos(e.endAngle),   y:e.cy+e.r*Math.sin(e.endAngle)});
+      break;
+  }
+  return F;
+}
+
+// Descripteur {k,i} → coordonnées monde actuelles de l'entité hôte (recalcul live).
+function assocResolve(e, f) {
+  switch (f.k) {
+    case 'pt':     return [e.x, e.y];
+    case 'p1':     return [e.x1, e.y1];
+    case 'p2':     return [e.x2, e.y2];
+    case 'mid':    return [(e.x1+e.x2)/2, (e.y1+e.y2)/2];
+    case 'c':      { const xs=[e.x1,e.x2,e.x2,e.x1], ys=[e.y1,e.y1,e.y2,e.y2]; return [xs[f.i], ys[f.i]]; }
+    case 'cmid':   { const xs=[e.x1,e.x2,e.x2,e.x1], ys=[e.y1,e.y1,e.y2,e.y2]; const j=(f.i+1)%4; return [(xs[f.i]+xs[j])/2,(ys[f.i]+ys[j])/2]; }
+    case 'v':      { const p=e.points && e.points[f.i]; return p ? [p[0],p[1]] : null; }
+    case 'vmid':   { const a=e.points && e.points[f.i], b=e.points && e.points[f.i+1]; return (a&&b) ? [(a[0]+b[0])/2,(a[1]+b[1])/2] : null; }
+    case 'center': return [e.cx, e.cy];
+    case 'quad':   { const a=[0,Math.PI/2,Math.PI,3*Math.PI/2][f.i]; return [e.cx+e.r*Math.cos(a), e.cy+e.r*Math.sin(a)]; }
+    case 'astart': return [e.cx+e.r*Math.cos(e.startAngle), e.cy+e.r*Math.sin(e.startAngle)];
+    case 'aend':   return [e.cx+e.r*Math.cos(e.endAngle),   e.cy+e.r*Math.sin(e.endAngle)];
+  }
+  return null;
+}
+
+// Reverse-map : point (x,y) accroché sur `host` → descripteur stable, ou null.
+function makeAssocFeature(host, x, y) {
+  if (!host || host.id === undefined) return null;
+  if (host.type === 'dim_linear' || host.type === 'dim_aligned') return null; // pas de cote sur cote
+  const feats = assocFeatures(host);
+  let best=null, bd=1e-4;
+  for (const f of feats) {
+    const d = Math.hypot(f.x-x, f.y-y);
+    if (d < bd) { bd = d; best = f; }
+  }
+  return best ? { entId: host.id, k: best.k, i: best.i } : null;
+}
+
+// Recale une cote sur ses hôtes. Retourne true si elle a bougé.
+function recomputeAssocDim(d) {
+  if (!d.assoc) return false;
+  let changed = false;
+  const a1 = d.assoc.p1, a2 = d.assoc.p2;
+  if (a1) {
+    const h = S.entities.find(e => e.id === a1.entId);
+    if (h) { const p = assocResolve(h, a1);
+      if (p && isFinite(p[0]) && isFinite(p[1]) && (p[0]!==d.x1 || p[1]!==d.y1)) { d.x1=p[0]; d.y1=p[1]; changed=true; } }
+  }
+  if (a2) {
+    const h = S.entities.find(e => e.id === a2.entId);
+    if (h) { const p = assocResolve(h, a2);
+      if (p && isFinite(p[0]) && isFinite(p[1]) && (p[0]!==d.x2 || p[1]!==d.y2)) { d.x2=p[0]; d.y2=p[1]; changed=true; } }
+  }
+  return changed;
+}
+
+// Passe globale : recale toutes les cotes associatives sur leur géométrie hôte.
+function refreshAssocDims() {
+  for (const d of S.entities) {
+    if ((d.type === 'dim_linear' || d.type === 'dim_aligned') && d.assoc) recomputeAssocDim(d);
+  }
+}
+
+// Remappe assoc.entId après copie/collage ; abandonne le côté dont l'hôte n'a pas été copié.
+function remapAssoc(ne, idMap) {
+  if (!ne.assoc) return;
+  for (const side of ['p1','p2']) {
+    const a = ne.assoc[side];
+    if (!a) continue;
+    if (idMap[a.entId] !== undefined) a.entId = idMap[a.entId];
+    else delete ne.assoc[side];
+  }
+  if (!ne.assoc.p1 && !ne.assoc.p2) delete ne.assoc;
 }
 
 // ===== TRIM =====
@@ -11845,6 +12159,7 @@ function applyScale(factor) {
   if (factor <= 0) { termPrint('Facteur invalide','warning'); return; }
   pushUndo();
   S.scaleIds.forEach(id => { const e=S.entities.find(en=>en.id===id); if(e) scaleEntityInPlace(e,S.scaleBase[0],S.scaleBase[1],factor); });
+  refreshAssocDims();
   termPrint('SCALE: '+S.scaleIds.length+' objet(s) mis à l\'échelle ×'+factor.toFixed(3),'success');
   S.scaleStep=0; S.scaleBase=null; S.scaleIds=[];
   setTool('select'); updateSaveIndicator('modified'); autoSave(); render();
@@ -11911,6 +12226,7 @@ function rotateEntityInPlace(e, cx, cy, angle) {
 function applyRotate(angle) {
   pushUndo();
   S.rotateIds.forEach(id => { const e=S.entities.find(en=>en.id===id); if(e) rotateEntityInPlace(e,S.rotateBase[0],S.rotateBase[1],angle); });
+  refreshAssocDims();
   termPrint('ROTATE: '+S.rotateIds.length+' objet(s) pivoté(s) de '+(angle*180/Math.PI).toFixed(1)+'°','success');
   S.rotateStep=0; S.rotateBase=null; S.rotateIds=[];
   setTool('select'); updateSaveIndicator('modified'); autoSave(); render();
@@ -11925,6 +12241,7 @@ function mirrorPt(px,py,ax,ay,bx,by) {
 
 function mirrorEntity(src,ax,ay,bx,by) {
   const e=JSON.parse(JSON.stringify(src));
+  if (e.assoc) delete e.assoc; // copie miroir : cote figée (hôte non suivi)
   const m=(px,py)=>mirrorPt(px,py,ax,ay,bx,by);
   const _th=pluginTransformHandler(e.type);
   if(_th){ _th(e, m, 'mirror'); return e; }
@@ -12423,8 +12740,12 @@ function hitTest(wx,wy,filter) {
       }
     }
     else if(e.type==='dim_linear'||e.type==='dim_aligned'){
-      let d=distToSeg(wx,wy,e.x1,e.y1,e.x2,e.y2);
+      // NB : la ligne de base entre les points de définition (e.x1,e.y1)-(e.x2,e.y2)
+      // n'est PAS dessinée et NE doit PAS être cliquable — sinon une cote associative,
+      // dont les points de définition reposent sur la géométrie, capture les clics
+      // destinés à l'objet coté. On ne teste que les éléments réellement tracés.
       const pts=getDimLinePoints(e);
+      let d = pts ? Infinity : distToSeg(wx,wy,e.x1,e.y1,e.x2,e.y2);
       if(pts){
         d=Math.min(d, distToSeg(wx,wy,pts[0],pts[1],pts[2],pts[3]));      // ligne de cote
         d=Math.min(d, distToSeg(wx,wy,e.x1,e.y1,pts[0],pts[1]));          // ligne d'attache 1
@@ -12981,6 +13302,7 @@ function _propChange(id, field, val, isText) {
   if (!e) return;
   pushUndo();
   if (isText) { e[field] = val; } else { const n = parseFloat(val); if (isNaN(n)) return; e[field] = n; }
+  refreshAssocDims();
   render(); autoSave();
 }
 
@@ -12999,6 +13321,7 @@ function _propChangeClosed(id, val) {
   }
   // Les splines pilotent la fermeture par le seul drapeau (pas de doublon).
   e.closed = makeClosed;
+  refreshAssocDims();
   render(); autoSave(); updateProperties();
   termPrint('#'+id+' '+(makeClosed?'fermée':'ouverte'), 'info');
 }
@@ -13010,6 +13333,7 @@ function _propChangeEllipseDim(id, axis, val) {
   if (isNaN(n) || n <= 0) return;
   pushUndo();
   e[axis] = n / 2;
+  refreshAssocDims();
   render(); autoSave(); updateProperties();
 }
 
@@ -13020,6 +13344,7 @@ function _propChangeEllipseAngle(id, valDeg) {
   if (isNaN(deg)) return;
   pushUndo();
   e.angle = deg * Math.PI / 180;
+  refreshAssocDims();
   render(); autoSave(); updateProperties();
 }
 
@@ -13034,6 +13359,7 @@ function _propChangeLongueurMulti(val) {
     e.x2 = e.x1 + newLen * Math.cos(angle);
     e.y2 = e.y1 + newLen * Math.sin(angle);
   });
+  refreshAssocDims();
   render(); autoSave(); updateProperties();
 }
 
@@ -13046,6 +13372,7 @@ function _propChangeLongueur(id, val) {
   pushUndo();
   e.x2 = e.x1 + newLen * Math.cos(angle);
   e.y2 = e.y1 + newLen * Math.sin(angle);
+  refreshAssocDims();
   render(); autoSave(); updateProperties();
 }
 
@@ -16590,6 +16917,10 @@ function captureUserPrefs() {
     toolbarLayout: S.toolbarLayout ? JSON.parse(JSON.stringify(S.toolbarLayout)) : null,
     loadedPlugins: S.loadedPlugins ? S.loadedPlugins.slice() : null,
     terminalHeight: parseInt(document.getElementById('terminal')?.style.height) || 160,
+    sidePanelWidth: parseInt(document.getElementById('side-panel')?.style.width) || 220,
+    sidePanelVisible: !document.getElementById('side-panel')?.classList.contains('hidden'),
+    propsPanelWidth: parseInt(document.getElementById('props-panel')?.style.width) || 200,
+    propsPanelVisible: !document.getElementById('props-panel')?.classList.contains('hidden'),
   };
 }
 
@@ -16627,6 +16958,28 @@ function applyUserPrefs(prefs) {
     const h = Math.max(58, Math.min(prefs.terminalHeight, 600));
     const el = document.getElementById('terminal');
     if (el) el.style.height = h + 'px';
+  }
+  if (prefs.sidePanelWidth) {
+    const w = Math.max(140, Math.min(prefs.sidePanelWidth, 600));
+    const el = document.getElementById('side-panel');
+    if (el) el.style.width = w + 'px';
+  }
+  if (prefs.sidePanelVisible === false) {
+    const el = document.getElementById('side-panel');
+    const tgl = document.getElementById('side-panel-toggle');
+    if (el) el.classList.add('hidden');
+    if (tgl) tgl.textContent = '▶';
+  }
+  if (prefs.propsPanelWidth) {
+    const w = Math.max(140, Math.min(prefs.propsPanelWidth, 600));
+    const el = document.getElementById('props-panel');
+    if (el) el.style.width = w + 'px';
+  }
+  if (prefs.propsPanelVisible === false) {
+    const el = document.getElementById('props-panel');
+    const tgl = document.getElementById('props-panel-toggle');
+    if (el) el.classList.add('hidden');
+    if (tgl) tgl.textContent = '◀';
   }
   _tbApplyLayout();
 }
@@ -18238,6 +18591,99 @@ function syncUIState() {
   // Grid
   document.getElementById('grid-btn').classList.toggle('active', S.gridVis);
 }
+
+// ===== SIDE PANEL RESIZE + TOGGLE =====
+(function() {
+  const handle  = document.getElementById('side-panel-resize-handle');
+  const panel   = document.getElementById('side-panel');
+  const toggle  = document.getElementById('side-panel-toggle');
+  const MIN_W = 140, MAX_W = 600, DEFAULT_W = 220;
+  let startX, startW;
+
+  handle.addEventListener('mousedown', e => {
+    if (e.target === toggle) return; // laisse le clic toggle gérer
+    startX = e.clientX;
+    startW = panel.offsetWidth;
+    handle.classList.add('dragging');
+    e.preventDefault();
+
+    const onMove = ev => {
+      if (panel.classList.contains('hidden')) return;
+      const w = Math.max(MIN_W, Math.min(MAX_W, startW + (ev.clientX - startX)));
+      panel.style.width = w + 'px';
+      resizeCanvas();
+    };
+    const onUp = () => {
+      handle.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      autoSavePrefs();
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  handle.addEventListener('dblclick', e => {
+    if (e.target === toggle) return;
+    panel.style.width = DEFAULT_W + 'px';
+    resizeCanvas();
+    autoSavePrefs();
+  });
+
+  toggle.addEventListener('click', () => {
+    const hidden = panel.classList.toggle('hidden');
+    toggle.textContent = hidden ? '▶' : '◀';
+    resizeCanvas();
+    autoSavePrefs();
+  });
+})();
+
+// ===== PROPS PANEL (droite) RESIZE + TOGGLE =====
+(function() {
+  const handle  = document.getElementById('props-panel-resize-handle');
+  const panel   = document.getElementById('props-panel');
+  const toggle  = document.getElementById('props-panel-toggle');
+  const MIN_W = 140, MAX_W = 600, DEFAULT_W = 200;
+  let startX, startW;
+
+  handle.addEventListener('mousedown', e => {
+    if (e.target === toggle) return;
+    startX = e.clientX;
+    startW = panel.offsetWidth;
+    handle.classList.add('dragging');
+    e.preventDefault();
+
+    const onMove = ev => {
+      if (panel.classList.contains('hidden')) return;
+      // Le panneau est à droite : drag vers la gauche = plus large
+      const w = Math.max(MIN_W, Math.min(MAX_W, startW - (ev.clientX - startX)));
+      panel.style.width = w + 'px';
+      resizeCanvas();
+    };
+    const onUp = () => {
+      handle.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      autoSavePrefs();
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  handle.addEventListener('dblclick', e => {
+    if (e.target === toggle) return;
+    panel.style.width = DEFAULT_W + 'px';
+    resizeCanvas();
+    autoSavePrefs();
+  });
+
+  toggle.addEventListener('click', () => {
+    const hidden = panel.classList.toggle('hidden');
+    toggle.textContent = hidden ? '◀' : '▶';
+    resizeCanvas();
+    autoSavePrefs();
+  });
+})();
 
 // ===== TERMINAL RESIZE =====
 (function() {
