@@ -2573,6 +2573,7 @@ const USER_PREFS = {
   ortho: false,
   polar: true,
   polarAngle: 15,
+  rightDragPan: false,
   tubeDiameter: 40,
   tubeBendRadius: 67,
   tubeRef: 'axe',
@@ -2615,6 +2616,7 @@ const S = {
   snap: true,
   ortho: false,
   polar: true,
+  rightDragPan: false, // glisser bouton droit pour déplacer la vue (clic droit reste Entrée)
   polarAngle: 15, // degrees increment for polar tracking
   gridVis: true,
   gridSize: 20,
@@ -9536,6 +9538,10 @@ function drawCursor() {
 
 // ===== INTERACTION =====
 let isPanning = false, panStartX, panStartY;
+// Pan au glisser-droit : _rightPanArm = amorçage (en attente du seuil de mouvement) ;
+// _rightPanned = un glisser a effectivement déplacé la vue (→ supprimer le menu contextuel au relâchement).
+let _rightPanArm = null, _rightPanned = false;
+const _RIGHT_PAN_THRESH = 4; // px écran avant de considérer que c'est un pan (et non un clic)
 let isRubberBand = false, rbStart = null, rbEnd = null, rbShiftKey = false;
 let isPrintRb = false, printRbStart = null, printRbEnd = null;
 
@@ -9545,6 +9551,14 @@ canvas.addEventListener('mousemove', (ev) => {
   S.mouseScreen = [sx, sy];
   let [wx, wy] = s2w(sx, sy);
   S.mouseWorld = [wx, wy];
+
+  // Glisser-droit : au-delà du seuil, on bascule en pan (model ou papier, via isPanning).
+  if (_rightPanArm && !isPanning &&
+      Math.hypot(ev.clientX - _rightPanArm.x0, ev.clientY - _rightPanArm.y0) >= _RIGHT_PAN_THRESH) {
+    isPanning = true; _rightPanned = true;
+    panStartX = _rightPanArm.x0; panStartY = _rightPanArm.y0; // déplacement appliqué depuis le point initial
+    canvas.style.cursor = 'grabbing';
+  }
 
   // Espace papier : pan modèle (MSPACE), drag de fenêtre, pan feuille, ou curseur
   if (S.space !== 'model') {
@@ -9629,7 +9643,13 @@ document.addEventListener('focusout', function(ev) {
 }, true);
 
 canvas.addEventListener('mousedown', (ev) => {
-  if (ev.button === 2) { ev.preventDefault(); return; } // géré par contextmenu
+  if (ev.button === 2) {
+    ev.preventDefault();
+    // Glisser-droit pour déplacer la vue : on amorce, le pan ne démarre qu'au-delà du seuil
+    // (un clic droit sans déplacement garde son rôle : Entrée / répéter / menu via contextmenu).
+    if (S.rightDragPan) { _rightPanArm = { x0: ev.clientX, y0: ev.clientY }; _rightPanned = false; }
+    return; // géré par contextmenu
+  }
 
   // Espace papier : MSPACE actif, sinon édition de fenêtres / pan feuille
   if (S.space !== 'model') {
@@ -9905,7 +9925,18 @@ function smartFocus() {
 }
 
 canvas.addEventListener('mouseup', (ev) => {
-  if (ev.button === 2) { ev.preventDefault(); return; }
+  if (ev.button === 2) {
+    ev.preventDefault();
+    _rightPanArm = null;
+    if (isPanning) { isPanning = false; canvas.style.cursor = S.space === 'model' ? 'none' : 'default'; }
+    if (S.rightDragPan) {
+      // Glisser → la vue a été déplacée : curseur croix+réticule, AUCUNE commande répétée.
+      // Clic (pas de déplacement) → action habituelle (Entrée / répéter / menu).
+      if (_rightPanned) { _rightPanned = false; canvas.style.cursor = S.space === 'model' ? 'none' : 'default'; }
+      else _rightClickAction(ev);
+    }
+    return;
+  }
   if (isPanning) { isPanning = false; canvas.style.cursor = S.space === 'model' ? 'none' : 'default'; }
   if (S.space !== 'model') {
     if (_mspacePan) { _mspacePan = null; canvas.style.cursor = 'grab'; autoSave(); }
@@ -16909,6 +16940,7 @@ function captureUserPrefs() {
     ortho: S.ortho,
     polar: S.polar,
     polarAngle: S.polarAngle,
+    rightDragPan: S.rightDragPan,
     tubeDiameter: S.tubeDiameter,
     tubeBendRadius: S.tubeBendRadius,
     tubeRef: S.tubeRef,
@@ -16948,6 +16980,7 @@ function applyUserPrefs(prefs) {
   if (prefs.ortho !== undefined)        S.ortho = prefs.ortho;
   if (prefs.polar !== undefined)        S.polar = prefs.polar;
   if (prefs.polarAngle !== undefined)   S.polarAngle = prefs.polarAngle;
+  if (prefs.rightDragPan !== undefined) S.rightDragPan = prefs.rightDragPan;
   if (prefs.tubeDiameter !== undefined) S.tubeDiameter = prefs.tubeDiameter;
   if (prefs.tubeBendRadius !== undefined) S.tubeBendRadius = prefs.tubeBendRadius;
   if (prefs.tubeRef !== undefined)      S.tubeRef = prefs.tubeRef;
@@ -17092,6 +17125,10 @@ function openPrefsDialog() {
       ${row(`{{prefs.input_polar}} <span class="pf-unit">F10</span>`, chk('polar', p.polar))}
       ${row(`{{prefs.input_polar_inc}}`, num('polarAngle', p.polarAngle, 5, 1, 90), '°')}
       ${row(`{{prefs.input_pickbox}}`, num('pickboxPx', p.pickboxPx ?? 6, 1, 3, 20), 'px')}
+      ${row(`{{prefs.input_pan}}`, sel('rightDragPan', [
+        {v:'0', l:`{{prefs.pan_wheel}}`},
+        {v:'1', l:`{{prefs.pan_wheel_right}}`},
+      ], p.rightDragPan ? '1' : '0'))}
 
       ${sec(`{{prefs.dim}}`)}
       ${row(`{{prefs.dim_style}}`, sel('dimStyle', S.dimStyles.map(s=>({v:s.name,l:s.name})), p.currentDimStyle))}
@@ -17133,6 +17170,7 @@ function openPrefsDialog() {
       ortho: g('ortho').checked,
       polar: g('polar').checked,
       polarAngle: parseFloat(g('polarAngle').value) || 15,
+      rightDragPan: g('rightDragPan').value === '1',
       pickboxPx: parseFloat(g('pickboxPx').value) || 6,
       tubeDiameter: parseFloat(g('tubeDiameter').value) || 40,
       tubeBendRadius: parseFloat(g('tubeBendRadius').value) || 67,
@@ -18319,6 +18357,13 @@ canvas.addEventListener('dblclick', (ev) => {
 
 canvas.addEventListener('contextmenu', (ev) => {
   ev.preventDefault();
+  // Glisser-droit activé : l'action (Entrée / répéter / menu) est décidée au mouseup,
+  // car selon la plateforme `contextmenu` peut survenir au mousedown (avant le glisser) —
+  // on ne pourrait alors pas distinguer un clic d'un déplacement de vue.
+  if (S.rightDragPan) return;
+  _rightClickAction(ev);
+});
+function _rightClickAction(ev) {
   if (S.space !== 'model') {
     const layout = getActiveLayout(); if (!layout) return;
     const rect = canvas.getBoundingClientRect();
@@ -18467,7 +18512,7 @@ canvas.addEventListener('contextmenu', (ev) => {
     termPrint('Répéter: ' + S.lastCmdRaw.toUpperCase(), 'info');
     executeCommand(S.lastCmdRaw);
   }
-});
+}
 
 function showCanvasContext(ev) {
   const menu = document.getElementById('canvas-context');

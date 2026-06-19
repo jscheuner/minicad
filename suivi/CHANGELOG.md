@@ -7,6 +7,13 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.1] — 2026-06-16 — Version courante
 
 ### Ajouté
+- **Déplacement de la vue au glisser-droit** : nouveau réglage Préférences (section Saisie)
+  « Déplacement de la vue » → *Molette seule* (défaut) ou *Molette + glisser droit*. Quand il
+  est activé, **maintenir le bouton droit et glisser** déplace la vue (modèle et espace papier),
+  tandis qu'un **clic droit sans bouger conserve son rôle** (Entrée / répéter la commande /
+  menu contextuel via Ctrl) — y compris pendant une commande active. Seuil de 4 px pour
+  distinguer clic et glisser ; le menu contextuel est supprimé à la fin d'un glisser-pan.
+  Préférence persistée (`rightDragPan`).
 - **Cotes vraiment associatives (DIMASSOC)** : à la création d'une cote `dim_linear` /
   `dim_aligned`, si une extrémité est posée sur une accroche-**sommet** (extrémité, milieu,
   centre, quadrant) d'une autre entité, le lien est mémorisé (`assoc.p1` / `assoc.p2`). La
