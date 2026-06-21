@@ -6,7 +6,7 @@
 <title>MiniCAD — Free online 2D technical drawing & CAD, no installation</title>
 <meta name="description" content="Free 2D technical drawing (CAD) software running directly in your browser, no installation: lines, dimensioning, layers, DXF and SVG export.">
 <meta name="application-name" content="MiniCAD">
-<meta name="theme-color" content="#16213e">
+<meta name="theme-color" content="#f5f6f8">
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAADX0lEQVRYhe2XTWhUVxiGn3PunZkkM6kmaBInHTOa+NNAFRf1p2o1ENpEumiJ0EVXpSgB3aRm1S5a6DK4saHSElApFKURAlK1f1GHTlEihQTFamZEa2JyZxKCNQlx5t45XdhcHefOmMB1uvFdne97zz3ve79zvns5gqdQFd74DpJ2UNuAKkDgDjLAfYH6RUh5eDw2eH2eEADhcLhkVi7pAfWhS4KFkFaCzmR86AiABuCtrDteJHEATUCrv6I6MTNlXBXL6ze0CMW5Iok/jUdCV41aoKKmC1j/PxjQyQifBPXmQp8I+P14vd68vM/nI+D3L8ZEqw4sKzRj/doGPjm4n6a3tvNKeQCAu/dG6Dtznu5vjyGE4MD+j3j/3RZWhmoB+OfhNBciUQ5/9Q03h+OFln9VVK3eoPKxLc1N9HR34fF4HPnY7TtIKVkdXunIp1IpPj7Yyc+/XconofIaqA2uIHL+9GJLmoOH0zPsfPs9xoyEowHNX1H9hRPTcWAfO7ZutuM/rlzlu5O9DPw5SLguRHkg29jo2Dg9J77nQiSKruuEaoMA+Lxe0qZJJHrF0WDeCvx65hSvNz5ujlux2+ze04ZlZQB4bd0aLp7tffIaSrGrtc3eb13TuHjuNGvqVwHw160Yu1rbHCsgHW0BoeAKexy9PGCLA9y4OczI6JgdJycmsw6baVn0X/rdjhvqVyGls5RjtqyslKVLl9ix0/4ZiaQ9vj9uOPAT9ljXtJwtK2igtKQkK56be5QzJ22aBXnTsrJiXdcXbqCYeGngpYGco/mGX9K+PAVHPrdze+/ewFOt022Yz05330CdDyqlgi277VwyNsLOckl3bru7bwBg1JKwpcmO7/T9RL372vkNpNMmnZ99acepa9dzDHzdc4Levh8BSExM8Cwi0ctZa0zPzDoayPkZ7a2UbAtoHPo7bee2BiQdNTofxFLPeZ9FQzlWYKNf8mnwCRX0uHU9yIXO40uD3Y6Ds4ofJrO/45Om4t4DixeAjK5gVEBoPjM8pxiec7/dnKESUqDOFknNASIqkaoLcP10LUhecFQmYtfiQEfRxVHHjPhQvwYwM2UMlFVWTwlo5r/74osWX1aaaU8mk1ZWf9U0bGpUGfOQQjQDtS6ayYAyQESF4KgRH+qfJ/4FnbEd/FDgNcoAAAAASUVORK5CYII=">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=Oswald:wght@300;400;500&family=Share+Tech&display=swap');
@@ -1341,6 +1341,7 @@
   .td-footer button:hover { color: #fff; border-color: color-mix(in srgb, var(--ink) 27%, transparent); }
   .td-ok { background: var(--accent-dim) !important; color: var(--accent) !important; border-color: var(--accent) !important; }
 </style>
+<script>(function(){try{var p=JSON.parse(localStorage.getItem('minicad_user_prefs')||'{}');var t=p.theme||(p.theme===undefined?'light':p.theme);if(t==='light'||t===undefined)document.documentElement.classList.add('theme-light');}catch(e){document.documentElement.classList.add('theme-light');}})();</script>
 </head>
 <body>
 
@@ -2560,7 +2561,7 @@
 <script>
 // ===USER_PREFS_START===
 const USER_PREFS = {
-  theme: 'dark',
+  theme: 'light',
   pickboxPx: 6,
   osnapTolPx: 15,
   snap: true,
@@ -2591,7 +2592,7 @@ const USER_PREFS = {
 
 // ===== STATE =====
 const S = {
-  theme: 'dark',
+  theme: 'light',
   pickboxPx: 6,    // demi-côté du carré de sélection (px écran)
   osnapTolPx: 15,  // portée d'accrochage OSNAP (px écran)
   entities: [],
@@ -2825,7 +2826,7 @@ const OSNAP_COLORS_LIGHT = {
   quadrant: '#7a7000',
   extension: '#e65100',
 };
-let OSNAP_COLORS = OSNAP_COLORS_DARK;
+let OSNAP_COLORS = OSNAP_COLORS_LIGHT;
 
 // ===== THÈME (sombre / clair) =====
 // Couleurs du canvas pilotées par le thème. `ink` = encre de chrome (réticule,
@@ -2844,7 +2845,7 @@ const CANVAS_THEMES = {
     rbWin: '#0072ad', rbCross: '#00873e',
   },
 };
-let TC = CANVAS_THEMES.dark;
+let TC = CANVAS_THEMES.light;
 
 // Adapte une couleur d'entité au fond clair : si trop lumineuse pour rester
 // lisible sur blanc (contraste < ~3:1), on la rabat vers le noir en conservant
@@ -4390,6 +4391,7 @@ function resizeCanvas() {
   render();
 }
 window.addEventListener('resize', resizeCanvas);
+new ResizeObserver(() => resizeCanvas()).observe(document.getElementById('canvas-area'));
 
 function w2s(wx, wy) { return [wx * S.zoom + S.panX + canvasW / 2, -wy * S.zoom + S.panY + canvasH / 2]; }
 function s2w(sx, sy) { return [(sx - S.panX - canvasW / 2) / S.zoom, -(sy - S.panY - canvasH / 2) / S.zoom]; }
@@ -6755,25 +6757,37 @@ function updateTubeRefUI() {
   });
 }
 
-function flattenPolyPoints(pts) {
+function flattenPolyPoints(pts, closed) {
   const out = [];
+  // Échantillonnage via bulgeToArc → identique au rendu (gère les arcs majeurs |bulge|>1)
+  const addArc = (p, p2, bulge) => {
+    const arc = bulgeToArc(p[0], p[1], p2[0], p2[1], bulge);
+    if (!arc) return;
+    const span = arc.ea - arc.sa;   // intervalle CCW (>0)
+    const N = Math.max(8, Math.ceil(Math.abs(span) * arc.r / 5));
+    // bulgeToArc peut renvoyer sa au niveau de p OU de p2 (branche sa=aP2). On doit
+    // échantillonner DE p VERS p2 pour préserver l'ordre des sommets ; sinon les
+    // points d'arc sortent inversés → nœud papillon → hachure/aire qui débordent.
+    const startAtP = Math.hypot(arc.cx + arc.r * Math.cos(arc.sa) - p[0],
+                                arc.cy + arc.r * Math.sin(arc.sa) - p[1]) < 1e-6;
+    for (let j = 1; j < N; j++) {
+      const t = j / N;
+      const a = startAtP ? arc.sa + span * t : arc.ea - span * t;
+      out.push([arc.cx + arc.r * Math.cos(a), arc.cy + arc.r * Math.sin(a)]);
+    }
+  };
   for (let i = 0; i < pts.length; i++) {
     const p = pts[i];
     out.push([p[0], p[1]]);
     const bulge = p[2] || 0;
-    if (bulge !== 0 && i + 1 < pts.length) {
-      const p2 = pts[i + 1];
-      // Échantillonnage via bulgeToArc → identique au rendu (gère les arcs majeurs |bulge|>1)
-      const arc = bulgeToArc(p[0], p[1], p2[0], p2[1], bulge);
-      if (arc) {
-        const span = arc.ea - arc.sa;   // intervalle CCW (>0)
-        const N = Math.max(8, Math.ceil(Math.abs(span) * arc.r / 5));
-        for (let j = 1; j < N; j++) {
-          const a = arc.sa + span * (j / N);
-          out.push([arc.cx + arc.r * Math.cos(a), arc.cy + arc.r * Math.sin(a)]);
-        }
-      }
-    }
+    if (bulge !== 0 && i + 1 < pts.length) addArc(p, pts[i + 1], bulge);
+  }
+  // Segment de fermeture courbe (fillet/chanfrein sur la couture d'une polyligne fermée) :
+  // le bulge stocké sur le dernier point relie dernier → premier ; la boucle ci-dessus
+  // l'ignore (i+1 hors borne). Sans ça, le contour (hachure, aire…) coupe droit l'arc.
+  if (closed && pts.length > 1) {
+    const lp = pts[pts.length - 1], fp = pts[0], b = lp[2] || 0;
+    if (b !== 0 && Math.hypot(fp[0] - lp[0], fp[1] - lp[1]) > 1e-9) addArc(lp, fp, b);
   }
   return out;
 }
@@ -6791,7 +6805,7 @@ function ptsFromEntity(src) {
     return pts;
   }
   if (src.type === 'polyline' || src.type === 'cable') {
-    const pts = flattenPolyPoints(src.points);
+    const pts = flattenPolyPoints(src.points, src.closed);
     const first = pts[0], last = pts[pts.length - 1];
     if (pts.length > 1 && Math.hypot(last[0]-first[0], last[1]-first[1]) > 1)
       pts.push([first[0], first[1]]);
@@ -6942,6 +6956,9 @@ function drawEntity(e) {
         if (bulge !== 0) drawPolyArcSegToPath(lp, fp, bulge);
         else { const [qx,qy] = w2s(fp[0],fp[1]); ctx.lineTo(qx,qy); }
       }
+      // closePath() rend une vraie jointure au sommet de couture (sinon deux caps de
+      // ligne qui se touchent → coin entaillé avec une épaisseur de trait visible).
+      if (e.closed) ctx.closePath();
       ctx.stroke();
       if (e.type === 'cable') ctx.setLineDash([]);
       break;
@@ -8745,7 +8762,7 @@ function applySmooth(polys, k) {
   pushUndo();
   let count = 0;
   for (const e of polys) {
-    const flat = flattenPolyPoints(e.points);   // résout d'abord les bulges en points
+    const flat = flattenPolyPoints(e.points, e.closed);   // résout d'abord les bulges en points
     if (flat.length < 3) continue;
     const isClosed = e.closed === true ||
       (flat.length > 2 && Math.hypot(flat[0][0]-flat[flat.length-1][0], flat[0][1]-flat[flat.length-1][1]) < 1e-9);
@@ -11181,7 +11198,7 @@ function computeEntityArea(e) {
     return full ? Math.PI * e.rx * e.ry : null;   // pas d'aire pour un arc d'ellipse
   }
   if (['polyline','cable','hatch'].includes(e.type) && e.points?.length >= 3)
-    return _shoelace(flattenPolyPoints(e.points));
+    return _shoelace(flattenPolyPoints(e.points, e.closed));
   return null;
 }
 
@@ -11206,7 +11223,7 @@ function computeEntityPerimeter(e) {
     let L = 0; for (const s of ellipseSampleSegs(el, 128)) L += Math.hypot(s[2]-s[0], s[3]-s[1]); return L;
   }
   if (['polyline','cable','hatch'].includes(e.type) && e.points?.length >= 2) {
-    const pts = flattenPolyPoints(e.points);
+    const pts = flattenPolyPoints(e.points, e.closed);
     let p = 0;
     for (let i = 0; i < pts.length - 1; i++)
       p += Math.hypot(pts[i+1][0] - pts[i][0], pts[i+1][1] - pts[i][1]);
@@ -11251,7 +11268,7 @@ function executeDivide(ent, N) {
       ids.push(addPt(ent.cx + ent.r*Math.cos(a), ent.cy + ent.r*Math.sin(a)));
     }
   } else if (ent.type === 'polyline' || ent.type === 'cable') {
-    const raw = flattenPolyPoints(ent.points);
+    const raw = flattenPolyPoints(ent.points, ent.closed);
     const lens = [0];
     for (let i = 1; i < raw.length; i++)
       lens.push(lens[i-1] + Math.hypot(raw[i][0]-raw[i-1][0], raw[i][1]-raw[i-1][1]));
@@ -12912,10 +12929,11 @@ function pointInClosedEntity(wx, wy) {
       inside = Math.hypot(wx - e.cx, wy - e.cy) < e.r;
       area = Math.PI * e.r * e.r;
     } else if (e.type === 'polyline' || e.type === 'cable') {
-      const flat = flattenPolyPoints(e.points);
+      const flat = flattenPolyPoints(e.points, e.closed);
       if (flat.length < 3) continue;
       const fl = flat[flat.length - 1];
-      if (Math.hypot(fl[0] - flat[0][0], fl[1] - flat[0][1]) > 1) continue; // non fermée
+      const isClosed = e.closed === true || Math.hypot(fl[0] - flat[0][0], fl[1] - flat[0][1]) <= 1;
+      if (!isClosed) continue; // non fermée
       inside = pointInPolygon(wx, wy, flat);
       area = Math.abs(flat.reduce((s, p, i) => {
         const q = flat[(i + 1) % flat.length];
