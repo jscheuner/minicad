@@ -6,7 +6,7 @@
 <title>MiniCAD — Dessin technique 2D & CAO en ligne, gratuit et sans installation</title>
 <meta name="description" content="Logiciel de dessin technique 2D (CAO) gratuit, directement dans le navigateur, sans installation : lignes, cotation, calques, export DXF et SVG.">
 <meta name="application-name" content="MiniCAD">
-<meta name="theme-color" content="#16213e">
+<meta name="theme-color" content="#f5f6f8">
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAADX0lEQVRYhe2XTWhUVxiGn3PunZkkM6kmaBInHTOa+NNAFRf1p2o1ENpEumiJ0EVXpSgB3aRm1S5a6DK4saHSElApFKURAlK1f1GHTlEihQTFamZEa2JyZxKCNQlx5t45XdhcHefOmMB1uvFdne97zz3ve79zvns5gqdQFd74DpJ2UNuAKkDgDjLAfYH6RUh5eDw2eH2eEADhcLhkVi7pAfWhS4KFkFaCzmR86AiABuCtrDteJHEATUCrv6I6MTNlXBXL6ze0CMW5Iok/jUdCV41aoKKmC1j/PxjQyQifBPXmQp8I+P14vd68vM/nI+D3L8ZEqw4sKzRj/doGPjm4n6a3tvNKeQCAu/dG6Dtznu5vjyGE4MD+j3j/3RZWhmoB+OfhNBciUQ5/9Q03h+OFln9VVK3eoPKxLc1N9HR34fF4HPnY7TtIKVkdXunIp1IpPj7Yyc+/XconofIaqA2uIHL+9GJLmoOH0zPsfPs9xoyEowHNX1H9hRPTcWAfO7ZutuM/rlzlu5O9DPw5SLguRHkg29jo2Dg9J77nQiSKruuEaoMA+Lxe0qZJJHrF0WDeCvx65hSvNz5ujlux2+ze04ZlZQB4bd0aLp7tffIaSrGrtc3eb13TuHjuNGvqVwHw160Yu1rbHCsgHW0BoeAKexy9PGCLA9y4OczI6JgdJycmsw6baVn0X/rdjhvqVyGls5RjtqyslKVLl9ix0/4ZiaQ9vj9uOPAT9ljXtJwtK2igtKQkK56be5QzJ22aBXnTsrJiXdcXbqCYeGngpYGco/mGX9K+PAVHPrdze+/ewFOt022Yz05330CdDyqlgi277VwyNsLOckl3bru7bwBg1JKwpcmO7/T9RL372vkNpNMmnZ99acepa9dzDHzdc4Levh8BSExM8Cwi0ctZa0zPzDoayPkZ7a2UbAtoHPo7bee2BiQdNTofxFLPeZ9FQzlWYKNf8mnwCRX0uHU9yIXO40uD3Y6Ds4ofJrO/45Om4t4DixeAjK5gVEBoPjM8pxiec7/dnKESUqDOFknNASIqkaoLcP10LUhecFQmYtfiQEfRxVHHjPhQvwYwM2UMlFVWTwlo5r/74osWX1aaaU8mk1ZWf9U0bGpUGfOQQjQDtS6ayYAyQESF4KgRH+qfJ/4FnbEd/FDgNcoAAAAASUVORK5CYII=">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=Oswald:wght@300;400;500&family=Share+Tech&display=swap');
@@ -1341,6 +1341,7 @@
   .td-footer button:hover { color: #fff; border-color: color-mix(in srgb, var(--ink) 27%, transparent); }
   .td-ok { background: var(--accent-dim) !important; color: var(--accent) !important; border-color: var(--accent) !important; }
 </style>
+<script>(function(){try{var p=JSON.parse(localStorage.getItem('minicad_user_prefs')||'{}');var t=p.theme||(p.theme===undefined?'light':p.theme);if(t==='light'||t===undefined)document.documentElement.classList.add('theme-light');}catch(e){document.documentElement.classList.add('theme-light');}})();</script>
 <style>
 .lang-switcher{display:flex;align-items:center;gap:3px;margin-left:8px}
 .lang-btn{background:transparent;border:1px solid #ffffff22;border-radius:3px;color:#ffffff55;
@@ -1350,7 +1351,7 @@
 .lang-btn.active{border-color:var(--accent,#00d4ff);color:var(--accent,#00d4ff)}
 </style><script id="i18n-runtime">
 (function(){
-  var T = {"en":{"app.title":"MiniCAD","seo.title":"MiniCAD — Free online 2D technical drawing & CAD, no installation","seo.description":"Free 2D technical drawing (CAD) software running directly in your browser, no installation: lines, dimensioning, layers, DXF and SVG export.","menu.file":"File","menu.library":"Library","menu.draw":"Draw","menu.modify":"Modify","menu.insert":"Insert","menu.dimension":"Dimension","menu.help":"Help","menu.file.new":"New","menu.file.open":"Open…","menu.file.save":"Save","menu.file.save_as":"Save as…","menu.file.export_dxf":"Export DXF","menu.file.import_dxf":"Import DXF…","menu.file.print":"Print / Export PDF","menu.file.prefs":"Preferences…","menu.file.theme":"Light / dark theme","tb.file":"File","tb.draw":"Draw","tb.modify":"Modify","tb.dim":"Dimension","tb.snap":"Snap","tb.view":"View","tb.arch":"Architecture","tb.elec":"Electrical","tool.select":"Select (V)","tool.pan":"Pan (P)","tool.move":"Move (M)","tool.copy":"Copy (CO)","tool.rotate":"Rotate (RO)","tool.scale":"Scale (SC)","tool.mirror":"Mirror (MI)","tool.offset":"Offset (O)","tool.trim":"Trim (TR)","tool.extend":"Extend (EX)","tool.fillet":"Fillet (F)","tool.chamfer":"Chamfer (CHA)","tool.stretch":"Stretch (ET)","tool.explode":"Explode (X)","tool.join":"Join as Polyline (J)","tool.line":"Line (L)","tool.xline":"Construction Line (XL)","tool.ray":"Ray","tool.rect":"Rectangle (R)","tool.rectcenter":"Rectangle by Center (RC)","tool.circle":"Circle (C)","tool.arc":"Arc (A)","tool.polyline":"Polyline (PL)","tool.polygon":"Regular Polygon (POL)","tool.ellipse":"Ellipse (EL)","tool.spline":"Spline (SPL)","tool.wall":"Wall (W)","tool.cable":"Cable (CAB)","tool.ray_rev":"Reverse ray (RAY_REV)","tool.erase":"Erase (Del)","tool.door":"Door (DOOR)","tool.window":"Window (WINDOW)","tool.outlet":"Outlet (OUTLET)","tool.switch":"Switch (SWITCH)","tool.dimstyle":"Dimension styles (DIMSTYLE)","tool.tube":"Tube 2-line (TUBE)","tool.leader":"Leader (LEADER)","tool.text":"Text (TX)","tool.hatch":"Hatch (H)","tool.point":"Point (PT)","tool.dim_linear":"Linear Dimension","tool.dim_aligned":"Aligned Dimension","tool.dim_angular":"Angular Dimension","tool.dim_radius":"Radius Dimension","tool.dim_diameter":"Diameter Dimension","tool.dim_arc":"Arc Length Dimension","tool.array":"Rectangular Array (AR)","tool.array_polar":"Polar Array (APO)","tool.measure":"Measure (ME)","tool.calc":"Calculator (CALC)","tool.dist":"Distance (DI)","tool.area":"Area (AREA)","tool.divide":"Divide (DIV)","tool.zoom_extents":"Zoom Extents","tool.theme":"Toggle theme (THEME)","tool.zoom_in":"Zoom In","tool.zoom_out":"Zoom Out","tool.grid":"Grid","tool.snap":"Grid Snap (F9)","tool.osnap":"Object Snap (F3)","tool.ortho":"Ortho (F8)","tool.polar":"Polar (F10)","tool.explode_btn":"Explode (X)","tool.group":"Group (GROUP)","tool.ungroup":"Ungroup (UNGROUP)","tool.ai":"AI Assistant Ollama","tool.print":"Export PDF (Ctrl+P)","tool.save_state":"Save State","panel.layers":"LAYERS","panel.properties":"PROPERTIES","panel.osnap":"SNAP","panel.modules":"MODULES","panel.terminal":"HISTORY","layer.new":"New Layer","layer.name":"Name","layer.color":"Color","layer.visible":"Visible","layer.lock":"Locked","layer.print":"Print","layer.linetype":"Line Type","layer.linewidth":"Line Width","osnap.endpoint":"Endpoint","osnap.midpoint":"Midpoint","osnap.center":"Center","osnap.nearest":"Nearest","osnap.intersection":"Intersection","osnap.perpendicular":"Perpendicular","osnap.tangent":"Tangent","osnap.quadrant":"Quadrant","osnap.extension":"Extension","status.ortho":"ORTHO","status.polar":"POLAR","status.snap":"SNAP","status.osnap":"OSNAP","btn.ok":"OK","btn.cancel":"Cancel","btn.apply":"Apply ↵","btn.close":"Close","btn.add":"+ Add Section","btn.delete":"Delete","btn.preview":"Preview","dialog.array.title":"RECTANGULAR ARRAY","dialog.array.cols":"Columns","dialog.array.rows":"Rows","dialog.array.dx":"X Spacing","dialog.array.dy":"Y Spacing","dialog.polar.title":"POLAR ARRAY","dialog.polar.count":"Item count","dialog.polar.angle":"Total angle (°)","dialog.polar.cx":"Center X","dialog.polar.cy":"Center Y","dialog.polar.rotate":"Rotate items","dialog.calc.title":"CALCULATOR","dialog.tube.title":"Tube Parameters","dialog.tube.diameter":"Ø diameter","dialog.tube.radius":"MR mean radius","dialog.tube.edit_title":"EDIT TUBE","dialog.tube.add_section":"+ Add Section","dialog.tube.devlen":"Developed length AXIS","dialog.tube.col_len":"Entry length","dialog.tube.col_angle":"Angle (°)","dialog.tube.col_arc":"Bend length","dialog.layers.title":"LAYER MANAGER","dialog.layers.add":"New Layer","dialog.dimstyle.title":"DIMENSION STYLES","cmd.placeholder":"Command or measure (100<45, @50,30, 200)...","cmd.first_point":"First point: X,Y (e.g. 100,200) or click…","cmd.wh":"Width,Height (e.g. 100,100) or click…","tool.open":"Open (Ctrl+O)","tool.save":"Save (Ctrl+S)","help.commands":"═══ COMMANDS ═══","help.measure":"═══ POINT INPUT (after 1st point) ═══","help.measure.polar":"  100<45   — Polar: distance 100, angle 45°","help.measure.rel":"  50,30    — Relative: +50 X, +30 Y (default)","help.measure.relx":"  @50,30   — Relative: same (explicit)","help.measure.abs":"  #200,300 — Absolute: X=200, Y=300","help.measure.dist":"  150      — Distance 150 in cursor direction","help.measure.ex":"  Example: RECT → click → 100,100 → 100×100 square ✓","help.files":"═══ FILES ═══","help.files.open":"  OPEN     — Open DXF / DWG / JSON (.mcad)","help.files.save":"  SAVE     — Save as native JSON (.mcad)","help.files.dxf":"  EXPORT DXF — Export DXF (R2000)","help.files.dwg":"  EXPORT DWG — Export DWG (via DXF)","help.files.svg":"  EXPORT SVG — Export SVG","help.files.shortcut":"  Ctrl+O / Ctrl+S — Open / Save","help.constraints":"═══ CONSTRAINTS ═══","help.ortho":"  F8 = ORTHO (0°/90°/180°/270° only)","help.polar":"  F10 = POLAR (configurable angle increments)","help.polar.cmd":"  POLAR [angle] — Change increment (e.g. POLAR 30)","help.polar.excl":"  Ortho and Polar are mutually exclusive","help.di":"═══ DYNAMIC INPUT ═══","help.di.tooltip":"  Distance/Angle tooltip editable near cursor","help.di.tab":"  Tab = toggle between D and A fields","help.di.confirm":"  Enter a value + Enter = confirm point","help.module":"═══ MODULE: {name} ═══","prefs.title":"User preferences","prefs.appearance":"Appearance","prefs.theme":"Theme","prefs.theme_dark":"Dark","prefs.theme_light":"Light","prefs.grid":"Grid","prefs.grid_visible":"Show grid","prefs.grid_snap":"Snap to grid","prefs.grid_size":"Grid spacing (X)","prefs.grid_size_y":"Grid spacing (Y)","prefs.unit_drawing":"units","prefs.osnap":"Object snap (OSNAP)","prefs.osnap_enabled":"Snapping enabled","prefs.osnap_range":"Detection range","prefs.input":"Input & cursor","prefs.input_ortho":"Ortho mode","prefs.input_polar":"Polar tracking","prefs.input_polar_inc":"Polar increment","prefs.input_pickbox":"Pickbox size","prefs.dim":"Dimensions","prefs.dim_style":"Active dimension style","prefs.tube":"Tube & piping","prefs.tube_diameter":"Outer diameter Ø","prefs.tube_bend":"Bend radius","prefs.tube_ref":"Reference line","prefs.tube_ref_axis":"Axis","prefs.tube_ref_outer":"Outside","prefs.tube_ref_inner":"Inside","prefs.reset":"Reset","prefs.import":"Import…","prefs.export":"Export…","prefs.cancel":"Cancel","prefs.apply":"Apply","prefs.reset_confirm":"Reset all preferences to default values?"},"fr":{"app.title":"MiniCAD","seo.title":"MiniCAD — Dessin technique 2D & CAO en ligne, gratuit et sans installation","seo.description":"Logiciel de dessin technique 2D (CAO) gratuit, directement dans le navigateur, sans installation : lignes, cotation, calques, export DXF et SVG.","menu.file":"Fichier","menu.library":"Bibliothèque","menu.draw":"Dessin","menu.modify":"Modifier","menu.insert":"Insérer","menu.dimension":"Cotation","menu.help":"Aide","menu.file.new":"Nouveau","menu.file.open":"Ouvrir…","menu.file.save":"Sauvegarder","menu.file.save_as":"Sauvegarder sous…","menu.file.export_dxf":"Exporter DXF","menu.file.import_dxf":"Importer DXF…","menu.file.print":"Imprimer / Export PDF","menu.file.prefs":"Préférences…","menu.file.theme":"Thème clair / sombre","tb.file":"Fichier","tb.draw":"Dessin","tb.modify":"Modification","tb.dim":"Cotation","tb.snap":"Accrochage","tb.view":"Vue","tb.arch":"Architecture","tb.elec":"Électricité","tool.select":"Sélection (V)","tool.pan":"Panoramique (P)","tool.move":"Déplacer (M)","tool.copy":"Copier (CO)","tool.rotate":"Rotation (RO)","tool.scale":"Mise à l'échelle (SC)","tool.mirror":"Miroir (MI)","tool.offset":"Décaler (O)","tool.trim":"Couper (TR)","tool.extend":"Prolonger (EX)","tool.fillet":"Raccord (F)","tool.chamfer":"Chanfrein (CHA)","tool.stretch":"Étirer (ET)","tool.explode":"Éclater (X)","tool.join":"Joindre en polyligne (J)","tool.line":"Ligne (L)","tool.xline":"Ligne infinie (XL)","tool.ray":"Demi-droite","tool.rect":"Rectangle (R)","tool.rectcenter":"Rectangle par le centre (RC)","tool.circle":"Cercle (C)","tool.arc":"Arc (A)","tool.polyline":"Polyligne (PL)","tool.polygon":"Polygone régulier (POL)","tool.ellipse":"Ellipse (EL)","tool.spline":"Spline (SPL)","tool.wall":"Mur (W)","tool.cable":"Câble (CAB)","tool.ray_rev":"Demi-droite inverse (RAY_REV)","tool.erase":"Supprimer (Suppr)","tool.door":"Porte (DOOR)","tool.window":"Fenêtre (WINDOW)","tool.outlet":"Prise (OUTLET)","tool.switch":"Interrupteur (SWITCH)","tool.dimstyle":"Styles de cotes (DIMSTYLE)","tool.tube":"Tube 2 traits (TUBE)","tool.leader":"Repère (LEADER)","tool.text":"Texte (TX)","tool.hatch":"Hachures (H)","tool.point":"Point (PT)","tool.dim_linear":"Cote linéaire","tool.dim_aligned":"Cote parallèle","tool.dim_angular":"Cote angulaire","tool.dim_radius":"Cote rayon","tool.dim_diameter":"Cote diamètre","tool.dim_arc":"Cote longueur d'arc","tool.array":"Réseau rectangulaire (AR)","tool.array_polar":"Réseau polaire (APO)","tool.measure":"Mesurer (ME)","tool.calc":"Calculatrice (CALC)","tool.dist":"Distance (DI)","tool.area":"Aire (AREA)","tool.divide":"Diviser (DIV)","tool.zoom_extents":"Zoom Étendue","tool.theme":"Basculer le thème (THEME)","tool.zoom_in":"Zoom +","tool.zoom_out":"Zoom -","tool.grid":"Grille","tool.snap":"Accrochage grille (F9)","tool.osnap":"Accrochage objets (F3)","tool.ortho":"Ortho (F8)","tool.polar":"Polaire (F10)","tool.explode_btn":"Éclater (X)","tool.group":"Grouper (GROUPE)","tool.ungroup":"Dégrouper (DÉGROUPER)","tool.ai":"Assistant IA Ollama","tool.print":"Exporter PDF (Ctrl+P)","tool.save_state":"État de sauvegarde","panel.layers":"CALQUES","panel.properties":"PROPRIÉTÉS","panel.osnap":"ACCROCHAGE","panel.modules":"MODULES","panel.terminal":"HISTORIQUE","layer.new":"Nouveau calque","layer.name":"Nom","layer.color":"Couleur","layer.visible":"Visible","layer.lock":"Verrouillé","layer.print":"Impression","layer.linetype":"Type de ligne","layer.linewidth":"Épaisseur","osnap.endpoint":"Extrémité","osnap.midpoint":"Milieu","osnap.center":"Centre","osnap.nearest":"Le plus proche","osnap.intersection":"Intersection","osnap.perpendicular":"Perpendiculaire","osnap.tangent":"Tangente","osnap.quadrant":"Quadrant","osnap.extension":"Extension","status.ortho":"ORTHO","status.polar":"POLAIRE","status.snap":"SNAP","status.osnap":"OSNAP","btn.ok":"OK","btn.cancel":"Annuler","btn.apply":"Appliquer ↵","btn.close":"Fermer","btn.add":"+ Ajouter une section","btn.delete":"Supprimer","btn.preview":"Prévisualiser","dialog.array.title":"RÉSEAU RECTANGULAIRE","dialog.array.cols":"Colonnes","dialog.array.rows":"Lignes","dialog.array.dx":"Espacement X","dialog.array.dy":"Espacement Y","dialog.polar.title":"RÉSEAU POLAIRE","dialog.polar.count":"Nb d'éléments","dialog.polar.angle":"Angle total (°)","dialog.polar.cx":"Centre X","dialog.polar.cy":"Centre Y","dialog.polar.rotate":"Faire pivoter les éléments","dialog.calc.title":"CALCULATRICE","dialog.tube.title":"Paramètres du tube","dialog.tube.diameter":"Ø diamètre","dialog.tube.radius":"RM rayon moy.","dialog.tube.edit_title":"ÉDITER LE TUBE","dialog.tube.add_section":"+ Ajouter une section","dialog.tube.devlen":"Long. développée AXE","dialog.tube.col_len":"L. saisie","dialog.tube.col_angle":"Angle (°)","dialog.tube.col_arc":"L. coude","dialog.layers.title":"GESTIONNAIRE DE CALQUES","dialog.layers.add":"Nouveau calque","dialog.dimstyle.title":"STYLES DE COTES","cmd.placeholder":"Commande ou mesure (100<45, @50,30, 200)...","cmd.first_point":"Premier point: X,Y (ex: 100,200) ou cliquez…","cmd.wh":"Largeur,Hauteur (ex: 100,100) ou cliquez…","tool.open":"Ouvrir (Ctrl+O)","tool.save":"Sauvegarder (Ctrl+S)","help.commands":"═══ COMMANDES ═══","help.measure":"═══ SAISIE DE MESURE (après 1er point) ═══","help.measure.polar":"  100<45   — Polaire: distance 100, angle 45°","help.measure.rel":"  50,30    — Relatif: +50 en X, +30 en Y (par défaut)","help.measure.relx":"  @50,30   — Relatif: idem (explicite)","help.measure.abs":"  #200,300 — Absolu: coordonnées X=200, Y=300","help.measure.dist":"  150      — Distance 150 dans la direction du curseur","help.measure.ex":"  Exemple: RECT → clic → 100,100 → carré 100×100 ✓","help.files":"═══ FICHIERS ═══","help.files.open":"  OPEN     — Ouvrir DXF / DWG / JSON (.mcad)","help.files.save":"  SAVE     — Sauvegarder en JSON natif (.mcad)","help.files.dxf":"  EXPORT DXF — Export DXF (R2000)","help.files.dwg":"  EXPORT DWG — Export DWG (via DXF)","help.files.svg":"  EXPORT SVG — Export SVG","help.files.shortcut":"  Ctrl+O / Ctrl+S — Ouvrir / Sauvegarder","help.constraints":"═══ CONTRAINTES ═══","help.ortho":"  F8 = ORTHO (0°/90°/180°/270° uniquement)","help.polar":"  F10 = POLAIRE (increments d'angle configurables)","help.polar.cmd":"  POLAR [angle] — Modifier increment (ex: POLAR 30)","help.polar.excl":"  Ortho et Polaire sont mutuellement exclusifs","help.di":"═══ SAISIE DYNAMIQUE ═══","help.di.tooltip":"  Infobulle Distance/Angle éditable près du curseur","help.di.tab":"  Tab = basculer entre champs D et A","help.di.confirm":"  Entrez une valeur + Entrée = confirmer le point","help.module":"═══ MODULE: {name} ═══","prefs.title":"Préférences utilisateur","prefs.appearance":"Apparence","prefs.theme":"Thème","prefs.theme_dark":"Sombre","prefs.theme_light":"Clair","prefs.grid":"Grille","prefs.grid_visible":"Afficher la grille","prefs.grid_snap":"Accrochage à la grille (Snap)","prefs.grid_size":"Pas de la grille (X)","prefs.grid_size_y":"Pas de la grille (Y)","prefs.unit_drawing":"unités","prefs.osnap":"Accrochage aux objets (OSNAP)","prefs.osnap_enabled":"Accrochage actif","prefs.osnap_range":"Portée de détection","prefs.input":"Saisie & curseur","prefs.input_ortho":"Mode ortho","prefs.input_polar":"Accrochage polaire","prefs.input_polar_inc":"Incrément polaire","prefs.input_pickbox":"Taille du pickbox","prefs.dim":"Cotation","prefs.dim_style":"Style de cote actif","prefs.tube":"Tube & tuyauterie","prefs.tube_diameter":"Diamètre extérieur Ø","prefs.tube_bend":"Rayon de coude","prefs.tube_ref":"Ligne de référence","prefs.tube_ref_axis":"Axe","prefs.tube_ref_outer":"Extérieur","prefs.tube_ref_inner":"Intérieur","prefs.reset":"Réinitialiser","prefs.import":"Importer…","prefs.export":"Exporter…","prefs.cancel":"Annuler","prefs.apply":"Appliquer","prefs.reset_confirm":"Réinitialiser toutes les préférences aux valeurs par défaut ?"}};
+  var T = {"en":{"app.title":"MiniCAD","seo.title":"MiniCAD — Free online 2D technical drawing & CAD, no installation","seo.description":"Free 2D technical drawing (CAD) software running directly in your browser, no installation: lines, dimensioning, layers, DXF and SVG export.","menu.file":"File","menu.library":"Library","menu.draw":"Draw","menu.modify":"Modify","menu.insert":"Insert","menu.dimension":"Dimension","menu.help":"Help","menu.file.new":"New","menu.file.open":"Open…","menu.file.save":"Save","menu.file.save_as":"Save as…","menu.file.export_dxf":"Export DXF","menu.file.import_dxf":"Import DXF…","menu.file.print":"Print / Export PDF","menu.file.prefs":"Preferences…","menu.file.theme":"Light / dark theme","tb.file":"File","tb.draw":"Draw","tb.modify":"Modify","tb.dim":"Dimension","tb.snap":"Snap","tb.view":"View","tb.arch":"Architecture","tb.elec":"Electrical","tool.select":"Select (V)","tool.pan":"Pan (P)","tool.move":"Move (M)","tool.copy":"Copy (CO)","tool.rotate":"Rotate (RO)","tool.scale":"Scale (SC)","tool.mirror":"Mirror (MI)","tool.offset":"Offset (O)","tool.trim":"Trim (TR)","tool.extend":"Extend (EX)","tool.fillet":"Fillet (F)","tool.chamfer":"Chamfer (CHA)","tool.stretch":"Stretch (ET)","tool.explode":"Explode (X)","tool.join":"Join as Polyline (J)","tool.line":"Line (L)","tool.xline":"Construction Line (XL)","tool.ray":"Ray","tool.rect":"Rectangle (R)","tool.rectcenter":"Rectangle by Center (RC)","tool.circle":"Circle (C)","tool.arc":"Arc (A)","tool.polyline":"Polyline (PL)","tool.polygon":"Regular Polygon (POL)","tool.ellipse":"Ellipse (EL)","tool.spline":"Spline (SPL)","tool.wall":"Wall (W)","tool.cable":"Cable (CAB)","tool.ray_rev":"Reverse ray (RAY_REV)","tool.erase":"Erase (Del)","tool.door":"Door (DOOR)","tool.window":"Window (WINDOW)","tool.outlet":"Outlet (OUTLET)","tool.switch":"Switch (SWITCH)","tool.dimstyle":"Dimension styles (DIMSTYLE)","tool.tube":"Tube 2-line (TUBE)","tool.leader":"Leader (LEADER)","tool.text":"Text (TX)","tool.hatch":"Hatch (H)","tool.point":"Point (PT)","tool.dim_linear":"Linear Dimension","tool.dim_aligned":"Aligned Dimension","tool.dim_angular":"Angular Dimension","tool.dim_radius":"Radius Dimension","tool.dim_diameter":"Diameter Dimension","tool.dim_arc":"Arc Length Dimension","tool.array":"Rectangular Array (AR)","tool.array_polar":"Polar Array (APO)","tool.measure":"Measure (ME)","tool.calc":"Calculator (CALC)","tool.dist":"Distance (DI)","tool.area":"Area (AREA)","tool.divide":"Divide (DIV)","tool.zoom_extents":"Zoom Extents","tool.theme":"Toggle theme (THEME)","tool.zoom_in":"Zoom In","tool.zoom_out":"Zoom Out","tool.grid":"Grid","tool.snap":"Grid Snap (F9)","tool.osnap":"Object Snap (F3)","tool.ortho":"Ortho (F8)","tool.polar":"Polar (F10)","tool.explode_btn":"Explode (X)","tool.group":"Group (GROUP)","tool.ungroup":"Ungroup (UNGROUP)","tool.ai":"AI Assistant Ollama","tool.print":"Export PDF (Ctrl+P)","tool.save_state":"Save State","panel.layers":"LAYERS","panel.properties":"PROPERTIES","panel.osnap":"SNAP","panel.modules":"MODULES","panel.terminal":"HISTORY","layer.new":"New Layer","layer.name":"Name","layer.color":"Color","layer.visible":"Visible","layer.lock":"Locked","layer.print":"Print","layer.linetype":"Line Type","layer.linewidth":"Line Width","osnap.endpoint":"Endpoint","osnap.midpoint":"Midpoint","osnap.center":"Center","osnap.nearest":"Nearest","osnap.intersection":"Intersection","osnap.perpendicular":"Perpendicular","osnap.tangent":"Tangent","osnap.quadrant":"Quadrant","osnap.extension":"Extension","status.ortho":"ORTHO","status.polar":"POLAR","status.snap":"SNAP","status.osnap":"OSNAP","btn.ok":"OK","btn.cancel":"Cancel","btn.apply":"Apply ↵","btn.close":"Close","btn.add":"+ Add Section","btn.delete":"Delete","btn.preview":"Preview","dialog.array.title":"RECTANGULAR ARRAY","dialog.array.cols":"Columns","dialog.array.rows":"Rows","dialog.array.dx":"X Spacing","dialog.array.dy":"Y Spacing","dialog.polar.title":"POLAR ARRAY","dialog.polar.count":"Item count","dialog.polar.angle":"Total angle (°)","dialog.polar.cx":"Center X","dialog.polar.cy":"Center Y","dialog.polar.rotate":"Rotate items","dialog.calc.title":"CALCULATOR","dialog.tube.title":"Tube Parameters","dialog.tube.diameter":"Ø diameter","dialog.tube.radius":"MR mean radius","dialog.tube.edit_title":"EDIT TUBE","dialog.tube.add_section":"+ Add Section","dialog.tube.devlen":"Developed length AXIS","dialog.tube.col_len":"Entry length","dialog.tube.col_angle":"Angle (°)","dialog.tube.col_arc":"Bend length","dialog.layers.title":"LAYER MANAGER","dialog.layers.add":"New Layer","dialog.dimstyle.title":"DIMENSION STYLES","cmd.placeholder":"Command or measure (100<45, @50,30, 200)...","cmd.first_point":"First point: X,Y (e.g. 100,200) or click…","cmd.wh":"Width,Height (e.g. 100,100) or click…","tool.open":"Open (Ctrl+O)","tool.save":"Save (Ctrl+S)","help.commands":"═══ COMMANDS ═══","help.measure":"═══ POINT INPUT (after 1st point) ═══","help.measure.polar":"  100<45   — Polar: distance 100, angle 45°","help.measure.rel":"  50,30    — Relative: +50 X, +30 Y (default)","help.measure.relx":"  @50,30   — Relative: same (explicit)","help.measure.abs":"  #200,300 — Absolute: X=200, Y=300","help.measure.dist":"  150      — Distance 150 in cursor direction","help.measure.ex":"  Example: RECT → click → 100,100 → 100×100 square ✓","help.files":"═══ FILES ═══","help.files.open":"  OPEN     — Open DXF / DWG / JSON (.mcad)","help.files.save":"  SAVE     — Save as native JSON (.mcad)","help.files.dxf":"  EXPORT DXF — Export DXF (R2000)","help.files.dwg":"  EXPORT DWG — Export DWG (via DXF)","help.files.svg":"  EXPORT SVG — Export SVG","help.files.shortcut":"  Ctrl+O / Ctrl+S — Open / Save","help.constraints":"═══ CONSTRAINTS ═══","help.ortho":"  F8 = ORTHO (0°/90°/180°/270° only)","help.polar":"  F10 = POLAR (configurable angle increments)","help.polar.cmd":"  POLAR [angle] — Change increment (e.g. POLAR 30)","help.polar.excl":"  Ortho and Polar are mutually exclusive","help.di":"═══ DYNAMIC INPUT ═══","help.di.tooltip":"  Distance/Angle tooltip editable near cursor","help.di.tab":"  Tab = toggle between D and A fields","help.di.confirm":"  Enter a value + Enter = confirm point","help.module":"═══ MODULE: {name} ═══","prefs.title":"User preferences","prefs.appearance":"Appearance","prefs.theme":"Theme","prefs.theme_dark":"Dark","prefs.theme_light":"Light","prefs.grid":"Grid","prefs.grid_visible":"Show grid","prefs.grid_snap":"Snap to grid","prefs.grid_size":"Grid spacing (X)","prefs.grid_size_y":"Grid spacing (Y)","prefs.unit_drawing":"units","prefs.osnap":"Object snap (OSNAP)","prefs.osnap_enabled":"Snapping enabled","prefs.osnap_range":"Detection range","prefs.input":"Input & cursor","prefs.input_ortho":"Ortho mode","prefs.input_polar":"Polar tracking","prefs.input_polar_inc":"Polar increment","prefs.input_pickbox":"Pickbox size","prefs.input_pan":"Pan view","prefs.pan_wheel":"Wheel only","prefs.pan_wheel_right":"Wheel + right-drag","prefs.dim":"Dimensions","prefs.dim_style":"Active dimension style","prefs.tube":"Tube & piping","prefs.tube_diameter":"Outer diameter Ø","prefs.tube_bend":"Bend radius","prefs.tube_ref":"Reference line","prefs.tube_ref_axis":"Axis","prefs.tube_ref_outer":"Outside","prefs.tube_ref_inner":"Inside","prefs.reset":"Reset","prefs.import":"Import…","prefs.export":"Export…","prefs.cancel":"Cancel","prefs.apply":"Apply","prefs.reset_confirm":"Reset all preferences to default values?"},"fr":{"app.title":"MiniCAD","seo.title":"MiniCAD — Dessin technique 2D & CAO en ligne, gratuit et sans installation","seo.description":"Logiciel de dessin technique 2D (CAO) gratuit, directement dans le navigateur, sans installation : lignes, cotation, calques, export DXF et SVG.","menu.file":"Fichier","menu.library":"Bibliothèque","menu.draw":"Dessin","menu.modify":"Modifier","menu.insert":"Insérer","menu.dimension":"Cotation","menu.help":"Aide","menu.file.new":"Nouveau","menu.file.open":"Ouvrir…","menu.file.save":"Sauvegarder","menu.file.save_as":"Sauvegarder sous…","menu.file.export_dxf":"Exporter DXF","menu.file.import_dxf":"Importer DXF…","menu.file.print":"Imprimer / Export PDF","menu.file.prefs":"Préférences…","menu.file.theme":"Thème clair / sombre","tb.file":"Fichier","tb.draw":"Dessin","tb.modify":"Modification","tb.dim":"Cotation","tb.snap":"Accrochage","tb.view":"Vue","tb.arch":"Architecture","tb.elec":"Électricité","tool.select":"Sélection (V)","tool.pan":"Panoramique (P)","tool.move":"Déplacer (M)","tool.copy":"Copier (CO)","tool.rotate":"Rotation (RO)","tool.scale":"Mise à l'échelle (SC)","tool.mirror":"Miroir (MI)","tool.offset":"Décaler (O)","tool.trim":"Couper (TR)","tool.extend":"Prolonger (EX)","tool.fillet":"Raccord (F)","tool.chamfer":"Chanfrein (CHA)","tool.stretch":"Étirer (ET)","tool.explode":"Éclater (X)","tool.join":"Joindre en polyligne (J)","tool.line":"Ligne (L)","tool.xline":"Ligne infinie (XL)","tool.ray":"Demi-droite","tool.rect":"Rectangle (R)","tool.rectcenter":"Rectangle par le centre (RC)","tool.circle":"Cercle (C)","tool.arc":"Arc (A)","tool.polyline":"Polyligne (PL)","tool.polygon":"Polygone régulier (POL)","tool.ellipse":"Ellipse (EL)","tool.spline":"Spline (SPL)","tool.wall":"Mur (W)","tool.cable":"Câble (CAB)","tool.ray_rev":"Demi-droite inverse (RAY_REV)","tool.erase":"Supprimer (Suppr)","tool.door":"Porte (DOOR)","tool.window":"Fenêtre (WINDOW)","tool.outlet":"Prise (OUTLET)","tool.switch":"Interrupteur (SWITCH)","tool.dimstyle":"Styles de cotes (DIMSTYLE)","tool.tube":"Tube 2 traits (TUBE)","tool.leader":"Repère (LEADER)","tool.text":"Texte (TX)","tool.hatch":"Hachures (H)","tool.point":"Point (PT)","tool.dim_linear":"Cote linéaire","tool.dim_aligned":"Cote parallèle","tool.dim_angular":"Cote angulaire","tool.dim_radius":"Cote rayon","tool.dim_diameter":"Cote diamètre","tool.dim_arc":"Cote longueur d'arc","tool.array":"Réseau rectangulaire (AR)","tool.array_polar":"Réseau polaire (APO)","tool.measure":"Mesurer (ME)","tool.calc":"Calculatrice (CALC)","tool.dist":"Distance (DI)","tool.area":"Aire (AREA)","tool.divide":"Diviser (DIV)","tool.zoom_extents":"Zoom Étendue","tool.theme":"Basculer le thème (THEME)","tool.zoom_in":"Zoom +","tool.zoom_out":"Zoom -","tool.grid":"Grille","tool.snap":"Accrochage grille (F9)","tool.osnap":"Accrochage objets (F3)","tool.ortho":"Ortho (F8)","tool.polar":"Polaire (F10)","tool.explode_btn":"Éclater (X)","tool.group":"Grouper (GROUPE)","tool.ungroup":"Dégrouper (DÉGROUPER)","tool.ai":"Assistant IA Ollama","tool.print":"Exporter PDF (Ctrl+P)","tool.save_state":"État de sauvegarde","panel.layers":"CALQUES","panel.properties":"PROPRIÉTÉS","panel.osnap":"ACCROCHAGE","panel.modules":"MODULES","panel.terminal":"HISTORIQUE","layer.new":"Nouveau calque","layer.name":"Nom","layer.color":"Couleur","layer.visible":"Visible","layer.lock":"Verrouillé","layer.print":"Impression","layer.linetype":"Type de ligne","layer.linewidth":"Épaisseur","osnap.endpoint":"Extrémité","osnap.midpoint":"Milieu","osnap.center":"Centre","osnap.nearest":"Le plus proche","osnap.intersection":"Intersection","osnap.perpendicular":"Perpendiculaire","osnap.tangent":"Tangente","osnap.quadrant":"Quadrant","osnap.extension":"Extension","status.ortho":"ORTHO","status.polar":"POLAIRE","status.snap":"SNAP","status.osnap":"OSNAP","btn.ok":"OK","btn.cancel":"Annuler","btn.apply":"Appliquer ↵","btn.close":"Fermer","btn.add":"+ Ajouter une section","btn.delete":"Supprimer","btn.preview":"Prévisualiser","dialog.array.title":"RÉSEAU RECTANGULAIRE","dialog.array.cols":"Colonnes","dialog.array.rows":"Lignes","dialog.array.dx":"Espacement X","dialog.array.dy":"Espacement Y","dialog.polar.title":"RÉSEAU POLAIRE","dialog.polar.count":"Nb d'éléments","dialog.polar.angle":"Angle total (°)","dialog.polar.cx":"Centre X","dialog.polar.cy":"Centre Y","dialog.polar.rotate":"Faire pivoter les éléments","dialog.calc.title":"CALCULATRICE","dialog.tube.title":"Paramètres du tube","dialog.tube.diameter":"Ø diamètre","dialog.tube.radius":"RM rayon moy.","dialog.tube.edit_title":"ÉDITER LE TUBE","dialog.tube.add_section":"+ Ajouter une section","dialog.tube.devlen":"Long. développée AXE","dialog.tube.col_len":"L. saisie","dialog.tube.col_angle":"Angle (°)","dialog.tube.col_arc":"L. coude","dialog.layers.title":"GESTIONNAIRE DE CALQUES","dialog.layers.add":"Nouveau calque","dialog.dimstyle.title":"STYLES DE COTES","cmd.placeholder":"Commande ou mesure (100<45, @50,30, 200)...","cmd.first_point":"Premier point: X,Y (ex: 100,200) ou cliquez…","cmd.wh":"Largeur,Hauteur (ex: 100,100) ou cliquez…","tool.open":"Ouvrir (Ctrl+O)","tool.save":"Sauvegarder (Ctrl+S)","help.commands":"═══ COMMANDES ═══","help.measure":"═══ SAISIE DE MESURE (après 1er point) ═══","help.measure.polar":"  100<45   — Polaire: distance 100, angle 45°","help.measure.rel":"  50,30    — Relatif: +50 en X, +30 en Y (par défaut)","help.measure.relx":"  @50,30   — Relatif: idem (explicite)","help.measure.abs":"  #200,300 — Absolu: coordonnées X=200, Y=300","help.measure.dist":"  150      — Distance 150 dans la direction du curseur","help.measure.ex":"  Exemple: RECT → clic → 100,100 → carré 100×100 ✓","help.files":"═══ FICHIERS ═══","help.files.open":"  OPEN     — Ouvrir DXF / DWG / JSON (.mcad)","help.files.save":"  SAVE     — Sauvegarder en JSON natif (.mcad)","help.files.dxf":"  EXPORT DXF — Export DXF (R2000)","help.files.dwg":"  EXPORT DWG — Export DWG (via DXF)","help.files.svg":"  EXPORT SVG — Export SVG","help.files.shortcut":"  Ctrl+O / Ctrl+S — Ouvrir / Sauvegarder","help.constraints":"═══ CONTRAINTES ═══","help.ortho":"  F8 = ORTHO (0°/90°/180°/270° uniquement)","help.polar":"  F10 = POLAIRE (increments d'angle configurables)","help.polar.cmd":"  POLAR [angle] — Modifier increment (ex: POLAR 30)","help.polar.excl":"  Ortho et Polaire sont mutuellement exclusifs","help.di":"═══ SAISIE DYNAMIQUE ═══","help.di.tooltip":"  Infobulle Distance/Angle éditable près du curseur","help.di.tab":"  Tab = basculer entre champs D et A","help.di.confirm":"  Entrez une valeur + Entrée = confirmer le point","help.module":"═══ MODULE: {name} ═══","prefs.title":"Préférences utilisateur","prefs.appearance":"Apparence","prefs.theme":"Thème","prefs.theme_dark":"Sombre","prefs.theme_light":"Clair","prefs.grid":"Grille","prefs.grid_visible":"Afficher la grille","prefs.grid_snap":"Accrochage à la grille (Snap)","prefs.grid_size":"Pas de la grille (X)","prefs.grid_size_y":"Pas de la grille (Y)","prefs.unit_drawing":"unités","prefs.osnap":"Accrochage aux objets (OSNAP)","prefs.osnap_enabled":"Accrochage actif","prefs.osnap_range":"Portée de détection","prefs.input":"Saisie & curseur","prefs.input_ortho":"Mode ortho","prefs.input_polar":"Accrochage polaire","prefs.input_polar_inc":"Incrément polaire","prefs.input_pickbox":"Taille du pickbox","prefs.input_pan":"Déplacement de la vue","prefs.pan_wheel":"Molette seule","prefs.pan_wheel_right":"Molette + glisser droit","prefs.dim":"Cotation","prefs.dim_style":"Style de cote actif","prefs.tube":"Tube & tuyauterie","prefs.tube_diameter":"Diamètre extérieur Ø","prefs.tube_bend":"Rayon de coude","prefs.tube_ref":"Ligne de référence","prefs.tube_ref_axis":"Axe","prefs.tube_ref_outer":"Extérieur","prefs.tube_ref_inner":"Intérieur","prefs.reset":"Réinitialiser","prefs.import":"Importer…","prefs.export":"Exporter…","prefs.cancel":"Annuler","prefs.apply":"Appliquer","prefs.reset_confirm":"Réinitialiser toutes les préférences aux valeurs par défaut ?"}};
   // Priorité : ?lang=xx (SEO / lien direct) > dernier choix mémorisé > langue par défaut
   var _urlLang = null;
   try { _urlLang = new URLSearchParams(location.search).get('lang'); } catch(e) {}
@@ -2726,7 +2727,7 @@
 <script>
 // ===USER_PREFS_START===
 const USER_PREFS = {
-  theme: 'dark',
+  theme: 'light',
   pickboxPx: 6,
   osnapTolPx: 15,
   snap: true,
@@ -2739,6 +2740,7 @@ const USER_PREFS = {
   ortho: false,
   polar: true,
   polarAngle: 15,
+  rightDragPan: false,
   tubeDiameter: 40,
   tubeBendRadius: 67,
   tubeRef: 'axe',
@@ -2756,7 +2758,7 @@ const USER_PREFS = {
 
 // ===== STATE =====
 const S = {
-  theme: 'dark',
+  theme: 'light',
   pickboxPx: 6,    // demi-côté du carré de sélection (px écran)
   osnapTolPx: 15,  // portée d'accrochage OSNAP (px écran)
   entities: [],
@@ -2781,6 +2783,7 @@ const S = {
   snap: true,
   ortho: false,
   polar: true,
+  rightDragPan: false, // glisser bouton droit pour déplacer la vue (clic droit reste Entrée)
   polarAngle: 15, // degrees increment for polar tracking
   gridVis: true,
   gridSize: 20,
@@ -2989,7 +2992,7 @@ const OSNAP_COLORS_LIGHT = {
   quadrant: '#7a7000',
   extension: '#e65100',
 };
-let OSNAP_COLORS = OSNAP_COLORS_DARK;
+let OSNAP_COLORS = OSNAP_COLORS_LIGHT;
 
 // ===== THÈME (sombre / clair) =====
 // Couleurs du canvas pilotées par le thème. `ink` = encre de chrome (réticule,
@@ -3008,7 +3011,7 @@ const CANVAS_THEMES = {
     rbWin: '#0072ad', rbCross: '#00873e',
   },
 };
-let TC = CANVAS_THEMES.dark;
+let TC = CANVAS_THEMES.light;
 
 // Adapte une couleur d'entité au fond clair : si trop lumineuse pour rester
 // lisible sur blanc (contraste < ~3:1), on la rabat vers le noir en conservant
@@ -4554,6 +4557,7 @@ function resizeCanvas() {
   render();
 }
 window.addEventListener('resize', resizeCanvas);
+new ResizeObserver(() => resizeCanvas()).observe(document.getElementById('canvas-area'));
 
 function w2s(wx, wy) { return [wx * S.zoom + S.panX + canvasW / 2, -wy * S.zoom + S.panY + canvasH / 2]; }
 function s2w(sx, sy) { return [(sx - S.panX - canvasW / 2) / S.zoom, -(sy - S.panY - canvasH / 2) / S.zoom]; }
@@ -6919,25 +6923,37 @@ function updateTubeRefUI() {
   });
 }
 
-function flattenPolyPoints(pts) {
+function flattenPolyPoints(pts, closed) {
   const out = [];
+  // Échantillonnage via bulgeToArc → identique au rendu (gère les arcs majeurs |bulge|>1)
+  const addArc = (p, p2, bulge) => {
+    const arc = bulgeToArc(p[0], p[1], p2[0], p2[1], bulge);
+    if (!arc) return;
+    const span = arc.ea - arc.sa;   // intervalle CCW (>0)
+    const N = Math.max(8, Math.ceil(Math.abs(span) * arc.r / 5));
+    // bulgeToArc peut renvoyer sa au niveau de p OU de p2 (branche sa=aP2). On doit
+    // échantillonner DE p VERS p2 pour préserver l'ordre des sommets ; sinon les
+    // points d'arc sortent inversés → nœud papillon → hachure/aire qui débordent.
+    const startAtP = Math.hypot(arc.cx + arc.r * Math.cos(arc.sa) - p[0],
+                                arc.cy + arc.r * Math.sin(arc.sa) - p[1]) < 1e-6;
+    for (let j = 1; j < N; j++) {
+      const t = j / N;
+      const a = startAtP ? arc.sa + span * t : arc.ea - span * t;
+      out.push([arc.cx + arc.r * Math.cos(a), arc.cy + arc.r * Math.sin(a)]);
+    }
+  };
   for (let i = 0; i < pts.length; i++) {
     const p = pts[i];
     out.push([p[0], p[1]]);
     const bulge = p[2] || 0;
-    if (bulge !== 0 && i + 1 < pts.length) {
-      const p2 = pts[i + 1];
-      // Échantillonnage via bulgeToArc → identique au rendu (gère les arcs majeurs |bulge|>1)
-      const arc = bulgeToArc(p[0], p[1], p2[0], p2[1], bulge);
-      if (arc) {
-        const span = arc.ea - arc.sa;   // intervalle CCW (>0)
-        const N = Math.max(8, Math.ceil(Math.abs(span) * arc.r / 5));
-        for (let j = 1; j < N; j++) {
-          const a = arc.sa + span * (j / N);
-          out.push([arc.cx + arc.r * Math.cos(a), arc.cy + arc.r * Math.sin(a)]);
-        }
-      }
-    }
+    if (bulge !== 0 && i + 1 < pts.length) addArc(p, pts[i + 1], bulge);
+  }
+  // Segment de fermeture courbe (fillet/chanfrein sur la couture d'une polyligne fermée) :
+  // le bulge stocké sur le dernier point relie dernier → premier ; la boucle ci-dessus
+  // l'ignore (i+1 hors borne). Sans ça, le contour (hachure, aire…) coupe droit l'arc.
+  if (closed && pts.length > 1) {
+    const lp = pts[pts.length - 1], fp = pts[0], b = lp[2] || 0;
+    if (b !== 0 && Math.hypot(fp[0] - lp[0], fp[1] - lp[1]) > 1e-9) addArc(lp, fp, b);
   }
   return out;
 }
@@ -6955,7 +6971,7 @@ function ptsFromEntity(src) {
     return pts;
   }
   if (src.type === 'polyline' || src.type === 'cable') {
-    const pts = flattenPolyPoints(src.points);
+    const pts = flattenPolyPoints(src.points, src.closed);
     const first = pts[0], last = pts[pts.length - 1];
     if (pts.length > 1 && Math.hypot(last[0]-first[0], last[1]-first[1]) > 1)
       pts.push([first[0], first[1]]);
@@ -7106,6 +7122,9 @@ function drawEntity(e) {
         if (bulge !== 0) drawPolyArcSegToPath(lp, fp, bulge);
         else { const [qx,qy] = w2s(fp[0],fp[1]); ctx.lineTo(qx,qy); }
       }
+      // closePath() rend une vraie jointure au sommet de couture (sinon deux caps de
+      // ligne qui se touchent → coin entaillé avec une épaisseur de trait visible).
+      if (e.closed) ctx.closePath();
       ctx.stroke();
       if (e.type === 'cable') ctx.setLineDash([]);
       break;
@@ -8909,7 +8928,7 @@ function applySmooth(polys, k) {
   pushUndo();
   let count = 0;
   for (const e of polys) {
-    const flat = flattenPolyPoints(e.points);   // résout d'abord les bulges en points
+    const flat = flattenPolyPoints(e.points, e.closed);   // résout d'abord les bulges en points
     if (flat.length < 3) continue;
     const isClosed = e.closed === true ||
       (flat.length > 2 && Math.hypot(flat[0][0]-flat[flat.length-1][0], flat[0][1]-flat[flat.length-1][1]) < 1e-9);
@@ -9702,6 +9721,10 @@ function drawCursor() {
 
 // ===== INTERACTION =====
 let isPanning = false, panStartX, panStartY;
+// Pan au glisser-droit : _rightPanArm = amorçage (en attente du seuil de mouvement) ;
+// _rightPanned = un glisser a effectivement déplacé la vue (→ supprimer le menu contextuel au relâchement).
+let _rightPanArm = null, _rightPanned = false;
+const _RIGHT_PAN_THRESH = 4; // px écran avant de considérer que c'est un pan (et non un clic)
 let isRubberBand = false, rbStart = null, rbEnd = null, rbShiftKey = false;
 let isPrintRb = false, printRbStart = null, printRbEnd = null;
 
@@ -9711,6 +9734,14 @@ canvas.addEventListener('mousemove', (ev) => {
   S.mouseScreen = [sx, sy];
   let [wx, wy] = s2w(sx, sy);
   S.mouseWorld = [wx, wy];
+
+  // Glisser-droit : au-delà du seuil, on bascule en pan (model ou papier, via isPanning).
+  if (_rightPanArm && !isPanning &&
+      Math.hypot(ev.clientX - _rightPanArm.x0, ev.clientY - _rightPanArm.y0) >= _RIGHT_PAN_THRESH) {
+    isPanning = true; _rightPanned = true;
+    panStartX = _rightPanArm.x0; panStartY = _rightPanArm.y0; // déplacement appliqué depuis le point initial
+    canvas.style.cursor = 'grabbing';
+  }
 
   // Espace papier : pan modèle (MSPACE), drag de fenêtre, pan feuille, ou curseur
   if (S.space !== 'model') {
@@ -9795,7 +9826,13 @@ document.addEventListener('focusout', function(ev) {
 }, true);
 
 canvas.addEventListener('mousedown', (ev) => {
-  if (ev.button === 2) { ev.preventDefault(); return; } // géré par contextmenu
+  if (ev.button === 2) {
+    ev.preventDefault();
+    // Glisser-droit pour déplacer la vue : on amorce, le pan ne démarre qu'au-delà du seuil
+    // (un clic droit sans déplacement garde son rôle : Entrée / répéter / menu via contextmenu).
+    if (S.rightDragPan) { _rightPanArm = { x0: ev.clientX, y0: ev.clientY }; _rightPanned = false; }
+    return; // géré par contextmenu
+  }
 
   // Espace papier : MSPACE actif, sinon édition de fenêtres / pan feuille
   if (S.space !== 'model') {
@@ -10071,7 +10108,18 @@ function smartFocus() {
 }
 
 canvas.addEventListener('mouseup', (ev) => {
-  if (ev.button === 2) { ev.preventDefault(); return; }
+  if (ev.button === 2) {
+    ev.preventDefault();
+    _rightPanArm = null;
+    if (isPanning) { isPanning = false; canvas.style.cursor = S.space === 'model' ? 'none' : 'default'; }
+    if (S.rightDragPan) {
+      // Glisser → la vue a été déplacée : curseur croix+réticule, AUCUNE commande répétée.
+      // Clic (pas de déplacement) → action habituelle (Entrée / répéter / menu).
+      if (_rightPanned) { _rightPanned = false; canvas.style.cursor = S.space === 'model' ? 'none' : 'default'; }
+      else _rightClickAction(ev);
+    }
+    return;
+  }
   if (isPanning) { isPanning = false; canvas.style.cursor = S.space === 'model' ? 'none' : 'default'; }
   if (S.space !== 'model') {
     if (_mspacePan) { _mspacePan = null; canvas.style.cursor = 'grab'; autoSave(); }
@@ -11316,7 +11364,7 @@ function computeEntityArea(e) {
     return full ? Math.PI * e.rx * e.ry : null;   // pas d'aire pour un arc d'ellipse
   }
   if (['polyline','cable','hatch'].includes(e.type) && e.points?.length >= 3)
-    return _shoelace(flattenPolyPoints(e.points));
+    return _shoelace(flattenPolyPoints(e.points, e.closed));
   return null;
 }
 
@@ -11341,7 +11389,7 @@ function computeEntityPerimeter(e) {
     let L = 0; for (const s of ellipseSampleSegs(el, 128)) L += Math.hypot(s[2]-s[0], s[3]-s[1]); return L;
   }
   if (['polyline','cable','hatch'].includes(e.type) && e.points?.length >= 2) {
-    const pts = flattenPolyPoints(e.points);
+    const pts = flattenPolyPoints(e.points, e.closed);
     let p = 0;
     for (let i = 0; i < pts.length - 1; i++)
       p += Math.hypot(pts[i+1][0] - pts[i][0], pts[i+1][1] - pts[i][1]);
@@ -11386,7 +11434,7 @@ function executeDivide(ent, N) {
       ids.push(addPt(ent.cx + ent.r*Math.cos(a), ent.cy + ent.r*Math.sin(a)));
     }
   } else if (ent.type === 'polyline' || ent.type === 'cable') {
-    const raw = flattenPolyPoints(ent.points);
+    const raw = flattenPolyPoints(ent.points, ent.closed);
     const lens = [0];
     for (let i = 1; i < raw.length; i++)
       lens.push(lens[i-1] + Math.hypot(raw[i][0]-raw[i-1][0], raw[i][1]-raw[i-1][1]));
@@ -13047,10 +13095,11 @@ function pointInClosedEntity(wx, wy) {
       inside = Math.hypot(wx - e.cx, wy - e.cy) < e.r;
       area = Math.PI * e.r * e.r;
     } else if (e.type === 'polyline' || e.type === 'cable') {
-      const flat = flattenPolyPoints(e.points);
+      const flat = flattenPolyPoints(e.points, e.closed);
       if (flat.length < 3) continue;
       const fl = flat[flat.length - 1];
-      if (Math.hypot(fl[0] - flat[0][0], fl[1] - flat[0][1]) > 1) continue; // non fermée
+      const isClosed = e.closed === true || Math.hypot(fl[0] - flat[0][0], fl[1] - flat[0][1]) <= 1;
+      if (!isClosed) continue; // non fermée
       inside = pointInPolygon(wx, wy, flat);
       area = Math.abs(flat.reduce((s, p, i) => {
         const q = flat[(i + 1) % flat.length];
@@ -17648,6 +17697,7 @@ function captureUserPrefs() {
     ortho: S.ortho,
     polar: S.polar,
     polarAngle: S.polarAngle,
+    rightDragPan: S.rightDragPan,
     tubeDiameter: S.tubeDiameter,
     tubeBendRadius: S.tubeBendRadius,
     tubeRef: S.tubeRef,
@@ -17687,6 +17737,7 @@ function applyUserPrefs(prefs) {
   if (prefs.ortho !== undefined)        S.ortho = prefs.ortho;
   if (prefs.polar !== undefined)        S.polar = prefs.polar;
   if (prefs.polarAngle !== undefined)   S.polarAngle = prefs.polarAngle;
+  if (prefs.rightDragPan !== undefined) S.rightDragPan = prefs.rightDragPan;
   if (prefs.tubeDiameter !== undefined) S.tubeDiameter = prefs.tubeDiameter;
   if (prefs.tubeBendRadius !== undefined) S.tubeBendRadius = prefs.tubeBendRadius;
   if (prefs.tubeRef !== undefined)      S.tubeRef = prefs.tubeRef;
@@ -17831,6 +17882,10 @@ function openPrefsDialog() {
       ${row(`Accrochage polaire <span class="pf-unit">F10</span>`, chk('polar', p.polar))}
       ${row(`Incrément polaire`, num('polarAngle', p.polarAngle, 5, 1, 90), '°')}
       ${row(`Taille du pickbox`, num('pickboxPx', p.pickboxPx ?? 6, 1, 3, 20), 'px')}
+      ${row(`Déplacement de la vue`, sel('rightDragPan', [
+        {v:'0', l:`Molette seule`},
+        {v:'1', l:`Molette + glisser droit`},
+      ], p.rightDragPan ? '1' : '0'))}
 
       ${sec(`Cotation`)}
       ${row(`Style de cote actif`, sel('dimStyle', S.dimStyles.map(s=>({v:s.name,l:s.name})), p.currentDimStyle))}
@@ -17872,6 +17927,7 @@ function openPrefsDialog() {
       ortho: g('ortho').checked,
       polar: g('polar').checked,
       polarAngle: parseFloat(g('polarAngle').value) || 15,
+      rightDragPan: g('rightDragPan').value === '1',
       pickboxPx: parseFloat(g('pickboxPx').value) || 6,
       tubeDiameter: parseFloat(g('tubeDiameter').value) || 40,
       tubeBendRadius: parseFloat(g('tubeBendRadius').value) || 67,
@@ -19058,6 +19114,13 @@ canvas.addEventListener('dblclick', (ev) => {
 
 canvas.addEventListener('contextmenu', (ev) => {
   ev.preventDefault();
+  // Glisser-droit activé : l'action (Entrée / répéter / menu) est décidée au mouseup,
+  // car selon la plateforme `contextmenu` peut survenir au mousedown (avant le glisser) —
+  // on ne pourrait alors pas distinguer un clic d'un déplacement de vue.
+  if (S.rightDragPan) return;
+  _rightClickAction(ev);
+});
+function _rightClickAction(ev) {
   if (S.space !== 'model') {
     const layout = getActiveLayout(); if (!layout) return;
     const rect = canvas.getBoundingClientRect();
@@ -19206,7 +19269,7 @@ canvas.addEventListener('contextmenu', (ev) => {
     termPrint('Répéter: ' + S.lastCmdRaw.toUpperCase(), 'info');
     executeCommand(S.lastCmdRaw);
   }
-});
+}
 
 function showCanvasContext(ev) {
   const menu = document.getElementById('canvas-context');
