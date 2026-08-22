@@ -2287,20 +2287,28 @@
   </div>
 </div>
 
-<div id="dim-text-dialog" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2133;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:8px;z-index:951;width:340px;box-shadow:0 12px 48px rgba(0,0,0,0.8);font-family:'IBM Plex Sans',sans-serif">
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid color-mix(in srgb, var(--ink) 9%, transparent);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1px;color:var(--accent)">
+<div id="dim-text-dialog" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2133;border:1px solid #ffffff21;border-radius:8px;z-index:951;width:340px;box-shadow:0 12px 48px rgba(0,0,0,0.8);font-family:'IBM Plex Sans',sans-serif">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #ffffff17;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1px;color:var(--accent)">
     TEXTE DE COTE
-    <span onclick="closeDimTextDialog()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
+    <span onclick="closeDimTextDialog()" style="cursor:pointer;color:#ffffff54;font-size:18px;line-height:1">×</span>
   </div>
   <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px">
-    <label style="font-size:10px;color:color-mix(in srgb, var(--ink) 33%, transparent);letter-spacing:0.4px">Texte libre — utiliser &lt;&gt; pour la valeur mesurée</label>
+    <label style="font-size:10px;color:#ffffff54;letter-spacing:0.4px">Texte libre — utiliser &lt;&gt; pour la valeur mesurée</label>
     <input id="dim-td-input" type="text" placeholder="<>" autocomplete="off"
-      style="background:var(--bg-elev);border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:3px;color:var(--text);font-size:13px;padding:6px 10px;font-family:'JetBrains Mono',monospace;outline:none"
+      style="background:var(--bg-elev);border:1px solid #ffffff21;border-radius:3px;color:var(--text);font-size:13px;padding:6px 10px;font-family:'JetBrains Mono',monospace;outline:none"
       oninput="updateDimTextPreview()" onkeydown="if(event.key==='Enter')confirmDimTextDialog();if(event.key==='Escape')closeDimTextDialog()">
-    <div id="dim-td-preview" style="font-size:12px;color:var(--accent);min-height:18px;font-family:'JetBrains Mono',monospace;padding-left:2px"></div>
+    <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim);cursor:pointer">
+      <input id="dim-td-hide" type="checkbox" onchange="updateDimTextPreview()" style="cursor:pointer">
+      Masquer le texte (aucune valeur affichée)
+    </label>
+    <div style="display:flex;align-items:center;gap:6px">
+      <div id="dim-td-preview" style="font-size:12px;color:var(--accent);flex:1;min-height:18px;font-family:'JetBrains Mono',monospace;padding-left:2px"></div>
+      <span onclick="copyDimTextPreview()" title="Copier dans le presse-papier"
+        style="cursor:pointer;font-size:20px;line-height:1;color:#ffffff66;padding:5px 8px">⧉</span>
+    </div>
   </div>
-  <div style="padding:8px 16px;border-top:1px solid color-mix(in srgb, var(--ink) 7%, transparent);display:flex;justify-content:flex-end;gap:8px">
-    <button onclick="closeDimTextDialog()" style="padding:4px 16px;background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:3px;color:var(--text-dim);font-size:11px;cursor:pointer">Annuler</button>
+  <div style="padding:8px 16px;border-top:1px solid #ffffff12;display:flex;justify-content:flex-end;gap:8px">
+    <button onclick="closeDimTextDialog()" style="padding:4px 16px;background:none;border:1px solid #ffffff21;border-radius:3px;color:var(--text-dim);font-size:11px;cursor:pointer">Annuler</button>
     <button onclick="confirmDimTextDialog()" style="padding:4px 16px;background:var(--accent);border:none;border-radius:3px;color:var(--on-accent);font-size:11px;font-weight:600;cursor:pointer">OK</button>
   </div>
 </div>
@@ -5729,6 +5737,7 @@ function _restoreLayouts(data) {
 }
 
 function dimText(e, value) {
+  if (e && e.textHidden) return '';
   const ds = getDimStyle(e);
   const dec = (ds && ds.decimals != null) ? ds.decimals : 1;
   const formatted = value.toFixed(dec);
@@ -7140,7 +7149,7 @@ function drawEntity(e) {
       ctx.translate(vsx + textR * Math.cos(midA), vsy + textR * Math.sin(midA));
       ctx.rotate(textAngle);
       ctx.font = tpx + 'px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(dimText(e, deg) + (e.text ? '' : '°'), 0, 0);
+      ctx.fillText(dimText(e, deg) + ((e.text || e.textHidden) ? '' : '°'), 0, 0);
       ctx.restore();
       ctx.restore();
       break;
@@ -15219,6 +15228,7 @@ function showDimTextDialog(e) {
   const dlg = document.getElementById('dim-text-dialog');
   const inp = document.getElementById('dim-td-input');
   inp.value = e.text || '';
+  document.getElementById('dim-td-hide').checked = !!e.textHidden;
   dlg.style.display = 'block';
   updateDimTextPreview();
   setTimeout(() => { inp.focus(); inp.select(); }, 0);
@@ -15249,9 +15259,18 @@ function updateDimTextPreview() {
   } else {
     measured = 0;
   }
+  const hidden = document.getElementById('dim-td-hide').checked;
+  document.getElementById('dim-td-input').disabled = hidden;
   const val = document.getElementById('dim-td-input').value.trim();
-  const preview = val ? dimText({text: val}, measured) : measured.toFixed(1);
+  const preview = hidden ? '(aucun texte)' : (val ? dimText({text: val}, measured) : measured.toFixed(1));
   document.getElementById('dim-td-preview').textContent = '→ ' + preview;
+}
+function copyDimTextPreview() {
+  if (document.getElementById('dim-td-hide').checked) { termPrint('Texte masqué : rien à copier', 'warning'); return; }
+  const t = document.getElementById('dim-td-preview')?.textContent.replace(/^→\s*/, '');
+  if (!t) return;
+  navigator.clipboard?.writeText(t).catch(() => {});
+  termPrint('Copié : ' + t, 'info');
 }
 function confirmDimTextDialog() {
   const e = S._dimEditId !== null ? S.entities.find(en => en.id === S._dimEditId) : null;
@@ -15259,6 +15278,7 @@ function confirmDimTextDialog() {
   pushUndo();
   const val = document.getElementById('dim-td-input').value.trim();
   e.text = val || '';
+  e.textHidden = document.getElementById('dim-td-hide').checked;
   closeDimTextDialog();
   render(); autoSave();
 }
@@ -16310,6 +16330,9 @@ document.addEventListener('keydown',(ev)=>{
   const ae = document.activeElement;
   if(ae && ae !== cmdInput && (ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.tagName==='SELECT')){
     if(!ev.ctrlKey && !ev.metaKey) return;
+    // Édition de texte native (copier/couper/coller/tout sélectionner) : ne pas la voler
+    // au profit des raccourcis presse-papier d'entités CAO (Ctrl+C/X/V/A globaux plus bas).
+    if(ae.tagName!=='SELECT' && ['a','c','x','v'].includes(ev.key.toLowerCase())) return;
   }
   if(document.activeElement===cmdInput){
     if(ev.key==='Escape'){cmdInput.blur(); return;}
@@ -16847,7 +16870,7 @@ async function exportDXF() {
         gLine(we,ln,col, e.vx, e.vy, s2x, s2y);
         const midA = sa + span/2, rT = r + tgap + th/2;
         gText(we,ln,col, e.vx + rT*Math.cos(midA), e.vy + rT*Math.sin(midA), th,
-              upright(midA + Math.PI/2), dimText(e, span*180/Math.PI) + (e.text ? '' : '\u00B0'));
+              upright(midA + Math.PI/2), dimText(e, span*180/Math.PI) + ((e.text || e.textHidden) ? '' : '\u00B0'));
         break;
       }
       case 'dim_radius':
@@ -17126,7 +17149,7 @@ async function exportDXF() {
         wDimHead();
         w('10'); w(f(defPtX)); w('20'); w(f(defPtY)); w('30'); w('0.0');
         w('11'); w(f(txtPtX)); w('21'); w(f(txtPtY)); w('31'); w('0.0');
-        w('70'); w('32'); w('71'); w('5'); w('1'); w(dxfEscape(e.text || '<>', true));
+        w('70'); w('32'); w('71'); w('5'); w('1'); w(dxfEscape(e.textHidden ? ' ' : (e.text || '<>'), true));
         w('100'); w('AcDbAlignedDimension');
         w('13'); w(f(e.x1)); w('23'); w(f(e.y1)); w('33'); w('0.0');
         w('14'); w(f(e.x2)); w('24'); w(f(e.y2)); w('34'); w('0.0');
@@ -17146,7 +17169,7 @@ async function exportDXF() {
         wDimHead();
         w('10'); w(f(e.x2+ox)); w('20'); w(f(e.y2+oy)); w('30'); w('0.0');
         w('11'); w(f((e.x1+e.x2)/2+ox+tox)); w('21'); w(f((e.y1+e.y2)/2+oy+toy)); w('31'); w('0.0');
-        w('70'); w('33'); w('71'); w('5'); w('1'); w(dxfEscape(e.text || '<>', true));
+        w('70'); w('33'); w('71'); w('5'); w('1'); w(dxfEscape(e.textHidden ? ' ' : (e.text || '<>'), true));
         w('100'); w('AcDbAlignedDimension');
         w('13'); w(f(e.x1)); w('23'); w(f(e.y1)); w('33'); w('0.0');
         w('14'); w(f(e.x2)); w('24'); w(f(e.y2)); w('34'); w('0.0');
@@ -17161,7 +17184,7 @@ async function exportDXF() {
         wDimHead();
         w('10'); w(f(e.x2)); w('20'); w(f(e.y2)); w('30'); w('0.0');
         w('11'); w(f(arcPtX)); w('21'); w(f(arcPtY)); w('31'); w('0.0');
-        w('70'); w('34'); w('71'); w('5'); w('1'); w(dxfEscape(e.text || '<>', true));
+        w('70'); w('34'); w('71'); w('5'); w('1'); w(dxfEscape(e.textHidden ? ' ' : (e.text || '<>'), true));
         w('100'); w('AcDb2LineAngularDimension');
         w('13'); w(f(e.vx)); w('23'); w(f(e.vy)); w('33'); w('0.0');
         w('14'); w(f(e.x1)); w('24'); w(f(e.y1)); w('34'); w('0.0');
@@ -17177,7 +17200,7 @@ async function exportDXF() {
         wDimHead();
         w('10'); w(f(e.cx)); w('20'); w(f(e.cy)); w('30'); w('0.0');
         w('11'); w(f(e.cx+e.r*0.5*Math.cos(a))); w('21'); w(f(e.cy+e.r*0.5*Math.sin(a))); w('31'); w('0.0');
-        w('70'); w('36'); w('71'); w('5'); w('1'); w(dxfEscape(e.text || '<>', true));
+        w('70'); w('36'); w('71'); w('5'); w('1'); w(dxfEscape(e.textHidden ? ' ' : (e.text || '<>'), true));
         w('100'); w('AcDbRadialDimension');
         w('15'); w(f(px)); w('25'); w(f(py)); w('35'); w('0.0');
         w('40'); w('0.0');
@@ -17192,7 +17215,7 @@ async function exportDXF() {
         wDimHead();
         w('10'); w(f(px)); w('20'); w(f(py)); w('30'); w('0.0');
         w('11'); w(f(e.cx)); w('21'); w(f(e.cy)); w('31'); w('0.0');
-        w('70'); w('35'); w('71'); w('5'); w('1'); w(dxfEscape(e.text || '<>', true));
+        w('70'); w('35'); w('71'); w('5'); w('1'); w(dxfEscape(e.textHidden ? ' ' : (e.text || '<>'), true));
         w('100'); w('AcDbDiametricDimension');
         w('15'); w(f(qx)); w('25'); w(f(qy)); w('35'); w('0.0');
         w('40'); w('0.0');
