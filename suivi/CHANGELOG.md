@@ -6,6 +6,92 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ## [0.1] — 2026-06-16 — Version courante
 
+### Corrigé
+- **DIMALIGNED : trait d'attache plus long que DIMLINEAR.** Le dépassement du trait
+  d'attache au-delà de la ligne de cote utilisait un survol proportionnel fixe de 15 % de
+  la distance totale objet→ligne de cote (`ox * 1.15`) au lieu du dépassement fixe `extGap`
+  du style de cote, déjà utilisé correctement par DIMLINEAR. Plus la cote était éloignée de
+  l'objet, plus l'écart entre les deux types de cote se voyait. Corrigé aux trois endroits
+  concernés (rendu canvas, aperçu pendant le tracé, export DXF) pour utiliser `extGap`,
+  comme DIMLINEAR. Vérifié : coordonnées exportées conformes au calcul théorique
+  (`origin + extOff` → `ligne de cote + extGap`).
+
+- **Export DXF réellement ouvrable dans AutoCAD.** Les fichiers exportés étaient rejetés
+  (ou « récupérés » en perdant du contenu). Causes identifiées et corrigées :
+  - **Cotes sans bloc de géométrie** — cause principale. En R2000 une `DIMENSION` doit
+    référencer (code 2) un **bloc anonyme `*Dn`** contenant sa géométrie dessinée ; sans lui,
+    AutoCAD et l'ODA suppriment purement et simplement l'entité. Chaque cote reçoit désormais
+    son bloc (lignes d'attache, ligne de cote, flèches `SOLID`, texte `MTEXT`), son
+    enregistrement `BLOCK_RECORD`, et le bit 32 dans le code 70.
+  - **Styles de cote perdus** — toutes les cotes sortaient en `STANDARD` avec un
+    `DIMSTYLE` vide, donc AutoCAD retombait sur ses défauts (texte 0,18 mm) et les cotes
+    étaient illisibles. Les 7 styles (`1:1` … `1:100`) sont exportés avec leurs vraies
+    valeurs `DIMTXT` / `DIMASZ` / `DIMEXO` / `DIMEXE` / `DIMGAP` / `DIMDEC`.
+  - **Textes de cote surchargés perdus** — le code 1 était toujours vide, ce qui demande à
+    AutoCAD de *masquer* le texte. Il porte maintenant la surcharge (`<> mm`, préfixes,
+    suffixes) ou `<>` par défaut.
+  - **`dim_aligned` décalée du mauvais côté** — l'export utilisait `angle + π/2` là où le
+    rendu écran (Y inversé) utilise `angle − π/2` : la ligne de cote partait à l'opposé.
+  - **Encodage** — pas de `$DWGCODEPAGE` et des accents en UTF-8 dans un fichier AC1015
+    (attendu en ANSI) donnaient des textes illisibles. Le fichier est désormais **ASCII pur**,
+    les caractères non-ASCII étant échappés en `\U+XXXX` (décodé par AutoCAD).
+  - **Calques homonymes** — après assainissement, « Mur 1 » et « Mur_1 » produisaient deux
+    enregistrements `LAYER` identiques (fichier refusé). Les noms sont dédoublonnés.
+  - **Couleurs** — la couleur du calque était recopiée sur chaque entité, ce qui les figeait
+    dans AutoCAD. Les entités sortent en `DUCALQUE` (256), sauf surcharge explicite.
+
+- **Diagnostic à corriger : AutoCAD Web n'ouvre pas les DXF, quels qu'ils soient.**
+  Les fichiers exportés étaient testés sur AutoCAD Web, qui refuse le DXF *par conception*
+  (Autodesk documente qu'il faut convertir en DWG au préalable, via AutoCAD Desktop). Les
+  échecs constatés là-bas ne prouvaient donc rien sur la validité de l'export. Les correctifs
+  ci-dessous restent des bugs réels — vérifiés dans le fichier produit — mais aucun d'eux
+  n'aurait pu rendre un DXF ouvrable sur AutoCAD Web. **Valider l'export avec un lecteur qui
+  gère réellement le DXF** : LibreCAD, QCAD, DraftSight, FreeCAD, AutoCAD Desktop, Autodesk
+  Viewer, ou l'ODA File Converter.
+
+- **Codes de groupe flottants sans point décimal.** Dès qu'une coordonnée, un rayon ou un
+  angle tombait pile sur un nombre entier, il s'exportait `40\n50` au lieu de `40\n50.0`,
+  alors que le format exige un point décimal sur tout code flottant (10-59, 110-159,
+  210-239…). Cause : `String(parseFloat(n.toFixed(6)))` efface le `.0` final ; corrigé pour
+  conserver au moins une décimale. `ezdxf` acceptait la forme entière, d'où un test qui ne
+  voyait rien : `tests/dxf_export_test.py` contrôle désormais explicitement le point décimal.
+
+- **Section `CLASSES` vide.** Le fichier instancie des objets `LAYOUT` (section `OBJECTS`,
+  un par onglet Modèle/Présentation) sans déclarer leur classe. `LAYOUT` n'est pas un type
+  natif du noyau DXF mais une classe « dérivée », qu'un document généré par `ezdxf` déclare
+  systématiquement. Ajout de `CLASS LAYOUT / AcDbLayout / ObjectDBX Classes`.
+
+- **Code de groupe 271 (DIMDEC) dupliqué.** Chaque enregistrement `DIMSTYLE` écrivait deux
+  fois de suite le même code 271 (copier-coller resté dans le code) — un enregistrement
+  structurellement invalide, présent dans *tous* les fichiers puisque la table `DIMSTYLE`
+  (7 styles) est toujours générée, même sans la moindre cote. Ni `ezdxf` ni `libdxfrw`
+  (LibreCAD) ne signalent ce genre de doublon en lecture : ils gardent la dernière valeur.
+  Ligne dupliquée supprimée ; retiré au passage un code `71` après le marqueur
+  `AcDbDimStyleTable`, absent de la structure produite par `ezdxf`. `tests/dxf_export_test.py`
+  vérifie désormais qu'aucun code de groupe n'apparaît deux fois dans un même enregistrement
+  de table ou d'entité simple (LINE/CIRCLE/ARC/ELLIPSE/TEXT/POINT/XLINE/RAY/DIMSTYLE/LAYER/
+  STYLE/APPID/LTYPE/VPORT/CLASS/BLOCK_RECORD) — validé en réintroduisant volontairement le
+  bug pour confirmer que le test l'aurait bloqué.
+
+- **`SPLINE` sans point de contrôle ni vecteur nodal.** L'export écrivait `72` (nœuds) = 0,
+  `73` (points de contrôle) = 0 et uniquement des points de passage (code 11). Une B-spline
+  DXF se définit par ses points de contrôle et son vecteur nodal : sans eux, aucun noyau CAO
+  ne peut reconstruire la courbe. La Catmull-Rom de MiniCAD est désormais convertie en
+  B-spline cubique clampée — chaque segment Catmull-Rom uniforme de tension 0.5 est
+  *exactement* un Bézier cubique (`b1 = p1 + (p2-p0)/6`, `b2 = p2 - (p3-p1)/6`), et la chaîne
+  de Béziers s'écrit comme une B-spline de degré 3 à nœuds internes de multiplicité 3. Écart
+  mesuré entre la courbe exportée et la courbe affichée : 3·10⁻⁷ unité (arrondi à 6 décimales).
+  `ezdxf` annonçait « 0 erreur, 0 correction » sur l'ancienne version ; le test vérifie
+  maintenant l'invariant `nb_nœuds == nb_points_de_contrôle + degré + 1`.
+
+- **Entités manquantes à l'export DXF** : les **ellipses** et **arcs d'ellipse** étaient
+  dessinés mais jamais écrits dans le fichier. Export en `ELLIPSE` natif, avec bascule du
+  grand axe quand `ry > rx` (le DXF impose un ratio ≤ 1) et conversion des paramètres d'arc.
+
+- **Export DWG** : produisait un contenu DXF nommé `.dwg`, qu'AutoCAD refuse toujours. La
+  commande signale maintenant que le DWG natif exige un SDK propriétaire et exporte un
+  vrai `.dxf` (au lieu de dupliquer un écrivain DXF dégradé, sans cotes ni ellipses).
+
 ### Ajouté
 - **Déplacement de la vue au glisser-droit** : nouveau réglage Préférences (section Saisie)
   « Déplacement de la vue » → *Molette seule* (défaut) ou *Molette + glisser droit*. Quand il

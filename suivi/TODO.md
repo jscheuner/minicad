@@ -6,6 +6,9 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## 🔴 Priorité haute (prochaine session)
 
+- [x] **Export DXF compatible AutoCAD** ✅ — blocs de géométrie `*Dn` des cotes, styles de
+      cote réels, ellipses, encodage ASCII, calques dédoublonnés.
+      Non-régression : `python tests/dxf_export_test.py` (nécessite `pip install ezdxf`).
 - [x] **4.3 — Menu contextuel** clic-droit canvas (Couper/Copier/Coller/Propriétés) ✅
 - [ ] **3.4 — Commande EXTEND** *(multi-limites fait, mode tout prolonger fait — vérifier cas limites)*
 - [x] **5.2 — Commande AREA** (surface d'un polygone) ✅
