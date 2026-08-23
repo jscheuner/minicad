@@ -18436,7 +18436,7 @@ async function cmdOpen() {
       _fileHandle = null; // sera redemandé au prochain Ctrl+S
       if (ext === 'json' || ext === 'mcad') openJSON(content, file.name);
       else if (ext === 'dxf') openDXF(content, file.name);
-      else if (ext === 'dwg') warnDwgNotSupported();
+      else if (ext === 'dwg') warnDwgNotSupported(file);
       else termPrint('Format non supporté: .' + ext, 'error');
       return;
     } catch(e) {
@@ -18452,7 +18452,7 @@ function handleFileOpen(event) {
   event.target.value = ''; // reset so same file can be re-opened
 
   const ext = file.name.split('.').pop().toLowerCase();
-  if (ext === 'dwg') { warnDwgNotSupported(); return; }
+  if (ext === 'dwg') { warnDwgNotSupported(file); return; }
 
   const reader = new FileReader();
 
@@ -18483,10 +18483,25 @@ function handleFileOpen(event) {
 // (ODA / LibreDWG), donc une dépendance externe — exclu par la contrainte du fichier
 // HTML autonome (voir exportDWG). Un outil séparé (dwg-import/, hors de ce fichier)
 // convertit DWG → DXF localement via LibreDWG/WebAssembly ; le DXF obtenu s'ouvre
-// ensuite normalement ici.
-function warnDwgNotSupported() {
+// ensuite normalement ici. Le File déjà sélectionné est transmis directement à l'outil
+// via postMessage (File est clonable) une fois l'onglet prêt, pour éviter à l'utilisateur
+// de le re-sélectionner par glisser-déposer. Fallback sur le lien manuel si la fenêtre
+// est bloquée par le navigateur ou ne répond pas.
+function warnDwgNotSupported(file) {
   termPrint('⚠ Le DWG natif exige un SDK propriétaire (Autodesk ODA) : impossible à lire ici.', 'warning');
-  termPrintLink('→ Convertissez-le d’abord en DXF (local, sans envoi réseau), puis ouvrez le .dxf obtenu :', 'dwg-import/index.html', 'ouvrir le convertisseur DWG → DXF ↗');
+  const fallback = () => termPrintLink('→ Convertissez-le d’abord en DXF (local, sans envoi réseau), puis ouvrez le .dxf obtenu :', 'dwg-import/index.html', 'ouvrir le convertisseur DWG → DXF ↗');
+  const w = window.open('dwg-import/index.html', '_blank');
+  if (!w) { fallback(); return; }
+  let done = false;
+  function onMsg(ev) {
+    if (ev.source !== w || ev.data !== 'dwg-import-ready') return;
+    done = true;
+    window.removeEventListener('message', onMsg);
+    w.postMessage({ type: 'dwg-file', file }, '*');
+    termPrint('→ ' + file.name + ' envoyé au convertisseur DWG → DXF (nouvel onglet).', 'info');
+  }
+  window.addEventListener('message', onMsg);
+  setTimeout(() => { if (!done) { window.removeEventListener('message', onMsg); fallback(); } }, 6000);
 }
 
 function openJSON(content, filename) {

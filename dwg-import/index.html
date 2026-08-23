@@ -120,6 +120,18 @@
     return libredwgPromise;
   }
 
+  // Reçoit directement le File depuis MiniCAD (postMessage, File est clonable) au lieu
+  // d'obliger l'utilisateur à le re-sélectionner par glisser-déposer. On signale d'abord
+  // qu'on est prêt : MiniCAD attend ce signal avant d'envoyer le fichier.
+  window.addEventListener('message', (ev) => {
+    if (ev.data && ev.data.type === 'dwg-file' && ev.data.file instanceof File) {
+      handleFile(ev.data.file);
+    }
+  });
+  if (window.opener) {
+    try { window.opener.postMessage('dwg-import-ready', '*'); } catch(e) {}
+  }
+
   async function handleFile(file) {
     clearLog();
     actionsEl.style.display = 'none';
