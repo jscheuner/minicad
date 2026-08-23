@@ -6,6 +6,74 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ## [0.1] — 2026-06-16 — Version courante
 
+### Ajouté
+- **Fichier ▸ Fermer** (`FERMER`, alias `CLOSE`) — ferme le dessin courant, avec
+  confirmation si des modifications ne sont pas sauvegardées.
+
+### Corrigé
+- **Export DXF : arcs de polyligne (bulge) inversés dès qu'ils dépassent le demi-cercle.**
+  Le standard DXF définit `bulge = tan(θ/4)` avec θ l'angle inclus signé, ce qui place le
+  centre en `milieu + perp_ccw·((1−b²)/(2b))` : pour un **arc majeur** (`|b| > 1`) ce
+  facteur devient négatif et le centre bascule de l'autre côté de la corde.
+  `drawPolyArcSegToPath()` place lui le centre en `milieu + signe(b)·perp_ccw·|apothème|`,
+  toujours du côté du signe de b, et rattrape le sens au rendu. Les deux conventions
+  coïncident pour `|b| ≤ 1` mais donnent des **arcs symétriques par rapport à la corde**
+  au-delà : la polyligne exportée s'ouvrait du mauvais côté dans LibreCAD/AutoCAD.
+  Corrigé par l'involution `dxfBulge(b) = |b|>1 ? -b : b`, appliquée à l'export **et** à
+  l'import. Vérifié par un oracle externe (ezdxf, 0 erreur d'audit) sur 12 bulges positifs
+  et négatifs : centres, rayons et apex conformes au calcul standard, aller-retour exact.
+  À noter : `openDXF()` utilisant la même convention interne, les aller-retours
+  MiniCAD↔MiniCAD paraissaient corrects depuis toujours — un aller-retour maison ne prouve
+  rien sur la conformité DXF.
+
+- **Import DXF : tous les arcs de polyligne étaient perdus.** `openDXF()` ne lisait que les
+  codes 10/20 des `LWPOLYLINE` et ignorait le code 42 : toute polyligne courbe revenait en
+  segments droits. Le 42 n'étant émis que pour les sommets courbes, un tableau indexé par
+  code de groupe ne peut pas être aligné positionnellement ; la lecture se fait désormais
+  sur le flux de jetons brut, où chaque 10 ouvre un sommet que 20/42 complètent. Ajout d'un
+  garde-fou pour qu'une polyligne fermée de 4 sommets **porteuse d'arcs** ne soit plus
+  convertie en `rect` (ce qui aplatissait les arcs).
+
+- **Export DXF : hachures non affichées dans LibreCAD/AutoCAD.** `ptsFromEntity()` referme
+  déjà le contour en répétant le premier point, et la boucle d'arêtes rebouclait en plus
+  via `(i+1)%n` : le contour sortait avec une **arête de longueur nulle** (9 arêtes pour
+  8 sommets, 65 pour un cercle), que LibreCAD et AutoCAD considèrent comme un contour
+  invalide — la hachure était simplement ignorée. Les points dupliqués sont retirés avant
+  l'émission.
+
+- **Ouvrir empilait le nouveau dessin sur l'ancien.** `openDXF()` se contentait de `push`er
+  les entités importées sans vider `S.entities` (les formats `.mcad`/JSON remplaçaient
+  correctement, seul DXF/DWG était touché). L'ouverture passe désormais par
+  `closeDrawing()`, qui vide les entités **et** remet les 4 calques par défaut — sans quoi
+  l'import empilait ses calques sur les précédents (doublons « 0 », « 1_-_Construction »…).
+
+- **Axe de cercle inapplicable sur un arc de polyligne.** `applyCircleAxes()` filtrait sur
+  `circle`/`arc` uniquement, alors que `findCircleEntity()` gérait déjà les segments d'arc
+  des polylignes. Les maths bulge→cercle sont extraites en `_polySegs()` / `_arcSegCircle()`
+  (utilisées par les deux chemins, sans duplication) et le filtre accepte `polyline`/`cable`
+  via `_polyArcCircles()`.
+
+- **Texte de cote illisible par-dessus une hachure.** Le texte est désormais dessiné par
+  `fillDimText()`, qui pose un masque à la couleur du fond du plan de travail derrière lui
+  (nouvelle clé `bg` dans `CANVAS_THEMES`).
+
+- **Poignée du texte d'une cote de diamètre mal placée.** Le texte par défaut est stocké au
+  centre mais dessiné décalé perpendiculairement au trait ; la poignée reste sur le centre
+  et se confondait avec celle du centre. Elle reprend maintenant le même décalage, en
+  reproduisant la rotation écran du rendu pour rester correcte à tout angle.
+
+- **Hachure abandonnée à la copie.** `applyCopy()` et le copier/coller ne dupliquaient une
+  hachure que si elle était elle-même sélectionnée ; les hachures associées (`sourceId`) à
+  une forme copiée sont maintenant reprises et re-liées automatiquement. Si la forme hôte
+  n'est pas du voyage, la hachure est figée sur ses points au lieu de pointer dans le vide.
+
+- **Échelle d'une ellipse sans effet.** `scaleEntityInPlace()` ne mettait à l'échelle que
+  `r`, jamais `rx`/`ry`.
+
+- **Dialogue TEXTE DE COTE illisible en thème clair.** Couleurs en dur (`#fff`,
+  `#ffffff21`, `#e8ecf4`…) remplacées par les variables de thème.
+
+
 ### Corrigé
 - **DIMALIGNED : trait d'attache plus long que DIMLINEAR.** Le dépassement du trait
   d'attache au-delà de la ligne de cote utilisait un survol proportionnel fixe de 15 % de

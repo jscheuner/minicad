@@ -1300,7 +1300,7 @@
     cursor: pointer; color: color-mix(in srgb, var(--ink) 33%, transparent); font-size: 16px; line-height: 1;
     width: 20px; text-align: center;
   }
-  .td-close:hover { color: #fff; }
+  .td-close:hover { color: var(--text); }
   .td-body { padding: 12px 14px 10px; display: flex; flex-direction: column; gap: 10px; }
   .td-symbols { display: flex; gap: 4px; flex-wrap: wrap; }
   .td-sym-btn {
@@ -1317,7 +1317,7 @@
   }
   .td-field input, .td-field select {
     background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); border-radius: 4px;
-    color: #e8ecf4; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 12px;
     padding: 6px 9px; outline: none; width: 100%; box-sizing: border-box;
   }
   .td-field input:focus, .td-field select:focus { border-color: var(--accent); }
@@ -1331,14 +1331,14 @@
     display: flex; align-items: center; justify-content: center; padding: 0 8px;
   }
   .td-style-btn.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
-  .td-style-btn:hover:not(.active) { border-color: color-mix(in srgb, var(--ink) 20%, transparent); color: #fff; }
+  .td-style-btn:hover:not(.active) { border-color: color-mix(in srgb, var(--ink) 20%, transparent); color: var(--text); }
   .td-footer { display: flex; gap: 8px; padding: 0 14px 12px; }
   .td-footer button {
     flex: 1; padding: 7px 10px; font-size: 11px; font-weight: 600; cursor: pointer;
     border-radius: 5px; border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); background: var(--input-bg);
-    color: #ffffffaa; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.3px;
+    color: var(--text-dim); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.3px;
   }
-  .td-footer button:hover { color: #fff; border-color: color-mix(in srgb, var(--ink) 27%, transparent); }
+  .td-footer button:hover { color: var(--text); border-color: color-mix(in srgb, var(--ink) 27%, transparent); }
   .td-ok { background: var(--accent-dim) !important; color: var(--accent) !important; border-color: var(--accent) !important; }
 </style>
 <script>(function(){try{var p=JSON.parse(localStorage.getItem('minicad_user_prefs')||'{}');var t=p.theme||(p.theme===undefined?'light':p.theme);if(t==='light'||t===undefined)document.documentElement.classList.add('theme-light');}catch(e){document.documentElement.classList.add('theme-light');}})();</script>
@@ -1358,6 +1358,9 @@
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="cmdOpen();closeMenus()">
           <span>Ouvrir…</span><span class="item-shortcut">Ctrl+O</span>
+        </div>
+        <div class="menu-dropdown-item" onclick="executeCommand('FERMER');closeMenus()">
+          <span>Fermer</span>
         </div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="cmdSave();closeMenus()">
@@ -2287,15 +2290,15 @@
   </div>
 </div>
 
-<div id="dim-text-dialog" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2133;border:1px solid #ffffff21;border-radius:8px;z-index:951;width:340px;box-shadow:0 12px 48px rgba(0,0,0,0.8);font-family:'IBM Plex Sans',sans-serif">
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #ffffff17;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1px;color:var(--accent)">
+<div id="dim-text-dialog" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-elev);border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:8px;z-index:951;width:340px;box-shadow:0 12px 48px rgba(0,0,0,0.5);font-family:'IBM Plex Sans',sans-serif">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid color-mix(in srgb, var(--ink) 9%, transparent);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1px;color:var(--accent)">
     TEXTE DE COTE
-    <span onclick="closeDimTextDialog()" style="cursor:pointer;color:#ffffff54;font-size:18px;line-height:1">×</span>
+    <span onclick="closeDimTextDialog()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
   </div>
   <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px">
-    <label style="font-size:10px;color:#ffffff54;letter-spacing:0.4px">Texte libre — utiliser &lt;&gt; pour la valeur mesurée</label>
+    <label style="font-size:10px;color:color-mix(in srgb, var(--ink) 40%, transparent);letter-spacing:0.4px">Texte libre — utiliser &lt;&gt; pour la valeur mesurée</label>
     <input id="dim-td-input" type="text" placeholder="<>" autocomplete="off"
-      style="background:var(--bg-elev);border:1px solid #ffffff21;border-radius:3px;color:var(--text);font-size:13px;padding:6px 10px;font-family:'JetBrains Mono',monospace;outline:none"
+      style="background:var(--input-bg);border:1px solid color-mix(in srgb, var(--ink) 10%, transparent);border-radius:3px;color:var(--text);font-size:13px;padding:6px 10px;font-family:'JetBrains Mono',monospace;outline:none"
       oninput="updateDimTextPreview()" onkeydown="if(event.key==='Enter')confirmDimTextDialog();if(event.key==='Escape')closeDimTextDialog()">
     <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim);cursor:pointer">
       <input id="dim-td-hide" type="checkbox" onchange="updateDimTextPreview()" style="cursor:pointer">
@@ -2304,11 +2307,11 @@
     <div style="display:flex;align-items:center;gap:6px">
       <div id="dim-td-preview" style="font-size:12px;color:var(--accent);flex:1;min-height:18px;font-family:'JetBrains Mono',monospace;padding-left:2px"></div>
       <span onclick="copyDimTextPreview()" title="Copier dans le presse-papier"
-        style="cursor:pointer;font-size:20px;line-height:1;color:#ffffff66;padding:5px 8px">⧉</span>
+        style="cursor:pointer;font-size:20px;line-height:1;color:color-mix(in srgb, var(--ink) 45%, transparent);padding:5px 8px">⧉</span>
     </div>
   </div>
-  <div style="padding:8px 16px;border-top:1px solid #ffffff12;display:flex;justify-content:flex-end;gap:8px">
-    <button onclick="closeDimTextDialog()" style="padding:4px 16px;background:none;border:1px solid #ffffff21;border-radius:3px;color:var(--text-dim);font-size:11px;cursor:pointer">Annuler</button>
+  <div style="padding:8px 16px;border-top:1px solid color-mix(in srgb, var(--ink) 7%, transparent);display:flex;justify-content:flex-end;gap:8px">
+    <button onclick="closeDimTextDialog()" style="padding:4px 16px;background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:3px;color:var(--text-dim);font-size:11px;cursor:pointer">Annuler</button>
     <button onclick="confirmDimTextDialog()" style="padding:4px 16px;background:var(--accent);border:none;border-radius:3px;color:var(--on-accent);font-size:11px;font-weight:600;cursor:pointer">OK</button>
   </div>
 </div>
@@ -2847,13 +2850,13 @@ const CANVAS_THEMES = {
   dark: {
     ink: '#ffffff', accent: '#00d4ff', label: '#ffab40',
     gridFine: '#141e35', grid: '#1a2a4a', gridMajor: '#253a5a',
-    pill: '#0d1525cc', atelier: '#0c0f17',
+    pill: '#0d1525cc', atelier: '#0c0f17', bg: '#0f0f1a',
     rbWin: '#00d4ff', rbCross: '#00e676',
   },
   light: {
     ink: '#13202e', accent: '#0072ad', label: '#9a5b00',
     gridFine: '#e9edf3', grid: '#dde3eb', gridMajor: '#c6d0dd',
-    pill: '#ffffffe6', atelier: '#c6cbd3',
+    pill: '#ffffffe6', atelier: '#c6cbd3', bg: '#fbfcfd',
     rbWin: '#0072ad', rbCross: '#00873e',
   },
 };
@@ -4047,15 +4050,12 @@ const CMD = {
     S.entities.forEach(e => termPrint('#' + e.id + ' ' + e.type + ' [calque ' + e.layer + ']', 'info'));
   }},
   CLEAR: { alias: ['CLS','NOUVEAU'], desc: 'Tout effacer', exec: () => {
-    // Sécurité : prévenir avant de perdre un dessin non sauvegardé (statut MODIFIÉ)
-    if (S.entities.length && S._saveState === 'modified') {
-      if (!confirm('Le dessin actuel n\'est pas sauvegardé.\nLes modifications seront perdues.\n\nCréer un nouveau dessin quand même ?')) {
-        termPrint('Nouveau dessin annulé', 'info'); return;
-      }
-    }
-    if (S.entities.length) pushUndo(); S.entities = []; S.selected = [];
-    _fileHandle = null; _kdFile = null; localStorage.removeItem('minicad_autosave'); updateSaveIndicator('new');
-    termPrint('Dessin effacé', 'success'); render();
+    if (!closeDrawing('Créer un nouveau dessin quand même ?')) { termPrint('Nouveau dessin annulé', 'info'); return; }
+    termPrint('Dessin effacé', 'success');
+  }},
+  FERMER: { alias: ['CLOSE'], desc: 'Fermer le dessin courant', exec: () => {
+    if (!closeDrawing('Fermer le dessin quand même ?')) { termPrint('Fermeture annulée', 'info'); return; }
+    termPrint('Dessin fermé', 'success');
   }},
   GRID: { alias: ['GRILLE'], desc: 'Taille grille (GRID [x] [y] — ex: GRID 20 10)', exec: (args) => {
     if (args[0]) {
@@ -7071,7 +7071,7 @@ function drawEntity(e) {
         const dist = Math.abs(e.x2 - e.x1);
         const [ttx, tty] = w2s((e.x1+e.x2)/2 + to, dimY);
         ctx.font = tpx + 'px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.fillText(dimText(e, dist), ttx, tty - dimTextGap(ds)*S.zoom);
+        fillDimText(dimText(e, dist), ttx, tty - dimTextGap(ds)*S.zoom);
       } else {
         const dimX = (e.x1 + e.x2) / 2 + off;
         const [a1, b1] = w2s(dimX, e.y1), [a2, b2] = w2s(dimX, e.y2);
@@ -7085,7 +7085,7 @@ function drawEntity(e) {
         const [ttx, tty] = w2s(dimX, (e.y1+e.y2)/2 + to);
         ctx.save(); ctx.translate(ttx, tty); ctx.rotate(-Math.PI/2);
         ctx.font = tpx + 'px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.fillText(dimText(e, dist), 0, -tpx*0.3); ctx.restore();
+        fillDimText(dimText(e, dist), 0, -tpx*0.3); ctx.restore();
       }
       break;
     }
@@ -7116,7 +7116,7 @@ function drawEntity(e) {
       if (textAngle > Math.PI/2 || textAngle < -Math.PI/2) textAngle += Math.PI;
       ctx.rotate(textAngle);
       ctx.font = tpx + 'px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillText(dimText(e, dist), 0, -dimTextGap(ds)*S.zoom); ctx.restore();
+      fillDimText(dimText(e, dist), 0, -dimTextGap(ds)*S.zoom); ctx.restore();
       break;
     }
     case 'dim_angular': {
@@ -7149,7 +7149,7 @@ function drawEntity(e) {
       ctx.translate(vsx + textR * Math.cos(midA), vsy + textR * Math.sin(midA));
       ctx.rotate(textAngle);
       ctx.font = tpx + 'px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(dimText(e, deg) + ((e.text || e.textHidden) ? '' : '°'), 0, 0);
+      fillDimText(dimText(e, deg) + ((e.text || e.textHidden) ? '' : '°'), 0, 0);
       ctx.restore();
       ctx.restore();
       break;
@@ -7196,7 +7196,7 @@ function drawEntity(e) {
       ctx.rotate(lineAngle);
       ctx.font = tpx + 'px JetBrains Mono';
       ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillText(prefix + dimText(e, val), 0, -dimTextGap(ds)*S.zoom);
+      fillDimText(prefix + dimText(e, val), 0, -dimTextGap(ds)*S.zoom);
       ctx.restore();
       ctx.restore();
       break;
@@ -7281,6 +7281,30 @@ function getDimStyle(e) {
 // Paramètre de style `textGap` ; fallback ≈ 0.3·hauteur de texte pour les anciens styles.
 function dimTextGap(ds) { return (ds && ds.textGap != null) ? ds.textGap : ((ds ? ds.textHeight : 4) * 0.3); }
 
+// Texte de cote avec un masque (couleur du fond du plan de travail) derrière lui,
+// pour rester lisible par-dessus des hachures ou d'autres entités. Respecte le
+// repère courant (translate/rotate déjà appliqués par l'appelant) ainsi que
+// ctx.font / textAlign / textBaseline / fillStyle en cours.
+function fillDimText(text, x, y) {
+  if (!text) return;
+  const w = ctx.measureText(text).width;
+  const h = parseFloat(ctx.font) || 12;
+  const pad = Math.max(1, h * 0.15);
+  let left = x;
+  if (ctx.textAlign === 'center') left = x - w / 2;
+  else if (ctx.textAlign === 'right' || ctx.textAlign === 'end') left = x - w;
+  let top;
+  if (ctx.textBaseline === 'bottom') top = y - h;
+  else if (ctx.textBaseline === 'middle') top = y - h / 2;
+  else if (ctx.textBaseline === 'top' || ctx.textBaseline === 'hanging') top = y;
+  else top = y - h * 0.8;
+  const prevFill = ctx.fillStyle;
+  ctx.fillStyle = TC.bg;
+  ctx.fillRect(left - pad, top - pad, w + pad * 2, h + pad * 2);
+  ctx.fillStyle = prevFill;
+  ctx.fillText(text, x, y);
+}
+
 function drawArrowHead(fromX, fromY, toX, toY, sz) {
   sz = sz !== undefined ? sz : 8;
   const a = Math.atan2(toY - fromY, toX - fromX);
@@ -7341,7 +7365,7 @@ function _renderDimArc(e) {
   ctx.rotate(lineAngle);
   ctx.font = tpx + 'px JetBrains Mono';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('⌒' + dimText(e, e.r * span), 0, 0);
+  fillDimText('⌒' + dimText(e, e.r * span), 0, 0);
   ctx.restore();
 }
 
@@ -7487,9 +7511,29 @@ function getGripPoints(e) {
         }
         ent.angle = newA;
       });
-      // Grip texte — déplace uniquement le label
-      const _twx = e.textWx !== undefined ? e.textWx : e.cx + e.r * 0.55 * Math.cos(_a);
-      const _twy = e.textWy !== undefined ? e.textWy : e.cy + e.r * 0.55 * Math.sin(_a);
+      // Grip texte — déplace uniquement le label. Pour le diamètre, le texte par
+      // défaut est au centre (cf. defTwx/defTwy plus haut) mais dessiné décalé
+      // perpendiculairement au trait (cf. fillDimText, appelé avec un décalage
+      // -dimTextGap*zoom). On place donc la poignée à ce même décalage — pile
+      // sous le texte, entre celui-ci et la poignée centre — en reproduisant
+      // exactement la rotation écran utilisée au rendu (lineAngle) pour repartir
+      // dans le bon sens quel que soit l'angle de la cote.
+      const _isDiam = e.type === 'dim_diameter';
+      let _twx, _twy;
+      if (e.textWx !== undefined) { _twx = e.textWx; _twy = e.textWy; }
+      else if (_isDiam) {
+        const [_csx, _csy] = w2s(e.cx, e.cy);
+        const [_esx, _esy] = w2s(e.cx + e.r * Math.cos(_a), e.cy + e.r * Math.sin(_a));
+        let _lineAngle = Math.atan2(_esy - _csy, _esx - _csx);
+        if (_lineAngle > Math.PI/2 || _lineAngle < -Math.PI/2) _lineAngle += Math.PI;
+        const _dds = getDimStyle(e);
+        const _gap = dimTextGap(_dds) + _dds.textHeight * 0.5;
+        _twx = e.cx + _gap * Math.sin(_lineAngle);
+        _twy = e.cy + _gap * Math.cos(_lineAngle);
+      } else {
+        _twx = e.cx + e.r * 0.55 * Math.cos(_a);
+        _twy = e.cy + e.r * 0.55 * Math.sin(_a);
+      }
       gp(_twx, _twy, (ent, nx, ny) => { ent.textWx = nx; ent.textWy = ny; });
       break;
     }
@@ -11126,12 +11170,25 @@ function applyCopy(ids, dx, dy) {
       offsetEntity(ne, dx, dy);
       S.entities.push(ne);
     });
+  // Auto-copier les hachures associées à une forme copiée (même si la hachure elle-même n'est pas sélectionnée)
+  S.entities
+    .filter(e => e.type === 'hatch' && e.sourceId !== undefined && idMap[e.sourceId] !== undefined && !copiedSrcIds.has(e.id))
+    .forEach(src => {
+      const ne = JSON.parse(JSON.stringify(src));
+      ne.id = S.nextId++;
+      ne.sourceId = idMap[src.sourceId];
+      offsetEntity(ne, dx, dy);
+      S.entities.push(ne);
+    });
 }
 
 // ===== CLIPBOARD CUT / COPY / PASTE =====
 function clipboardCopy() {
   if (!S.selected.length) { termPrint('Aucun objet sélectionné', 'warning'); return; }
-  S.clipboard = S.selected.map(id => {
+  const ids = new Set(S.selected);
+  // Inclure automatiquement les hachures associées à une forme copiée
+  S.entities.forEach(e => { if (e.type === 'hatch' && e.sourceId !== undefined && ids.has(e.sourceId)) ids.add(e.id); });
+  S.clipboard = [...ids].map(id => {
     const e = S.entities.find(e => e.id === id);
     return e ? JSON.parse(JSON.stringify(e)) : null;
   }).filter(Boolean);
@@ -11471,6 +11528,10 @@ function refreshAssocDims() {
 
 // Remappe assoc.entId après copie/collage ; abandonne le côté dont l'hôte n'a pas été copié.
 function remapAssoc(ne, idMap) {
+  if (ne.type === 'hatch' && ne.sourceId !== undefined) {
+    if (idMap[ne.sourceId] !== undefined) ne.sourceId = idMap[ne.sourceId];
+    else { ne.points = getHatchPoints(ne) || ne.points; delete ne.sourceId; }
+  }
   if (!ne.assoc) return;
   for (const side of ['p1','p2']) {
     const a = ne.assoc[side];
@@ -11539,6 +11600,19 @@ function applyMatchProps(t, p){
   if (t.type === 'text' && p.text){ t.size = p.text.size; t.font = p.text.font; t.bold = p.text.bold; t.italic = p.text.italic; }
   if (p.dimStyle !== undefined && t.dimStyle !== undefined) t.dimStyle = p.dimStyle;
 }
+
+// Conversion bulge MiniCAD ⇄ bulge DXF standard.
+//
+// Le standard DXF définit bulge = tan(θ/4) avec θ l'angle inclus signé (θ>0 = CCW),
+// ce qui place le centre en milieu + perp_ccw·((1−b²)/(2b)) : pour un arc MAJEUR
+// (|b|>1) le facteur devient négatif, donc le centre bascule de l'autre côté de la corde.
+// drawPolyArcSegToPath() place lui le centre en milieu + signe(b)·perp_ccw·|apothème|,
+// toujours du côté du signe de b, et rattrape le sens au rendu. Les deux conventions
+// coïncident pour |b| ≤ 1 mais donnent des arcs symétriques par rapport à la corde
+// dès que |b| > 1 : l'arc exporté partait alors du mauvais côté dans LibreCAD/AutoCAD.
+// Vérifié : l'arc dessiné par MiniCAD pour b vaut exactement l'arc DXF de −b si |b|>1.
+// La transformation est une involution : elle sert donc à l'export comme à l'import.
+function dxfBulge(b){ return Math.abs(b) > 1 ? -b : b; }
 
 // Segment à bulge → arc {cx,cy,r,sa,ea} (intervalle CCW), identique au rendu (drawPolyArcSegToPath)
 function bulgeToArc(x1,y1,x2,y2,b){
@@ -12206,7 +12280,7 @@ function scaleEntityInPlace(e, cx, cy, f) {
   if (_th) { _th(e, sp, 'scale'); return; }
   if (e.x1!==undefined) { [e.x1,e.y1]=sp(e.x1,e.y1); }
   if (e.x2!==undefined) { [e.x2,e.y2]=sp(e.x2,e.y2); }
-  if (e.cx!==undefined) { [e.cx,e.cy]=sp(e.cx,e.cy); if(e.r!==undefined) e.r*=f; }
+  if (e.cx!==undefined) { [e.cx,e.cy]=sp(e.cx,e.cy); if(e.r!==undefined) e.r*=f; if(e.rx!==undefined) e.rx*=f; if(e.ry!==undefined) e.ry*=f; }
   if (e.type==='dim_arc') { if(e.offset!==undefined) e.offset*=f; if(e.textWx!==undefined){[e.textWx,e.textWy]=sp(e.textWx,e.textWy);} }
   if (e.x!==undefined&&e.x1===undefined) { [e.x,e.y]=sp(e.x,e.y); if(e.size) e.size*=f; }
   if (e.vx!==undefined) { [e.vx,e.vy]=sp(e.vx,e.vy); }
@@ -13149,26 +13223,38 @@ function findCircleEntity(wx, wy) {
   return null;
 }
 
-// Cherche un segment d'arc (bulge) d'une polyligne proche de (wx,wy).
-// Retourne {cx,cy,r} synthétique compatible DIMRADIUS/DIMDIAMETER.
-function _findPolyArcSeg(e, wx, wy, tol) {
+// Liste des segments [p1,p2] d'une polyligne, segment de fermeture inclus si fermée sans doublon.
+function _polySegs(e) {
   const pts = e.points;
-  if (!pts || pts.length < 2) return null;
-  // Liste des segments, segment de fermeture inclus si fermée sans doublon
+  if (!pts || pts.length < 2) return [];
   const segs = [];
   for (let i = 0; i < pts.length - 1; i++) segs.push([pts[i], pts[i+1]]);
   const f = pts[0], l = pts[pts.length-1];
   if (e.closed && Math.hypot(f[0]-l[0], f[1]-l[1]) > 1e-9) segs.push([l, f]);
-  for (const [p1, p2] of segs) {
-    const b = p1[2] || 0;
-    if (b === 0) continue;
-    const x1=p1[0], y1=p1[1], x2=p2[0], y2=p2[1];
-    const d = Math.hypot(x2-x1, y2-y1);
-    if (d < 1e-9) continue;
-    const r = d*(1+b*b)/(4*Math.abs(b));
-    const sag = Math.sqrt(Math.max(0, r*r - d*d/4));
-    const mx=(x1+x2)/2, my=(y1+y2)/2, pdx=-(y2-y1)/d, pdy=(x2-x1)/d;
-    const cx = mx + Math.sign(b)*pdx*sag, cy = my + Math.sign(b)*pdy*sag;
+  return segs;
+}
+
+// Cercle synthétique {cx,cy,r} porté par un segment d'arc (bulge), ou null si segment droit.
+function _arcSegCircle(p1, p2) {
+  const b = p1[2] || 0;
+  if (b === 0) return null;
+  const x1=p1[0], y1=p1[1], x2=p2[0], y2=p2[1];
+  const d = Math.hypot(x2-x1, y2-y1);
+  if (d < 1e-9) return null;
+  const r = d*(1+b*b)/(4*Math.abs(b));
+  const sag = Math.sqrt(Math.max(0, r*r - d*d/4));
+  const mx=(x1+x2)/2, my=(y1+y2)/2, pdx=-(y2-y1)/d, pdy=(x2-x1)/d;
+  const cx = mx + Math.sign(b)*pdx*sag, cy = my + Math.sign(b)*pdy*sag;
+  return { cx, cy, r, b, x1, y1 };
+}
+
+// Cherche un segment d'arc (bulge) d'une polyligne proche de (wx,wy).
+// Retourne {cx,cy,r} synthétique compatible DIMRADIUS/DIMDIAMETER.
+function _findPolyArcSeg(e, wx, wy, tol) {
+  for (const [p1, p2] of _polySegs(e)) {
+    const c = _arcSegCircle(p1, p2);
+    if (!c) continue;
+    const { cx, cy, r, b, x1, y1 } = c;
     if (Math.abs(Math.hypot(wx-cx, wy-cy) - r) >= tol) continue;
     // Vérifier que le clic est bien sur la portion d'arc (et pas sur le cercle ailleurs)
     const a1=Math.atan2(y1-cy,x1-cx), ac=Math.atan2(wy-cy,wx-cx);
@@ -13179,6 +13265,16 @@ function _findPolyArcSeg(e, wx, wy, tol) {
     if (dac <= mag + 0.06) return { cx, cy, r };
   }
   return null;
+}
+
+// Tous les cercles synthétiques {cx,cy,r} portés par les segments d'arc (bulge) d'une polyligne.
+function _polyArcCircles(e) {
+  const out = [];
+  for (const [p1, p2] of _polySegs(e)) {
+    const c = _arcSegCircle(p1, p2);
+    if (c) out.push({ cx: c.cx, cy: c.cy, r: c.r });
+  }
+  return out;
 }
 
 // Cherche l'arc de coude d'un tube le plus proche du point (wx,wy)
@@ -13328,7 +13424,12 @@ function armCircleAxesSelection() {
 function applyCircleAxes() {
   if (!S.axisOverPending) return;
   const d = S.axisOverDist || 0;
-  const circles = S.entities.filter(e => S.selected.includes(e.id) && (e.type === 'circle' || e.type === 'arc'));
+  const circles = [];
+  S.entities.forEach(e => {
+    if (!S.selected.includes(e.id)) return;
+    if (e.type === 'circle' || e.type === 'arc') circles.push(e);
+    else if (e.type === 'polyline' || e.type === 'cable') circles.push(..._polyArcCircles(e));
+  });
   if (!circles.length) { termPrint('Aucun cercle sélectionné', 'warning'); return; }
   pushUndo();
   circles.forEach(c => {
@@ -17324,7 +17425,7 @@ async function exportDXF() {
         w('0'); w('LWPOLYLINE'); wEnt(layerName,col); w('100'); w('AcDbPolyline');
         w('90'); w(String(e.points.length));
         w('70'); w(e.closed ? '1' : '0');
-        e.points.forEach(p=>{ w('10'); w(f(p[0])); w('20'); w(f(p[1])); if(p[2]){ w('42'); w(f(p[2])); } });
+        e.points.forEach(p=>{ w('10'); w(f(p[0])); w('20'); w(f(p[1])); if(p[2]){ w('42'); w(f(dxfBulge(p[2]))); } });
         break;
       }
 
@@ -17350,8 +17451,18 @@ async function exportDXF() {
       }
 
       case 'hatch': {
-        const hpts = getHatchPoints(e);
+        let hpts = getHatchPoints(e);
         if (!hpts || hpts.length < 3) break;
+        // ptsFromEntity() referme déjà le contour en répétant le premier point ;
+        // la boucle d'arêtes ci-dessous reboucle en plus via (i+1)%n. Sans ce
+        // retrait on émet une arête de longueur nulle, que LibreCAD/AutoCAD
+        // considèrent comme un contour invalide → hachure non affichée.
+        while (hpts.length > 3 &&
+               Math.hypot(hpts[hpts.length-1][0] - hpts[0][0],
+                          hpts[hpts.length-1][1] - hpts[0][1]) < 1e-9) {
+          hpts = hpts.slice(0, -1);
+        }
+        if (hpts.length < 3) break;
         const _hdx = _hatchDef(e.pattern);
         const patternName = _hdx.dxfName || 'ANSI31';
         const ang = e.angle ?? (_hdx.defaultAngle ?? 45);
@@ -18115,6 +18226,31 @@ async function cmdSave(name, forceNew) {
   termPrint('Téléchargé: ' + filename + ' (utilisez Chrome/Edge pour la sauvegarde directe)', 'info');
 }
 
+// Ferme le dessin courant (vide S.entities, réinitialise l'état fichier).
+// Si des modifications sont non sauvegardées, demande confirmation (confirmQuestion
+// complète le message d'avertissement). Retourne false si l'utilisateur annule.
+function closeDrawing(confirmQuestion) {
+  if (S.entities.length && S._saveState === 'modified') {
+    if (!confirm('Le dessin actuel n\'est pas sauvegardé.\nLes modifications seront perdues.\n\n' + confirmQuestion)) {
+      return false;
+    }
+  }
+  if (S.entities.length) pushUndo();
+  S.entities = []; S.selected = [];
+  // Calques par défaut : sans cette remise à zéro, ouvrir un DXF après coup empile
+  // ses calques sur ceux du dessin précédent (doublons « 0 », « 1_-_Construction »…).
+  S.layers = [
+    { name: '0 - Défaut',      color: '#00d4ff', printColor: '#000000', visible: true, lineWidth: 0.35, lineType: 'solid' },
+    { name: '1 - Construction',color: '#ff4081', printColor: '#888888', visible: true, lineWidth: 0.13, lineType: 'dashed' },
+    { name: '2 - Cotation',    color: '#00e676', printColor: '#000000', visible: true, lineWidth: 0.25, lineType: 'solid' },
+    { name: '3 - Texte',       color: '#ffab40', printColor: '#000000', visible: true, lineWidth: 0.25, lineType: 'solid' },
+  ];
+  S.currentLayer = 0;
+  _fileHandle = null; _kdFile = null; localStorage.removeItem('minicad_autosave'); updateSaveIndicator('new');
+  updateUI(); syncUIState(); render();
+  return true;
+}
+
 async function cmdOpen() {
   if ('showOpenFilePicker' in window) {
     try {
@@ -18129,6 +18265,7 @@ async function cmdOpen() {
       const file = await handle.getFile();
       const content = await file.text();
       const ext = file.name.split('.').pop().toLowerCase();
+      if (!closeDrawing('Ouvrir un autre dessin quand même ?')) { termPrint('Ouverture annulée', 'info'); return; }
       termPrint('Ouverture: ' + file.name + ' (' + (content.length/1024).toFixed(1) + ' Ko)', 'info');
       _fileHandle = null; // sera redemandé au prochain Ctrl+S
       if (ext === 'json' || ext === 'mcad') openJSON(content, file.name);
@@ -18154,6 +18291,7 @@ function handleFileOpen(event) {
   const reader = new FileReader();
 
   reader.onload = function(e) {
+    if (!closeDrawing('Ouvrir un autre dessin quand même ?')) { termPrint('Ouverture annulée', 'info'); return; }
     const content = e.target.result;
     termPrint('Ouverture: ' + file.name + ' (' + (content.length/1024).toFixed(1) + ' Ko)', 'info');
 
@@ -18297,12 +18435,18 @@ function openDXF(content, filename) {
 
         case 'LWPOLYLINE': {
           const closed = (parseInt(gs(70,'0')) & 1) === 1;
-          const xVals = props[10] || [], yVals = props[20] || [];
+          // Le bulge (42) n'est émis que pour les sommets courbes : un simple tableau
+          // props[42] ne dirait pas à quel sommet il se rattache. On relit donc le flux
+          // brut, où chaque 10 ouvre un sommet que 20/42 complètent.
           const pts = [];
-          for (let k = 0; k < Math.max(xVals.length, yVals.length); k++)
-            pts.push([parseFloat(xVals[k]||0), parseFloat(yVals[k]||0)]);
+          for (let j = i + 1; j < tokens.length && tokens[j].code !== 0; j++) {
+            const c = tokens[j].code, v = parseFloat(tokens[j].value);
+            if (c === 10) pts.push([v, 0]);
+            else if (c === 20 && pts.length) pts[pts.length-1][1] = v;
+            else if (c === 42 && pts.length && v) pts[pts.length-1][2] = dxfBulge(v);
+          }
           if (pts.length >= 2) {
-            if (closed && pts.length === 4 && isRectangle(pts)) {
+            if (closed && pts.length === 4 && !pts.some(p => p[2]) && isRectangle(pts)) {
               const xs=pts.map(p=>p[0]), ys=pts.map(p=>p[1]);
               ent = { type:'rect', x1:Math.min(...xs), y1:Math.min(...ys), x2:Math.max(...xs), y2:Math.max(...ys) };
             } else {
