@@ -15,6 +15,7 @@
   "menu.help": "Help",
   "menu.file.new": "New",
   "menu.file.open": "Open…",
+  "menu.file.close": "Close",
   "menu.file.save": "Save",
   "menu.file.save_as": "Save as…",
   "menu.file.export_dxf": "Export DXF",

@@ -6,6 +6,9 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## 🔴 Priorité haute (prochaine session)
 
+- [x] **Export DXF compatible AutoCAD** ✅ — blocs de géométrie `*Dn` des cotes, styles de
+      cote réels, ellipses, encodage ASCII, calques dédoublonnés.
+      Non-régression : `python tests/dxf_export_test.py` (nécessite `pip install ezdxf`).
 - [x] **4.3 — Menu contextuel** clic-droit canvas (Couper/Copier/Coller/Propriétés) ✅
 - [ ] **3.4 — Commande EXTEND** *(multi-limites fait, mode tout prolonger fait — vérifier cas limites)*
 - [x] **5.2 — Commande AREA** (surface d'un polygone) ✅
@@ -68,6 +71,10 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## ✅ Terminé (résumé)
 
+- ✅ **Bulge DXF conforme au standard** — arcs majeurs (`|b|>1`) exportés/importés du bon côté de la corde (`dxfBulge()`), validé par ezdxf
+- ✅ **Import DXF : arcs de polyligne préservés** — lecture du code 42 sur le flux brut (`LWPOLYLINE`)
+- ✅ **Fichier ▸ Fermer** (`FERMER`) — et fermeture du dessin courant avant toute ouverture (calques remis à zéro)
+- ✅ **Axe de cercle sur arc de polyligne** — `_polyArcCircles()`, mêmes maths bulge→cercle que l'accroche
 - ✅ **AREA** — surface entité (cercle/rect/polyligne) ou polygone cliqué [P] ; preview live S≈ ; Entrée/clic-droit pour calculer ; alias AIRE/SURFACE
 - ✅ **Menu contextuel** — clic-droit canvas : Couper/Copier/Coller (presse-papiers, Ctrl+X/C/V), Déplacer, Effacer, Propriétés, Tout sélectionner, Zoom étendu ; mode COLLER avec preview fantôme
 - ✅ **ARC multi-mode** — 3P / SCE / SCA / SER, mots-clés DI, grips départ/fin, preview live

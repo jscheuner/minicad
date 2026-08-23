@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Convertisseur DWG → DXF pour MiniCAD</title>
+<style>
+  :root {
+    --bg-dark: #1a1a2e;
+    --bg-panel: #16213e;
+    --bg-elev: #1a2133;
+    --border: #ffffff22;
+    --accent: #00d4ff;
+    --text: #c8d6e5;
+    --text-dim: #8295ab;
+    --text-bright: #f0f4f8;
+    --ok: #4caf50;
+    --err: #ff5252;
+    --warn: #ffab40;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: var(--bg-dark); color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 24px;
+  }
+  main { max-width: 640px; width: 100%; }
+  h1 { color: var(--text-bright); font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--text-dim); margin: 0 0 20px; font-size: 13px; }
+  .card {
+    background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px; margin-bottom: 16px;
+  }
+  #drop {
+    border: 2px dashed var(--border); border-radius: 8px; padding: 32px 16px;
+    text-align: center; cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  #drop.drag { border-color: var(--accent); background: #00d4ff11; }
+  #drop .icon { font-size: 32px; margin-bottom: 8px; }
+  #drop .hint { color: var(--text-dim); font-size: 12px; margin-top: 4px; }
+  input[type=file] { display: none; }
+  #log {
+    background: #0a0a14; border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 12px; font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+    max-height: 220px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
+  }
+  #log .ok { color: var(--ok); }
+  #log .err { color: var(--err); }
+  #log .warn { color: var(--warn); }
+  #log .dim { color: var(--text-dim); }
+  #actions { display: flex; gap: 10px; margin-top: 14px; }
+  button {
+    background: var(--accent); color: #04141a; border: none; border-radius: 6px;
+    padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  button:disabled { background: var(--bg-elev); color: var(--text-dim); cursor: not-allowed; }
+  a.dl {
+    background: var(--bg-elev); color: var(--text-bright); border: 1px solid var(--border);
+    border-radius: 6px; padding: 10px 16px; font-size: 13px; text-decoration: none; font-weight: 600;
+  }
+  footer { color: var(--text-dim); font-size: 12px; line-height: 1.6; }
+  footer a { color: var(--accent); }
+  code { background: #ffffff14; padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Convertisseur DWG &rarr; DXF</h1>
+  <p class="sub">Outil séparé pour MiniCAD — convertit un fichier .dwg en .dxf dans le navigateur, sans envoi sur un serveur. Ouvrez ensuite le .dxf obtenu dans MiniCAD (📂 Ouvrir).</p>
+
+  <div class="card">
+    <div id="drop">
+      <div class="icon">📐</div>
+      <div>Glissez un fichier <strong>.dwg</strong> ici, ou cliquez pour le choisir</div>
+      <div class="hint">Traitement 100% local (WebAssembly) — rien n'est envoyé nulle part</div>
+      <input type="file" id="file-input" accept=".dwg">
+    </div>
+    <div id="actions" style="display:none">
+      <button id="btn-download" disabled>Télécharger le DXF</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="log"><span class="dim">En attente d'un fichier…</span></div>
+  </div>
+
+  <footer>
+    Conversion assurée par <a href="https://github.com/mlightcad/libredwg-web" target="_blank" rel="noopener">libredwg-web</a>
+    (WebAssembly, basé sur <a href="https://www.gnu.org/software/libredwg/" target="_blank" rel="noopener">GNU LibreDWG</a>, licence GPL-3.0 —
+    voir <code>LICENSE</code> dans ce dossier). Cet outil est volontairement tenu à l'écart de <code>minicad.html</code>,
+    qui reste un fichier autonome sans dépendance.
+  </footer>
+</main>
+
+<script type="module">
+  import { LibreDwg } from './lib/dist/libredwg-web.js';
+
+  const dropEl = document.getElementById('drop');
+  const inputEl = document.getElementById('file-input');
+  const logEl = document.getElementById('log');
+  const actionsEl = document.getElementById('actions');
+  const btnDownload = document.getElementById('btn-download');
+
+  let libredwgPromise = null;
+  let currentBlob = null;
+  let currentName = 'converti.dxf';
+
+  function log(msg, cls) {
+    const line = document.createElement('div');
+    if (cls) line.className = cls;
+    line.textContent = msg;
+    logEl.appendChild(line);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function clearLog() { logEl.innerHTML = ''; }
+
+  function getLibredwg() {
+    if (!libredwgPromise) libredwgPromise = LibreDwg.create();
+    return libredwgPromise;
+  }
+
+  // Reçoit directement le File depuis MiniCAD (postMessage, File est clonable) au lieu
+  // d'obliger l'utilisateur à le re-sélectionner par glisser-déposer. On signale d'abord
+  // qu'on est prêt : MiniCAD attend ce signal avant d'envoyer le fichier.
+  window.addEventListener('message', (ev) => {
+    if (ev.data && ev.data.type === 'dwg-file' && ev.data.file instanceof File) {
+      handleFile(ev.data.file);
+    }
+  });
+  if (window.opener) {
+    try { window.opener.postMessage('dwg-import-ready', '*'); } catch(e) {}
+  }
+
+  async function handleFile(file) {
+    clearLog();
+    actionsEl.style.display = 'none';
+    btnDownload.disabled = true;
+    currentBlob = null;
+
+    if (!file.name.toLowerCase().endsWith('.dwg')) {
+      log('Fichier ignoré : seule l\'extension .dwg est acceptée.', 'err');
+      return;
+    }
+
+    log('Chargement du moteur de conversion (WebAssembly)…', 'dim');
+    let libredwg;
+    try {
+      libredwg = await getLibredwg();
+    } catch (e) {
+      log('Échec du chargement du moteur : ' + (e?.message || e), 'err');
+      return;
+    }
+
+    log('Lecture de ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' Ko)…', 'dim');
+    let buf;
+    try {
+      buf = await file.arrayBuffer();
+    } catch (e) {
+      log('Erreur de lecture du fichier : ' + (e?.message || e), 'err');
+      return;
+    }
+
+    log('Conversion DWG → DXF…', 'dim');
+    let dxfBytes;
+    try {
+      dxfBytes = libredwg.dwg_write_dxf(buf);
+    } catch (e) {
+      log('Erreur pendant la conversion : ' + (e?.message || e), 'err');
+      return;
+    }
+
+    if (!dxfBytes) {
+      log('La conversion a échoué : format DWG non reconnu ou fichier corrompu.', 'err');
+      log('Versions supportées : AutoCAD R13 à 2018 environ (selon LibreDWG).', 'warn');
+      return;
+    }
+
+    currentBlob = new Blob([dxfBytes], { type: 'application/dxf' });
+    currentName = file.name.replace(/\.dwg$/i, '') + '.dxf';
+    log('Conversion réussie — ' + (currentBlob.size / 1024).toFixed(1) + ' Ko de DXF généré.', 'ok');
+    log('Téléchargez le fichier puis ouvrez-le dans MiniCAD (📂 Ouvrir).', 'ok');
+
+    actionsEl.style.display = 'flex';
+    btnDownload.disabled = false;
+  }
+
+  btnDownload.addEventListener('click', () => {
+    if (!currentBlob) return;
+    const url = URL.createObjectURL(currentBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = currentName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  });
+
+  dropEl.addEventListener('click', () => inputEl.click());
+  inputEl.addEventListener('change', () => {
+    if (inputEl.files[0]) handleFile(inputEl.files[0]);
+  });
+  ['dragenter', 'dragover'].forEach(evt =>
+    dropEl.addEventListener(evt, e => { e.preventDefault(); dropEl.classList.add('drag'); })
+  );
+  ['dragleave', 'drop'].forEach(evt =>
+    dropEl.addEventListener(evt, e => { e.preventDefault(); dropEl.classList.remove('drag'); })
+  );
+  dropEl.addEventListener('drop', e => {
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+</script>
+</body>
+</html>
