@@ -15620,6 +15620,18 @@ function termPrint(text,cls='') {
   div.textContent=text; termOutput.appendChild(div); termOutput.scrollTop=termOutput.scrollHeight;
 }
 
+// Lien cliquable dans le terminal. href est toujours un chemin fixe codé en dur (jamais une
+// valeur utilisateur) pour éviter d'ouvrir termPrint() à l'injection de HTML arbitraire.
+function termPrintLink(text, href, label, cls='info') {
+  const div=document.createElement('div'); div.className='term-'+cls;
+  div.append(text+' ');
+  const a=document.createElement('a');
+  a.href=href; a.target='_blank'; a.rel='noopener'; a.textContent=label;
+  a.style.color='var(--accent)'; a.style.textDecoration='underline';
+  div.appendChild(a);
+  termOutput.appendChild(div); termOutput.scrollTop=termOutput.scrollHeight;
+}
+
 function showHelp() {
   // _ht(key, fallback) — Mode A : fallback = valeur déjà substituée par build.py
   //                      Mode B : lookup runtime dans TRANSLATIONS[currentLang]
@@ -18120,7 +18132,8 @@ async function cmdOpen() {
       termPrint('Ouverture: ' + file.name + ' (' + (content.length/1024).toFixed(1) + ' Ko)', 'info');
       _fileHandle = null; // sera redemandé au prochain Ctrl+S
       if (ext === 'json' || ext === 'mcad') openJSON(content, file.name);
-      else if (ext === 'dxf' || ext === 'dwg') openDXF(content, file.name);
+      else if (ext === 'dxf') openDXF(content, file.name);
+      else if (ext === 'dwg') warnDwgNotSupported();
       else termPrint('Format non supporté: .' + ext, 'error');
       return;
     } catch(e) {
@@ -18136,6 +18149,8 @@ function handleFileOpen(event) {
   event.target.value = ''; // reset so same file can be re-opened
 
   const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'dwg') { warnDwgNotSupported(); return; }
+
   const reader = new FileReader();
 
   reader.onload = function(e) {
@@ -18145,7 +18160,7 @@ function handleFileOpen(event) {
     try {
       if (ext === 'json' || ext === 'mcad') {
         openJSON(content, file.name);
-      } else if (ext === 'dxf' || ext === 'dwg') {
+      } else if (ext === 'dxf') {
         openDXF(content, file.name);
       } else {
         termPrint('Format non supporté: .' + ext, 'error');
@@ -18158,6 +18173,16 @@ function handleFileOpen(event) {
 
   reader.onerror = () => termPrint('Erreur de lecture du fichier', 'error');
   reader.readAsText(file);
+}
+
+// Le DWG est un format binaire propriétaire (Autodesk) : le lire demanderait un SDK
+// (ODA / LibreDWG), donc une dépendance externe — exclu par la contrainte du fichier
+// HTML autonome (voir exportDWG). Un outil séparé (dwg-import/, hors de ce fichier)
+// convertit DWG → DXF localement via LibreDWG/WebAssembly ; le DXF obtenu s'ouvre
+// ensuite normalement ici.
+function warnDwgNotSupported() {
+  termPrint('⚠ Le DWG natif exige un SDK propriétaire (Autodesk ODA) : impossible à lire ici.', 'warning');
+  termPrintLink('→ Convertissez-le d’abord en DXF (local, sans envoi réseau), puis ouvrez le .dxf obtenu :', 'dwg-import/index.html', 'ouvrir le convertisseur DWG → DXF ↗');
 }
 
 function openJSON(content, filename) {
