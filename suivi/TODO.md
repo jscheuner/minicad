@@ -61,8 +61,6 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## 🟢 Priorité basse / Futur
 
-- [ ] **BLOCK — Créer un bloc nommé** depuis une sélection (commande BLOCK, point d'insertion, nom)
-- [ ] **INSERT — Insérer un bloc** existant avec point d'insertion, échelle, rotation
 - [ ] **REFEDIT — Éditer un bloc** en place (double-clic pour entrer dans le bloc)
 - [ ] **4.5 — Zoom fenêtre** (sélection zone)
 - [ ] **4.7 — Sélection par type** (SEL LINE etc.)
@@ -71,6 +69,9 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## ✅ Terminé (résumé)
 
+- ✅ **BLOCK / INSERT** — définitions de blocs nommées et réutilisables (`S.blocks`), entité `insert` (position/angle/échelle propres par instance). `BLOCK [nom]` sur une sélection + point de base ; `INSERT nom` pour poser une nouvelle instance. MOVE/COPY/ROTATE/SCALE/MIRROR/ERASE/EXPLODE et grips fonctionnent nativement (mêmes chemins génériques que TEXT, MIRROR avec un drapeau `mirror` dédié qui flip aussi le contenu du bloc — pas seulement la position de l'instance). Persistant en `.mcad`. Accessible via menu (Modifier/Insérer) et barre d'outils, en plus du terminal. Export DXF : pas de vrai `BLOCK`/`INSERT` DXF — chaque instance est aplatie en géométrie transformée à l'export (amélioration par rapport à GROUP, qui n'a toujours aucun export DXF). `REFEDIT` reste à faire (ligne ci-dessus).
+- ✅ **OSNAP Insertion** — mode dédié au point d'insertion des blocs (`e.type==='insert'`), sur le modèle d'AutoCAD (Insertion ≠ Extrémité). Corrige l'imprécision du déplacement par poignée d'une instance de bloc, qui ne pouvait jusqu'ici s'accrocher à rien.
+- ✅ **OSNAP sur le contenu des blocs** — tous les modes standards (extrémité/milieu/centre/plus proche/intersection/perpendiculaire/tangente/quadrant) fonctionnent aussi sur la géométrie interne d'une instance de bloc (pas seulement son point d'insertion), via aplatissement dans `findOsnap()`. Récursif (blocs imbriqués). Limite connue : DIMASSOC ne peut pas s'accrocher/suivre un enfant de bloc (id synthétique, pas d'entité réelle correspondante).
 - ✅ **Bulge DXF conforme au standard** — arcs majeurs (`|b|>1`) exportés/importés du bon côté de la corde (`dxfBulge()`), validé par ezdxf
 - ✅ **Import DXF : arcs de polyligne préservés** — lecture du code 42 sur le flux brut (`LWPOLYLINE`)
 - ✅ **Fichier ▸ Fermer** (`FERMER`) — et fermeture du dessin courant avant toute ouverture (calques remis à zéro)

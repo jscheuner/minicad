@@ -44,6 +44,7 @@
     --osnap-tangent: #ff6e40;
     --osnap-quadrant: #cddc39;
     --osnap-extension: #ff9800;
+    --osnap-insertion: #b388ff;
     --module-arch: #7c4dff;
     --module-elec: #ffab40;
     --module-dim: #00e676;
@@ -84,6 +85,7 @@
     --osnap-tangent: #d84315;
     --osnap-quadrant: #7a7000;
     --osnap-extension: #e65100;
+    --osnap-insertion: #5e35b1;
     --module-arch: #5e35b1;
     --module-elec: #9a5b00;
     --module-dim: #00873e;
@@ -1451,6 +1453,7 @@
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="executeCommand('EXPLODE');closeMenus()"><span>Éclater (X)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('MATCHPROP');closeMenus()"><span>Copier les propriétés</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('BLOCK');closeMenus()"><span>Créer un bloc (BLOCK)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('GROUP');closeMenus()"><span>Grouper (GROUPE)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('UNGROUP');closeMenus()"><span>Dégrouper (DÉGROUPER)</span></div>
         <div class="menu-dropdown-sep"></div>
@@ -1460,6 +1463,8 @@
     <div class="menu-dropdown" id="menu-inserer">
       <div class="menu-item" id="menu-inserer-btn" onclick="toggleMenuDropdown('menu-inserer',event)">Insérer</div>
       <div class="menu-dropdown-list" id="menu-inserer-list">
+        <div class="menu-dropdown-item" onclick="executeCommand('INSERT');closeMenus()"><span>Insérer un bloc (INSERT)</span></div>
+        <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="executeCommand('WALL');closeMenus()"><span>Mur (W)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('DOOR');closeMenus()"><span>Porte (DOOR)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('WINDOW');closeMenus()"><span>Fenêtre (WINDOW)</span></div>
@@ -1675,6 +1680,22 @@
           <line x1="16" y1="12" x2="22" y2="12"/><polygon points="20,10 20,14 23,12" fill="currentColor"/>
           <line x1="12" y1="16" x2="12" y2="22"/><polygon points="10,20 14,20 12,23" fill="currentColor"/>
           <line x1="8" y1="12" x2="2" y2="12"/><polygon points="4,10 4,14 1,12" fill="currentColor"/>
+        </svg>
+      </button>
+      <!-- Créer un bloc -->
+      <button class="tool-btn" title="Créer un bloc (BLOCK)" onclick="executeCommand('BLOCK')">
+        <svg viewBox="0 0 24 24">
+          <rect x="3.5" y="3.5" width="17" height="17" rx="2" fill="none" stroke-dasharray="3,2" opacity="0.55"/>
+          <rect x="7" y="7" width="10" height="10" rx="1"/>
+          <circle cx="7" cy="17" r="1.6" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
+      <!-- Insérer un bloc -->
+      <button class="tool-btn" title="Insérer un bloc (INSERT)" onclick="executeCommand('INSERT')">
+        <svg viewBox="0 0 24 24">
+          <rect x="9" y="9" width="10" height="10" rx="1" fill="none" stroke-dasharray="3,2" opacity="0.55"/>
+          <rect x="11" y="11" width="6" height="6" rx="1"/>
+          <line x1="1" y1="12" x2="7" y2="12"/><polygon points="5,10 5,14 8,12" fill="currentColor"/>
         </svg>
       </button>
       <!-- Grouper -->
@@ -2585,7 +2606,7 @@ const USER_PREFS = {
   gridSizeY: 20,
   gridVis: true,
   osnapEnabled: true,
-  osnapModes: { endpoint:true, midpoint:true, center:true, nearest:false, intersection:true, perpendicular:false, tangent:false, quadrant:true, extension:false },
+  osnapModes: { endpoint:true, midpoint:true, center:true, nearest:false, intersection:true, perpendicular:false, tangent:false, quadrant:true, extension:false, insertion:true },
   ortho: false,
   polar: true,
   polarAngle: 15,
@@ -2611,6 +2632,8 @@ const S = {
   pickboxPx: 6,    // demi-côté du carré de sélection (px écran)
   osnapTolPx: 15,  // portée d'accrochage OSNAP (px écran)
   entities: [],
+  blocks: {},      // définitions de blocs nommés : { [nom]: { entities:[...], base:{x:0,y:0} } }
+
   layers: [
     { name: '0 - Défaut',      color: '#00d4ff', printColor: '#000000', visible: true, lineWidth: 0.35, lineType: 'solid' },
     { name: '1 - Construction',color: '#ff4081', printColor: '#888888', visible: true, lineWidth: 0.13, lineType: 'dashed' },
@@ -2663,6 +2686,7 @@ const S = {
     tangent: false,
     quadrant: true,
     extension: false,
+    insertion: true,
   },
   osnapAcquired: [], // [{ax,ay,dx,dy}] — extension acquired points
   currentOsnap: null, // { x, y, type, entity }
@@ -2681,6 +2705,7 @@ const S = {
   explodePending: false,
   groupPending: false,
   ungroupPending: false,
+  blockPending: false,
   // MIRROR pending selection
   mirrorPending: false,
   rotatePending: false,
@@ -2828,6 +2853,7 @@ const OSNAP_COLORS_DARK = {
   tangent: '#ff6e40',
   quadrant: '#cddc39',
   extension: '#ff9800',
+  insertion: '#b388ff',
 };
 // Mêmes teintes, assombries pour rester lisibles sur fond clair
 const OSNAP_COLORS_LIGHT = {
@@ -2840,6 +2866,7 @@ const OSNAP_COLORS_LIGHT = {
   tangent: '#d84315',
   quadrant: '#7a7000',
   extension: '#e65100',
+  insertion: '#5e35b1',
 };
 let OSNAP_COLORS = OSNAP_COLORS_LIGHT;
 
@@ -3018,6 +3045,38 @@ function findOsnap(wx, wy) {
     _nearby.push(e);
   }
 
+  // Accrochage sur le contenu des blocs (INSERT) : chaque instance proche du
+  // curseur est "aplatie" en ses entités enfant transformées (monde), injectées
+  // dans _nearby, pour que TOUS les modes OSNAP (extrémité, milieu, centre...)
+  // fonctionnent sur la géométrie du bloc — comme AutoCAD. L'entité 'insert'
+  // elle-même reste dans _nearby pour le mode INSERTION (point de base).
+  // Id préfixé par l'id de l'instance : deux instances du même bloc clonent le
+  // même id local (JSON.parse/stringify de la définition), il faut les
+  // distinguer pour ne pas fausser les logiques basées sur l'id (ex. tangente).
+  // Profondeur limitée (blocs imbriqués) pour éviter toute boucle sans fin.
+  function _flattenInsertChildren(inst, depth, out) {
+    if (depth > 5) return;
+    for (const child of insertWorldEntities(inst)) {
+      if (!S.layers[child.layer]?.visible) continue;
+      child.id = inst.id + ':' + child.id;
+      if (child.type === 'insert') _flattenInsertChildren(child, depth + 1, out);
+      else out.push(child);
+    }
+  }
+  for (const inst of _nearby.filter(e => e.type === 'insert')) {
+    const kids = [];
+    _flattenInsertChildren(inst, 0, kids);
+    for (const child of kids) {
+      const cbb = getEntityBBox(child);
+      if (cbb) {
+        const dx = Math.max(cbb.minX - wx, 0, wx - cbb.maxX);
+        const dy = Math.max(cbb.minY - wy, 0, wy - cbb.maxY);
+        if (dx * dx + dy * dy > tol * tol) continue;
+      }
+      _nearby.push(child);
+    }
+  }
+
   // Optim 4 — cache des segments : getEntitySegments() appelé une seule fois par entité
   const _segCache = new Map();
   const segsOf = e => {
@@ -3078,6 +3137,12 @@ function findOsnap(wx, wy) {
       if (e.type === 'tube') {
         for (const p of getTubeSnapPoints(e)) check(p.x, p.y, 'endpoint', e);
       }
+    }
+
+    // INSERTION — point d'insertion d'un bloc (comme AutoCAD : mode dédié,
+    // distinct d'ENDPOINT, pour accrocher/aligner sur l'origine d'une instance)
+    if (S.osnapModes.insertion && e.type === 'insert') {
+      check(e.x, e.y, 'insertion', e);
     }
 
     // MIDPOINT
@@ -3683,6 +3748,13 @@ function drawOsnapMarker(snap) {
       ctx.moveTo(sx - sz, sy); ctx.lineTo(sx + sz, sy);
       ctx.stroke();
       break;
+    case 'insertion': // carré + croix diagonale (point d'insertion de bloc, comme AutoCAD)
+      ctx.strokeRect(sx - sz, sy - sz, sz * 2, sz * 2);
+      ctx.beginPath();
+      ctx.moveTo(sx - sz, sy - sz); ctx.lineTo(sx + sz, sy + sz);
+      ctx.moveTo(sx + sz, sy - sz); ctx.lineTo(sx - sz, sy + sz);
+      ctx.stroke();
+      break;
   }
 }
 
@@ -4221,7 +4293,7 @@ const CMD = {
     render();
   }},
   EXPLODE: { alias: ['X','ECLATER','ÉCLATER'], desc: 'Éclater un bloc, polyligne ou tube en primitives', exec: () => {
-    const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && (e.type === 'block' || e.type === 'polyline' || e.type === 'cable' || e.type === 'tube' || e.type === 'rect' || pluginExplodeHandler(e.type)));
+    const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && (e.type === 'block' || e.type === 'insert' || e.type === 'polyline' || e.type === 'cable' || e.type === 'tube' || e.type === 'rect' || pluginExplodeHandler(e.type)));
     if (!targets.length) {
       S.explodePending = true; setTool('select');
       termPrint('ÉCLATER: Sélectionner les objets à éclater, puis Entrée', 'warning'); return;
@@ -4239,6 +4311,10 @@ const CMD = {
           newIds.push(ch.id);
         });
         termPrint('Bloc "' + (ent.name||'bloc') + '" → ' + (ent.entities?.length||0) + ' entités', 'success');
+      } else if (ent.type === 'insert') {
+        const kids = insertWorldEntities(ent);
+        kids.forEach(ch => { ch.id = S.nextId++; S.entities.push(ch); newIds.push(ch.id); });
+        termPrint('Bloc "' + ent.blockName + '" → ' + kids.length + ' entités', 'success');
       } else if (ent.type === 'tube') {
         // Tube → lignes (droits) + arcs (coudes), 3 éléments par segment (axe + 2 parois)
         let cx = ent.startX, cy = ent.startY, theta = ent.startAngle;
@@ -4374,6 +4450,36 @@ const CMD = {
     S.selected = newIds;
     updateSaveIndicator('modified'); autoSave(); render(); updateUI();
     termPrint('Dégroupé — ' + newIds.length + ' entité(s)', 'success');
+  }},
+
+  BLOCK: { alias: ['BL','BLOC'], desc: 'Créer un bloc nommé depuis une sélection', exec: (args) => {
+    const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+    if (!targets.length) {
+      // Pas de présélection → étape de sélection au Pickbox, valider par Entrée
+      S.blockPending = true; S._blockPendingArgs = args || []; setTool('select');
+      termPrint('BLOC : sélectionner les objets, puis Entrée — Échap pour annuler', 'info');
+      return;
+    }
+    S.blockPending = false;
+    S._blockPendingEnts = targets;
+    S._blockPendingName = (args && args[0]) ? args[0].replace(/"/g,'') : _nextBlockName();
+    setTool('block_base');
+    termPrint('BLOC "' + S._blockPendingName + '" : cliquer le point de base', 'info');
+  }},
+
+  INSERT: { alias: ['I','INS','INSERER','INSÉRER'], desc: 'Insérer un bloc', exec: (args) => {
+    const names = Object.keys(S.blocks);
+    if (!names.length) { termPrint('Aucun bloc défini — utilisez BLOCK pour en créer un', 'warning'); return; }
+    const name = (args && args[0]) ? args[0].replace(/"/g,'') : null;
+    if (!name || !S.blocks[name]) {
+      if (name) termPrint('Bloc "' + name + '" introuvable.', 'warning');
+      termPrint('Blocs disponibles : ' + names.join(', '), 'info');
+      termPrint('Tapez INSERT <nom> puis cliquez le point d\'insertion', 'info');
+      return;
+    }
+    S._insertBlockName = name;
+    setTool('insert_place');
+    termPrint('INSERT "' + name + '" : cliquer le point d\'insertion', 'info');
   }},
 };
 
@@ -4521,6 +4627,16 @@ function getEntityBBox(e, tight) {
       if (!e.entities?.length) return null;
       let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
       e.entities.forEach(ch => {
+        const bb = getEntityBBox(ch);
+        if (bb) { x0=Math.min(x0,bb.minX);x1=Math.max(x1,bb.maxX);y0=Math.min(y0,bb.minY);y1=Math.max(y1,bb.maxY); }
+      });
+      return x0===Infinity ? null : { minX:x0, maxX:x1, minY:y0, maxY:y1 };
+    }
+    case 'insert': {
+      const kids = insertWorldEntities(e);
+      if (!kids.length) return { minX:e.x-10, maxX:e.x+10, minY:e.y-10, maxY:e.y+10 };
+      let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+      kids.forEach(ch => {
         const bb = getEntityBBox(ch);
         if (bb) { x0=Math.min(x0,bb.minX);x1=Math.max(x1,bb.maxX);y0=Math.min(y0,bb.minY);y1=Math.max(y1,bb.maxY); }
       });
@@ -7247,6 +7363,32 @@ function drawEntity(e) {
       ctx.strokeStyle = savedStroke; ctx.fillStyle = savedFill; ctx.lineWidth = savedLW;
       break;
     }
+    case 'insert': {
+      const def = S.blocks[e.blockName];
+      if (!def) {
+        // Bloc introuvable (fichier édité à la main) : repère "?" au point d'insertion
+        const [ix, iy] = w2s(e.x, e.y);
+        ctx.save();
+        ctx.strokeStyle = '#ff4081'; ctx.setLineDash([4,3]); ctx.lineWidth = 1;
+        ctx.strokeRect(ix-10, iy-10, 20, 20);
+        ctx.fillStyle = '#ff4081'; ctx.font = '11px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('?', ix, iy);
+        ctx.restore();
+        break;
+      }
+      const savedStroke2 = ctx.strokeStyle, savedFill2 = ctx.fillStyle, savedLW2 = ctx.lineWidth;
+      for (const child of insertWorldEntities(e)) {
+        const layer = S.layers[child.layer] || S.layers[S.currentLayer];
+        ctx.strokeStyle = dispColor(child.color || layer?.color || '#00d4ff');
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.lineWidth = getLayerLineWidthPx(child.lineWidth ?? layer?.lineWidth);
+        ctx.setLineDash(child.dash || getLayerLineDash(child.lineType || layer?.lineType || 'solid'));
+        drawEntity(child);
+        ctx.setLineDash([]);
+      }
+      ctx.strokeStyle = savedStroke2; ctx.fillStyle = savedFill2; ctx.lineWidth = savedLW2;
+      break;
+    }
     case 'hatch': {
       const _hpts = getHatchPoints(e);
       if (!_hpts || _hpts.length < 3) break;
@@ -9545,7 +9687,7 @@ function getCursorMode() {
   if (t === 'area') return S._areaMode === 'points' ? 'draw' : 'pick';
   if (t === 'polygon') return 'draw';
   if (t === 'ellipse') return 'draw';
-  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.groupPending || S.ungroupPending || S.arrayPending || S.polarArrayPending || S.axisOverPending) ? 'pick' : 'idle';
+  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.groupPending || S.ungroupPending || S.blockPending || S.arrayPending || S.polarArrayPending || S.axisOverPending) ? 'pick' : 'idle';
   if (t === 'stretch' && S.stretchStep === 0) return 'pick';
   if (t === 'trim' || t === 'extend') return 'pick';
   if (t === 'fillet' || t === 'chamfer' || t === 'join' || t === 'hatch') return 'pick';
@@ -10709,13 +10851,23 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
   }
 
   // Placement tools
-  if (['door','outlet','switch_place','window_place','text_place'].includes(tool)) {
+  if (['door','outlet','switch_place','window_place','text_place','insert_place'].includes(tool)) {
     if (tool==='text_place') {
       S._textPendingX = wx; S._textPendingY = wy;
       const [sx, sy] = w2s(wx, wy);
       const cr = canvas.getBoundingClientRect();
       showTextDialog(cr.left + sx, cr.top + sy);
       return;
+    }
+    if (tool==='insert_place') {
+      const name = S._insertBlockName;
+      if (!name || !S.blocks[name]) { setTool('select'); render(); return; }
+      pushUndo();
+      const ent = { type:'insert', id:S.nextId++, layer:S.currentLayer, blockName:name, x:wx, y:wy, angle:0, scale:1 };
+      S.entities.push(ent);
+      S.selected = [ent.id];
+      termPrint('#'+ent.id+' bloc "'+name+'" inséré à ('+wx.toFixed(1)+', '+wy.toFixed(1)+')','success');
+      setTool('select'); updateSaveIndicator('modified'); autoSave(); render(); updateUI(); return;
     }
     pushUndo();
     let ent;
@@ -10726,6 +10878,30 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     ent.id=S.nextId++; ent.layer=S.currentLayer; S.entities.push(ent);
     termPrint('#'+ent.id+' '+ent.type+' à ('+wx.toFixed(1)+', '+wy.toFixed(1)+')','success');
     setTool('select'); render(); return;
+  }
+
+  // BLOCK — clic = point de base : recentre la sélection, crée la définition + l'instance
+  if (tool === 'block_base') {
+    const ents = S._blockPendingEnts || [];
+    if (!ents.length) { setTool('select'); render(); return; }
+    const name = S._blockPendingName || _nextBlockName();
+    pushUndo();
+    const defEnts = ents.map(srcEnt => {
+      const c = JSON.parse(JSON.stringify(srcEnt));
+      offsetEntity(c, -wx, -wy);
+      return c;
+    });
+    ents.forEach(srcEnt => {
+      const i = S.entities.findIndex(e => e.id === srcEnt.id);
+      if (i !== -1) S.entities.splice(i, 1);
+    });
+    S.blocks[name] = { entities: defEnts, base: { x:0, y:0 } };
+    const inst = { type:'insert', id:S.nextId++, layer:S.currentLayer, blockName:name, x:wx, y:wy, angle:0, scale:1 };
+    S.entities.push(inst);
+    S.selected = [inst.id];
+    S._blockPendingEnts = null; S._blockPendingName = null;
+    termPrint('Bloc "'+name+'" créé — '+defEnts.length+' entité(s) (#'+inst.id+')','success');
+    setTool('select'); updateSaveIndicator('modified'); autoSave(); render(); updateUI(); return;
   }
 
   // Offset — clic sur le côté → décale tous les sélectionnés
@@ -12274,6 +12450,32 @@ function applyExtend(extendedId, prims, clickWx, clickWy) {
   updateSaveIndicator('modified'); autoSave(); render();
 }
 
+// ===== BLOCKS / INSERT =====
+function _nextBlockName() {
+  let n = 1;
+  while (S.blocks['Bloc' + n]) n++;
+  return 'Bloc' + n;
+}
+
+// Entités d'une définition de bloc, transformées en coordonnées monde pour une instance
+// donnée (insert.scale, insert.angle, insert.x/y). Réutilisé par le rendu, la bbox, le
+// hit-test et l'éclatement.
+function insertWorldEntities(e) {
+  const def = S.blocks[e.blockName];
+  if (!def || !def.entities) return [];
+  return def.entities.map(child => {
+    // Instance miroitée : on reflète chaque entité enfant autour de l'axe Y
+    // local (mirrorEntity avec une droite (0,0)-(0,1) ⇒ x → -x, y → y) AVANT
+    // l'échelle/rotation — mirrorEntity gère déjà correctement bulge de
+    // polyligne et start/end d'arc, pas de logique dupliquée ici.
+    const c = e.mirror ? mirrorEntity(child, 0, 0, 0, 1) : JSON.parse(JSON.stringify(child));
+    scaleEntityInPlace(c, 0, 0, e.scale ?? 1);
+    rotateEntityInPlace(c, 0, 0, e.angle ?? 0);
+    offsetEntity(c, e.x, e.y);
+    return c;
+  });
+}
+
 function scaleEntityInPlace(e, cx, cy, f) {
   function sp(px, py) { return [cx+(px-cx)*f, cy+(py-cy)*f]; }
   const _th = pluginTransformHandler(e.type);
@@ -12282,7 +12484,7 @@ function scaleEntityInPlace(e, cx, cy, f) {
   if (e.x2!==undefined) { [e.x2,e.y2]=sp(e.x2,e.y2); }
   if (e.cx!==undefined) { [e.cx,e.cy]=sp(e.cx,e.cy); if(e.r!==undefined) e.r*=f; if(e.rx!==undefined) e.rx*=f; if(e.ry!==undefined) e.ry*=f; }
   if (e.type==='dim_arc') { if(e.offset!==undefined) e.offset*=f; if(e.textWx!==undefined){[e.textWx,e.textWy]=sp(e.textWx,e.textWy);} }
-  if (e.x!==undefined&&e.x1===undefined) { [e.x,e.y]=sp(e.x,e.y); if(e.size) e.size*=f; }
+  if (e.x!==undefined&&e.x1===undefined) { [e.x,e.y]=sp(e.x,e.y); if(e.size) e.size*=f; if(e.type==='insert') e.scale=(e.scale??1)*f; }
   if (e.vx!==undefined) { [e.vx,e.vy]=sp(e.vx,e.vy); }
   if (e.thickness!==undefined) e.thickness*=f;
   if (e.points) e.points=e.points.map(p=>{const[nx,ny]=sp(p[0],p[1]);return p.length>2?[nx,ny,p[2]]:[nx,ny];});
@@ -12405,6 +12607,20 @@ function mirrorEntity(src,ax,ay,bx,by) {
     const ns=2*la-e.endAngle, ne2=2*la-e.startAngle;
     e.startAngle=ns; e.endAngle=ne2;
     if(e.textWx!==undefined){[e.textWx,e.textWy]=m(e.textWx,e.textWy);}
+  }
+  // insert (bloc) : la position est déjà reflétée par la branche générique x/y
+  // ci-dessus. Il faut en plus (a) inverser le drapeau miroir — sinon le
+  // contenu du bloc garde sa géométrie d'origine, seule l'instance bouge —
+  // et (b) recalculer l'angle. Formule dérivée de la composition
+  // monde = R(angle)·F(mirror)·local + T : pour que le nouveau monde égale la
+  // réflexion (matrice A(la) = R(2·la)·F0) de l'ancien monde quel que soit
+  // l'état initial de `mirror`, on obtient angle' = 2·la − angle + π (mod 2π)
+  // et mirror' = !mirror. Vérifié numériquement (point local (1,0)/(0,1)
+  // sur deux miroirs différents) avant intégration.
+  if(e.type==='insert'){
+    const la=Math.atan2(by-ay,bx-ax);
+    e.angle = 2*la - (e.angle||0) + Math.PI;
+    e.mirror = !e.mirror;
   }
   return e;
 }
@@ -12977,6 +13193,19 @@ function hitTest(wx,wy,filter) {
         }
       }
     }
+    else if(e.type==='insert'){
+      const kids=insertWorldEntities(e);
+      if(kids.length){
+        const bb=getEntityBBox(e);
+        if(bb&&wx>=bb.minX-tol&&wx<=bb.maxX+tol&&wy>=bb.minY-tol&&wy<=bb.maxY+tol){
+          const tmpEntities=S.entities; S.entities=kids;
+          const hit=hitTest(wx,wy); S.entities=tmpEntities;
+          if(hit) tryHit(e, tol*0.5);
+        }
+      } else {
+        tryHit(e, Math.hypot(wx-e.x,wy-e.y));
+      }
+    }
     else {
       // Entités de plugin : détection déléguée au plugin (ex. disque/règle/arc gradué)
       const hh = pluginHitHandler(e.type);
@@ -13317,6 +13546,7 @@ function setTool(t) {
   if(t !== 'select') S.explodePending=false;
   if(t !== 'select') S.groupPending=false;
   if(t !== 'select') S.ungroupPending=false;
+  if(t !== 'select' && t !== 'block_base') S.blockPending=false;
   if(t !== 'select') S.arrayPending=false;
   if(t !== 'select') S.polarArrayPending=false;
   if(t !== 'select' && t !== 'mirror') S.mirrorPending=false;
@@ -13512,6 +13742,25 @@ function _propChangeEllipseAngle(id, valDeg) {
   render(); autoSave(); updateProperties();
 }
 
+function _propChangeInsertMirror(id, val) {
+  const e = S.entities.find(en => en.id === id);
+  if (!e || e.type !== 'insert') return;
+  pushUndo();
+  e.mirror = (val === 'true' || val === true);
+  render(); autoSave(); updateProperties();
+}
+
+function _propChangeInsertAngle(id, valDeg) {
+  const e = S.entities.find(en => en.id === id);
+  if (!e || e.type !== 'insert') return;
+  const deg = parseFloat(valDeg);
+  if (isNaN(deg)) return;
+  pushUndo();
+  e.angle = deg * Math.PI / 180;
+  refreshAssocDims();
+  render(); autoSave(); updateProperties();
+}
+
 function _propChangeLongueurMulti(val) {
   const newLen = parseFloat(val);
   if (isNaN(newLen) || newLen <= 0) return;
@@ -13662,6 +13911,15 @@ function _updatePropertiesSingle(e) {
   if (e.x !== undefined && e.x1 === undefined) {
     h += row('X', inp('x', e.x.toFixed(2)));
     h += row('Y', inp('y', e.y.toFixed(2)));
+  }
+  if (e.type === 'insert') {
+    h += row('Bloc', '<span class="prop-value">'+e.blockName+'</span>');
+    h += row('Angle (°)', '<input type="number" class="prop-input" step="any" value="'+((e.angle||0)*180/Math.PI).toFixed(2)+'" onchange="_propChangeInsertAngle('+id+',this.value)" />');
+    h += row('Échelle', inp('scale', (e.scale ?? 1)));
+    const mirrorSel = '<select class="prop-select" onchange="_propChangeInsertMirror('+id+',this.value)">'+
+      '<option value="false"'+(!e.mirror?' selected':'')+'>Non</option>'+
+      '<option value="true"'+(e.mirror?' selected':'')+'>Oui</option></select>';
+    h += row('Miroir', mirrorSel);
   }
   if (e.thickness !== undefined) h += row('Épaisseur', inp('thickness', e.thickness));
   if (e.content !== undefined) h += row('Texte', inp('content', e.content, true));
@@ -14966,6 +15224,7 @@ function updateOsnapPanel() {
     ['tangent', 'Tangente', '--osnap-tangent'],
     ['quadrant', 'Quadrant', '--osnap-quadrant'],
     ['extension', 'Extension', '--osnap-extension'],
+    ['insertion', 'Insertion', '--osnap-insertion'],
   ];
   panel.innerHTML = modes.map(([key, label, cssVar]) =>
     '<label class="osnap-row"><input type="checkbox" ' + (S.osnapModes[key] ? 'checked' : '') +
@@ -16477,6 +16736,13 @@ document.addEventListener('keydown',(ev)=>{
     S.ungroupPending=false; CMD.UNGROUP.exec(); return;
   }
 
+  // Enter global: créer un bloc (sélection confirmée → passe à l'étape point de base)
+  if(ev.key==='Enter' && S.blockPending){
+    ev.preventDefault();
+    if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
+    S.blockPending=false; CMD.BLOCK.exec(S._blockPendingArgs||[]); return;
+  }
+
   // Enter global: valider sélection arrayPending
   if(ev.key==='Enter' && S.arrayPending){
     ev.preventDefault();
@@ -16557,6 +16823,12 @@ document.addEventListener('keydown',(ev)=>{
   }
   if(ev.key==='Escape' && S.ungroupPending){
     S.ungroupPending=false; termPrint('Dégroupage annulé','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S.blockPending){
+    S.blockPending=false; termPrint('Bloc annulé','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S.tool==='block_base'){
+    S._blockPendingEnts=null; termPrint('Bloc annulé','warning'); setTool('select'); return;
   }
   if(ev.key==='Escape' && S.arrayPickAxis){
     S.arrayPickAxis=null; S.arrayPickPt1=null;
@@ -17194,7 +17466,18 @@ async function exportDXF() {
   const wEnt = wEntIn(hModelBR); // handle + propriétaire (Model_Space)
   let _dimIdx = 0;
 
+  // Aplatit les instances de bloc (insert) en leur géométrie transformée :
+  // pas de vrai BLOCK/INSERT DXF (voir docs), juste les entités finales.
+  const _dxfEntities = [];
   S.entities.forEach(e => {
+    if (e.type === 'insert') {
+      if (S.blocks[e.blockName]) _dxfEntities.push(...insertWorldEntities(e));
+    } else {
+      _dxfEntities.push(e);
+    }
+  });
+
+  _dxfEntities.forEach(e => {
     const layerName = dxfLN(e.layer);
     const col = dxfEntColor(e);
     // Chaque cote consomme le bloc *Dn réservé dans la pré-passe (même ordre).
@@ -17875,7 +18158,7 @@ function buildSaveData(name) {
     version: '0.1', app: 'MiniCAD',
     name: name || (_fileHandle?.name?.replace(/\.mcad$/i,'')) || 'projet',
     date: new Date().toISOString(),
-    layers: S.layers, entities: S.entities,
+    layers: S.layers, entities: S.entities, blocks: S.blocks,
     currentLayer: S.currentLayer, nextId: S.nextId,
     modules: Object.fromEntries(Object.entries(modules).map(([k,m])=>[k,m.loaded])),
     gridSize: S.gridSize, gridSizeY: S.gridSizeY,
@@ -18046,7 +18329,7 @@ function resetUserPrefs() {
   termPrint('Préférences réinitialisées aux valeurs par défaut', 'info');
 }
 
-const _PD_OS_MODES = ['endpoint','midpoint','center','nearest','intersection','perpendicular','tangent','quadrant','extension'];
+const _PD_OS_MODES = ['endpoint','midpoint','center','nearest','intersection','perpendicular','tangent','quadrant','extension','insertion'];
 
 function openPrefsDialog() {
   const existing = document.getElementById('prefs-dialog');
@@ -18056,6 +18339,7 @@ function openPrefsDialog() {
     endpoint: `Extrémité`, midpoint: `Milieu`, center: `Centre`,
     nearest: `Le plus proche`, intersection: `Intersection`, perpendicular: `Perpendiculaire`,
     tangent: `Tangente`, quadrant: `Quadrant`, extension: `Extension`,
+    insertion: `Insertion`,
   };
   const dlg = document.createElement('div');
   dlg.id = 'prefs-dialog';
@@ -18176,6 +18460,7 @@ function loadFromLocalStorage() {
     if (!data.entities || !data.entities.length) return;
     if (data.layers) { S.layers = data.layers; S.layers.forEach(l=>{if(!l.lineWidth)l.lineWidth=0.25;if(!l.lineType)l.lineType='solid';if(!l.printColor)l.printColor='#000000';}); }
     S.entities = data.entities.filter(e => e.type !== 'ellipse' || (e.rx > 0 && e.ry > 0));
+    if (data.blocks) S.blocks = data.blocks;
     if (data.currentLayer !== undefined) S.currentLayer = data.currentLayer;
     if (data.nextId) S.nextId = data.nextId;
     if (data.gridSize) S.gridSize = data.gridSize;
@@ -18348,6 +18633,7 @@ function openJSON(content, filename) {
   pushUndo();
   if (data.layers) { S.layers = data.layers; S.layers.forEach(l=>{if(!l.lineWidth)l.lineWidth=0.25;if(!l.lineType)l.lineType='solid';if(!l.printColor)l.printColor='#000000';}); }
   if (data.entities) S.entities = data.entities;
+  if (data.blocks) S.blocks = data.blocks;
   if (data.currentLayer !== undefined) S.currentLayer = data.currentLayer;
   if (data.nextId) S.nextId = data.nextId;
   if (data.gridSize) S.gridSize = data.gridSize;

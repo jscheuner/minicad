@@ -7,10 +7,68 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.1] — 2026-06-16 — Version courante
 
 ### Ajouté
+- **BLOCK / INSERT** — blocs nommés réutilisables. `BLOCK [nom]` sur une sélection
+  crée une définition (`S.blocks[nom]`, géométrie recentrée sur le point de base
+  choisi au clic) et la remplace par une première instance (`type:'insert'`).
+  `INSERT nom` pose ensuite autant d'instances indépendantes qu'on veut, chacune
+  avec sa propre position/angle/échelle. Les instances se déplacent, copient,
+  tournent, mettent à l'échelle, s'effacent et s'éclatent (`EXPLODE`) comme
+  n'importe quelle entité — réutilisation des chemins génériques existants
+  (mêmes branches que `TEXT` pour move/rotate ; une ligne ajoutée dans
+  `scaleEntityInPlace`) plutôt que du code dédié partout. `MIRROR` reflète
+  aussi bien la position que l'orientation du contenu du bloc (voir entrée
+  dédiée ci-dessous). Persistant dans les fichiers `.mcad`
+  (`S.blocks`, rétrocompatible). Export DXF : pas de vrais enregistrements
+  `BLOCK`/`INSERT` — chaque instance est aplatie en géométrie transformée au
+  moment de l'export (`insertWorldEntities()`), ce qui est déjà mieux que
+  `GROUP` dont les entités groupées n'étaient jusqu'ici jamais exportées en DXF.
+  Accessible aussi via le menu (Modifier ▸ Créer un bloc, Insérer ▸ Insérer un
+  bloc) et deux boutons de barre d'outils dédiés, à côté de Grouper/Dégrouper.
+- **OSNAP Insertion** — mode d'accrochage dédié au point d'insertion d'un bloc
+  (`type:'insert'`), sur le même principe que le mode "Insertion" d'AutoCAD :
+  jusqu'ici `findOsnap()` n'avait aucun cas pour `insert`, donc impossible
+  d'accrocher précisément une instance de bloc pendant un déplacement par
+  poignée. Marqueur dédié (carré + croix diagonale), activé par défaut,
+  bascule dans le panneau ACCROCHAGE et dans les Préférences.
+- **OSNAP sur le contenu des blocs** — au-delà du point d'insertion, tous les
+  modes OSNAP standards (extrémité, milieu, centre, plus proche, intersection,
+  perpendiculaire, tangente, quadrant) fonctionnent maintenant aussi sur la
+  géométrie *à l'intérieur* d'une instance de bloc, comme dans AutoCAD.
+  `findOsnap()` aplatit chaque instance proche du curseur en ses entités
+  enfant transformées (`insertWorldEntities()`) et les injecte dans le
+  pré-filtre `_nearby`, avec un id synthétique `<idInstance>:<idEnfant>` pour
+  ne pas confondre deux instances du même bloc (pertinent pour la logique
+  tangente-tangente). Support récursif pour les blocs imbriqués (profondeur
+  max 5). Limite connue : une cote associative (DIMASSOC) accrochée sur un
+  enfant de bloc ne peut pas se recaler (l'entité hôte n'existe pas dans
+  `S.entities`) — se comporte comme un accroché "figé", pas de crash.
+  OSNAP Extension/OTRACK reste hors scope (déjà documenté comme défectueux
+  au TODO, mécanisme séparé non branché sur `_nearby`).
+- **Panneau Propriétés pour BLOCK/INSERT** — sélectionner une instance affiche
+  maintenant son nom de bloc, son angle (°, éditable), son échelle (éditable)
+  et l'état Miroir (case Oui/Non, éditable), en plus de X/Y déjà couverts par
+  le fallback générique.
+- **MIRROR sur les blocs** — jusqu'ici `MIRROR` reflétait la position du point
+  d'insertion d'une instance mais laissait son contenu inchangé (pas de vraie
+  symétrie visuelle). Ajout d'un drapeau `mirror` sur l'entité `insert` :
+  `insertWorldEntities()` applique désormais un flip local (`mirrorEntity`
+  autour de l'axe Y local) avant échelle/rotation, et `mirrorEntity()` sait
+  recalculer l'angle d'une instance (`angle' = 2·angleDroite − angle + π`) et
+  inverser son drapeau `mirror` pour tout miroir arbitraire. Formule dérivée
+  par composition matricielle (monde = R(angle)·F(mirror)·local + translation)
+  et vérifiée numériquement (7 cas variés + double-miroir = identité) avec les
+  fonctions réelles du fichier source avant intégration.
 - **Fichier ▸ Fermer** (`FERMER`, alias `CLOSE`) — ferme le dessin courant, avec
   confirmation si des modifications ne sont pas sauvegardées.
 
 ### Corrigé
+- **BLOCK/INSERT perdu après F5** — `loadFromLocalStorage()` (restauration
+  auto-save au chargement de page) ne restaurait pas `data.blocks`, contrairement
+  à `openJSON()` (Ouvrir un fichier) qui le faisait déjà. Après un F5, l'entité
+  `insert` survivait mais pointait vers un bloc introuvable → marqueur `?` en
+  pointillé (garde-fou prévu pour ce cas) au lieu de la géométrie du bloc.
+  Corrigé par l'ajout de `if (data.blocks) S.blocks = data.blocks;` au même
+  endroit que dans `openJSON()`.
 - **Export DXF : arcs de polyligne (bulge) inversés dès qu'ils dépassent le demi-cercle.**
   Le standard DXF définit `bulge = tan(θ/4)` avec θ l'angle inclus signé, ce qui place le
   centre en `milieu + perp_ccw·((1−b²)/(2b))` : pour un **arc majeur** (`|b| > 1`) ce
