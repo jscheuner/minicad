@@ -70,6 +70,13 @@ Format : `[version] — YYYY-MM-DD — Description`
   (renommé automatiquement en cas de collision de nom), puis l'insertion se
   déroule normalement (clic pour poser). Le raccourci terminal `INSERT <nom>`
   reste inchangé (toujours direct, sans popup).
+- **Preview de bloc pendant INSERT** — après avoir choisi un bloc (dialogue ou
+  `INSERT <nom>`), le contenu du bloc s'affiche désormais en pointillé sous le
+  curseur pendant qu'on cherche le point d'insertion (respecte l'accroche
+  OSNAP/grille active), au lieu de devoir cliquer à l'aveugle. Même principe
+  que la preview des bibliothèques (`drawLibPreview`) : entités fantômes
+  générées via `insertWorldEntities()` et dessinées à 55% d'opacité, trait
+  pointillé.
 
 ### Corrigé
 - **BLOCK/INSERT perdu après F5** — `loadFromLocalStorage()` (restauration

@@ -4794,6 +4794,27 @@ function drawLibPreview() {
   ctx.restore();
 }
 
+function drawInsertPreview() {
+  const name = S._insertBlockName;
+  const def = S.blocks[name];
+  if (!def) return;
+  const [wx, wy] = S.mouseWorld;
+  const [mx, my] = S.currentOsnap ? [S.currentOsnap.x, S.currentOsnap.y] : snapToGrid(wx, wy);
+  const ghost = { type:'insert', blockName:name, x:mx, y:my, angle:0, scale:1, mirror:false };
+  const children = insertWorldEntities(ghost);
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+  ctx.setLineDash([5, 4]);
+  children.forEach(e => {
+    const layer = S.layers[e.layer] || S.layers[S.currentLayer];
+    ctx.strokeStyle = dispColor(layer?.color || '#00d4ff');
+    ctx.lineWidth = Math.max(1, getLayerLineWidthPx(layer?.lineWidth));
+    drawEntity(e);
+  });
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
 function drawTanDeferredMarker() {
   const { cx, cy, r } = S._tanFromCircle;
   const [scx, scy] = w2s(cx, cy);
@@ -4977,6 +4998,7 @@ function _drawDynamicLayer() {
   }
   if (S.aiPendingEntities && S.aiPendingCenter && mouseOnCanvas) drawAiPlacementPreview();
   if (S.libPending && S.libDef && mouseOnCanvas) drawLibPreview();
+  if (S.tool === 'insert_place' && S._insertBlockName && mouseOnCanvas) drawInsertPreview();
   if (S.tool === 'paste' && S.clipboard.length && mouseOnCanvas) drawPastePreview();
   if (S.tool === 'polygon' && S._polyStep === 2 && mouseOnCanvas) drawPolygonPreview();
   if (S.tool === 'ellipse' && S._ellipStep >= 1 && mouseOnCanvas) drawEllipsePreview();
