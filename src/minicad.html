@@ -624,7 +624,7 @@
   .cb.wide   { grid-column: span 2; }
 
   /* ===== ARRAY DIALOG ===== */
-  #array-dialog, #polar-array-dialog {
+  #array-dialog, #polar-array-dialog, #insert-block-dialog {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
     background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     z-index: 952; width: 320px; box-shadow: 0 12px 48px rgba(0,0,0,0.8);
@@ -2217,6 +2217,31 @@
   <div class="ar-footer">
     <button class="ar-btn cancel" onclick="closePolarArrayDialog()">Annuler</button>
     <button class="ar-btn ok" onclick="confirmPolarArray()">OK</button>
+  </div>
+</div>
+
+<div id="insert-block-dialog">
+  <div class="ar-header">
+    <span data-i18n="dialog.insert.title">{{dialog.insert.title}}</span>
+    <span class="lm-close" onclick="closeInsertBlockDialog()">×</span>
+  </div>
+  <div class="ar-body" style="grid-template-columns:1fr">
+    <div class="ar-group">
+      <div class="ar-label" data-i18n="dialog.insert.block_label">{{dialog.insert.block_label}}</div>
+      <select id="ib-select" class="ar-input"></select>
+    </div>
+    <div class="ar-group">
+      <div class="ar-label" data-i18n="dialog.insert.from_file">{{dialog.insert.from_file}}</div>
+      <div class="ar-pick-row">
+        <input id="ib-path" class="ar-input" type="text" readonly data-i18n-placeholder="dialog.insert.no_file" placeholder="{{dialog.insert.no_file}}">
+        <button class="ar-pick-btn" data-i18n-title="dialog.insert.browse" title="{{dialog.insert.browse}}" onclick="ibBrowseFile()">…</button>
+      </div>
+    </div>
+  </div>
+  <input type="file" id="ib-file-input" accept=".mcad,.json" style="display:none" onchange="ibFileSelected(event)">
+  <div class="ar-footer">
+    <button class="ar-btn cancel" onclick="closeInsertBlockDialog()" data-i18n="btn.cancel">{{btn.cancel}}</button>
+    <button class="ar-btn ok" id="ib-ok-btn" onclick="confirmInsertBlock()" data-i18n="btn.ok">{{btn.ok}}</button>
   </div>
 </div>
 
@@ -4468,13 +4493,12 @@ const CMD = {
   }},
 
   INSERT: { alias: ['I','INS','INSERER','INSÉRER'], desc: 'Insérer un bloc', exec: (args) => {
-    const names = Object.keys(S.blocks);
-    if (!names.length) { termPrint('Aucun bloc défini — utilisez BLOCK pour en créer un', 'warning'); return; }
     const name = (args && args[0]) ? args[0].replace(/"/g,'') : null;
-    if (!name || !S.blocks[name]) {
-      if (name) termPrint('Bloc "' + name + '" introuvable.', 'warning');
-      termPrint('Blocs disponibles : ' + names.join(', '), 'info');
-      termPrint('Tapez INSERT <nom> puis cliquez le point d\'insertion', 'info');
+    if (!name) { openInsertBlockDialog(); return; } // sans argument (menu/barre d'outils/terminal vide) → popup
+    if (!S.blocks[name]) {
+      const names = Object.keys(S.blocks);
+      termPrint('Bloc "' + name + '" introuvable.', 'warning');
+      if (names.length) termPrint('Blocs disponibles : ' + names.join(', '), 'info');
       return;
     }
     S._insertBlockName = name;
@@ -14569,6 +14593,103 @@ function closePolarArrayDialog() {
   scheduleRender();
 }
 
+// ===== DIALOGUE INSERT (bloc du dessin ou importé depuis un fichier .mcad/.json) =====
+let _ibImportedBlocks = {}; // nom → définition, en attente le temps que le dialogue soit ouvert
+
+function openInsertBlockDialog() {
+  _ibImportedBlocks = {};
+  document.getElementById('ib-path').value = '';
+  _ibRefreshSelect();
+  document.getElementById('insert-block-dialog').style.display = 'flex';
+}
+
+function closeInsertBlockDialog() {
+  document.getElementById('insert-block-dialog').style.display = 'none';
+  _ibImportedBlocks = {};
+}
+
+function _ibRefreshSelect() {
+  const sel = document.getElementById('ib-select');
+  const drawingNames = Object.keys(S.blocks);
+  const importedNames = Object.keys(_ibImportedBlocks);
+  let html = '';
+  if (drawingNames.length) {
+    html += '<optgroup label="Blocs du dessin">' + drawingNames.map(n => '<option value="drawing:'+n+'">'+n+'</option>').join('') + '</optgroup>';
+  }
+  if (importedNames.length) {
+    html += '<optgroup label="Blocs importés">' + importedNames.map(n => '<option value="imported:'+n+'">'+n+'</option>').join('') + '</optgroup>';
+  }
+  const okBtn = document.getElementById('ib-ok-btn');
+  if (!html) {
+    html = '<option value="" disabled selected>(aucun bloc disponible)</option>';
+    okBtn.disabled = true;
+  } else {
+    okBtn.disabled = false;
+  }
+  sel.innerHTML = html;
+}
+
+function ibBrowseFile() {
+  document.getElementById('ib-file-input').click();
+}
+
+function ibFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = ''; // permet de resélectionner le même fichier
+  document.getElementById('ib-path').value = file.name;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.app !== 'MiniCAD' && !data.entities && !data.blocks) {
+        termPrint('Fichier non reconnu comme projet MiniCAD', 'error');
+        return;
+      }
+      const found = (data.blocks && Object.keys(data.blocks).length) ? data.blocks : null;
+      if (!found) {
+        termPrint('Aucun bloc trouvé dans "' + file.name + '"', 'warning');
+        return;
+      }
+      _ibImportedBlocks = found;
+      _ibRefreshSelect();
+      const sel = document.getElementById('ib-select');
+      const firstImported = sel.querySelector('option[value^="imported:"]');
+      if (firstImported) sel.value = firstImported.value;
+      termPrint(Object.keys(found).length + ' bloc(s) trouvé(s) dans "' + file.name + '"', 'success');
+    } catch (err) {
+      termPrint('Erreur de lecture du fichier: ' + err.message, 'error');
+    }
+  };
+  reader.onerror = () => termPrint('Erreur de lecture du fichier', 'error');
+  reader.readAsText(file);
+}
+
+function confirmInsertBlock() {
+  const sel = document.getElementById('ib-select');
+  const val = sel.value;
+  if (!val) return;
+  const sep = val.indexOf(':');
+  const origin = val.slice(0, sep);
+  let name = val.slice(sep + 1);
+  if (origin === 'imported') {
+    let finalName = name;
+    if (S.blocks[finalName]) {
+      let i = 2;
+      while (S.blocks[finalName + '_' + i]) i++;
+      finalName = finalName + '_' + i;
+      termPrint('Un bloc "' + name + '" existe déjà dans ce dessin — importé sous "' + finalName + '"', 'warning');
+    }
+    S.blocks[finalName] = JSON.parse(JSON.stringify(_ibImportedBlocks[name]));
+    name = finalName;
+    updateSaveIndicator('modified'); autoSave();
+  }
+  closeInsertBlockDialog();
+  S._insertBlockName = name;
+  setTool('insert_place');
+  termPrint('INSERT "' + name + '" : cliquer le point d\'insertion', 'info');
+}
+
 function polarArrayPickCenter() {
   document.getElementById('polar-array-dialog').style.display = 'none';
   S.polarArrayPickCenter = true;
@@ -16089,6 +16210,8 @@ document.addEventListener('keyup', (ev) => {
   if (ad && ad.style.display !== 'none') { closeArrayDialog(); cmdInput.focus(); return; }
   const pad = document.getElementById('polar-array-dialog');
   if (pad && pad.style.display !== 'none') { closePolarArrayDialog(); cmdInput.focus(); return; }
+  const ibd = document.getElementById('insert-block-dialog');
+  if (ibd && ibd.style.display !== 'none') { closeInsertBlockDialog(); cmdInput.focus(); return; }
   const tubeD = document.getElementById('tube-edit-dialog');
   if (tubeD) { tubeD.remove(); cmdInput.focus(); return; }
   const hatchD = document.getElementById('hatch-dialog');

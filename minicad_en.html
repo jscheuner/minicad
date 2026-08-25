@@ -44,6 +44,7 @@
     --osnap-tangent: #ff6e40;
     --osnap-quadrant: #cddc39;
     --osnap-extension: #ff9800;
+    --osnap-insertion: #b388ff;
     --module-arch: #7c4dff;
     --module-elec: #ffab40;
     --module-dim: #00e676;
@@ -84,6 +85,7 @@
     --osnap-tangent: #d84315;
     --osnap-quadrant: #7a7000;
     --osnap-extension: #e65100;
+    --osnap-insertion: #5e35b1;
     --module-arch: #5e35b1;
     --module-elec: #9a5b00;
     --module-dim: #00873e;
@@ -622,7 +624,7 @@
   .cb.wide   { grid-column: span 2; }
 
   /* ===== ARRAY DIALOG ===== */
-  #array-dialog, #polar-array-dialog {
+  #array-dialog, #polar-array-dialog, #insert-block-dialog {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
     background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     z-index: 952; width: 320px; box-shadow: 0 12px 48px rgba(0,0,0,0.8);
@@ -1300,7 +1302,7 @@
     cursor: pointer; color: color-mix(in srgb, var(--ink) 33%, transparent); font-size: 16px; line-height: 1;
     width: 20px; text-align: center;
   }
-  .td-close:hover { color: #fff; }
+  .td-close:hover { color: var(--text); }
   .td-body { padding: 12px 14px 10px; display: flex; flex-direction: column; gap: 10px; }
   .td-symbols { display: flex; gap: 4px; flex-wrap: wrap; }
   .td-sym-btn {
@@ -1317,7 +1319,7 @@
   }
   .td-field input, .td-field select {
     background: var(--input-bg); border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); border-radius: 4px;
-    color: #e8ecf4; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 12px;
     padding: 6px 9px; outline: none; width: 100%; box-sizing: border-box;
   }
   .td-field input:focus, .td-field select:focus { border-color: var(--accent); }
@@ -1331,14 +1333,14 @@
     display: flex; align-items: center; justify-content: center; padding: 0 8px;
   }
   .td-style-btn.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
-  .td-style-btn:hover:not(.active) { border-color: color-mix(in srgb, var(--ink) 20%, transparent); color: #fff; }
+  .td-style-btn:hover:not(.active) { border-color: color-mix(in srgb, var(--ink) 20%, transparent); color: var(--text); }
   .td-footer { display: flex; gap: 8px; padding: 0 14px 12px; }
   .td-footer button {
     flex: 1; padding: 7px 10px; font-size: 11px; font-weight: 600; cursor: pointer;
     border-radius: 5px; border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); background: var(--input-bg);
-    color: #ffffffaa; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.3px;
+    color: var(--text-dim); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.3px;
   }
-  .td-footer button:hover { color: #fff; border-color: color-mix(in srgb, var(--ink) 27%, transparent); }
+  .td-footer button:hover { color: var(--text); border-color: color-mix(in srgb, var(--ink) 27%, transparent); }
   .td-ok { background: var(--accent-dim) !important; color: var(--accent) !important; border-color: var(--accent) !important; }
 </style>
 <script>(function(){try{var p=JSON.parse(localStorage.getItem('minicad_user_prefs')||'{}');var t=p.theme||(p.theme===undefined?'light':p.theme);if(t==='light'||t===undefined)document.documentElement.classList.add('theme-light');}catch(e){document.documentElement.classList.add('theme-light');}})();</script>
@@ -1358,6 +1360,9 @@
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="cmdOpen();closeMenus()">
           <span>Open…</span><span class="item-shortcut">Ctrl+O</span>
+        </div>
+        <div class="menu-dropdown-item" onclick="executeCommand('FERMER');closeMenus()">
+          <span>Close</span>
         </div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="cmdSave();closeMenus()">
@@ -1448,6 +1453,7 @@
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="executeCommand('EXPLODE');closeMenus()"><span>Explode (X)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('MATCHPROP');closeMenus()"><span>Copier les propriétés</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('BLOCK');closeMenus()"><span>Create block (BLOCK)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('GROUP');closeMenus()"><span>Group (GROUP)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('UNGROUP');closeMenus()"><span>Ungroup (UNGROUP)</span></div>
         <div class="menu-dropdown-sep"></div>
@@ -1457,6 +1463,8 @@
     <div class="menu-dropdown" id="menu-inserer">
       <div class="menu-item" id="menu-inserer-btn" onclick="toggleMenuDropdown('menu-inserer',event)">Insert</div>
       <div class="menu-dropdown-list" id="menu-inserer-list">
+        <div class="menu-dropdown-item" onclick="executeCommand('INSERT');closeMenus()"><span>Insert a block (INSERT)</span></div>
+        <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="executeCommand('WALL');closeMenus()"><span>Wall (W)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('DOOR');closeMenus()"><span>Door (DOOR)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('WINDOW');closeMenus()"><span>Window (WINDOW)</span></div>
@@ -1672,6 +1680,22 @@
           <line x1="16" y1="12" x2="22" y2="12"/><polygon points="20,10 20,14 23,12" fill="currentColor"/>
           <line x1="12" y1="16" x2="12" y2="22"/><polygon points="10,20 14,20 12,23" fill="currentColor"/>
           <line x1="8" y1="12" x2="2" y2="12"/><polygon points="4,10 4,14 1,12" fill="currentColor"/>
+        </svg>
+      </button>
+      <!-- Créer un bloc -->
+      <button class="tool-btn" title="Create block (BLOCK)" onclick="executeCommand('BLOCK')">
+        <svg viewBox="0 0 24 24">
+          <rect x="3.5" y="3.5" width="17" height="17" rx="2" fill="none" stroke-dasharray="3,2" opacity="0.55"/>
+          <rect x="7" y="7" width="10" height="10" rx="1"/>
+          <circle cx="7" cy="17" r="1.6" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
+      <!-- Insérer un bloc -->
+      <button class="tool-btn" title="Insert a block (INSERT)" onclick="executeCommand('INSERT')">
+        <svg viewBox="0 0 24 24">
+          <rect x="9" y="9" width="10" height="10" rx="1" fill="none" stroke-dasharray="3,2" opacity="0.55"/>
+          <rect x="11" y="11" width="6" height="6" rx="1"/>
+          <line x1="1" y1="12" x2="7" y2="12"/><polygon points="5,10 5,14 8,12" fill="currentColor"/>
         </svg>
       </button>
       <!-- Grouper -->
@@ -1930,7 +1954,8 @@
     </div>
   </div>
 
-  <!-- Toolbar: Architecture -->
+  <!-- Toolbar: Architecture — masquée du frontend (module en pause, code conservé) : voir modules.architecture -->
+  <!--
   <div class="cad-toolbar docked" id="tb-arch" data-name="Architecture">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-arch')" ondblclick="toggleTBDock('tb-arch')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-arch')" ondblclick="toggleTBDock('tb-arch')">
@@ -1960,8 +1985,10 @@
       </button>
     </div>
   </div>
+  -->
 
-  <!-- Toolbar: Électricité -->
+  <!-- Toolbar: Électricité — masquée du frontend (module en pause, code conservé) : voir modules.electrical -->
+  <!--
   <div class="cad-toolbar docked" id="tb-elec" data-name="Electrical">
     <div class="tb-grip" onmousedown="startTBDrag(event,'tb-elec')" ondblclick="toggleTBDock('tb-elec')">⋮⋮</div>
     <div class="tb-header" onmousedown="startTBDrag(event,'tb-elec')" ondblclick="toggleTBDock('tb-elec')">
@@ -1990,6 +2017,7 @@
       </button>
     </div>
   </div>
+  -->
 
 </div>
 
@@ -2192,6 +2220,31 @@
   </div>
 </div>
 
+<div id="insert-block-dialog">
+  <div class="ar-header">
+    <span>INSERT BLOCK</span>
+    <span class="lm-close" onclick="closeInsertBlockDialog()">×</span>
+  </div>
+  <div class="ar-body" style="grid-template-columns:1fr">
+    <div class="ar-group">
+      <div class="ar-label">Block</div>
+      <select id="ib-select" class="ar-input"></select>
+    </div>
+    <div class="ar-group">
+      <div class="ar-label">Import from a file</div>
+      <div class="ar-pick-row">
+        <input id="ib-path" class="ar-input" type="text" readonly placeholder="No file selected">
+        <button class="ar-pick-btn" title="Browse…" onclick="ibBrowseFile()">…</button>
+      </div>
+    </div>
+  </div>
+  <input type="file" id="ib-file-input" accept=".mcad,.json" style="display:none" onchange="ibFileSelected(event)">
+  <div class="ar-footer">
+    <button class="ar-btn cancel" onclick="closeInsertBlockDialog()">Cancel</button>
+    <button class="ar-btn ok" id="ib-ok-btn" onclick="confirmInsertBlock()">OK</button>
+  </div>
+</div>
+
 <!-- CALCULATRICE -->
 <div id="calc-dialog" tabindex="-1" style="outline:none">
   <div class="calc-hdr" id="calc-drag">
@@ -2283,17 +2336,25 @@
   </div>
 </div>
 
-<div id="dim-text-dialog" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a2133;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:8px;z-index:951;width:340px;box-shadow:0 12px 48px rgba(0,0,0,0.8);font-family:'IBM Plex Sans',sans-serif">
+<div id="dim-text-dialog" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-elev);border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:8px;z-index:951;width:340px;box-shadow:0 12px 48px rgba(0,0,0,0.5);font-family:'IBM Plex Sans',sans-serif">
   <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid color-mix(in srgb, var(--ink) 9%, transparent);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1px;color:var(--accent)">
     TEXTE DE COTE
     <span onclick="closeDimTextDialog()" style="cursor:pointer;color:color-mix(in srgb, var(--ink) 33%, transparent);font-size:18px;line-height:1">×</span>
   </div>
   <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px">
-    <label style="font-size:10px;color:color-mix(in srgb, var(--ink) 33%, transparent);letter-spacing:0.4px">Texte libre — utiliser &lt;&gt; pour la valeur mesurée</label>
+    <label style="font-size:10px;color:color-mix(in srgb, var(--ink) 40%, transparent);letter-spacing:0.4px">Texte libre — utiliser &lt;&gt; pour la valeur mesurée</label>
     <input id="dim-td-input" type="text" placeholder="<>" autocomplete="off"
-      style="background:var(--bg-elev);border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:3px;color:var(--text);font-size:13px;padding:6px 10px;font-family:'JetBrains Mono',monospace;outline:none"
+      style="background:var(--input-bg);border:1px solid color-mix(in srgb, var(--ink) 10%, transparent);border-radius:3px;color:var(--text);font-size:13px;padding:6px 10px;font-family:'JetBrains Mono',monospace;outline:none"
       oninput="updateDimTextPreview()" onkeydown="if(event.key==='Enter')confirmDimTextDialog();if(event.key==='Escape')closeDimTextDialog()">
-    <div id="dim-td-preview" style="font-size:12px;color:var(--accent);min-height:18px;font-family:'JetBrains Mono',monospace;padding-left:2px"></div>
+    <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim);cursor:pointer">
+      <input id="dim-td-hide" type="checkbox" onchange="updateDimTextPreview()" style="cursor:pointer">
+      Masquer le texte (aucune valeur affichée)
+    </label>
+    <div style="display:flex;align-items:center;gap:6px">
+      <div id="dim-td-preview" style="font-size:12px;color:var(--accent);flex:1;min-height:18px;font-family:'JetBrains Mono',monospace;padding-left:2px"></div>
+      <span onclick="copyDimTextPreview()" title="Copier dans le presse-papier"
+        style="cursor:pointer;font-size:20px;line-height:1;color:color-mix(in srgb, var(--ink) 45%, transparent);padding:5px 8px">⧉</span>
+    </div>
   </div>
   <div style="padding:8px 16px;border-top:1px solid color-mix(in srgb, var(--ink) 7%, transparent);display:flex;justify-content:flex-end;gap:8px">
     <button onclick="closeDimTextDialog()" style="padding:4px 16px;background:none;border:1px solid color-mix(in srgb, var(--ink) 13%, transparent);border-radius:3px;color:var(--text-dim);font-size:11px;cursor:pointer">Annuler</button>
@@ -2570,7 +2631,7 @@ const USER_PREFS = {
   gridSizeY: 20,
   gridVis: true,
   osnapEnabled: true,
-  osnapModes: { endpoint:true, midpoint:true, center:true, nearest:false, intersection:true, perpendicular:false, tangent:false, quadrant:true, extension:false },
+  osnapModes: { endpoint:true, midpoint:true, center:true, nearest:false, intersection:true, perpendicular:false, tangent:false, quadrant:true, extension:false, insertion:true },
   ortho: false,
   polar: true,
   polarAngle: 15,
@@ -2596,6 +2657,8 @@ const S = {
   pickboxPx: 6,    // demi-côté du carré de sélection (px écran)
   osnapTolPx: 15,  // portée d'accrochage OSNAP (px écran)
   entities: [],
+  blocks: {},      // définitions de blocs nommés : { [nom]: { entities:[...], base:{x:0,y:0} } }
+
   layers: [
     { name: '0 - Défaut',      color: '#00d4ff', printColor: '#000000', visible: true, lineWidth: 0.35, lineType: 'solid' },
     { name: '1 - Construction',color: '#ff4081', printColor: '#888888', visible: true, lineWidth: 0.13, lineType: 'dashed' },
@@ -2648,6 +2711,7 @@ const S = {
     tangent: false,
     quadrant: true,
     extension: false,
+    insertion: true,
   },
   osnapAcquired: [], // [{ax,ay,dx,dy}] — extension acquired points
   currentOsnap: null, // { x, y, type, entity }
@@ -2666,6 +2730,7 @@ const S = {
   explodePending: false,
   groupPending: false,
   ungroupPending: false,
+  blockPending: false,
   // MIRROR pending selection
   mirrorPending: false,
   rotatePending: false,
@@ -2813,6 +2878,7 @@ const OSNAP_COLORS_DARK = {
   tangent: '#ff6e40',
   quadrant: '#cddc39',
   extension: '#ff9800',
+  insertion: '#b388ff',
 };
 // Mêmes teintes, assombries pour rester lisibles sur fond clair
 const OSNAP_COLORS_LIGHT = {
@@ -2825,6 +2891,7 @@ const OSNAP_COLORS_LIGHT = {
   tangent: '#d84315',
   quadrant: '#7a7000',
   extension: '#e65100',
+  insertion: '#5e35b1',
 };
 let OSNAP_COLORS = OSNAP_COLORS_LIGHT;
 
@@ -2835,13 +2902,13 @@ const CANVAS_THEMES = {
   dark: {
     ink: '#ffffff', accent: '#00d4ff', label: '#ffab40',
     gridFine: '#141e35', grid: '#1a2a4a', gridMajor: '#253a5a',
-    pill: '#0d1525cc', atelier: '#0c0f17',
+    pill: '#0d1525cc', atelier: '#0c0f17', bg: '#0f0f1a',
     rbWin: '#00d4ff', rbCross: '#00e676',
   },
   light: {
     ink: '#13202e', accent: '#0072ad', label: '#9a5b00',
     gridFine: '#e9edf3', grid: '#dde3eb', gridMajor: '#c6d0dd',
-    pill: '#ffffffe6', atelier: '#c6cbd3',
+    pill: '#ffffffe6', atelier: '#c6cbd3', bg: '#fbfcfd',
     rbWin: '#0072ad', rbCross: '#00873e',
   },
 };
@@ -3003,6 +3070,38 @@ function findOsnap(wx, wy) {
     _nearby.push(e);
   }
 
+  // Accrochage sur le contenu des blocs (INSERT) : chaque instance proche du
+  // curseur est "aplatie" en ses entités enfant transformées (monde), injectées
+  // dans _nearby, pour que TOUS les modes OSNAP (extrémité, milieu, centre...)
+  // fonctionnent sur la géométrie du bloc — comme AutoCAD. L'entité 'insert'
+  // elle-même reste dans _nearby pour le mode INSERTION (point de base).
+  // Id préfixé par l'id de l'instance : deux instances du même bloc clonent le
+  // même id local (JSON.parse/stringify de la définition), il faut les
+  // distinguer pour ne pas fausser les logiques basées sur l'id (ex. tangente).
+  // Profondeur limitée (blocs imbriqués) pour éviter toute boucle sans fin.
+  function _flattenInsertChildren(inst, depth, out) {
+    if (depth > 5) return;
+    for (const child of insertWorldEntities(inst)) {
+      if (!S.layers[child.layer]?.visible) continue;
+      child.id = inst.id + ':' + child.id;
+      if (child.type === 'insert') _flattenInsertChildren(child, depth + 1, out);
+      else out.push(child);
+    }
+  }
+  for (const inst of _nearby.filter(e => e.type === 'insert')) {
+    const kids = [];
+    _flattenInsertChildren(inst, 0, kids);
+    for (const child of kids) {
+      const cbb = getEntityBBox(child);
+      if (cbb) {
+        const dx = Math.max(cbb.minX - wx, 0, wx - cbb.maxX);
+        const dy = Math.max(cbb.minY - wy, 0, wy - cbb.maxY);
+        if (dx * dx + dy * dy > tol * tol) continue;
+      }
+      _nearby.push(child);
+    }
+  }
+
   // Optim 4 — cache des segments : getEntitySegments() appelé une seule fois par entité
   const _segCache = new Map();
   const segsOf = e => {
@@ -3063,6 +3162,12 @@ function findOsnap(wx, wy) {
       if (e.type === 'tube') {
         for (const p of getTubeSnapPoints(e)) check(p.x, p.y, 'endpoint', e);
       }
+    }
+
+    // INSERTION — point d'insertion d'un bloc (comme AutoCAD : mode dédié,
+    // distinct d'ENDPOINT, pour accrocher/aligner sur l'origine d'une instance)
+    if (S.osnapModes.insertion && e.type === 'insert') {
+      check(e.x, e.y, 'insertion', e);
     }
 
     // MIDPOINT
@@ -3668,6 +3773,13 @@ function drawOsnapMarker(snap) {
       ctx.moveTo(sx - sz, sy); ctx.lineTo(sx + sz, sy);
       ctx.stroke();
       break;
+    case 'insertion': // carré + croix diagonale (point d'insertion de bloc, comme AutoCAD)
+      ctx.strokeRect(sx - sz, sy - sz, sz * 2, sz * 2);
+      ctx.beginPath();
+      ctx.moveTo(sx - sz, sy - sz); ctx.lineTo(sx + sz, sy + sz);
+      ctx.moveTo(sx + sz, sy - sz); ctx.lineTo(sx - sz, sy + sz);
+      ctx.stroke();
+      break;
   }
 }
 
@@ -4035,15 +4147,12 @@ const CMD = {
     S.entities.forEach(e => termPrint('#' + e.id + ' ' + e.type + ' [calque ' + e.layer + ']', 'info'));
   }},
   CLEAR: { alias: ['CLS','NOUVEAU'], desc: 'Tout effacer', exec: () => {
-    // Sécurité : prévenir avant de perdre un dessin non sauvegardé (statut MODIFIÉ)
-    if (S.entities.length && S._saveState === 'modified') {
-      if (!confirm('Le dessin actuel n\'est pas sauvegardé.\nLes modifications seront perdues.\n\nCréer un nouveau dessin quand même ?')) {
-        termPrint('Nouveau dessin annulé', 'info'); return;
-      }
-    }
-    if (S.entities.length) pushUndo(); S.entities = []; S.selected = [];
-    _fileHandle = null; _kdFile = null; localStorage.removeItem('minicad_autosave'); updateSaveIndicator('new');
-    termPrint('Dessin effacé', 'success'); render();
+    if (!closeDrawing('Créer un nouveau dessin quand même ?')) { termPrint('Nouveau dessin annulé', 'info'); return; }
+    termPrint('Dessin effacé', 'success');
+  }},
+  FERMER: { alias: ['CLOSE'], desc: 'Fermer le dessin courant', exec: () => {
+    if (!closeDrawing('Fermer le dessin quand même ?')) { termPrint('Fermeture annulée', 'info'); return; }
+    termPrint('Dessin fermé', 'success');
   }},
   GRID: { alias: ['GRILLE'], desc: 'Taille grille (GRID [x] [y] — ex: GRID 20 10)', exec: (args) => {
     if (args[0]) {
@@ -4209,7 +4318,7 @@ const CMD = {
     render();
   }},
   EXPLODE: { alias: ['X','ECLATER','ÉCLATER'], desc: 'Éclater un bloc, polyligne ou tube en primitives', exec: () => {
-    const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && (e.type === 'block' || e.type === 'polyline' || e.type === 'cable' || e.type === 'tube' || e.type === 'rect' || pluginExplodeHandler(e.type)));
+    const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(e => e && (e.type === 'block' || e.type === 'insert' || e.type === 'polyline' || e.type === 'cable' || e.type === 'tube' || e.type === 'rect' || pluginExplodeHandler(e.type)));
     if (!targets.length) {
       S.explodePending = true; setTool('select');
       termPrint('ÉCLATER: Sélectionner les objets à éclater, puis Entrée', 'warning'); return;
@@ -4227,6 +4336,10 @@ const CMD = {
           newIds.push(ch.id);
         });
         termPrint('Bloc "' + (ent.name||'bloc') + '" → ' + (ent.entities?.length||0) + ' entités', 'success');
+      } else if (ent.type === 'insert') {
+        const kids = insertWorldEntities(ent);
+        kids.forEach(ch => { ch.id = S.nextId++; S.entities.push(ch); newIds.push(ch.id); });
+        termPrint('Bloc "' + ent.blockName + '" → ' + kids.length + ' entités', 'success');
       } else if (ent.type === 'tube') {
         // Tube → lignes (droits) + arcs (coudes), 3 éléments par segment (axe + 2 parois)
         let cx = ent.startX, cy = ent.startY, theta = ent.startAngle;
@@ -4362,6 +4475,35 @@ const CMD = {
     S.selected = newIds;
     updateSaveIndicator('modified'); autoSave(); render(); updateUI();
     termPrint('Dégroupé — ' + newIds.length + ' entité(s)', 'success');
+  }},
+
+  BLOCK: { alias: ['BL','BLOC'], desc: 'Créer un bloc nommé depuis une sélection', exec: (args) => {
+    const targets = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+    if (!targets.length) {
+      // Pas de présélection → étape de sélection au Pickbox, valider par Entrée
+      S.blockPending = true; S._blockPendingArgs = args || []; setTool('select');
+      termPrint('BLOC : sélectionner les objets, puis Entrée — Échap pour annuler', 'info');
+      return;
+    }
+    S.blockPending = false;
+    S._blockPendingEnts = targets;
+    S._blockPendingName = (args && args[0]) ? args[0].replace(/"/g,'') : _nextBlockName();
+    setTool('block_base');
+    termPrint('BLOC "' + S._blockPendingName + '" : cliquer le point de base', 'info');
+  }},
+
+  INSERT: { alias: ['I','INS','INSERER','INSÉRER'], desc: 'Insérer un bloc', exec: (args) => {
+    const name = (args && args[0]) ? args[0].replace(/"/g,'') : null;
+    if (!name) { openInsertBlockDialog(); return; } // sans argument (menu/barre d'outils/terminal vide) → popup
+    if (!S.blocks[name]) {
+      const names = Object.keys(S.blocks);
+      termPrint('Bloc "' + name + '" introuvable.', 'warning');
+      if (names.length) termPrint('Blocs disponibles : ' + names.join(', '), 'info');
+      return;
+    }
+    S._insertBlockName = name;
+    setTool('insert_place');
+    termPrint('INSERT "' + name + '" : cliquer le point d\'insertion', 'info');
   }},
 };
 
@@ -4509,6 +4651,16 @@ function getEntityBBox(e, tight) {
       if (!e.entities?.length) return null;
       let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
       e.entities.forEach(ch => {
+        const bb = getEntityBBox(ch);
+        if (bb) { x0=Math.min(x0,bb.minX);x1=Math.max(x1,bb.maxX);y0=Math.min(y0,bb.minY);y1=Math.max(y1,bb.maxY); }
+      });
+      return x0===Infinity ? null : { minX:x0, maxX:x1, minY:y0, maxY:y1 };
+    }
+    case 'insert': {
+      const kids = insertWorldEntities(e);
+      if (!kids.length) return { minX:e.x-10, maxX:e.x+10, minY:e.y-10, maxY:e.y+10 };
+      let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+      kids.forEach(ch => {
         const bb = getEntityBBox(ch);
         if (bb) { x0=Math.min(x0,bb.minX);x1=Math.max(x1,bb.maxX);y0=Math.min(y0,bb.minY);y1=Math.max(y1,bb.maxY); }
       });
@@ -5725,6 +5877,7 @@ function _restoreLayouts(data) {
 }
 
 function dimText(e, value) {
+  if (e && e.textHidden) return '';
   const ds = getDimStyle(e);
   const dec = (ds && ds.decimals != null) ? ds.decimals : 1;
   const formatted = value.toFixed(dec);
@@ -7058,7 +7211,7 @@ function drawEntity(e) {
         const dist = Math.abs(e.x2 - e.x1);
         const [ttx, tty] = w2s((e.x1+e.x2)/2 + to, dimY);
         ctx.font = tpx + 'px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.fillText(dimText(e, dist), ttx, tty - dimTextGap(ds)*S.zoom);
+        fillDimText(dimText(e, dist), ttx, tty - dimTextGap(ds)*S.zoom);
       } else {
         const dimX = (e.x1 + e.x2) / 2 + off;
         const [a1, b1] = w2s(dimX, e.y1), [a2, b2] = w2s(dimX, e.y2);
@@ -7072,7 +7225,7 @@ function drawEntity(e) {
         const [ttx, tty] = w2s(dimX, (e.y1+e.y2)/2 + to);
         ctx.save(); ctx.translate(ttx, tty); ctx.rotate(-Math.PI/2);
         ctx.font = tpx + 'px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.fillText(dimText(e, dist), 0, -tpx*0.3); ctx.restore();
+        fillDimText(dimText(e, dist), 0, -tpx*0.3); ctx.restore();
       }
       break;
     }
@@ -7085,10 +7238,11 @@ function drawEntity(e) {
       const perp = angle + Math.PI / 2;
       const off = (e.offset || 30) * S.zoom;
       const eoff = (ds.extOff || 0) * S.zoom;
+      const egap = (ds.extGap || 0) * S.zoom;
       const ox = Math.cos(perp) * off, oy = Math.sin(perp) * off;
       const ux = Math.cos(perp) * Math.sign(off||1), uy = Math.sin(perp) * Math.sign(off||1);
-      ctx.beginPath(); ctx.moveTo(a1 + ux*eoff, b1 + uy*eoff); ctx.lineTo(a1 + ox * 1.15, b1 + oy * 1.15); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(a2 + ux*eoff, b2 + uy*eoff); ctx.lineTo(a2 + ox * 1.15, b2 + oy * 1.15); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(a1 + ux*eoff, b1 + uy*eoff); ctx.lineTo(a1 + ox + ux*egap, b1 + oy + uy*egap); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(a2 + ux*eoff, b2 + uy*eoff); ctx.lineTo(a2 + ox + ux*egap, b2 + oy + uy*egap); ctx.stroke();
       const dx1 = a1 + ox, dy1 = b1 + oy, dx2 = a2 + ox, dy2 = b2 + oy;
       ctx.beginPath(); ctx.moveTo(dx1, dy1); ctx.lineTo(dx2, dy2); ctx.stroke();
       drawArrowHead(dx1, dy1, dx2, dy2, asz); drawArrowHead(dx2, dy2, dx1, dy1, asz);
@@ -7102,7 +7256,7 @@ function drawEntity(e) {
       if (textAngle > Math.PI/2 || textAngle < -Math.PI/2) textAngle += Math.PI;
       ctx.rotate(textAngle);
       ctx.font = tpx + 'px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillText(dimText(e, dist), 0, -dimTextGap(ds)*S.zoom); ctx.restore();
+      fillDimText(dimText(e, dist), 0, -dimTextGap(ds)*S.zoom); ctx.restore();
       break;
     }
     case 'dim_angular': {
@@ -7135,7 +7289,7 @@ function drawEntity(e) {
       ctx.translate(vsx + textR * Math.cos(midA), vsy + textR * Math.sin(midA));
       ctx.rotate(textAngle);
       ctx.font = tpx + 'px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(dimText(e, deg) + (e.text ? '' : '°'), 0, 0);
+      fillDimText(dimText(e, deg) + ((e.text || e.textHidden) ? '' : '°'), 0, 0);
       ctx.restore();
       ctx.restore();
       break;
@@ -7182,7 +7336,7 @@ function drawEntity(e) {
       ctx.rotate(lineAngle);
       ctx.font = tpx + 'px JetBrains Mono';
       ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillText(prefix + dimText(e, val), 0, -dimTextGap(ds)*S.zoom);
+      fillDimText(prefix + dimText(e, val), 0, -dimTextGap(ds)*S.zoom);
       ctx.restore();
       ctx.restore();
       break;
@@ -7233,6 +7387,32 @@ function drawEntity(e) {
       ctx.strokeStyle = savedStroke; ctx.fillStyle = savedFill; ctx.lineWidth = savedLW;
       break;
     }
+    case 'insert': {
+      const def = S.blocks[e.blockName];
+      if (!def) {
+        // Bloc introuvable (fichier édité à la main) : repère "?" au point d'insertion
+        const [ix, iy] = w2s(e.x, e.y);
+        ctx.save();
+        ctx.strokeStyle = '#ff4081'; ctx.setLineDash([4,3]); ctx.lineWidth = 1;
+        ctx.strokeRect(ix-10, iy-10, 20, 20);
+        ctx.fillStyle = '#ff4081'; ctx.font = '11px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('?', ix, iy);
+        ctx.restore();
+        break;
+      }
+      const savedStroke2 = ctx.strokeStyle, savedFill2 = ctx.fillStyle, savedLW2 = ctx.lineWidth;
+      for (const child of insertWorldEntities(e)) {
+        const layer = S.layers[child.layer] || S.layers[S.currentLayer];
+        ctx.strokeStyle = dispColor(child.color || layer?.color || '#00d4ff');
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.lineWidth = getLayerLineWidthPx(child.lineWidth ?? layer?.lineWidth);
+        ctx.setLineDash(child.dash || getLayerLineDash(child.lineType || layer?.lineType || 'solid'));
+        drawEntity(child);
+        ctx.setLineDash([]);
+      }
+      ctx.strokeStyle = savedStroke2; ctx.fillStyle = savedFill2; ctx.lineWidth = savedLW2;
+      break;
+    }
     case 'hatch': {
       const _hpts = getHatchPoints(e);
       if (!_hpts || _hpts.length < 3) break;
@@ -7266,6 +7446,30 @@ function getDimStyle(e) {
 // Écart (en unités monde) entre le trait de cote et le dessous du texte.
 // Paramètre de style `textGap` ; fallback ≈ 0.3·hauteur de texte pour les anciens styles.
 function dimTextGap(ds) { return (ds && ds.textGap != null) ? ds.textGap : ((ds ? ds.textHeight : 4) * 0.3); }
+
+// Texte de cote avec un masque (couleur du fond du plan de travail) derrière lui,
+// pour rester lisible par-dessus des hachures ou d'autres entités. Respecte le
+// repère courant (translate/rotate déjà appliqués par l'appelant) ainsi que
+// ctx.font / textAlign / textBaseline / fillStyle en cours.
+function fillDimText(text, x, y) {
+  if (!text) return;
+  const w = ctx.measureText(text).width;
+  const h = parseFloat(ctx.font) || 12;
+  const pad = Math.max(1, h * 0.15);
+  let left = x;
+  if (ctx.textAlign === 'center') left = x - w / 2;
+  else if (ctx.textAlign === 'right' || ctx.textAlign === 'end') left = x - w;
+  let top;
+  if (ctx.textBaseline === 'bottom') top = y - h;
+  else if (ctx.textBaseline === 'middle') top = y - h / 2;
+  else if (ctx.textBaseline === 'top' || ctx.textBaseline === 'hanging') top = y;
+  else top = y - h * 0.8;
+  const prevFill = ctx.fillStyle;
+  ctx.fillStyle = TC.bg;
+  ctx.fillRect(left - pad, top - pad, w + pad * 2, h + pad * 2);
+  ctx.fillStyle = prevFill;
+  ctx.fillText(text, x, y);
+}
 
 function drawArrowHead(fromX, fromY, toX, toY, sz) {
   sz = sz !== undefined ? sz : 8;
@@ -7327,7 +7531,7 @@ function _renderDimArc(e) {
   ctx.rotate(lineAngle);
   ctx.font = tpx + 'px JetBrains Mono';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('⌒' + dimText(e, e.r * span), 0, 0);
+  fillDimText('⌒' + dimText(e, e.r * span), 0, 0);
   ctx.restore();
 }
 
@@ -7473,9 +7677,29 @@ function getGripPoints(e) {
         }
         ent.angle = newA;
       });
-      // Grip texte — déplace uniquement le label
-      const _twx = e.textWx !== undefined ? e.textWx : e.cx + e.r * 0.55 * Math.cos(_a);
-      const _twy = e.textWy !== undefined ? e.textWy : e.cy + e.r * 0.55 * Math.sin(_a);
+      // Grip texte — déplace uniquement le label. Pour le diamètre, le texte par
+      // défaut est au centre (cf. defTwx/defTwy plus haut) mais dessiné décalé
+      // perpendiculairement au trait (cf. fillDimText, appelé avec un décalage
+      // -dimTextGap*zoom). On place donc la poignée à ce même décalage — pile
+      // sous le texte, entre celui-ci et la poignée centre — en reproduisant
+      // exactement la rotation écran utilisée au rendu (lineAngle) pour repartir
+      // dans le bon sens quel que soit l'angle de la cote.
+      const _isDiam = e.type === 'dim_diameter';
+      let _twx, _twy;
+      if (e.textWx !== undefined) { _twx = e.textWx; _twy = e.textWy; }
+      else if (_isDiam) {
+        const [_csx, _csy] = w2s(e.cx, e.cy);
+        const [_esx, _esy] = w2s(e.cx + e.r * Math.cos(_a), e.cy + e.r * Math.sin(_a));
+        let _lineAngle = Math.atan2(_esy - _csy, _esx - _csx);
+        if (_lineAngle > Math.PI/2 || _lineAngle < -Math.PI/2) _lineAngle += Math.PI;
+        const _dds = getDimStyle(e);
+        const _gap = dimTextGap(_dds) + _dds.textHeight * 0.5;
+        _twx = e.cx + _gap * Math.sin(_lineAngle);
+        _twy = e.cy + _gap * Math.cos(_lineAngle);
+      } else {
+        _twx = e.cx + e.r * 0.55 * Math.cos(_a);
+        _twy = e.cy + e.r * 0.55 * Math.sin(_a);
+      }
       gp(_twx, _twy, (ent, nx, ny) => { ent.textWx = nx; ent.textWy = ny; });
       break;
     }
@@ -7838,8 +8062,8 @@ function drawDimPreview(tool, p1, p2, mouseWorld) {
     const offPx=off*S.zoom;
     const ox=Math.cos(perp)*offPx, oy=Math.sin(perp)*offPx;
     const ux=Math.cos(perp)*Math.sign(offPx||1), uy=Math.sin(perp)*Math.sign(offPx||1);
-    ctx.beginPath(); ctx.moveTo(a1+ux*_eoff,b1+uy*_eoff); ctx.lineTo(a1+ox*1.15,b1+oy*1.15); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(a2+ux*_eoff,b2+uy*_eoff); ctx.lineTo(a2+ox*1.15,b2+oy*1.15); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(a1+ux*_eoff,b1+uy*_eoff); ctx.lineTo(a1+ox+ux*_egap,b1+oy+uy*_egap); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(a2+ux*_eoff,b2+uy*_eoff); ctx.lineTo(a2+ox+ux*_egap,b2+oy+uy*_egap); ctx.stroke();
     const dx1=a1+ox, dy1=b1+oy, dx2=a2+ox, dy2=b2+oy;
     ctx.beginPath(); ctx.moveTo(dx1,dy1); ctx.lineTo(dx2,dy2); ctx.stroke();
     drawArrowHead(dx2,dy2,dx1,dy1,_asz); drawArrowHead(dx1,dy1,dx2,dy2,_asz);
@@ -9487,7 +9711,7 @@ function getCursorMode() {
   if (t === 'area') return S._areaMode === 'points' ? 'draw' : 'pick';
   if (t === 'polygon') return 'draw';
   if (t === 'ellipse') return 'draw';
-  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.groupPending || S.ungroupPending || S.arrayPending || S.polarArrayPending || S.axisOverPending) ? 'pick' : 'idle';
+  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.groupPending || S.ungroupPending || S.blockPending || S.arrayPending || S.polarArrayPending || S.axisOverPending) ? 'pick' : 'idle';
   if (t === 'stretch' && S.stretchStep === 0) return 'pick';
   if (t === 'trim' || t === 'extend') return 'pick';
   if (t === 'fillet' || t === 'chamfer' || t === 'join' || t === 'hatch') return 'pick';
@@ -10651,13 +10875,23 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
   }
 
   // Placement tools
-  if (['door','outlet','switch_place','window_place','text_place'].includes(tool)) {
+  if (['door','outlet','switch_place','window_place','text_place','insert_place'].includes(tool)) {
     if (tool==='text_place') {
       S._textPendingX = wx; S._textPendingY = wy;
       const [sx, sy] = w2s(wx, wy);
       const cr = canvas.getBoundingClientRect();
       showTextDialog(cr.left + sx, cr.top + sy);
       return;
+    }
+    if (tool==='insert_place') {
+      const name = S._insertBlockName;
+      if (!name || !S.blocks[name]) { setTool('select'); render(); return; }
+      pushUndo();
+      const ent = { type:'insert', id:S.nextId++, layer:S.currentLayer, blockName:name, x:wx, y:wy, angle:0, scale:1 };
+      S.entities.push(ent);
+      S.selected = [ent.id];
+      termPrint('#'+ent.id+' bloc "'+name+'" inséré à ('+wx.toFixed(1)+', '+wy.toFixed(1)+')','success');
+      setTool('select'); updateSaveIndicator('modified'); autoSave(); render(); updateUI(); return;
     }
     pushUndo();
     let ent;
@@ -10668,6 +10902,30 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     ent.id=S.nextId++; ent.layer=S.currentLayer; S.entities.push(ent);
     termPrint('#'+ent.id+' '+ent.type+' à ('+wx.toFixed(1)+', '+wy.toFixed(1)+')','success');
     setTool('select'); render(); return;
+  }
+
+  // BLOCK — clic = point de base : recentre la sélection, crée la définition + l'instance
+  if (tool === 'block_base') {
+    const ents = S._blockPendingEnts || [];
+    if (!ents.length) { setTool('select'); render(); return; }
+    const name = S._blockPendingName || _nextBlockName();
+    pushUndo();
+    const defEnts = ents.map(srcEnt => {
+      const c = JSON.parse(JSON.stringify(srcEnt));
+      offsetEntity(c, -wx, -wy);
+      return c;
+    });
+    ents.forEach(srcEnt => {
+      const i = S.entities.findIndex(e => e.id === srcEnt.id);
+      if (i !== -1) S.entities.splice(i, 1);
+    });
+    S.blocks[name] = { entities: defEnts, base: { x:0, y:0 } };
+    const inst = { type:'insert', id:S.nextId++, layer:S.currentLayer, blockName:name, x:wx, y:wy, angle:0, scale:1 };
+    S.entities.push(inst);
+    S.selected = [inst.id];
+    S._blockPendingEnts = null; S._blockPendingName = null;
+    termPrint('Bloc "'+name+'" créé — '+defEnts.length+' entité(s) (#'+inst.id+')','success');
+    setTool('select'); updateSaveIndicator('modified'); autoSave(); render(); updateUI(); return;
   }
 
   // Offset — clic sur le côté → décale tous les sélectionnés
@@ -11112,12 +11370,25 @@ function applyCopy(ids, dx, dy) {
       offsetEntity(ne, dx, dy);
       S.entities.push(ne);
     });
+  // Auto-copier les hachures associées à une forme copiée (même si la hachure elle-même n'est pas sélectionnée)
+  S.entities
+    .filter(e => e.type === 'hatch' && e.sourceId !== undefined && idMap[e.sourceId] !== undefined && !copiedSrcIds.has(e.id))
+    .forEach(src => {
+      const ne = JSON.parse(JSON.stringify(src));
+      ne.id = S.nextId++;
+      ne.sourceId = idMap[src.sourceId];
+      offsetEntity(ne, dx, dy);
+      S.entities.push(ne);
+    });
 }
 
 // ===== CLIPBOARD CUT / COPY / PASTE =====
 function clipboardCopy() {
   if (!S.selected.length) { termPrint('Aucun objet sélectionné', 'warning'); return; }
-  S.clipboard = S.selected.map(id => {
+  const ids = new Set(S.selected);
+  // Inclure automatiquement les hachures associées à une forme copiée
+  S.entities.forEach(e => { if (e.type === 'hatch' && e.sourceId !== undefined && ids.has(e.sourceId)) ids.add(e.id); });
+  S.clipboard = [...ids].map(id => {
     const e = S.entities.find(e => e.id === id);
     return e ? JSON.parse(JSON.stringify(e)) : null;
   }).filter(Boolean);
@@ -11457,6 +11728,10 @@ function refreshAssocDims() {
 
 // Remappe assoc.entId après copie/collage ; abandonne le côté dont l'hôte n'a pas été copié.
 function remapAssoc(ne, idMap) {
+  if (ne.type === 'hatch' && ne.sourceId !== undefined) {
+    if (idMap[ne.sourceId] !== undefined) ne.sourceId = idMap[ne.sourceId];
+    else { ne.points = getHatchPoints(ne) || ne.points; delete ne.sourceId; }
+  }
   if (!ne.assoc) return;
   for (const side of ['p1','p2']) {
     const a = ne.assoc[side];
@@ -11525,6 +11800,19 @@ function applyMatchProps(t, p){
   if (t.type === 'text' && p.text){ t.size = p.text.size; t.font = p.text.font; t.bold = p.text.bold; t.italic = p.text.italic; }
   if (p.dimStyle !== undefined && t.dimStyle !== undefined) t.dimStyle = p.dimStyle;
 }
+
+// Conversion bulge MiniCAD ⇄ bulge DXF standard.
+//
+// Le standard DXF définit bulge = tan(θ/4) avec θ l'angle inclus signé (θ>0 = CCW),
+// ce qui place le centre en milieu + perp_ccw·((1−b²)/(2b)) : pour un arc MAJEUR
+// (|b|>1) le facteur devient négatif, donc le centre bascule de l'autre côté de la corde.
+// drawPolyArcSegToPath() place lui le centre en milieu + signe(b)·perp_ccw·|apothème|,
+// toujours du côté du signe de b, et rattrape le sens au rendu. Les deux conventions
+// coïncident pour |b| ≤ 1 mais donnent des arcs symétriques par rapport à la corde
+// dès que |b| > 1 : l'arc exporté partait alors du mauvais côté dans LibreCAD/AutoCAD.
+// Vérifié : l'arc dessiné par MiniCAD pour b vaut exactement l'arc DXF de −b si |b|>1.
+// La transformation est une involution : elle sert donc à l'export comme à l'import.
+function dxfBulge(b){ return Math.abs(b) > 1 ? -b : b; }
 
 // Segment à bulge → arc {cx,cy,r,sa,ea} (intervalle CCW), identique au rendu (drawPolyArcSegToPath)
 function bulgeToArc(x1,y1,x2,y2,b){
@@ -12186,15 +12474,41 @@ function applyExtend(extendedId, prims, clickWx, clickWy) {
   updateSaveIndicator('modified'); autoSave(); render();
 }
 
+// ===== BLOCKS / INSERT =====
+function _nextBlockName() {
+  let n = 1;
+  while (S.blocks['Bloc' + n]) n++;
+  return 'Bloc' + n;
+}
+
+// Entités d'une définition de bloc, transformées en coordonnées monde pour une instance
+// donnée (insert.scale, insert.angle, insert.x/y). Réutilisé par le rendu, la bbox, le
+// hit-test et l'éclatement.
+function insertWorldEntities(e) {
+  const def = S.blocks[e.blockName];
+  if (!def || !def.entities) return [];
+  return def.entities.map(child => {
+    // Instance miroitée : on reflète chaque entité enfant autour de l'axe Y
+    // local (mirrorEntity avec une droite (0,0)-(0,1) ⇒ x → -x, y → y) AVANT
+    // l'échelle/rotation — mirrorEntity gère déjà correctement bulge de
+    // polyligne et start/end d'arc, pas de logique dupliquée ici.
+    const c = e.mirror ? mirrorEntity(child, 0, 0, 0, 1) : JSON.parse(JSON.stringify(child));
+    scaleEntityInPlace(c, 0, 0, e.scale ?? 1);
+    rotateEntityInPlace(c, 0, 0, e.angle ?? 0);
+    offsetEntity(c, e.x, e.y);
+    return c;
+  });
+}
+
 function scaleEntityInPlace(e, cx, cy, f) {
   function sp(px, py) { return [cx+(px-cx)*f, cy+(py-cy)*f]; }
   const _th = pluginTransformHandler(e.type);
   if (_th) { _th(e, sp, 'scale'); return; }
   if (e.x1!==undefined) { [e.x1,e.y1]=sp(e.x1,e.y1); }
   if (e.x2!==undefined) { [e.x2,e.y2]=sp(e.x2,e.y2); }
-  if (e.cx!==undefined) { [e.cx,e.cy]=sp(e.cx,e.cy); if(e.r!==undefined) e.r*=f; }
+  if (e.cx!==undefined) { [e.cx,e.cy]=sp(e.cx,e.cy); if(e.r!==undefined) e.r*=f; if(e.rx!==undefined) e.rx*=f; if(e.ry!==undefined) e.ry*=f; }
   if (e.type==='dim_arc') { if(e.offset!==undefined) e.offset*=f; if(e.textWx!==undefined){[e.textWx,e.textWy]=sp(e.textWx,e.textWy);} }
-  if (e.x!==undefined&&e.x1===undefined) { [e.x,e.y]=sp(e.x,e.y); if(e.size) e.size*=f; }
+  if (e.x!==undefined&&e.x1===undefined) { [e.x,e.y]=sp(e.x,e.y); if(e.size) e.size*=f; if(e.type==='insert') e.scale=(e.scale??1)*f; }
   if (e.vx!==undefined) { [e.vx,e.vy]=sp(e.vx,e.vy); }
   if (e.thickness!==undefined) e.thickness*=f;
   if (e.points) e.points=e.points.map(p=>{const[nx,ny]=sp(p[0],p[1]);return p.length>2?[nx,ny,p[2]]:[nx,ny];});
@@ -12317,6 +12631,20 @@ function mirrorEntity(src,ax,ay,bx,by) {
     const ns=2*la-e.endAngle, ne2=2*la-e.startAngle;
     e.startAngle=ns; e.endAngle=ne2;
     if(e.textWx!==undefined){[e.textWx,e.textWy]=m(e.textWx,e.textWy);}
+  }
+  // insert (bloc) : la position est déjà reflétée par la branche générique x/y
+  // ci-dessus. Il faut en plus (a) inverser le drapeau miroir — sinon le
+  // contenu du bloc garde sa géométrie d'origine, seule l'instance bouge —
+  // et (b) recalculer l'angle. Formule dérivée de la composition
+  // monde = R(angle)·F(mirror)·local + T : pour que le nouveau monde égale la
+  // réflexion (matrice A(la) = R(2·la)·F0) de l'ancien monde quel que soit
+  // l'état initial de `mirror`, on obtient angle' = 2·la − angle + π (mod 2π)
+  // et mirror' = !mirror. Vérifié numériquement (point local (1,0)/(0,1)
+  // sur deux miroirs différents) avant intégration.
+  if(e.type==='insert'){
+    const la=Math.atan2(by-ay,bx-ax);
+    e.angle = 2*la - (e.angle||0) + Math.PI;
+    e.mirror = !e.mirror;
   }
   return e;
 }
@@ -12889,6 +13217,19 @@ function hitTest(wx,wy,filter) {
         }
       }
     }
+    else if(e.type==='insert'){
+      const kids=insertWorldEntities(e);
+      if(kids.length){
+        const bb=getEntityBBox(e);
+        if(bb&&wx>=bb.minX-tol&&wx<=bb.maxX+tol&&wy>=bb.minY-tol&&wy<=bb.maxY+tol){
+          const tmpEntities=S.entities; S.entities=kids;
+          const hit=hitTest(wx,wy); S.entities=tmpEntities;
+          if(hit) tryHit(e, tol*0.5);
+        }
+      } else {
+        tryHit(e, Math.hypot(wx-e.x,wy-e.y));
+      }
+    }
     else {
       // Entités de plugin : détection déléguée au plugin (ex. disque/règle/arc gradué)
       const hh = pluginHitHandler(e.type);
@@ -13135,26 +13476,38 @@ function findCircleEntity(wx, wy) {
   return null;
 }
 
-// Cherche un segment d'arc (bulge) d'une polyligne proche de (wx,wy).
-// Retourne {cx,cy,r} synthétique compatible DIMRADIUS/DIMDIAMETER.
-function _findPolyArcSeg(e, wx, wy, tol) {
+// Liste des segments [p1,p2] d'une polyligne, segment de fermeture inclus si fermée sans doublon.
+function _polySegs(e) {
   const pts = e.points;
-  if (!pts || pts.length < 2) return null;
-  // Liste des segments, segment de fermeture inclus si fermée sans doublon
+  if (!pts || pts.length < 2) return [];
   const segs = [];
   for (let i = 0; i < pts.length - 1; i++) segs.push([pts[i], pts[i+1]]);
   const f = pts[0], l = pts[pts.length-1];
   if (e.closed && Math.hypot(f[0]-l[0], f[1]-l[1]) > 1e-9) segs.push([l, f]);
-  for (const [p1, p2] of segs) {
-    const b = p1[2] || 0;
-    if (b === 0) continue;
-    const x1=p1[0], y1=p1[1], x2=p2[0], y2=p2[1];
-    const d = Math.hypot(x2-x1, y2-y1);
-    if (d < 1e-9) continue;
-    const r = d*(1+b*b)/(4*Math.abs(b));
-    const sag = Math.sqrt(Math.max(0, r*r - d*d/4));
-    const mx=(x1+x2)/2, my=(y1+y2)/2, pdx=-(y2-y1)/d, pdy=(x2-x1)/d;
-    const cx = mx + Math.sign(b)*pdx*sag, cy = my + Math.sign(b)*pdy*sag;
+  return segs;
+}
+
+// Cercle synthétique {cx,cy,r} porté par un segment d'arc (bulge), ou null si segment droit.
+function _arcSegCircle(p1, p2) {
+  const b = p1[2] || 0;
+  if (b === 0) return null;
+  const x1=p1[0], y1=p1[1], x2=p2[0], y2=p2[1];
+  const d = Math.hypot(x2-x1, y2-y1);
+  if (d < 1e-9) return null;
+  const r = d*(1+b*b)/(4*Math.abs(b));
+  const sag = Math.sqrt(Math.max(0, r*r - d*d/4));
+  const mx=(x1+x2)/2, my=(y1+y2)/2, pdx=-(y2-y1)/d, pdy=(x2-x1)/d;
+  const cx = mx + Math.sign(b)*pdx*sag, cy = my + Math.sign(b)*pdy*sag;
+  return { cx, cy, r, b, x1, y1 };
+}
+
+// Cherche un segment d'arc (bulge) d'une polyligne proche de (wx,wy).
+// Retourne {cx,cy,r} synthétique compatible DIMRADIUS/DIMDIAMETER.
+function _findPolyArcSeg(e, wx, wy, tol) {
+  for (const [p1, p2] of _polySegs(e)) {
+    const c = _arcSegCircle(p1, p2);
+    if (!c) continue;
+    const { cx, cy, r, b, x1, y1 } = c;
     if (Math.abs(Math.hypot(wx-cx, wy-cy) - r) >= tol) continue;
     // Vérifier que le clic est bien sur la portion d'arc (et pas sur le cercle ailleurs)
     const a1=Math.atan2(y1-cy,x1-cx), ac=Math.atan2(wy-cy,wx-cx);
@@ -13165,6 +13518,16 @@ function _findPolyArcSeg(e, wx, wy, tol) {
     if (dac <= mag + 0.06) return { cx, cy, r };
   }
   return null;
+}
+
+// Tous les cercles synthétiques {cx,cy,r} portés par les segments d'arc (bulge) d'une polyligne.
+function _polyArcCircles(e) {
+  const out = [];
+  for (const [p1, p2] of _polySegs(e)) {
+    const c = _arcSegCircle(p1, p2);
+    if (c) out.push({ cx: c.cx, cy: c.cy, r: c.r });
+  }
+  return out;
 }
 
 // Cherche l'arc de coude d'un tube le plus proche du point (wx,wy)
@@ -13207,6 +13570,7 @@ function setTool(t) {
   if(t !== 'select') S.explodePending=false;
   if(t !== 'select') S.groupPending=false;
   if(t !== 'select') S.ungroupPending=false;
+  if(t !== 'select' && t !== 'block_base') S.blockPending=false;
   if(t !== 'select') S.arrayPending=false;
   if(t !== 'select') S.polarArrayPending=false;
   if(t !== 'select' && t !== 'mirror') S.mirrorPending=false;
@@ -13314,7 +13678,12 @@ function armCircleAxesSelection() {
 function applyCircleAxes() {
   if (!S.axisOverPending) return;
   const d = S.axisOverDist || 0;
-  const circles = S.entities.filter(e => S.selected.includes(e.id) && (e.type === 'circle' || e.type === 'arc'));
+  const circles = [];
+  S.entities.forEach(e => {
+    if (!S.selected.includes(e.id)) return;
+    if (e.type === 'circle' || e.type === 'arc') circles.push(e);
+    else if (e.type === 'polyline' || e.type === 'cable') circles.push(..._polyArcCircles(e));
+  });
   if (!circles.length) { termPrint('Aucun cercle sélectionné', 'warning'); return; }
   pushUndo();
   circles.forEach(c => {
@@ -13389,6 +13758,25 @@ function _propChangeEllipseDim(id, axis, val) {
 function _propChangeEllipseAngle(id, valDeg) {
   const e = S.entities.find(en => en.id === id);
   if (!e || e.type !== 'ellipse') return;
+  const deg = parseFloat(valDeg);
+  if (isNaN(deg)) return;
+  pushUndo();
+  e.angle = deg * Math.PI / 180;
+  refreshAssocDims();
+  render(); autoSave(); updateProperties();
+}
+
+function _propChangeInsertMirror(id, val) {
+  const e = S.entities.find(en => en.id === id);
+  if (!e || e.type !== 'insert') return;
+  pushUndo();
+  e.mirror = (val === 'true' || val === true);
+  render(); autoSave(); updateProperties();
+}
+
+function _propChangeInsertAngle(id, valDeg) {
+  const e = S.entities.find(en => en.id === id);
+  if (!e || e.type !== 'insert') return;
   const deg = parseFloat(valDeg);
   if (isNaN(deg)) return;
   pushUndo();
@@ -13547,6 +13935,15 @@ function _updatePropertiesSingle(e) {
   if (e.x !== undefined && e.x1 === undefined) {
     h += row('X', inp('x', e.x.toFixed(2)));
     h += row('Y', inp('y', e.y.toFixed(2)));
+  }
+  if (e.type === 'insert') {
+    h += row('Bloc', '<span class="prop-value">'+e.blockName+'</span>');
+    h += row('Angle (°)', '<input type="number" class="prop-input" step="any" value="'+((e.angle||0)*180/Math.PI).toFixed(2)+'" onchange="_propChangeInsertAngle('+id+',this.value)" />');
+    h += row('Échelle', inp('scale', (e.scale ?? 1)));
+    const mirrorSel = '<select class="prop-select" onchange="_propChangeInsertMirror('+id+',this.value)">'+
+      '<option value="false"'+(!e.mirror?' selected':'')+'>Non</option>'+
+      '<option value="true"'+(e.mirror?' selected':'')+'>Oui</option></select>';
+    h += row('Miroir', mirrorSel);
   }
   if (e.thickness !== undefined) h += row('Épaisseur', inp('thickness', e.thickness));
   if (e.content !== undefined) h += row('Texte', inp('content', e.content, true));
@@ -14769,6 +15166,103 @@ function closePolarArrayDialog() {
   scheduleRender();
 }
 
+// ===== DIALOGUE INSERT (bloc du dessin ou importé depuis un fichier .mcad/.json) =====
+let _ibImportedBlocks = {}; // nom → définition, en attente le temps que le dialogue soit ouvert
+
+function openInsertBlockDialog() {
+  _ibImportedBlocks = {};
+  document.getElementById('ib-path').value = '';
+  _ibRefreshSelect();
+  document.getElementById('insert-block-dialog').style.display = 'flex';
+}
+
+function closeInsertBlockDialog() {
+  document.getElementById('insert-block-dialog').style.display = 'none';
+  _ibImportedBlocks = {};
+}
+
+function _ibRefreshSelect() {
+  const sel = document.getElementById('ib-select');
+  const drawingNames = Object.keys(S.blocks);
+  const importedNames = Object.keys(_ibImportedBlocks);
+  let html = '';
+  if (drawingNames.length) {
+    html += '<optgroup label="Blocs du dessin">' + drawingNames.map(n => '<option value="drawing:'+n+'">'+n+'</option>').join('') + '</optgroup>';
+  }
+  if (importedNames.length) {
+    html += '<optgroup label="Blocs importés">' + importedNames.map(n => '<option value="imported:'+n+'">'+n+'</option>').join('') + '</optgroup>';
+  }
+  const okBtn = document.getElementById('ib-ok-btn');
+  if (!html) {
+    html = '<option value="" disabled selected>(aucun bloc disponible)</option>';
+    okBtn.disabled = true;
+  } else {
+    okBtn.disabled = false;
+  }
+  sel.innerHTML = html;
+}
+
+function ibBrowseFile() {
+  document.getElementById('ib-file-input').click();
+}
+
+function ibFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = ''; // permet de resélectionner le même fichier
+  document.getElementById('ib-path').value = file.name;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.app !== 'MiniCAD' && !data.entities && !data.blocks) {
+        termPrint('Fichier non reconnu comme projet MiniCAD', 'error');
+        return;
+      }
+      const found = (data.blocks && Object.keys(data.blocks).length) ? data.blocks : null;
+      if (!found) {
+        termPrint('Aucun bloc trouvé dans "' + file.name + '"', 'warning');
+        return;
+      }
+      _ibImportedBlocks = found;
+      _ibRefreshSelect();
+      const sel = document.getElementById('ib-select');
+      const firstImported = sel.querySelector('option[value^="imported:"]');
+      if (firstImported) sel.value = firstImported.value;
+      termPrint(Object.keys(found).length + ' bloc(s) trouvé(s) dans "' + file.name + '"', 'success');
+    } catch (err) {
+      termPrint('Erreur de lecture du fichier: ' + err.message, 'error');
+    }
+  };
+  reader.onerror = () => termPrint('Erreur de lecture du fichier', 'error');
+  reader.readAsText(file);
+}
+
+function confirmInsertBlock() {
+  const sel = document.getElementById('ib-select');
+  const val = sel.value;
+  if (!val) return;
+  const sep = val.indexOf(':');
+  const origin = val.slice(0, sep);
+  let name = val.slice(sep + 1);
+  if (origin === 'imported') {
+    let finalName = name;
+    if (S.blocks[finalName]) {
+      let i = 2;
+      while (S.blocks[finalName + '_' + i]) i++;
+      finalName = finalName + '_' + i;
+      termPrint('Un bloc "' + name + '" existe déjà dans ce dessin — importé sous "' + finalName + '"', 'warning');
+    }
+    S.blocks[finalName] = JSON.parse(JSON.stringify(_ibImportedBlocks[name]));
+    name = finalName;
+    updateSaveIndicator('modified'); autoSave();
+  }
+  closeInsertBlockDialog();
+  S._insertBlockName = name;
+  setTool('insert_place');
+  termPrint('INSERT "' + name + '" : cliquer le point d\'insertion', 'info');
+}
+
 function polarArrayPickCenter() {
   document.getElementById('polar-array-dialog').style.display = 'none';
   S.polarArrayPickCenter = true;
@@ -14851,6 +15345,7 @@ function updateOsnapPanel() {
     ['tangent', 'Tangente', '--osnap-tangent'],
     ['quadrant', 'Quadrant', '--osnap-quadrant'],
     ['extension', 'Extension', '--osnap-extension'],
+    ['insertion', 'Insertion', '--osnap-insertion'],
   ];
   panel.innerHTML = modes.map(([key, label, cssVar]) =>
     '<label class="osnap-row"><input type="checkbox" ' + (S.osnapModes[key] ? 'checked' : '') +
@@ -14881,9 +15376,9 @@ function updateUI() {
   // OSNAP panel
   updateOsnapPanel();
 
-  // Modules
+  // Modules (Architecture/Électricité masqués du frontend, code conservé)
   const ml=document.getElementById('modules-list');
-  ml.innerHTML=Object.entries(modules).map(([k,m])=>
+  ml.innerHTML=Object.entries(modules).filter(([k])=>k!=='architecture'&&k!=='electrical').map(([k,m])=>
     '<div class="module-item'+(m.loaded?' loaded':'')+'" onclick="executeCommand(\'LOAD '+k+'\')">'+
     '<div class="module-dot" style="background:'+m.color+(m.loaded?'':';opacity:0.3')+'"></div>'+
     '<div><div style="font-size:11px;">'+m.name+'</div><div style="font-size:9px;color:var(--text-dim);">'+m.desc+'</div></div>'+
@@ -14906,8 +15401,9 @@ function updateStatusBar() {
   document.getElementById('status-layer').textContent='Calque: '+S.layers[S.currentLayer].name;
   const mode = S.ortho ? 'ORTHO (90°)' : S.polar ? 'POLAIRE ('+S.polarAngle+'°)' : 'Libre';
   document.getElementById('status-mode').textContent='Mode: '+mode;
-  const loaded=Object.values(modules).filter(m=>m.loaded).length;
-  document.getElementById('status-module').textContent='Modules: '+loaded+'/'+Object.keys(modules).length;
+  const visibleModules=Object.entries(modules).filter(([k])=>k!=='architecture'&&k!=='electrical').map(([,m])=>m);
+  const loaded=visibleModules.filter(m=>m.loaded).length;
+  document.getElementById('status-module').textContent='Modules: '+loaded+'/'+visibleModules.length;
 }
 
 // ===== AI ASSISTANT (OLLAMA) =====
@@ -15213,6 +15709,7 @@ function showDimTextDialog(e) {
   const dlg = document.getElementById('dim-text-dialog');
   const inp = document.getElementById('dim-td-input');
   inp.value = e.text || '';
+  document.getElementById('dim-td-hide').checked = !!e.textHidden;
   dlg.style.display = 'block';
   updateDimTextPreview();
   setTimeout(() => { inp.focus(); inp.select(); }, 0);
@@ -15243,9 +15740,18 @@ function updateDimTextPreview() {
   } else {
     measured = 0;
   }
+  const hidden = document.getElementById('dim-td-hide').checked;
+  document.getElementById('dim-td-input').disabled = hidden;
   const val = document.getElementById('dim-td-input').value.trim();
-  const preview = val ? dimText({text: val}, measured) : measured.toFixed(1);
+  const preview = hidden ? '(aucun texte)' : (val ? dimText({text: val}, measured) : measured.toFixed(1));
   document.getElementById('dim-td-preview').textContent = '→ ' + preview;
+}
+function copyDimTextPreview() {
+  if (document.getElementById('dim-td-hide').checked) { termPrint('Texte masqué : rien à copier', 'warning'); return; }
+  const t = document.getElementById('dim-td-preview')?.textContent.replace(/^→\s*/, '');
+  if (!t) return;
+  navigator.clipboard?.writeText(t).catch(() => {});
+  termPrint('Copié : ' + t, 'info');
 }
 function confirmDimTextDialog() {
   const e = S._dimEditId !== null ? S.entities.find(en => en.id === S._dimEditId) : null;
@@ -15253,6 +15759,7 @@ function confirmDimTextDialog() {
   pushUndo();
   const val = document.getElementById('dim-td-input').value.trim();
   e.text = val || '';
+  e.textHidden = document.getElementById('dim-td-hide').checked;
   closeDimTextDialog();
   render(); autoSave();
 }
@@ -15592,6 +16099,18 @@ const cmdInput=document.getElementById('cmd-input');
 function termPrint(text,cls='') {
   const div=document.createElement('div'); div.className='term-'+(cls||'text');
   div.textContent=text; termOutput.appendChild(div); termOutput.scrollTop=termOutput.scrollHeight;
+}
+
+// Lien cliquable dans le terminal. href est toujours un chemin fixe codé en dur (jamais une
+// valeur utilisateur) pour éviter d'ouvrir termPrint() à l'injection de HTML arbitraire.
+function termPrintLink(text, href, label, cls='info') {
+  const div=document.createElement('div'); div.className='term-'+cls;
+  div.append(text+' ');
+  const a=document.createElement('a');
+  a.href=href; a.target='_blank'; a.rel='noopener'; a.textContent=label;
+  a.style.color='var(--accent)'; a.style.textDecoration='underline';
+  div.appendChild(a);
+  termOutput.appendChild(div); termOutput.scrollTop=termOutput.scrollHeight;
 }
 
 function showHelp() {
@@ -16264,6 +16783,8 @@ document.addEventListener('keyup', (ev) => {
   if (ad && ad.style.display !== 'none') { closeArrayDialog(); cmdInput.focus(); return; }
   const pad = document.getElementById('polar-array-dialog');
   if (pad && pad.style.display !== 'none') { closePolarArrayDialog(); cmdInput.focus(); return; }
+  const ibd = document.getElementById('insert-block-dialog');
+  if (ibd && ibd.style.display !== 'none') { closeInsertBlockDialog(); cmdInput.focus(); return; }
   const tubeD = document.getElementById('tube-edit-dialog');
   if (tubeD) { tubeD.remove(); cmdInput.focus(); return; }
   const hatchD = document.getElementById('hatch-dialog');
@@ -16304,6 +16825,9 @@ document.addEventListener('keydown',(ev)=>{
   const ae = document.activeElement;
   if(ae && ae !== cmdInput && (ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.tagName==='SELECT')){
     if(!ev.ctrlKey && !ev.metaKey) return;
+    // Édition de texte native (copier/couper/coller/tout sélectionner) : ne pas la voler
+    // au profit des raccourcis presse-papier d'entités CAO (Ctrl+C/X/V/A globaux plus bas).
+    if(ae.tagName!=='SELECT' && ['a','c','x','v'].includes(ev.key.toLowerCase())) return;
   }
   if(document.activeElement===cmdInput){
     if(ev.key==='Escape'){cmdInput.blur(); return;}
@@ -16333,6 +16857,13 @@ document.addEventListener('keydown',(ev)=>{
   if(ev.key==='Enter' && S.ungroupPending){
     ev.preventDefault();
     S.ungroupPending=false; CMD.UNGROUP.exec(); return;
+  }
+
+  // Enter global: créer un bloc (sélection confirmée → passe à l'étape point de base)
+  if(ev.key==='Enter' && S.blockPending){
+    ev.preventDefault();
+    if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
+    S.blockPending=false; CMD.BLOCK.exec(S._blockPendingArgs||[]); return;
   }
 
   // Enter global: valider sélection arrayPending
@@ -16415,6 +16946,12 @@ document.addEventListener('keydown',(ev)=>{
   }
   if(ev.key==='Escape' && S.ungroupPending){
     S.ungroupPending=false; termPrint('Dégroupage annulé','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S.blockPending){
+    S.blockPending=false; termPrint('Bloc annulé','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S.tool==='block_base'){
+    S._blockPendingEnts=null; termPrint('Bloc annulé','warning'); setTool('select'); return;
   }
   if(ev.key==='Escape' && S.arrayPickAxis){
     S.arrayPickAxis=null; S.arrayPickPt1=null;
@@ -16633,18 +17170,85 @@ function exportSVG() {
 }
 
 // ===== DXF EXPORT =====
+// Échappement pour les codes 1/3 (TEXT, MTEXT, ATTRIB…). AC1015 n'est pas de l'UTF-8 :
+// on sort du pur ASCII et tout caractère non-ASCII devient \U+XXXX (compris par AutoCAD).
+function dxfEscape(str, mtext) {
+  let out = String(str == null ? '' : str);
+  if (mtext) out = out.replace(/\\/g, '\\\\').replace(/\{/g, '\\{').replace(/\}/g, '\\}');
+  out = out.replace(/\r\n?|\n/g, mtext ? '\\P' : ' ');
+  return out.replace(/[^\x20-\x7E]/g, c =>
+    '\\U+' + c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0'));
+}
+
 // Nom de calque DXF : le calque par défaut (index 0) DOIT s'appeler "0" (calque obligatoire
 // d'AutoCAD) ; les autres sont assainis (caractères non [A-Za-z0-9_-] → "_").
+// Couleur d'entité : 256 = DUCALQUE (par défaut), sinon l'ACI le plus proche de
+// la surcharge portée par l'entité. Exporter systématiquement la couleur du calque
+// figeait les entités et cassait la gestion des calques dans AutoCAD.
+function dxfEntColor(e) {
+  return (e && e.color) ? dxfColorIndex(e.color) : 256;
+}
+
+// Les noms de style de cote MiniCAD ('1:50') contiennent des caractères refusés
+// par AutoCAD dans un nom de table.
+function dxfDimStyleName(name) {
+  const n = String(name || 'STANDARD').replace(/[^a-zA-Z0-9_-]/g, '_');
+  return n || 'STANDARD';
+}
+
+// Les noms de calque sont insensibles à la casse pour AutoCAD : après assainissement,
+// deux calques homonymes (« Mur 1 » et « Mur_1 » → « Mur_1 ») produiraient deux
+// enregistrements LAYER identiques et feraient échouer l'ouverture. D'où le dédoublonnage.
+function dxfLayerNames() {
+  const used = new Set(['0']);
+  return (S.layers || []).map((lay, idx) => {
+    if (idx === 0) return '0';
+    const base = String((lay && lay.name) || '').replace(/[^a-zA-Z0-9_-]/g, '_') || ('Calque' + idx);
+    let n = base, k = 1;
+    while (used.has(n.toUpperCase())) n = base + '_' + (++k);
+    used.add(n.toUpperCase());
+    return n;
+  });
+}
+
 function dxfLayerName(idx) {
-  return (idx === 0 || idx == null || !S.layers[idx])
-    ? '0'
-    : S.layers[idx].name.replace(/[^a-zA-Z0-9_-]/g,'_');
+  return dxfLayerNames()[idx] || '0';
+}
+
+// Catmull-Rom (rendu MiniCAD) → B-spline cubique clampée (export DXF).
+// Chaque segment Catmull-Rom uniforme de tension 0.5 est *exactement* un Bézier cubique :
+//   b0 = p1,  b1 = p1 + (p2-p0)/6,  b2 = p2 - (p3-p1)/6,  b3 = p2
+// La chaîne de Béziers s'écrit comme une B-spline de degré 3 dont les nœuds internes
+// sont de multiplicité 3. La courbe exportée est donc au pixel près celle affichée.
+function catmullToBSpline(pts, closed) {
+  const n = pts && pts.length;
+  if (!n || n < 2) return null;
+  const m = closed ? n : n - 1;                    // nombre de segments
+  const ctrl = [[pts[0][0], pts[0][1]]];
+  for (let i = 0; i < m; i++) {
+    const p0 = pts[(i - 1 + n) % n], p1 = pts[i % n];
+    const p2 = pts[(i + 1) % n],     p3 = pts[(i + 2) % n];
+    ctrl.push([p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6]);
+    ctrl.push([p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6]);
+    ctrl.push([p2[0], p2[1]]);
+  }
+  // Vecteur nodal clampé : 0,0,0,0  1,1,1  2,2,2 …  m,m,m,m  → 3m+5 nœuds
+  const knots = [0, 0, 0, 0];
+  for (let i = 1; i < m; i++) knots.push(i, i, i);
+  knots.push(m, m, m, m);
+  return { ctrl, knots };
 }
 
 async function exportDXF() {
   const dxf = [];
   const w = (s) => dxf.push(s);
-  const f = (n) => String(parseFloat(n.toFixed(6)));
+  // DXF exige un point décimal sur tout code "real" (10/20/40/50…) : AutoCAD (surtout
+  // AutoCAD Web) rejette "50" pour un rayon, il faut "50.0". parseFloat+String() le
+  // supprimait dès que la valeur tombait sur un entier — ezdxf (outil de test) l'acceptait
+  // quand même, ce qui avait masqué le bug.
+  const f = (n) => n.toFixed(6).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '.0');
+  const layerNames = dxfLayerNames();              // table dédoublonnée, calculée une fois
+  const dxfLN = (i) => layerNames[i] || '0';
 
   // ── Handles (REQUIS par AC1015 : sans eux CAO rejette « ID 0 déjà utilisé ») ──
   let _h = 0x30;                                     // compteur de handles (hex)
@@ -16652,6 +17256,157 @@ async function exportDXF() {
   let _handseedIdx = -1;                             // index du $HANDSEED à patcher en fin
   let hModelBR = '', hPaperBR = '';                  // handles BLOCK_RECORD Model/Paper Space
   let hModelLayout = '', hPaperLayout = '', hLayoutDict = ''; // LAYOUT + dict ACAD_LAYOUT (requis ODA/AutoCAD)
+  let hStdStyle = '';                                // handle du style de texte STANDARD (lié par DIMSTYLE 340)
+
+  // ── Cotes : en R2000 une DIMENSION DOIT référencer (code 2) un bloc anonyme *Dn
+  //    contenant sa géométrie dessinée. Sans lui AutoCAD/ODA supprime l'entité
+  //    (« DIMENSION without valid geometry block ») — c'est la cause n°1 des
+  //    fichiers refusés. On réserve donc un nom de bloc par cote dès maintenant,
+  //    car la table BLOCK_RECORD s'écrit avant la section ENTITIES.
+  const dimBlocks = [];                              // [{ e, name, hBR }]
+  S.entities.forEach(e => {
+    if (typeof e.type === 'string' && e.type.startsWith('dim_') && e.type !== 'dim_arc')
+      dimBlocks.push({ e, name: '*D' + (dimBlocks.length + 1), hBR: '' });
+  });
+
+  // En-tête d'entité paramétrable par propriétaire (espace objet ou bloc de cote).
+  const wEntIn = (owner) => (layer, col) => {
+    w('5'); w(nh()); w('330'); w(owner);
+    w('100'); w('AcDbEntity');
+    w('8'); w(layer);
+    w('62'); w(String(col));
+  };
+
+  // Primitives utilisées pour peupler les blocs *Dn (coordonnées monde).
+  const gLine = (we, ln, col, x1, y1, x2, y2) => {
+    w('0'); w('LINE'); we(ln, col); w('100'); w('AcDbLine');
+    w('10'); w(f(x1)); w('20'); w(f(y1)); w('30'); w('0.0');
+    w('11'); w(f(x2)); w('21'); w(f(y2)); w('31'); w('0.0');
+  };
+  const gArc = (we, ln, col, cx, cy, r, sa, ea) => {
+    if (!(r > 1e-9)) return;
+    w('0'); w('ARC'); we(ln, col); w('100'); w('AcDbCircle');
+    w('10'); w(f(cx)); w('20'); w(f(cy)); w('30'); w('0.0'); w('40'); w(f(r));
+    w('100'); w('AcDbArc');
+    w('50'); w(f(sa * 180 / Math.PI)); w('51'); w(f(ea * 180 / Math.PI));
+  };
+  // Pointe de flèche pleine : triangle SOLID posé en (tx,ty), venant de (fx,fy).
+  const gArrow = (we, ln, col, fx, fy, tx, ty, sz) => {
+    const a = Math.atan2(ty - fy, tx - fx);
+    const p1x = tx - sz * Math.cos(a - 0.2), p1y = ty - sz * Math.sin(a - 0.2);
+    const p2x = tx - sz * Math.cos(a + 0.2), p2y = ty - sz * Math.sin(a + 0.2);
+    w('0'); w('SOLID'); we(ln, col); w('100'); w('AcDbTrace');
+    w('10'); w(f(tx));  w('20'); w(f(ty));  w('30'); w('0.0');
+    w('11'); w(f(p1x)); w('21'); w(f(p1y)); w('31'); w('0.0');
+    w('12'); w(f(p2x)); w('22'); w(f(p2y)); w('32'); w('0.0');
+    w('13'); w(f(p2x)); w('23'); w(f(p2y)); w('33'); w('0.0'); // 13=12 ⇒ triangle
+  };
+  // Texte de cote : MTEXT centré (attache 5). Attention : code 50 en RADIANS pour MTEXT.
+  const gText = (we, ln, col, x, y, h, ang, txt) => {
+    w('0'); w('MTEXT'); we(ln, col); w('100'); w('AcDbMText');
+    w('10'); w(f(x)); w('20'); w(f(y)); w('30'); w('0.0');
+    w('40'); w(f(h)); w('41'); w('0.0');
+    w('71'); w('5'); w('72'); w('5');
+    w('1'); w(dxfEscape(txt, true));
+    w('7'); w('STANDARD');
+    w('50'); w(f(ang));
+  };
+  // Garde le texte lisible (jamais à l'envers).
+  const upright = (a) => { let t = a; while (t > Math.PI/2 + 1e-9) t -= Math.PI; while (t < -Math.PI/2 - 1e-9) t += Math.PI; return t; };
+
+  // Géométrie dessinée d'une cote — reproduit le rendu écran, en coordonnées monde.
+  const emitDimGeom = (e, we, ln, col) => {
+    const ds   = getDimStyle(e) || {};
+    const th   = ds.textHeight || 4;
+    const asz  = ds.arrowSize  || 2.5;
+    const egap = ds.extGap  || 0;   // dépassement du trait d'attache au-delà de la ligne de cote
+    const eoff = ds.extOff  || 0;   // écart entre le point mesuré et le départ du trait d'attache
+    const tgap = dimTextGap(ds);
+    switch (e.type) {
+      case 'dim_linear': {
+        const isH = e.isHoriz !== undefined ? e.isHoriz : (Math.abs(e.x2-e.x1) >= Math.abs(e.y2-e.y1));
+        const off = e.offset || 30, sg = Math.sign(off) || 1, to = e.textOffset || 0;
+        if (isH) {
+          const dy = (e.y1+e.y2)/2 + off;
+          gLine(we,ln,col, e.x1, e.y1 + sg*eoff, e.x1, dy + sg*egap);
+          gLine(we,ln,col, e.x2, e.y2 + sg*eoff, e.x2, dy + sg*egap);
+          gLine(we,ln,col, e.x1, dy, e.x2, dy);
+          gArrow(we,ln,col, e.x2, dy, e.x1, dy, asz);
+          gArrow(we,ln,col, e.x1, dy, e.x2, dy, asz);
+          gText(we,ln,col, (e.x1+e.x2)/2 + to, dy + sg*(tgap + th/2), th, 0, dimText(e, Math.abs(e.x2-e.x1)));
+        } else {
+          const dx = (e.x1+e.x2)/2 + off;
+          gLine(we,ln,col, e.x1 + sg*eoff, e.y1, dx + sg*egap, e.y1);
+          gLine(we,ln,col, e.x2 + sg*eoff, e.y2, dx + sg*egap, e.y2);
+          gLine(we,ln,col, dx, e.y1, dx, e.y2);
+          gArrow(we,ln,col, dx, e.y2, dx, e.y1, asz);
+          gArrow(we,ln,col, dx, e.y1, dx, e.y2, asz);
+          gText(we,ln,col, dx + sg*(tgap + th/2), (e.y1+e.y2)/2 + to, th, Math.PI/2, dimText(e, Math.abs(e.y2-e.y1)));
+        }
+        break;
+      }
+      case 'dim_aligned': {
+        const off = e.offset || 30, sg = Math.sign(off) || 1, to = e.textOffset || 0;
+        const ang = Math.atan2(e.y2-e.y1, e.x2-e.x1);
+        const perp = ang - Math.PI/2;             // Y inversé au rendu ⇒ -π/2 et non +π/2
+        const ox = Math.cos(perp)*off, oy = Math.sin(perp)*off;
+        const ux = Math.cos(perp)*sg,  uy = Math.sin(perp)*sg;
+        gLine(we,ln,col, e.x1 + ux*eoff, e.y1 + uy*eoff, e.x1 + ox + ux*egap, e.y1 + oy + uy*egap);
+        gLine(we,ln,col, e.x2 + ux*eoff, e.y2 + uy*eoff, e.x2 + ox + ux*egap, e.y2 + oy + uy*egap);
+        const d1x=e.x1+ox, d1y=e.y1+oy, d2x=e.x2+ox, d2y=e.y2+oy;
+        gLine(we,ln,col, d1x,d1y,d2x,d2y);
+        gArrow(we,ln,col, d2x,d2y,d1x,d1y, asz);
+        gArrow(we,ln,col, d1x,d1y,d2x,d2y, asz);
+        const dist = Math.hypot(e.x2-e.x1, e.y2-e.y1);
+        const L = dist || 1;
+        gText(we,ln,col, (d1x+d2x)/2 + (e.x2-e.x1)/L*to + ux*(tgap + th/2),
+                         (d1y+d2y)/2 + (e.y2-e.y1)/L*to + uy*(tgap + th/2),
+              th, upright(ang), dimText(e, dist));
+        break;
+      }
+      case 'dim_angular': {
+        const r = e.r || 40;
+        const sa = e.startAngle, span = (e.angle < 0 ? e.angle + Math.PI*2 : e.angle), ea = sa + span;
+        gArc(we,ln,col, e.vx, e.vy, r, sa, ea);
+        const rim = (a) => [e.vx + r*Math.cos(a), e.vy + r*Math.sin(a)];
+        const [s1x,s1y] = rim(sa), [s2x,s2y] = rim(ea);
+        // Flèches tangentes, pointant vers l'extérieur de l'arc
+        gArrow(we,ln,col, s1x - asz*Math.sin(sa)*-1, s1y + asz*Math.cos(sa)*-1, s1x, s1y, asz);
+        gArrow(we,ln,col, s2x + asz*Math.sin(ea)*-1, s2y - asz*Math.cos(ea)*-1, s2x, s2y, asz);
+        // Traits d'attache depuis les côtés de l'angle
+        gLine(we,ln,col, e.vx, e.vy, s1x, s1y);
+        gLine(we,ln,col, e.vx, e.vy, s2x, s2y);
+        const midA = sa + span/2, rT = r + tgap + th/2;
+        gText(we,ln,col, e.vx + rT*Math.cos(midA), e.vy + rT*Math.sin(midA), th,
+              upright(midA + Math.PI/2), dimText(e, span*180/Math.PI) + ((e.text || e.textHidden) ? '' : '\u00B0'));
+        break;
+      }
+      case 'dim_radius':
+      case 'dim_diameter': {
+        const isD = e.type === 'dim_diameter';
+        const a = e.angle || 0;
+        const px = e.cx + e.r*Math.cos(a), py = e.cy + e.r*Math.sin(a);
+        if (isD) {
+          const qx = e.cx - e.r*Math.cos(a), qy = e.cy - e.r*Math.sin(a);
+          gLine(we,ln,col, qx,qy, px,py);
+          gArrow(we,ln,col, qx,qy, px,py, asz);
+          gArrow(we,ln,col, px,py, qx,qy, asz);
+        } else {
+          gLine(we,ln,col, e.cx,e.cy, px,py);
+          gArrow(we,ln,col, e.cx,e.cy, px,py, asz);
+        }
+        const cm = asz*0.4;                                    // croix de centre
+        gLine(we,ln,col, e.cx-cm, e.cy, e.cx+cm, e.cy);
+        gLine(we,ln,col, e.cx, e.cy-cm, e.cx, e.cy+cm);
+        const ta = upright(a);
+        const twx = e.textWx !== undefined ? e.textWx : (isD ? e.cx : e.cx + e.r*0.55*Math.cos(a));
+        const twy = e.textWy !== undefined ? e.textWy : (isD ? e.cy : e.cy + e.r*0.55*Math.sin(a));
+        gText(we,ln,col, twx - Math.sin(ta)*(tgap + th/2), twy + Math.cos(ta)*(tgap + th/2),
+              th, ta, (isD ? '\u00D8' : 'R') + dimText(e, isD ? e.r*2 : e.r));
+        break;
+      }
+    }
+  };
 
   // ── Compute drawing extents ──────────────────────────────────────────────────
   let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
@@ -16670,6 +17425,7 @@ async function exportDXF() {
   w('0'); w('SECTION');
   w('2'); w('HEADER');
   w('9'); w('$ACADVER'); w('1'); w('AC1015');
+  w('9'); w('$DWGCODEPAGE'); w('3'); w('ANSI_1252');
   w('9'); w('$HANDSEED'); w('5'); _handseedIdx = dxf.length; w('FFFFF'); // patché en fin
   w('9'); w('$INSBASE'); w('10'); w('0.0'); w('20'); w('0.0'); w('30'); w('0.0');
   w('9'); w('$EXTMIN'); w('10'); w(f(minX)); w('20'); w(f(minY)); w('30'); w('0.0');
@@ -16683,9 +17439,15 @@ async function exportDXF() {
   w('9'); w('$DIMASSOC'); w('280'); w('2');
   w('0'); w('ENDSEC');
 
-  // ── CLASSES (required, may be empty) ─────────────────────────────────────────
+  // ── CLASSES : toute classe « dérivée » (non native au noyau DXF) utilisée plus
+  //    loin doit être déclarée ici avant emploi. On instancie des objets LAYOUT
+  //    (section OBJECTS) : sans cette déclaration, AutoCAD (surtout AutoCAD Web,
+  //    plus strict que les lecteurs tolérants type ezdxf) rejette le fichier.
   w('0'); w('SECTION');
   w('2'); w('CLASSES');
+  w('0'); w('CLASS');
+  w('1'); w('LAYOUT'); w('2'); w('AcDbLayout'); w('3'); w('ObjectDBX Classes');
+  w('90'); w('0'); w('280'); w('0'); w('281'); w('0');
   w('0'); w('ENDSEC');
 
   // ── TABLES ───────────────────────────────────────────────────────────────────
@@ -16724,7 +17486,7 @@ async function exportDXF() {
   w('0'); w('TABLE'); w('2'); w('LAYER'); w('5'); w(hLayerT); w('330'); w('0'); w('100'); w('AcDbSymbolTable');
   w('70'); w(String(S.layers.length));
   S.layers.forEach((lay, idx) => {
-    const ln = dxfLayerName(idx);
+    const ln = dxfLN(idx);
     w('0'); w('LAYER'); w('5'); w(nh()); w('330'); w(hLayerT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbLayerTableRecord');
     w('2'); w(ln);
     w('70'); w(lay.visible ? '0' : '1');
@@ -16736,7 +17498,8 @@ async function exportDXF() {
   // STYLE table
   const hStyleT = nh();
   w('0'); w('TABLE'); w('2'); w('STYLE'); w('5'); w(hStyleT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
-  w('0'); w('STYLE'); w('5'); w(nh()); w('330'); w(hStyleT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbTextStyleTableRecord');
+  hStdStyle = nh();
+  w('0'); w('STYLE'); w('5'); w(hStdStyle); w('330'); w(hStyleT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbTextStyleTableRecord');
   w('2'); w('STANDARD'); w('70'); w('0'); w('40'); w('0.0'); w('41'); w('1.0'); w('50'); w('0.0'); w('71'); w('0'); w('42'); w('0.2'); w('3'); w(''); w('4'); w('');
   w('0'); w('ENDTAB');
 
@@ -16754,21 +17517,44 @@ async function exportDXF() {
   w('0'); w('ENDTAB');
 
   // DIMSTYLE table (l'enregistrement utilise le code 105 pour son handle)
+  // Sans DIMTXT/DIMASZ réels, AutoCAD retombe sur ses défauts (texte 0.18) et les cotes
+  // deviennent illisibles sur un dessin en millimètres. On exporte donc chaque style.
   const hDimT = nh();
-  w('0'); w('TABLE'); w('2'); w('DIMSTYLE'); w('5'); w(hDimT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('1');
-  w('0'); w('DIMSTYLE'); w('105'); w(nh()); w('330'); w(hDimT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbDimStyleTableRecord');
-  w('2'); w('STANDARD'); w('70'); w('0');
+  const dimStyleList = (S.dimStyles && S.dimStyles.length) ? S.dimStyles : [{ name: 'STANDARD' }];
+  w('0'); w('TABLE'); w('2'); w('DIMSTYLE'); w('5'); w(hDimT); w('330'); w('0'); w('100'); w('AcDbSymbolTable');
+  w('70'); w(String(dimStyleList.length));
+  w('100'); w('AcDbDimStyleTable');
+  dimStyleList.forEach(st => {
+    w('0'); w('DIMSTYLE'); w('105'); w(nh()); w('330'); w(hDimT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbDimStyleTableRecord');
+    w('2'); w(dxfDimStyleName(st.name)); w('70'); w('0');
+    w('40'); w('1.0');                                    // DIMSCALE
+    w('41'); w(f(st.arrowSize  != null ? st.arrowSize  : 2.5)); // DIMASZ
+    w('42'); w(f(st.extOff     != null ? st.extOff     : 2.0)); // DIMEXO
+    w('44'); w(f(st.extGap     != null ? st.extGap     : 1.5)); // DIMEXE
+    w('140'); w(f(st.textHeight != null ? st.textHeight : 4));  // DIMTXT
+    w('147'); w(f(dimTextGap(st)));                             // DIMGAP
+    w('73'); w('0');   // DIMTIH : texte aligné sur la cote
+    w('74'); w('0');   // DIMTOH : idem hors cote
+    w('77'); w('1');   // DIMTAD : texte au-dessus de la ligne de cote
+    w('78'); w('8');   // DIMZIN : pas de zéros de fin
+    w('271'); w(String(st.decimals != null ? st.decimals : 1)); // DIMDEC
+    w('340'); w(hStdStyle);                                     // DIMTXSTY
+  });
   w('0'); w('ENDTAB');
 
   // BLOCK_RECORD table (required by AC1015)
   // Pré-allouer les handles des objets LAYOUT (émis dans OBJECTS) pour le lien 340 ci-dessous.
   hModelLayout = nh(); hPaperLayout = nh(); hLayoutDict = nh();
   const hBlkRecT = nh();
-  w('0'); w('TABLE'); w('2'); w('BLOCK_RECORD'); w('5'); w(hBlkRecT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w('2');
+  w('0'); w('TABLE'); w('2'); w('BLOCK_RECORD'); w('5'); w(hBlkRecT); w('330'); w('0'); w('100'); w('AcDbSymbolTable'); w('70'); w(String(2 + dimBlocks.length));
   hModelBR = nh();
   w('0'); w('BLOCK_RECORD'); w('5'); w(hModelBR); w('330'); w(hBlkRecT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Model_Space'); w('340'); w(hModelLayout);
   hPaperBR = nh();
   w('0'); w('BLOCK_RECORD'); w('5'); w(hPaperBR); w('330'); w(hBlkRecT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w('*Paper_Space'); w('340'); w(hPaperLayout);
+  dimBlocks.forEach(db => {
+    db.hBR = nh();
+    w('0'); w('BLOCK_RECORD'); w('5'); w(db.hBR); w('330'); w(hBlkRecT); w('100'); w('AcDbSymbolTableRecord'); w('100'); w('AcDbBlockTableRecord'); w('2'); w(db.name);
+  });
   w('0'); w('ENDTAB');
 
   w('0'); w('ENDSEC');
@@ -16784,22 +17570,47 @@ async function exportDXF() {
   w('100'); w('AcDbBlockBegin'); w('2'); w('*Paper_Space'); w('70'); w('0');
   w('10'); w('0.0'); w('20'); w('0.0'); w('30'); w('0.0'); w('3'); w('*Paper_Space'); w('1'); w('');
   w('0'); w('ENDBLK'); w('5'); w(nh()); w('330'); w(hPaperBR); w('100'); w('AcDbEntity'); w('8'); w('0'); w('67'); w('1'); w('100'); w('AcDbBlockEnd');
+  // Blocs anonymes *Dn : la géométrie dessinée de chaque cote (flag 70 = 1 ⇒ anonyme)
+  dimBlocks.forEach(db => {
+    const ln = dxfLN(db.e.layer);
+    const col = dxfEntColor(db.e);
+    w('0'); w('BLOCK'); w('5'); w(nh()); w('330'); w(db.hBR); w('100'); w('AcDbEntity'); w('8'); w(ln);
+    w('100'); w('AcDbBlockBegin'); w('2'); w(db.name); w('70'); w('1');
+    w('10'); w('0.0'); w('20'); w('0.0'); w('30'); w('0.0'); w('3'); w(db.name); w('1'); w('');
+    emitDimGeom(db.e, wEntIn(db.hBR), ln, col);
+    w('0'); w('ENDBLK'); w('5'); w(nh()); w('330'); w(db.hBR); w('100'); w('AcDbEntity'); w('8'); w(ln); w('100'); w('AcDbBlockEnd');
+  });
   w('0'); w('ENDSEC');
 
   // ── ENTITIES ─────────────────────────────────────────────────────────────────
   w('0'); w('SECTION');
   w('2'); w('ENTITIES');
 
-  function wEnt(layer, col) {
-    w('5'); w(nh()); w('330'); w(hModelBR); // handle + propriétaire (Model_Space)
-    w('100'); w('AcDbEntity');
-    w('8'); w(layer);
-    w('62'); w(String(col));
-  }
+  const wEnt = wEntIn(hModelBR); // handle + propriétaire (Model_Space)
+  let _dimIdx = 0;
 
+  // Aplatit les instances de bloc (insert) en leur géométrie transformée :
+  // pas de vrai BLOCK/INSERT DXF (voir docs), juste les entités finales.
+  const _dxfEntities = [];
   S.entities.forEach(e => {
-    const layerName = dxfLayerName(e.layer);
-    const col = dxfColorIndex(S.layers[e.layer]?.color || '#ffffff');
+    if (e.type === 'insert') {
+      if (S.blocks[e.blockName]) _dxfEntities.push(...insertWorldEntities(e));
+    } else {
+      _dxfEntities.push(e);
+    }
+  });
+
+  _dxfEntities.forEach(e => {
+    const layerName = dxfLN(e.layer);
+    const col = dxfEntColor(e);
+    // Chaque cote consomme le bloc *Dn réservé dans la pré-passe (même ordre).
+    const dimBlk = (typeof e.type === 'string' && e.type.startsWith('dim_') && e.type !== 'dim_arc')
+      ? dimBlocks[_dimIdx++] : null;
+    // 70 : type de cote + bit 32 « le bloc géométrique n'est référencé que par cette cote »
+    const wDimHead = () => {
+      w('2'); w(dimBlk ? dimBlk.name : '*Model_Space');
+      w('3'); w(dxfDimStyleName((getDimStyle(e) || {}).name));
+    };
 
     switch(e.type) {
       case 'line':
@@ -16834,10 +17645,10 @@ async function exportDXF() {
           const ta = e.x2>=e.x1 ? 0 : Math.PI;
           w('0'); w('MTEXT'); wEnt(layerName,col); w('100'); w('AcDbMText');
           w('10'); w(f(e.x2+(e.x2>=e.x1?5:-5))); w('20'); w(f(e.y2)); w('30'); w('0.0');
-          w('40'); w('10'); w('41'); w('200');
+          w('40'); w('10.0'); w('41'); w('200.0');
           w('71'); w('1'); // top-left attachment
           w('72'); w(e.x2>=e.x1 ? '1' : '3'); // text direction
-          w('1'); w(e.text);
+          w('1'); w(dxfEscape(e.text, true));
         }
         break;
       }
@@ -16854,30 +17665,30 @@ async function exportDXF() {
           defPtX=dimX; defPtY=e.y2; txtPtX=dimX; txtPtY=(e.y1+e.y2)/2+(e.textOffset||0); rot=90;
         }
         w('0'); w('DIMENSION'); wEnt(layerName,col); w('100'); w('AcDbDimension');
-        w('3'); w('STANDARD');
+        wDimHead();
         w('10'); w(f(defPtX)); w('20'); w(f(defPtY)); w('30'); w('0.0');
         w('11'); w(f(txtPtX)); w('21'); w(f(txtPtY)); w('31'); w('0.0');
-        w('70'); w('0'); w('1'); w('');
+        w('70'); w('32'); w('71'); w('5'); w('1'); w(dxfEscape(e.textHidden ? ' ' : (e.text || '<>'), true));
         w('100'); w('AcDbAlignedDimension');
         w('13'); w(f(e.x1)); w('23'); w(f(e.y1)); w('33'); w('0.0');
         w('14'); w(f(e.x2)); w('24'); w(f(e.y2)); w('34'); w('0.0');
         w('100'); w('AcDbRotatedDimension');
-        w('50'); w(String(rot));
+        w('50'); w(f(rot));
         break;
       }
 
       case 'dim_aligned': {
         const off = e.offset || 30;
         const ang = Math.atan2(e.y2-e.y1, e.x2-e.x1);
-        const perp = ang+Math.PI/2;
+        const perp = ang-Math.PI/2;   // Y inversé au rendu : le décalage va de ce côté
         const ox=Math.cos(perp)*off, oy=Math.sin(perp)*off;
         const to = e.textOffset || 0;
         const tox = Math.cos(ang)*to, toy = Math.sin(ang)*to;
         w('0'); w('DIMENSION'); wEnt(layerName,col); w('100'); w('AcDbDimension');
-        w('3'); w('STANDARD');
+        wDimHead();
         w('10'); w(f(e.x2+ox)); w('20'); w(f(e.y2+oy)); w('30'); w('0.0');
         w('11'); w(f((e.x1+e.x2)/2+ox+tox)); w('21'); w(f((e.y1+e.y2)/2+oy+toy)); w('31'); w('0.0');
-        w('70'); w('1'); w('1'); w('');
+        w('70'); w('33'); w('71'); w('5'); w('1'); w(dxfEscape(e.textHidden ? ' ' : (e.text || '<>'), true));
         w('100'); w('AcDbAlignedDimension');
         w('13'); w(f(e.x1)); w('23'); w(f(e.y1)); w('33'); w('0.0');
         w('14'); w(f(e.x2)); w('24'); w(f(e.y2)); w('34'); w('0.0');
@@ -16889,10 +17700,10 @@ async function exportDXF() {
         const arcPtX = e.vx + e.r*Math.cos(midA);
         const arcPtY = e.vy + e.r*Math.sin(midA);
         w('0'); w('DIMENSION'); wEnt(layerName,col); w('100'); w('AcDbDimension');
-        w('3'); w('STANDARD');
+        wDimHead();
         w('10'); w(f(e.x2)); w('20'); w(f(e.y2)); w('30'); w('0.0');
         w('11'); w(f(arcPtX)); w('21'); w(f(arcPtY)); w('31'); w('0.0');
-        w('70'); w('2'); w('1'); w('');
+        w('70'); w('34'); w('71'); w('5'); w('1'); w(dxfEscape(e.textHidden ? ' ' : (e.text || '<>'), true));
         w('100'); w('AcDb2LineAngularDimension');
         w('13'); w(f(e.vx)); w('23'); w(f(e.vy)); w('33'); w('0.0');
         w('14'); w(f(e.x1)); w('24'); w(f(e.y1)); w('34'); w('0.0');
@@ -16905,10 +17716,10 @@ async function exportDXF() {
         const a = e.angle||0;
         const px=e.cx+e.r*Math.cos(a), py=e.cy+e.r*Math.sin(a);
         w('0'); w('DIMENSION'); wEnt(layerName,col); w('100'); w('AcDbDimension');
-        w('3'); w('STANDARD');
+        wDimHead();
         w('10'); w(f(e.cx)); w('20'); w(f(e.cy)); w('30'); w('0.0');
         w('11'); w(f(e.cx+e.r*0.5*Math.cos(a))); w('21'); w(f(e.cy+e.r*0.5*Math.sin(a))); w('31'); w('0.0');
-        w('70'); w('4'); w('1'); w('');
+        w('70'); w('36'); w('71'); w('5'); w('1'); w(dxfEscape(e.textHidden ? ' ' : (e.text || '<>'), true));
         w('100'); w('AcDbRadialDimension');
         w('15'); w(f(px)); w('25'); w(f(py)); w('35'); w('0.0');
         w('40'); w('0.0');
@@ -16920,10 +17731,10 @@ async function exportDXF() {
         const px=e.cx+e.r*Math.cos(a), py=e.cy+e.r*Math.sin(a);
         const qx=e.cx-e.r*Math.cos(a), qy=e.cy-e.r*Math.sin(a);
         w('0'); w('DIMENSION'); wEnt(layerName,col); w('100'); w('AcDbDimension');
-        w('3'); w('STANDARD');
+        wDimHead();
         w('10'); w(f(px)); w('20'); w(f(py)); w('30'); w('0.0');
         w('11'); w(f(e.cx)); w('21'); w(f(e.cy)); w('31'); w('0.0');
-        w('70'); w('3'); w('1'); w('');
+        w('70'); w('35'); w('71'); w('5'); w('1'); w(dxfEscape(e.textHidden ? ' ' : (e.text || '<>'), true));
         w('100'); w('AcDbDiametricDimension');
         w('15'); w(f(qx)); w('25'); w(f(qy)); w('35'); w('0.0');
         w('40'); w('0.0');
@@ -16954,7 +17765,7 @@ async function exportDXF() {
         const ty = e.textWy !== undefined ? e.textWy : e.cy + rTxt*Math.sin(midA);
         w('0'); w('TEXT'); wEnt(layerName,col); w('100'); w('AcDbText');
         w('10'); w(f(tx)); w('20'); w(f(ty)); w('30'); w('0.0');
-        w('40'); w(f(th)); w('1'); w(dimText(e, e.r*span));
+        w('40'); w(f(th)); w('1'); w(dxfEscape(dimText(e, e.r*span), false));
         w('100'); w('AcDbText');
         break;
       }
@@ -16981,6 +17792,28 @@ async function exportDXF() {
         w('51'); w(f((e.endAngle||Math.PI)*180/Math.PI));
         break;
 
+      case 'ellipse': {
+        if (!(e.rx > 0) || !(e.ry > 0)) break;
+        // DXF impose ratio ≤ 1 : si ry > rx on bascule le grand axe de 90°
+        // (le paramètre d'arc suit la même rotation, d'où le -π/2).
+        let rMaj = e.rx, rMin = e.ry, rot = e.angle || 0;
+        let sp = e.startAngle, ep = e.endAngle;
+        const full = (sp === undefined || ep === undefined) || Math.abs((ep - sp) - Math.PI*2) < 1e-9;
+        if (rMin > rMaj) {
+          rMaj = e.ry; rMin = e.rx; rot += Math.PI/2;
+          if (!full) { sp -= Math.PI/2; ep -= Math.PI/2; }
+        }
+        const norm = (a) => { let v = a % (Math.PI*2); if (v < 0) v += Math.PI*2; return v; };
+        w('0'); w('ELLIPSE'); wEnt(layerName,col); w('100'); w('AcDbEllipse');
+        w('10'); w(f(e.cx)); w('20'); w(f(e.cy)); w('30'); w('0.0');
+        w('11'); w(f(rMaj*Math.cos(rot))); w('21'); w(f(rMaj*Math.sin(rot))); w('31'); w('0.0');
+        w('210'); w('0.0'); w('220'); w('0.0'); w('230'); w('1.0');
+        w('40'); w(f(rMin/rMaj));
+        if (full) { w('41'); w('0.0'); w('42'); w(f(Math.PI*2)); }
+        else      { w('41'); w(f(norm(sp))); w('42'); w(f(norm(sp) + (ep - sp))); }
+        break;
+      }
+
       case 'xline':
         w('0'); w('XLINE'); wEnt(layerName,col); w('100'); w('AcDbXline');
         w('10'); w(f(e.x)); w('20'); w(f(e.y)); w('30'); w('0.0');
@@ -16998,23 +17831,44 @@ async function exportDXF() {
         w('0'); w('LWPOLYLINE'); wEnt(layerName,col); w('100'); w('AcDbPolyline');
         w('90'); w(String(e.points.length));
         w('70'); w(e.closed ? '1' : '0');
-        e.points.forEach(p=>{ w('10'); w(f(p[0])); w('20'); w(f(p[1])); if(p[2]){ w('42'); w(f(p[2])); } });
+        e.points.forEach(p=>{ w('10'); w(f(p[0])); w('20'); w(f(p[1])); if(p[2]){ w('42'); w(f(dxfBulge(p[2]))); } });
         break;
       }
 
       case 'spline': {
+        // Une SPLINE DXF se définit par des points de CONTRÔLE + un vecteur nodal.
+        // Écrire seulement des points de passage (code 11) avec 0 nœud / 0 point de
+        // contrôle produit une entité que AutoCAD refuse — et il abandonne alors tout
+        // le dessin (« Invalid or incomplete DXF input »). On convertit donc la
+        // Catmull-Rom de MiniCAD en B-spline cubique clampée, géométriquement identique.
+        const bs = catmullToBSpline(e.points, e.closed);
+        if (!bs) break;
         w('0'); w('SPLINE'); wEnt(layerName,col); w('100'); w('AcDbSpline');
-        w('70'); w(e.closed ? '9' : '8');
-        w('71'); w('3');
-        w('72'); w('0'); w('73'); w('0');
-        w('74'); w(String(e.points.length));
-        e.points.forEach(p=>{ w('11'); w(f(p[0])); w('21'); w(f(p[1])); w('31'); w('0.0'); });
+        w('210'); w('0.0'); w('220'); w('0.0'); w('230'); w('1.0');
+        w('70'); w('8');                                   // 8 = planaire
+        w('71'); w('3');                                   // degré 3
+        w('72'); w(String(bs.knots.length));
+        w('73'); w(String(bs.ctrl.length));
+        w('74'); w('0');                                   // pas de points de passage
+        w('42'); w('0.0000001'); w('43'); w('0.0000001');
+        bs.knots.forEach(k=>{ w('40'); w(f(k)); });
+        bs.ctrl.forEach(p=>{ w('10'); w(f(p[0])); w('20'); w(f(p[1])); w('30'); w('0.0'); });
         break;
       }
 
       case 'hatch': {
-        const hpts = getHatchPoints(e);
+        let hpts = getHatchPoints(e);
         if (!hpts || hpts.length < 3) break;
+        // ptsFromEntity() referme déjà le contour en répétant le premier point ;
+        // la boucle d'arêtes ci-dessous reboucle en plus via (i+1)%n. Sans ce
+        // retrait on émet une arête de longueur nulle, que LibreCAD/AutoCAD
+        // considèrent comme un contour invalide → hachure non affichée.
+        while (hpts.length > 3 &&
+               Math.hypot(hpts[hpts.length-1][0] - hpts[0][0],
+                          hpts[hpts.length-1][1] - hpts[0][1]) < 1e-9) {
+          hpts = hpts.slice(0, -1);
+        }
+        if (hpts.length < 3) break;
         const _hdx = _hatchDef(e.pattern);
         const patternName = _hdx.dxfName || 'ANSI31';
         const ang = e.angle ?? (_hdx.defaultAngle ?? 45);
@@ -17093,7 +17947,7 @@ async function exportDXF() {
         w('0'); w('TEXT'); wEnt(layerName,col); w('100'); w('AcDbText');
         w('10'); w(f(e.x)); w('20'); w(f(e.y)); w('30'); w('0.0');
         w('40'); w(f(e.size||14));
-        w('1'); w(e.content||'Texte');
+        w('1'); w(dxfEscape(e.content || 'Texte', false));
         if (e.angle) { w('50'); w(f(e.angle*180/Math.PI)); }
         w('100'); w('AcDbText');
         break;
@@ -17111,7 +17965,7 @@ async function exportDXF() {
         w('10'); w(f(e.x)); w('20'); w(f(e.y)); w('30'); w('0.0');
         w('0'); w('TEXT'); wEnt(layerName,col); w('100'); w('AcDbText');
         w('10'); w(f(e.x+5)); w('20'); w(f(e.y+5)); w('30'); w('0.0');
-        w('40'); w('8'); w('1'); w('['+e.type+']');
+        w('40'); w('8.0'); w('1'); w(dxfEscape('['+e.type+']', false));
         w('100'); w('AcDbText');
         break;
     }
@@ -17172,85 +18026,14 @@ async function exportDXF() {
   termPrint('DXF exporté : '+fname+' — '+nEnt+' entité'+(nEnt>1?'s':'')+' — AC1015 (R2000)','success');
 }
 
-function exportDWG() {
-  // DWG is a proprietary binary format by Autodesk.
-  // A true DWG writer requires an SDK (OpenDesign Alliance ODA / LibreDWG).
-  // Strategy: export a DXF file with .dwg extension hint, or offer DXF.
-  // Most modern CAD apps (FreeCAD, LibreCAD, BricsCAD) can open DXF natively.
-  // We'll export as DXF but also offer a .dwg file that is actually DXF content
-  // (some tools auto-detect content regardless of extension).
-
-  termPrint('⚠ Le format DWG natif nécessite un SDK propriétaire (Autodesk ODA).','warning');
-  termPrint('Export en DXF compatible R2000 avec extension .dwg...','info');
-  termPrint('→ Ce fichier est lisible par: BricsCAD, FreeCAD, LibreCAD, DraftSight','info');
-
-  // Build same DXF content
-  const dxf = [];
-  const w2 = (s) => dxf.push(s);
-  w2('0'); w2('SECTION'); w2('2'); w2('HEADER');
-  w2('9'); w2('$ACADVER'); w2('1'); w2('AC1015');
-  w2('0'); w2('ENDSEC');
-  w2('0'); w2('SECTION'); w2('2'); w2('TABLES');
-  w2('0'); w2('TABLE'); w2('2'); w2('LAYER'); w2('70'); w2(String(S.layers.length));
-  S.layers.forEach((lay, i) => {
-    w2('0'); w2('LAYER');
-    w2('2'); w2(dxfLayerName(i));
-    w2('70'); w2(lay.visible ? '0' : '1');
-    w2('62'); w2(String(dxfColorIndex(lay.color)));
-    w2('6'); w2('CONTINUOUS');
-  });
-  w2('0'); w2('ENDTAB'); w2('0'); w2('ENDSEC');
-  w2('0'); w2('SECTION'); w2('2'); w2('ENTITIES');
-  // Re-use same entity export logic
-  S.entities.forEach(e => {
-    const layerName = dxfLayerName(e.layer);
-    const col = dxfColorIndex(S.layers[e.layer]?.color || '#ffffff');
-    if(e.type==='line'||e.type==='wall'||e.type==='leader'||e.type==='dim_linear'||e.type==='dim_aligned'){
-      w2('0');w2('LINE');w2('8');w2(layerName);w2('62');w2(String(col));
-      w2('10');w2(String(e.x1));w2('20');w2(String(e.y1));w2('30');w2('0.0');
-      w2('11');w2(String(e.x2));w2('21');w2(String(e.y2));w2('31');w2('0.0');
-    }else if(e.type==='dim_angular'){
-      w2('0');w2('LINE');w2('8');w2(layerName);w2('62');w2(String(col));
-      w2('10');w2(String(e.vx));w2('20');w2(String(e.vy));w2('30');w2('0.0');
-      w2('11');w2(String(e.x1));w2('21');w2(String(e.y1));w2('31');w2('0.0');
-      w2('0');w2('LINE');w2('8');w2(layerName);w2('62');w2(String(col));
-      w2('10');w2(String(e.vx));w2('20');w2(String(e.vy));w2('30');w2('0.0');
-      w2('11');w2(String(e.x2));w2('21');w2(String(e.y2));w2('31');w2('0.0');
-    }else if(e.type==='dim_radius'||e.type==='dim_diameter'){
-      const a=e.angle||0;
-      w2('0');w2('CIRCLE');w2('8');w2(layerName);w2('62');w2(String(col));
-      w2('10');w2(String(e.cx));w2('20');w2(String(e.cy));w2('30');w2('0.0');w2('40');w2(String(e.r));
-    }else if(e.type==='dim_arc'){
-      const rd=e.r+(e.offset||0);
-      w2('0');w2('ARC');w2('8');w2(layerName);w2('62');w2(String(col));
-      w2('10');w2(String(e.cx));w2('20');w2(String(e.cy));w2('30');w2('0.0');w2('40');w2(String(rd));
-      w2('50');w2(String((e.startAngle||0)*180/Math.PI));w2('51');w2(String((e.endAngle||Math.PI)*180/Math.PI));
-    }else if(e.type==='rect'){
-      w2('0');w2('LWPOLYLINE');w2('8');w2(layerName);w2('62');w2(String(col));
-      w2('90');w2('4');w2('70');w2('1');
-      [[e.x1,e.y1],[e.x2,e.y1],[e.x2,e.y2],[e.x1,e.y2]].forEach(p=>{w2('10');w2(String(p[0]));w2('20');w2(String(p[1]));});
-    }else if(e.type==='circle'){
-      w2('0');w2('CIRCLE');w2('8');w2(layerName);w2('62');w2(String(col));
-      w2('10');w2(String(e.cx));w2('20');w2(String(e.cy));w2('30');w2('0.0');w2('40');w2(String(e.r));
-    }else if(e.type==='arc'){
-      w2('0');w2('ARC');w2('8');w2(layerName);w2('62');w2(String(col));
-      w2('10');w2(String(e.cx));w2('20');w2(String(e.cy));w2('30');w2('0.0');w2('40');w2(String(e.r));
-      w2('50');w2(String((e.startAngle||0)*180/Math.PI));w2('51');w2(String((e.endAngle||Math.PI)*180/Math.PI));
-    }else if(e.type==='polyline'||e.type==='cable'){
-      w2('0');w2('LWPOLYLINE');w2('8');w2(layerName);w2('62');w2(String(col));
-      w2('90');w2(String(e.points.length));w2('70');w2('0');
-      e.points.forEach(p=>{w2('10');w2(String(p[0]));w2('20');w2(String(p[1]));});
-    }else if(e.type==='text'){
-      w2('0');w2('TEXT');w2('8');w2(layerName);w2('62');w2(String(col));
-      w2('10');w2(String(e.x));w2('20');w2(String(e.y));w2('30');w2('0.0');
-      w2('40');w2(String(e.size||14));w2('1');w2(e.content||'');
-    }
-  });
-  w2('0');w2('ENDSEC');w2('0');w2('EOF');
-
-  const content = dxf.join('\r\n') + '\r\n'; // CRLF (compat AutoCAD)
-  downloadBlob(content, 'application/octet-stream', 'minicad_export.dwg');
-  termPrint('Fichier .dwg exporté (contenu DXF compatible)','success');
+// Le DWG natif est un format binaire propriétaire (Autodesk) : l'écrire demanderait
+// un SDK (ODA / LibreDWG), donc une dépendance externe — exclu par la contrainte du
+// fichier HTML autonome. On produisait auparavant un contenu DXF nommé « .dwg » :
+// AutoCAD refuse systématiquement un tel fichier. On exporte donc un vrai .dxf.
+async function exportDWG() {
+  termPrint('\u26a0 Le DWG natif exige un SDK propriétaire (Autodesk ODA) : impossible ici.','warning');
+  termPrint('\u2192 Export en DXF R2000 à la place — AutoCAD, BricsCAD, FreeCAD, LibreCAD et DraftSight l\'ouvrent directement.','info');
+  await exportDXF();
 }
 
 // Map hex color to nearest DXF ACI color index
@@ -17498,7 +18281,7 @@ function buildSaveData(name) {
     version: '0.1', app: 'MiniCAD',
     name: name || (_fileHandle?.name?.replace(/\.mcad$/i,'')) || 'projet',
     date: new Date().toISOString(),
-    layers: S.layers, entities: S.entities,
+    layers: S.layers, entities: S.entities, blocks: S.blocks,
     currentLayer: S.currentLayer, nextId: S.nextId,
     modules: Object.fromEntries(Object.entries(modules).map(([k,m])=>[k,m.loaded])),
     gridSize: S.gridSize, gridSizeY: S.gridSizeY,
@@ -17669,7 +18452,7 @@ function resetUserPrefs() {
   termPrint('Préférences réinitialisées aux valeurs par défaut', 'info');
 }
 
-const _PD_OS_MODES = ['endpoint','midpoint','center','nearest','intersection','perpendicular','tangent','quadrant','extension'];
+const _PD_OS_MODES = ['endpoint','midpoint','center','nearest','intersection','perpendicular','tangent','quadrant','extension','insertion'];
 
 function openPrefsDialog() {
   const existing = document.getElementById('prefs-dialog');
@@ -17679,6 +18462,7 @@ function openPrefsDialog() {
     endpoint: `Endpoint`, midpoint: `Midpoint`, center: `Center`,
     nearest: `Nearest`, intersection: `Intersection`, perpendicular: `Perpendicular`,
     tangent: `Tangent`, quadrant: `Quadrant`, extension: `Extension`,
+    insertion: `Insertion`,
   };
   const dlg = document.createElement('div');
   dlg.id = 'prefs-dialog';
@@ -17799,6 +18583,7 @@ function loadFromLocalStorage() {
     if (!data.entities || !data.entities.length) return;
     if (data.layers) { S.layers = data.layers; S.layers.forEach(l=>{if(!l.lineWidth)l.lineWidth=0.25;if(!l.lineType)l.lineType='solid';if(!l.printColor)l.printColor='#000000';}); }
     S.entities = data.entities.filter(e => e.type !== 'ellipse' || (e.rx > 0 && e.ry > 0));
+    if (data.blocks) S.blocks = data.blocks;
     if (data.currentLayer !== undefined) S.currentLayer = data.currentLayer;
     if (data.nextId) S.nextId = data.nextId;
     if (data.gridSize) S.gridSize = data.gridSize;
@@ -17849,6 +18634,31 @@ async function cmdSave(name, forceNew) {
   termPrint('Téléchargé: ' + filename + ' (utilisez Chrome/Edge pour la sauvegarde directe)', 'info');
 }
 
+// Ferme le dessin courant (vide S.entities, réinitialise l'état fichier).
+// Si des modifications sont non sauvegardées, demande confirmation (confirmQuestion
+// complète le message d'avertissement). Retourne false si l'utilisateur annule.
+function closeDrawing(confirmQuestion) {
+  if (S.entities.length && S._saveState === 'modified') {
+    if (!confirm('Le dessin actuel n\'est pas sauvegardé.\nLes modifications seront perdues.\n\n' + confirmQuestion)) {
+      return false;
+    }
+  }
+  if (S.entities.length) pushUndo();
+  S.entities = []; S.selected = [];
+  // Calques par défaut : sans cette remise à zéro, ouvrir un DXF après coup empile
+  // ses calques sur ceux du dessin précédent (doublons « 0 », « 1_-_Construction »…).
+  S.layers = [
+    { name: '0 - Défaut',      color: '#00d4ff', printColor: '#000000', visible: true, lineWidth: 0.35, lineType: 'solid' },
+    { name: '1 - Construction',color: '#ff4081', printColor: '#888888', visible: true, lineWidth: 0.13, lineType: 'dashed' },
+    { name: '2 - Cotation',    color: '#00e676', printColor: '#000000', visible: true, lineWidth: 0.25, lineType: 'solid' },
+    { name: '3 - Texte',       color: '#ffab40', printColor: '#000000', visible: true, lineWidth: 0.25, lineType: 'solid' },
+  ];
+  S.currentLayer = 0;
+  _fileHandle = null; _kdFile = null; localStorage.removeItem('minicad_autosave'); updateSaveIndicator('new');
+  updateUI(); syncUIState(); render();
+  return true;
+}
+
 async function cmdOpen() {
   if ('showOpenFilePicker' in window) {
     try {
@@ -17863,10 +18673,12 @@ async function cmdOpen() {
       const file = await handle.getFile();
       const content = await file.text();
       const ext = file.name.split('.').pop().toLowerCase();
+      if (!closeDrawing('Ouvrir un autre dessin quand même ?')) { termPrint('Ouverture annulée', 'info'); return; }
       termPrint('Ouverture: ' + file.name + ' (' + (content.length/1024).toFixed(1) + ' Ko)', 'info');
       _fileHandle = null; // sera redemandé au prochain Ctrl+S
       if (ext === 'json' || ext === 'mcad') openJSON(content, file.name);
-      else if (ext === 'dxf' || ext === 'dwg') openDXF(content, file.name);
+      else if (ext === 'dxf') openDXF(content, file.name);
+      else if (ext === 'dwg') warnDwgNotSupported(file);
       else termPrint('Format non supporté: .' + ext, 'error');
       return;
     } catch(e) {
@@ -17882,16 +18694,19 @@ function handleFileOpen(event) {
   event.target.value = ''; // reset so same file can be re-opened
 
   const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'dwg') { warnDwgNotSupported(file); return; }
+
   const reader = new FileReader();
 
   reader.onload = function(e) {
+    if (!closeDrawing('Ouvrir un autre dessin quand même ?')) { termPrint('Ouverture annulée', 'info'); return; }
     const content = e.target.result;
     termPrint('Ouverture: ' + file.name + ' (' + (content.length/1024).toFixed(1) + ' Ko)', 'info');
 
     try {
       if (ext === 'json' || ext === 'mcad') {
         openJSON(content, file.name);
-      } else if (ext === 'dxf' || ext === 'dwg') {
+      } else if (ext === 'dxf') {
         openDXF(content, file.name);
       } else {
         termPrint('Format non supporté: .' + ext, 'error');
@@ -17906,6 +18721,31 @@ function handleFileOpen(event) {
   reader.readAsText(file);
 }
 
+// Le DWG est un format binaire propriétaire (Autodesk) : le lire demanderait un SDK
+// (ODA / LibreDWG), donc une dépendance externe — exclu par la contrainte du fichier
+// HTML autonome (voir exportDWG). Un outil séparé (dwg-import/, hors de ce fichier)
+// convertit DWG → DXF localement via LibreDWG/WebAssembly ; le DXF obtenu s'ouvre
+// ensuite normalement ici. Le File déjà sélectionné est transmis directement à l'outil
+// via postMessage (File est clonable) une fois l'onglet prêt, pour éviter à l'utilisateur
+// de le re-sélectionner par glisser-déposer. Fallback sur le lien manuel si la fenêtre
+// est bloquée par le navigateur ou ne répond pas.
+function warnDwgNotSupported(file) {
+  termPrint('⚠ Le DWG natif exige un SDK propriétaire (Autodesk ODA) : impossible à lire ici.', 'warning');
+  const fallback = () => termPrintLink('→ Convertissez-le d’abord en DXF (local, sans envoi réseau), puis ouvrez le .dxf obtenu :', 'dwg-import/index.html', 'ouvrir le convertisseur DWG → DXF ↗');
+  const w = window.open('dwg-import/index.html', '_blank');
+  if (!w) { fallback(); return; }
+  let done = false;
+  function onMsg(ev) {
+    if (ev.source !== w || ev.data !== 'dwg-import-ready') return;
+    done = true;
+    window.removeEventListener('message', onMsg);
+    w.postMessage({ type: 'dwg-file', file }, '*');
+    termPrint('→ ' + file.name + ' envoyé au convertisseur DWG → DXF (nouvel onglet).', 'info');
+  }
+  window.addEventListener('message', onMsg);
+  setTimeout(() => { if (!done) { window.removeEventListener('message', onMsg); fallback(); } }, 6000);
+}
+
 function openJSON(content, filename) {
   const data = JSON.parse(content);
   if (data.app !== 'MiniCAD' && !data.entities) {
@@ -17916,6 +18756,7 @@ function openJSON(content, filename) {
   pushUndo();
   if (data.layers) { S.layers = data.layers; S.layers.forEach(l=>{if(!l.lineWidth)l.lineWidth=0.25;if(!l.lineType)l.lineType='solid';if(!l.printColor)l.printColor='#000000';}); }
   if (data.entities) S.entities = data.entities;
+  if (data.blocks) S.blocks = data.blocks;
   if (data.currentLayer !== undefined) S.currentLayer = data.currentLayer;
   if (data.nextId) S.nextId = data.nextId;
   if (data.gridSize) S.gridSize = data.gridSize;
@@ -18018,12 +18859,18 @@ function openDXF(content, filename) {
 
         case 'LWPOLYLINE': {
           const closed = (parseInt(gs(70,'0')) & 1) === 1;
-          const xVals = props[10] || [], yVals = props[20] || [];
+          // Le bulge (42) n'est émis que pour les sommets courbes : un simple tableau
+          // props[42] ne dirait pas à quel sommet il se rattache. On relit donc le flux
+          // brut, où chaque 10 ouvre un sommet que 20/42 complètent.
           const pts = [];
-          for (let k = 0; k < Math.max(xVals.length, yVals.length); k++)
-            pts.push([parseFloat(xVals[k]||0), parseFloat(yVals[k]||0)]);
+          for (let j = i + 1; j < tokens.length && tokens[j].code !== 0; j++) {
+            const c = tokens[j].code, v = parseFloat(tokens[j].value);
+            if (c === 10) pts.push([v, 0]);
+            else if (c === 20 && pts.length) pts[pts.length-1][1] = v;
+            else if (c === 42 && pts.length && v) pts[pts.length-1][2] = dxfBulge(v);
+          }
           if (pts.length >= 2) {
-            if (closed && pts.length === 4 && isRectangle(pts)) {
+            if (closed && pts.length === 4 && !pts.some(p => p[2]) && isRectangle(pts)) {
               const xs=pts.map(p=>p[0]), ys=pts.map(p=>p[1]);
               ent = { type:'rect', x1:Math.min(...xs), y1:Math.min(...ys), x2:Math.max(...xs), y2:Math.max(...ys) };
             } else {
@@ -18162,10 +19009,19 @@ function openDXF(content, filename) {
           break;
         }
 
-        case 'ELLIPSE':
-          ent = { type:'circle', cx:g(10,0), cy:g(20,0), r:Math.hypot(g(11,10),g(21,0)) };
-          termPrint('  ⚠ Ellipse approximée en cercle', 'warning');
+        case 'ELLIPSE': {
+          // 11/21 = extrémité du grand axe, RELATIVE au centre ; 40 = petit/grand ;
+          // 41/42 = paramètres de début/fin (2π d'amplitude ⇒ ellipse complète).
+          const mx = g(11, 0), my = g(21, 0);
+          const rMaj = Math.hypot(mx, my);
+          if (!(rMaj > 0)) break;
+          const ratio = g(40, 1);
+          const sp = g(41, 0), ep = g(42, Math.PI * 2);
+          ent = { type:'ellipse', cx:g(10,0), cy:g(20,0),
+                  rx:rMaj, ry:rMaj * ratio, angle:Math.atan2(my, mx) };
+          if (Math.abs((ep - sp) - Math.PI * 2) > 1e-9) { ent.startAngle = sp; ent.endAngle = ep; }
           break;
+        }
 
         case 'SPLINE': {
           // Prefer fit points (11/21) — that's what MiniCAD exports

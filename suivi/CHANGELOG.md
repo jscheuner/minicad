@@ -60,6 +60,16 @@ Format : `[version] — YYYY-MM-DD — Description`
   fonctions réelles du fichier source avant intégration.
 - **Fichier ▸ Fermer** (`FERMER`, alias `CLOSE`) — ferme le dessin courant, avec
   confirmation si des modifications ne sont pas sauvegardées.
+- **Dialogue INSÉRER UN BLOC** — cliquer Insérer ▸ Insérer un bloc (ou taper
+  `INSERT` sans argument) ouvrait un simple message dans le terminal listant
+  les blocs disponibles, sans action possible. Ouvre maintenant une popup avec
+  une liste déroulante des blocs du dessin courant, plus un champ chemin +
+  bouton "…" pour parcourir le disque et importer les blocs d'un autre fichier
+  `.mcad`/`.json` (lu côté client via `FileReader`, aucune dépendance réseau).
+  Un bloc importé est copié dans `S.blocks` au moment de la validation
+  (renommé automatiquement en cas de collision de nom), puis l'insertion se
+  déroule normalement (clic pour poser). Le raccourci terminal `INSERT <nom>`
+  reste inchangé (toujours direct, sans popup).
 
 ### Corrigé
 - **BLOCK/INSERT perdu après F5** — `loadFromLocalStorage()` (restauration
