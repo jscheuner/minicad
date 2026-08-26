@@ -7,6 +7,92 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.1] — 2026-06-16 — Version courante
 
 ### Ajouté
+- **Nom de bloc demandé + renommage propagé** — `BLOCK` sans nom fourni en
+  argument ouvre désormais une invite (`prompt()`) au lieu d'auto-nommer
+  silencieusement en `Bloc1`/`Bloc2`... (Échap/annuler abandonne la création).
+  Collision de nom (bloc déjà existant) auto-suffixée (`_2`, `_3`...) avec
+  avertissement, même logique que l'import de bloc depuis un fichier externe.
+  Nouvelle fonction `renameBlock(oldName)` : renomme la définition dans
+  `S.blocks` et met à jour `blockName` sur toutes les entités `insert` qui la
+  référencent (comptage affiché). Accessible via un bouton ✎ à côté de la
+  liste déroulante dans la popup `INSERT`, ou directement en éditant le champ
+  "Bloc" (désormais un texte modifiable, plus un simple libellé) du panneau
+  Propriétés pour une entité `insert` sélectionnée — logique de renommage
+  factorisée dans `_renameBlockTo(oldName,newName)`, réutilisée par les deux
+  entrées (popup et Propriétés). Collision de nom : refusée avec avertissement,
+  le champ Propriétés reprend l'ancien nom. Popup `INSERT` : le champ "Bloc"
+  (liste déroulante) et le bouton renommer se grisent automatiquement dès
+  qu'un bloc est importé depuis un fichier (`_ibImportedBlocks` non vide) —
+  le nom vient du fichier importé, pas d'un choix parmi les blocs du dessin.
+- **`WBLOCK`** (alias `WB`/`WBLOC`) — équivalent AutoCAD : écrit une définition
+  de bloc dans un fichier `.mcad` externe autonome, réutilisable dans un autre
+  dessin via `INSERT` ▸ "Importer depuis un fichier" (même format
+  `{app:'MiniCAD', blocks:{...}}` que cet import). `WBLOCK <nom>` écrit
+  directement un bloc déjà défini dans le dessin ; `WBLOCK` sans nom et sans
+  sélection liste les blocs disponibles et invite à sélectionner des objets ;
+  avec une sélection, réutilise le flux `BLOCK` (nom + point de base) puis
+  exporte automatiquement le bloc nouvellement créé. Nouvelle fonction
+  `wblockSaveToFile(name, def)`, réutilise `saveWithPicker()` (déjà utilisé par
+  `SAVE`). Entrée ajoutée au menu Modifier, juste après "Créer un bloc".
+- **`WBLOCK` — popup de sélection de la source (façon AutoCAD "Write Block")** —
+  `WBLOCK` sans nom d'argument (menu ou terminal vide) ouvre désormais une
+  boîte de dialogue (`#wblock-dialog`, `openWblockDialog()`) au lieu d'un flux
+  au clavier/`prompt()` : choix de la **source** (liste déroulante) parmi
+  "Bloc existant du dessin" (sélectionné dans une liste, écrit directement via
+  `wblockSaveToFile`), "Objets sélectionnés" ou "Dessin entier" (nouvelle
+  fonction `wblockSaveDrawingToFile(name)`, réutilise `buildSaveData()` —
+  export non destructif, ne modifie pas le fichier/handle du dessin ouvert).
+  Chaque source est grisée automatiquement si non applicable (aucun bloc /
+  dessin vide). Pour "Objets sélectionnés" : deux boutons dédiés dans le
+  dialogue, façon boîte AutoCAD "Écrire le bloc" — **Sélectionner des objets**
+  (cache le dialogue, bascule sur l'outil sélection standard fenêtre/
+  croisement/clic, Entrée valide/Échap annule, même mécanisme que ARRAY) et
+  **Point de base** (cache le dialogue, un clic canvas via l'outil dédié
+  `wb_basepoint` mémorise le point sans créer le bloc), tous deux réaffichant
+  le dialogue avec le compte d'objets et les coordonnées choisies. L'appui sur
+  OK crée alors le bloc et lance l'export en un seul geste — plus besoin de
+  cliquer un point sur le canvas après avoir fermé le dialogue. Logique de
+  création factorisée dans `_createBlockFromEntities(ents, name, bx, by)`,
+  réutilisée par le clic canvas classique de `BLOCK` (outil `block_base`) et
+  par cette nouvelle confirmation directe. `WBLOCK <nom>` reste un raccourci
+  direct sans popup (comme avant).
+- **`WBLOCK` — champ "Chemin" avec bouton parcourir** — nouveau champ dans le
+  dialogue (bouton 📁, `wbPickPath()`) qui ouvre immédiatement le sélecteur
+  natif `showSaveFilePicker` pour choisir la destination **avant** de cliquer
+  OK, comme le champ "File name and path" d'AutoCAD ; le handle de fichier
+  choisi est conservé (`S._wbFileHandle`) et réutilisé directement par OK, sans
+  repasser par un second sélecteur — `saveWithPicker()` accepte désormais un
+  handle existant en dernier paramètre et écrit dessus au lieu de rouvrir une
+  boîte "Enregistrer sous". Si l'API n'est pas disponible dans le navigateur,
+  message d'avertissement expliquant que le fichier sera téléchargé dans le
+  dossier de téléchargements par défaut (limite de la sandbox navigateur :
+  JavaScript n'a jamais accès au chemin absolu réel, seulement au nom du
+  fichier choisi). Champ facultatif : si non renseigné, OK déclenche comme
+  avant le sélecteur natif au moment de l'export.
+
+### Corrigé
+- **WBLOCK réaffichait le sélecteur de fichier malgré un chemin déjà choisi** —
+  `saveWithPicker()` réutilisait le handle de `S._wbFileHandle` mais avalait
+  silencieusement toute erreur de `createWritable()` (permission repassée à
+  `'prompt'` entre le clic sur « Chemin » et le clic sur OK, notamment après un
+  aller-retour par « Sélectionner des objets »/« Point de base ») et retombait
+  sans explication sur un nouveau `showSaveFilePicker()` — d'où l'impression
+  qu'OK redemandait le chemin. Revalidation explicite de la permission
+  (`queryPermission`/`requestPermission`) avant l'écriture, et l'échec éventuel
+  est maintenant affiché dans le terminal au lieu d'être masqué.
+- **Blocs qui survivaient à "Nouveau dessin"** — `closeDrawing()` (commandes
+  `NOUVEAU`/`CLS`/`FERMER`, menu Fichier ▸ Nouveau) remettait à zéro
+  `S.entities`/`S.selected`/`S.layers` mais oubliait `S.blocks` : les
+  définitions de blocs d'un dessin précédent restaient donc proposées dans la
+  popup `INSERT` d'un dessin flambant neuf. Ajout de `S.blocks = {}` au reset.
+- **Modules Architecture / Électricité de nouveau visibles** — le panneau
+  latéral "Modules" et le compteur de la barre de statut filtraient
+  volontairement `architecture` et `electrical` (masqués du frontend, code
+  conservé) ; retrait des deux filtres dans `updateUI()`/`updateStatusBar()`
+  pour réafficher les quatre modules (Architecture, Électricité, Cotation,
+  Annotation).
+
+### Ajouté
 - **BLOCK / INSERT** — blocs nommés réutilisables. `BLOCK [nom]` sur une sélection
   crée une définition (`S.blocks[nom]`, géométrie recentrée sur le point de base
   choisi au clic) et la remplace par une première instance (`type:'insert'`).
@@ -77,6 +163,47 @@ Format : `[version] — YYYY-MM-DD — Description`
   que la preview des bibliothèques (`drawLibPreview`) : entités fantômes
   générées via `insertWorldEntities()` et dessinées à 55% d'opacité, trait
   pointillé.
+- **OSNAP Extension : expiration automatique des points acquis** — les points
+  de repère acquis par survol (OTRACK, `S.osnapAcquired`) restaient actifs
+  indéfiniment tant qu'on ne changeait pas d'outil, ce qui les faisait
+  s'accumuler et perturber le tracking pendant une séquence de plusieurs
+  clics (ex. plusieurs `LINE` à la suite). Deux correctifs : (1) reset
+  systématique de `S.osnapAcquired` à chaque clic (`handleClick`) et à chaque
+  validation de saisie dynamique (`confirmDynamicInput`) ; (2) expiration par
+  minuteur individuel (3 s par défaut) sur chaque point acquis, via un
+  `setTimeout` déclenché à l'acquisition. Durée réglable dans Préférences ▸
+  Object snap (`prefs.osnap_ext_timeout`, nouveau champ `S.osnapExtTimeout`,
+  0 = jamais expirer, plage 0–30 s).
+- **`DIMCONTINUE`** (alias `DCO`/`DIMCONT`) — équivalent AutoCAD : enchaîne des
+  cotes depuis le 2e point d'extension d'une cote linéaire/alignée existante,
+  en réutilisant automatiquement la même ligne de cote (un seul clic par
+  point suivant, Échap pour terminer). Sélection de la cote de départ à trois
+  niveaux comme AutoCAD : cote explicitement sélectionnée, sinon dernière cote
+  créée (`S._lastDimId`, maintenant renseigné par le flux `DIMLINEAR`/
+  `DIMALIGNED`), sinon invite à cliquer une cote existante. Alignement exact
+  de la ligne de cote calculé par `_dimContOffsetFor(base, p1, p2)` à partir
+  de la ligne de cote réelle de la cote de base (`getDimLinePoints`), et non
+  en recopiant naïvement son `offset` (qui ne coïnciderait que par coïncidence
+  géométrique). `drawDimPreview()` accepte désormais un offset/orientation
+  forcés pour la prévisualisation en direct. Accessible via le menu Cotation,
+  un bouton de barre d'outils dédié, ou en tapant `DIMCONTINUE`/`DCO`.
+- **`DIMBASELINE`** (alias `DBA`/`DIMBASE`) — équivalent AutoCAD : empile des
+  cotes depuis la même origine (1er point d'extension) qu'une cote linéaire/
+  alignée existante, chaque nouvelle cote étant décalée d'un cran
+  supplémentaire vers l'extérieur pour ne pas chevaucher les précédentes (un
+  seul clic par point suivant, Échap pour terminer). Même sélection de la
+  cote de départ à trois niveaux que `DIMCONTINUE` (sélection explicite,
+  sinon `S._lastDimId`, sinon invite à cliquer). Écart entre cotes empilées
+  réglable par style de cotation — nouveau champ `baselineSpacing` (colonne
+  "Écart cotes" dans Cotation ▸ Gérer les styles…, par défaut ≈ 2.8×
+  `textHeight` selon l'échelle du style, rétrocompatible avec les styles
+  sauvegardés avant cette version via `_dimBaselineSpacing()`). Alignement
+  calculé par `_dimBaselineOffsetFor(base, p1,
+  p2, n)`, qui réutilise `_dimContOffsetFor` sur un clone de la cote de base
+  dont l'offset est déjà poussé de `n` crans — même principe de calcul exact
+  que `DIMCONTINUE`, pas de décalage recopié à l'aveugle. Accessible via le
+  menu Cotation, un bouton de barre d'outils dédié, ou en tapant
+  `DIMBASELINE`/`DBA`.
 
 ### Corrigé
 - **BLOCK/INSERT perdu après F5** — `loadFromLocalStorage()` (restauration
