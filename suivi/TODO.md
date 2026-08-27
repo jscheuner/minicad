@@ -69,6 +69,16 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## ✅ Terminé (résumé)
 
+- ✅ **Export : sens de la compensation = deux drapeaux entiers (rôle + côté)** — retour terrain
+  2026-08-27 avec **notre export et le même fichier corrigé** : diff de 4 lignes sur les deux
+  polygones-trous. Rôle (après `<End Glyphs>`) et côté (1ʳᵉ ligne `<Crafts>`) valent 1/1 pour un
+  polygone extérieur, 2/1 pour un cercle-trou, **2/2 pour un polygone-trou**, sur les 48 graphes
+  de référence. Le rôle était écrit `native === 'circle' ? 2 : 1` — 3ᵉ piège de corrélation
+  cercle⇔trou du format. Règle revérifiée en recalculant les drapeaux depuis notre export :
+  identique au fichier corrigé ligne à ligne. Headless 182/182.
+- ✅ **Annulé : padding de bbox conditionné au rôle** (correctif de la veille) — le fichier
+  corrigé garde +0.2 sur ses polygones-trous : le padding ne porte aucun sens, il ne dépend que
+  de la forme. Comportement d'origine rétabli et épinglé par un test.
 - ✅ **Amorce : départ auto des extérieurs en haut-gauche (CCW) / bas-gauche (CW)** — demande
   utilisateur 2026-08-27. `_chfDefaultStartPoint` : point du contour le plus proche du coin
   haut-gauche ou bas-gauche de la bbox selon `_chfTravelCCW` (aire signée × `_chfReverse`) —

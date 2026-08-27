@@ -581,8 +581,15 @@ function _chfBuildGraph(e, idx) {
     if (!glyBlocks.length) return null;
     startPt = [glyBlocks[0].x1, glyBlocks[0].y1];
     endPt = [glyBlocks[glyBlocks.length - 1].x2, glyBlocks[glyBlocks.length - 1].y2];
-    // Bbox élargie de ±compensation (non-cercle uniquement) — comportement observé
-    // sur l'exemple (graph NO:5 : nominal [8,8]-[356,356] → déclaré ±0.25 exact).
+    // Bbox élargie de ±compensation pour TOUT contour non-cercle, quel que soit son rôle.
+    //
+    // Le padding NE PORTE AUCUNE information de sens — vérifié sur les 48 graphes des fichiers
+    // réels, y compris le fichier corrigé à la main du 9ᵉ retour terrain dont les deux
+    // POLYGONES-TROUS gardent un padding de +0.2 vers l'extérieur tout en étant compensés dans
+    // le bon sens. (Une tentative de conditionner ce padding au rôle a été faite puis annulée :
+    // le sens réel se joue sur les deux drapeaux entiers écrits plus bas, pas ici.)
+    // Le cercle natif, lui, n'est jamais padé : 34 fois sur 34, y compris avec une compensation
+    // négative — la machine recalcule sans doute la bbox depuis le rayon.
     minX -= comp; minY -= comp; maxX += comp; maxY += comp;
   }
 
@@ -606,9 +613,38 @@ function _chfBuildGraph(e, idx) {
   });
   lines.push('<End Glyphs>');
   lines.push('0');
-  lines.push(contour.native === 'circle' ? '2' : '1'); // code craft : 2 = cercle natif, 1 sinon
+
+  // Les deux drapeaux entiers qui portent réellement le SENS de la compensation — 9ᵉ retour
+  // terrain (2026-08-27, « ce n'est toujours pas bon »). L'utilisateur a fourni notre export et
+  // le même fichier corrigé pour couper dans le bon sens : le diff fait **4 lignes**, ces deux
+  // champs sur les deux polygones-TROUS. Ni la géométrie, ni la bbox, ni la valeur <Crafts>,
+  // ni l'amorce ne bougent. Relevé sur les 48 graphes de tous les fichiers de référence :
+  //
+  //   rôle / forme                        | rôle | côté | (échantillons)
+  //   polygone EXTÉRIEUR (CW et CCW)      |  1   |  1   | 12
+  //   cercle TROU                         |  2   |  1   | 34
+  //   polygone TROU                       |  2   |  2   |  2  ← les deux corrigés à la main
+  //
+  // 1er drapeau = RÔLE, extérieur/trou. La valeur écrite ici était `native === 'circle' ? 2 : 1`,
+  // rétro-ingénierée sur `laser_6mm.chf` où les 30 trous sont TOUS des cercles et les 8
+  // extérieurs TOUS des polygones : le prédicat « cercle » et le prédicat « trou » y sont
+  // indiscernables. ⚠ C'est le même piège de corrélation que pour l'angle relatif (invisible
+  // sur un cercle) — troisième fois sur ce format. Le fichier corrigé le tranche enfin : un
+  // polygone-trou porte 2, donc c'est bien le RÔLE.
+  //
+  // 2e drapeau = CÔTÉ de compensation, jamais écrit autrement que 1 jusqu'ici. Sur un polygone
+  // il suit le rôle ; sur un cercle il vaut 1 même pour un trou (34/34, dont les 4 trous du
+  // fichier redécoupé et validé machine) — la machine dérive sans doute le côté du rayon, le
+  // drapeau ne servant qu'aux chaînes de segments. Ce n'est PAS une corrélation cette fois : le
+  // fichier corrigé contient à la fois un cercle-trou à 1 et un polygone-trou à 2.
+  //
+  // Le côté ne peut pas être « gauche/droite du parcours » : les 8 extérieurs de `laser_6mm.chf`
+  // sont 4 paires de pièces identiques en miroir (4 CW + 4 CCW) et portent tous 1 — une
+  // convention relative au parcours compenserait la moitié d'entre elles vers l'intérieur.
+  const hole = _chfIsHole(_chfNestDepth(e));
+  lines.push(hole ? '2' : '1');
   lines.push('<Crafts>');
-  lines.push('1');
+  lines.push(hole && contour.native !== 'circle' ? '2' : '1');
   lines.push(_chfNum(comp));
   lines.push(CHF_TAIL_HEAD + _chfBuildGuideCurve(e) + CHF_TAIL_FOOT);
   lines.push('<End Crafts>');

@@ -27,6 +27,33 @@ Format : `[version] — YYYY-MM-DD — Description`
   orientation-dessinée × `_chfReverse`, la priorité du point manuel et la non-régression des trous).
 
 ### Corrigé
+- **Export `.chf` : le SENS de la compensation tient à deux drapeaux entiers, pas à la bbox** —
+  retour terrain *« le sens du décalage change lors de l'export »*, consigne : *ne travailler que
+  sur l'export, ne rien changer côté MiniCAD*. L'utilisateur a fourni **notre export et le même
+  fichier corrigé pour couper dans le bon sens** : le diff fait **4 lignes**, deux champs sur les
+  deux **polygones-trous**. Ni la géométrie, ni la bbox, ni la valeur `<Crafts>`, ni l'amorce ne
+  bougent. Ces deux entiers — celui qui suit `<End Glyphs>` (**rôle** : 1 = extérieur, 2 = trou)
+  et le premier de `<Crafts>` (**côté de compensation**) — valent sur les **48 graphes** de tous
+  les fichiers de référence : polygone extérieur (CW *et* CCW) → 1/1 (12 éch.) ; cercle-trou →
+  2/1 (34 éch.) ; **polygone-trou → 2/2** (2 éch., les deux corrigés). Le rôle était écrit
+  `native === 'circle' ? 2 : 1`, rétro-ingénierie faite sur `laser_6mm.chf` où les 30 trous sont
+  **tous** des cercles et les 8 extérieurs **tous** des polygones : les prédicats « cercle » et
+  « trou » y sont indiscernables — **troisième occurrence du même piège de corrélation sur ce
+  format**, après l'angle relatif invisible sur un cercle. Le côté, lui, n'avait jamais été écrit
+  autrement que 1 ; il suit le rôle sur un polygone mais reste 1 sur un cercle même trou (34/34,
+  dont les 4 trous du fichier redécoupé et validé machine) — et ce n'est pas une corrélation
+  cette fois, le fichier corrigé contient côte à côte un cercle-trou à 1 et un polygone-trou à 2.
+  Le côté ne peut pas non plus être « gauche/droite du parcours » : les 8 extérieurs de
+  `laser_6mm.chf` sont 4 paires de pièces identiques en miroir (4 CW + 4 CCW) et portent tous 1.
+  **Vérifié** : en recalculant les deux drapeaux depuis notre export avec la règle implémentée,
+  on retrouve le fichier corrigé **ligne à ligne, à l'identique**. Aperçu MiniCAD, conversion
+  d'angle et valeur `<Crafts>` (uniforme) strictement intacts. Headless 182/182.
+- **Annulé : le padding de bbox conditionné au rôle** — correctif de la veille sur le même
+  symptôme, fondé sur la mesure « trous jamais padés » des 43 graphes alors disponibles. Le
+  fichier corrigé reçu ensuite l'invalide : ses **deux polygones-trous gardent leur padding de
+  +0.2** vers l'extérieur tout en coupant dans le bon sens. Le padding ne dépend que de la forme
+  (cercle → 0, sinon `+comp`) et ne porte aucune information de sens — comportement d'origine
+  rétabli, et épinglé par un test pour qu'il le reste.
 - **Amorce : l'angle exporté dans le `.chf` est RELATIF au sens de parcours, pas absolu** —
   retour terrain (2026-08-27, captures MiniCAD + SC2000) : *« ok côté minicad c'est bon, si
   possible on n'y touche plus. par contre si j'exporte le chf et que je l'importe les amorces

@@ -102,8 +102,11 @@ réintroduits dans le plugin, mais **cloisonnés au rendu** : `_chfApplyCompensa
 - Sélecteur toolbar « Règle d'imbrication » (`data-tbid="chf-comp-mode"`) : **Alterné** (défaut)
   — parité de la profondeur (pair = extérieur, impair = trou), correct au-delà de 2 niveaux
   (anneau + moyeu plein) ; **Binaire** — extérieur seulement si profondeur 0, tout le reste
-  traité comme trou. Son intitulé précise explicitement qu'il n'affecte que l'aperçu, jamais la
-  valeur exportée.
+  traité comme trou. Son intitulé précise qu'il n'affecte pas la **valeur** exportée (toujours
+  uniforme et positive, comme validé par `export_corrigé.chf`). ⚠ Depuis le 9ᵉ retour terrain il
+  n'est plus vrai qu'il « n'affecte que l'aperçu » : le rôle extérieur/trou pilote aussi les deux
+  **drapeaux entiers** écrits à l'export (rôle + côté de compensation), qui portent le sens réel
+  du décalage — voir réserve #3, *neuvième retour*.
 - Profondeur (`_chfNestDepth`) calculée sur **tout le dessin** (`S.entities`), pas seulement la
   sélection courante — un trou reste visuellement correct même si son contour extérieur n'est
   pas sélectionné au moment de la prévisualisation.
@@ -250,8 +253,13 @@ eof
 
 Points clés vérifiés contre l'exemple d'origine :
 - La bbox déclarée d'un **cercle natif n'est jamais paddée** par la compensation, quelle que
-  soit sa valeur — seuls les contours non-cercle voient leur bbox élargie/rétrécie de
-  `±compensation` sur chaque côté.
+  soit sa valeur (observé 34/34 sur les fichiers réels) ; tout autre contour voit sa bbox
+  élargie de `+compensation` sur chaque côté, **quel que soit son rôle** — le padding ne porte
+  aucune information de sens (les deux polygones-trous du fichier corrigé du 9ᵉ retour gardent
+  leur padding vers l'extérieur tout en étant compensés correctement).
+- Les deux entiers qui suivent `<End Glyphs>` / ouvrent `<Crafts>` sont, eux, **porteurs du sens**
+  de la compensation : `rôle` (1 = extérieur, 2 = trou) et `côté` (idem, mais toujours 1 sur un
+  cercle). Voir réserve #3, *neuvième retour*.
 - `dir` encode le Sens de parcours (segment : ordre des points inversé de façon
   « direction-préservante » — le point de départ ne bouge pas, seul le reste de l'ordre change ;
   cercle : `dir=-1` si Sens = Inverse).
@@ -336,6 +344,72 @@ priorité sur une chute avant toute pièce définitive :
    était juste** et **les deux rectangles faux** (~90° de rotation). La première correction
    (`absolu − parcours`) avait été calée sur un unique échantillon à 90°, valeur où 3 des 8
    conventions candidates coïncident. Formule exacte trouvée par élimination croisée (réserve #4).
+
+   **Huitième retour (2026-08-27)** : « le sens du décalage change lors de l'export » — consigne
+   explicite : *ne travailler que sur l'export, ne rien changer côté MiniCAD*. Le défaut portait
+   sur le **rectangle intérieur** ; le trou **circulaire** de la même pièce, lui, sortait juste.
+   La valeur `<Crafts>` n'était pas en cause (déjà uniforme +0.2, exactement comme le fichier
+   validé machine). Mesure de la **bbox déclarée en en-tête vs la bbox réelle de la géométrie
+   écrite**, sur les 43 graphes des trois fichiers réels :
+
+   | fichier | graphes | padding mesuré |
+   |---|---|---|
+   | `laser_6mm.chf` (natif SC2000) | 30 cercles (trous) | **0** |
+   | | 8 polygones (extérieurs) | **+0.25** |
+   | `export_corrigé.chf` (validé machine) | 4 cercles (trous) | **0** |
+   | | 1 polygone (extérieur) | **+0.2** |
+
+   Deux règles expliquent ces 43 graphes de façon **identique** — « un cercle n'est jamais padé »
+   (ce que faisait le code) et « un **trou** n'est jamais padé » — parce que dans tous les
+   fichiers disponibles cercle ⇔ trou et polygone ⇔ extérieur. Elles ne divergent que sur **un
+   seul cas, absent de tous les échantillons : le polygone-trou** — précisément l'objet signalé.
+   Le padding avait donc été conditionné au rôle. **Hypothèse fausse, annulée au 9ᵉ retour** :
+   le fichier corrigé fourni ensuite garde un padding de `+0.2` sur ses **deux polygones-trous**
+   tout en coupant dans le bon sens. Le padding ne porte aucune information de sens ; il ne
+   dépend que de la forme (cercle → 0, sinon `+comp`), comme le faisait le code d'origine.
+
+   **Neuvième retour (2026-08-27) — RÉSOLU, le sens tient à deux drapeaux entiers** :
+   « ce n'est toujours pas bon », avec cette fois **notre export ET le même fichier corrigé pour
+   couper dans le bon sens**. Le diff fait **4 lignes** — deux champs, sur les deux
+   polygones-trous. Ni la géométrie, ni la bbox, ni la valeur `<Crafts>`, ni l'amorce ne bougent :
+
+   ```
+   <End Glyphs>
+   0
+   2          ← rôle           (1 = extérieur, 2 = trou)   — nous écrivions 1
+   <Crafts>
+   2          ← côté de comp.  (1 = extérieur, 2 = trou)   — nous écrivions 1
+   0.200000   ← valeur, inchangée
+   ```
+
+   Relevé sur les **48 graphes** de tous les fichiers de référence :
+
+   | contour | rôle | côté | échantillons |
+   |---|---|---|---|
+   | polygone **extérieur** (CW *et* CCW) | 1 | 1 | 12 |
+   | **cercle** trou | 2 | 1 | 34 |
+   | **polygone trou** | 2 | **2** | 2 (les deux corrigés) |
+
+   Le **rôle** était écrit `native === 'circle' ? 2 : 1` — rétro-ingénierie faite sur
+   `laser_6mm.chf`, où les 30 trous sont **tous** des cercles et les 8 extérieurs **tous** des
+   polygones : les prédicats « cercle » et « trou » y sont indiscernables. ⚠ **Troisième
+   occurrence du même piège de corrélation sur ce format** (après l'angle relatif, invisible sur
+   un cercle). Le fichier corrigé le tranche : un polygone-trou porte 2 → c'est le **rôle**.
+
+   Le **côté** n'avait jamais été écrit autrement que 1. Sur un polygone il suit le rôle ; sur un
+   cercle il reste 1 même pour un trou (34/34, dont les 4 trous du fichier redécoupé et validé
+   machine) — la machine dérive vraisemblablement le côté du rayon, le drapeau ne servant qu'aux
+   chaînes de segments. Ce n'est **pas** une corrélation cette fois : le fichier corrigé contient
+   côte à côte un cercle-trou à 1 et un polygone-trou à 2.
+
+   Le côté ne peut pas être « gauche/droite du parcours » : les 8 extérieurs de `laser_6mm.chf`
+   sont 4 paires de pièces identiques en miroir (4 CW + 4 CCW) et portent **tous** 1 — une
+   convention relative au parcours en compenserait la moitié vers l'intérieur.
+
+   Vérification : en recalculant les deux drapeaux depuis notre export avec la règle implémentée,
+   on retrouve le fichier corrigé **ligne à ligne, à l'identique**. Rien d'autre n'a bougé —
+   `_chfAutoLeadAngle`, `_chfLeadInGeom` (aperçu), `_chfExportLeadAngle` et
+   `_chfApplyCompensationToSelection` sont intacts.
 4. **Mapping du bloc `<GuideCurve Para>` (amorce)** — ~~réserve la plus forte du plugin~~
    **refermée le 2026-08-27**, après le retour terrain « si j'exporte le `.chf` et
    que je le réimporte, les amorces changent d'angle » (l'aperçu MiniCAD étant lui validé
