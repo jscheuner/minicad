@@ -6,6 +6,26 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ## [0.1] — 2026-06-16 — Version courante
 
+### Ajouté
+- **Amorce : point de départ automatique des contours EXTÉRIEURS, haut-gauche / bas-gauche** —
+  demande utilisateur : *« pour les amorces extérieur j'aimerai qu'elle soit mise plutôt en haut
+  à gauche pour le sens anti-horaire et en bas à gauche pour le sens horaire »*. Nouveau
+  `_chfDefaultStartPoint(e, contour)`, règle unique : point du contour le plus proche du coin
+  **haut-gauche** (parcours CCW) ou **bas-gauche** (parcours CW) de sa bbox — coin exact sur un
+  rect, diagonale 135°/225° sur un cercle, **sommet** le plus proche sur un polygone quelconque
+  (jamais un point inséré au milieu d'une arête : un sommet donne la bissectrice diagonale que
+  `_chfIdealLeadAngle` sait dégager, une arête donnerait une perpendiculaire). Le sens effectif
+  vient de `_chfTravelCCW` = orientation intrinsèque du contour (`_chfSignedArea`, aire signée)
+  combinée à `_chfReverse` : la règle suit le parcours réel, qu'il vienne du dessin ou du bouton
+  **Sens**. Deux exclusions volontaires : un `_chfStartPoint` posé à la main reste **prioritaire**
+  (régression déjà vécue en retour terrain — un point cliqué ne doit jamais être recalculé), et
+  les **trous** gardent leur comportement d'origine, la demande ne visant que l'extérieur. Aucune
+  modification de la conversion d'angle à l'export (`_chfExportLeadAngle` intact, comme demandé) :
+  seul le point d'entrée bouge, l'angle écrit suit mécaniquement. Cohérent avec le fichier natif
+  SC2000 `laser_6mm.chf`, dont les contours à amorce activée démarrent tous au coin haut-gauche.
+  Headless 168/168 (9 attentes mises à jour + 9 nouvelles, dont les 4 combinaisons
+  orientation-dessinée × `_chfReverse`, la priorité du point manuel et la non-régression des trous).
+
 ### Corrigé
 - **Amorce : l'angle exporté dans le `.chf` est RELATIF au sens de parcours, pas absolu** —
   retour terrain (2026-08-27, captures MiniCAD + SC2000) : *« ok côté minicad c'est bon, si

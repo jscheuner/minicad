@@ -422,13 +422,72 @@ function _chfStartAtPoint(pts, p) {
   return [bestPt].concat(_chfRotateArray(pts, bestI + 1));
 }
 
-// Applique Point de départ (si fermé + défini) puis Sens sur la liste de points
-// résolue. Le point de départ est préservé sous inversion : seule la direction de
-// parcours change (reverse "direction-preservant", pas une inversion brute du tableau).
+// Aire signée du contour fermé (monde Y-haut) : > 0 = tableau ordonné en anti-horaire.
+function _chfSignedArea(pts) {
+  let a = 0;
+  for (let i = 0, n = pts.length; i < n; i++) {
+    const p = pts[i], q = pts[(i + 1) % n];
+    a += p[0] * q[1] - q[0] * p[1];
+  }
+  return a / 2;
+}
+
+// Sens de PARCOURS effectif : +1 = anti-horaire, -1 = horaire. Combine l'orientation
+// intrinsèque du contour résolu et le drapeau _chfReverse. Sur un cercle il n'y a pas
+// d'orientation intrinsèque : `dir` de _chfCircleStart fait foi (+1 = CCW).
+function _chfTravelCCW(e, contour) {
+  const base = contour.native === 'circle' ? 1 : (_chfSignedArea(contour.points) >= 0 ? 1 : -1);
+  return e._chfReverse ? -base : base;
+}
+
+// Point de départ PAR DÉFAUT d'un contour EXTÉRIEUR fermé — demande utilisateur
+// (2026-08-27) : « pour les amorces extérieur j'aimerai qu'elle soit mise plutôt en haut
+// à gauche pour le sens anti-horaire et en bas à gauche pour le sens horaire ». Règle
+// unique : point du contour le plus proche du coin HAUT-GAUCHE (CCW) ou BAS-GAUCHE (CW)
+// de sa bbox — sur un rectangle ça tombe exactement sur le coin, sur un cercle sur la
+// diagonale (135° / 225°), sur un polygone quelconque sur le sommet le plus proche
+// (jamais un point inséré au milieu d'une arête : le sommet donne la bissectrice
+// diagonale que _chfIdealLeadAngle sait dégager proprement).
+// Deux exclusions volontaires :
+//   - un _chfStartPoint posé à la main (clic, CHFSTART) reste prioritaire — régression
+//     déjà vécue en retour terrain, un point choisi ne doit jamais être recalculé ;
+//   - les TROUS gardent leur comportement d'origine, la demande ne vise que l'extérieur.
+// Ce choix est cohérent avec le fichier natif SC2000 (laser_6mm.chf), dont les contours
+// à amorce activée démarrent tous au coin haut-gauche.
+function _chfDefaultStartPoint(e, contour) {
+  if (_chfIsHole(_chfNestDepth(e))) return null;
+  const ccw = _chfTravelCCW(e, contour) > 0;
+  if (contour.native === 'circle') {
+    const a = ccw ? 3 * Math.PI / 4 : -3 * Math.PI / 4;
+    return [contour.cx + contour.r * Math.cos(a), contour.cy + contour.r * Math.sin(a)];
+  }
+  const pts = contour.points;
+  if (!pts || pts.length < 2) return null;
+  let minX = Infinity, minY = Infinity, maxY = -Infinity;
+  for (const p of pts) {
+    if (p[0] < minX) minX = p[0];
+    if (p[1] < minY) minY = p[1];
+    if (p[1] > maxY) maxY = p[1];
+  }
+  const ty = ccw ? maxY : minY;
+  let best = null, bestD = Infinity;
+  for (const p of pts) {
+    const d = Math.hypot(p[0] - minX, p[1] - ty);
+    if (d < bestD - 1e-9) { bestD = d; best = p; }
+  }
+  return best ? [best[0], best[1]] : null;
+}
+
+// Applique Point de départ (si fermé : manuel s'il existe, sinon le défaut haut/bas-gauche
+// ci-dessus pour un extérieur) puis Sens sur la liste de points résolue. Le point de départ
+// est préservé sous inversion : seule la direction de parcours change (reverse
+// "direction-preservant", pas une inversion brute du tableau).
 function _chfOrderContourPoints(e, contour) {
   let pts = contour.points.slice();
-  if (contour.closed && e._chfStartPoint) {
-    const sp = _chfNearestPointOnEntity(e, e._chfStartPoint.x, e._chfStartPoint.y);
+  if (contour.closed) {
+    const sp = e._chfStartPoint
+      ? _chfNearestPointOnEntity(e, e._chfStartPoint.x, e._chfStartPoint.y)
+      : _chfDefaultStartPoint(e, contour);
     if (sp) pts = _chfStartAtPoint(pts, sp);
   }
   if (e._chfReverse) {
@@ -439,7 +498,12 @@ function _chfOrderContourPoints(e, contour) {
 
 function _chfCircleStart(e, contour) {
   let ang = 0;
-  if (e._chfStartPoint) ang = Math.atan2(e._chfStartPoint.y - contour.cy, e._chfStartPoint.x - contour.cx);
+  if (e._chfStartPoint) {
+    ang = Math.atan2(e._chfStartPoint.y - contour.cy, e._chfStartPoint.x - contour.cx);
+  } else {
+    const d = _chfDefaultStartPoint(e, contour);
+    if (d) ang = Math.atan2(d[1] - contour.cy, d[0] - contour.cx);
+  }
   return {
     x: contour.cx + contour.r * Math.cos(ang),
     y: contour.cy + contour.r * Math.sin(ang),

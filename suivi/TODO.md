@@ -69,6 +69,12 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## ✅ Terminé (résumé)
 
+- ✅ **Amorce : départ auto des extérieurs en haut-gauche (CCW) / bas-gauche (CW)** — demande
+  utilisateur 2026-08-27. `_chfDefaultStartPoint` : point du contour le plus proche du coin
+  haut-gauche ou bas-gauche de la bbox selon `_chfTravelCCW` (aire signée × `_chfReverse`) —
+  coin exact sur un rect, 135°/225° sur un cercle, sommet le plus proche sur un polygone.
+  `_chfStartPoint` manuel prioritaire ; trous inchangés ; export (`_chfExportLeadAngle`) non
+  touché. Headless 168/168.
 - ✅ **Amorce : angle exporté relatif au sens de parcours (réserve #4 refermée)** — retour
   terrain (2026-08-27, captures MiniCAD + SC2000) : *« ok côté minicad c'est bon […] par contre
   si j'exporte le chf et que je l'importe les amorces changent d'angle »*. Preuve croisée :

@@ -147,6 +147,34 @@ volontairement ignoré (commentaire explicite dans la branche `chf_leadvector` d
    du tableau `S.entities`), avec une marge `max(0,05 ; longueur × 0,15)`. Si l'idéal est bloqué,
    rotation par pas de 10° jusqu'à ±80° ; à défaut de solution propre, l'idéal est conservé.
 
+### Point de départ automatique d'un contour EXTÉRIEUR
+
+Demande utilisateur (2026-08-27) : *« pour les amorces extérieur j'aimerai qu'elle soit mise
+plutôt en haut à gauche pour le sens anti-horaire et en bas à gauche pour le sens horaire »*.
+
+`_chfDefaultStartPoint(e, contour)` applique une **règle unique** : le point du contour le plus
+proche du coin **haut-gauche** (parcours anti-horaire) ou **bas-gauche** (parcours horaire) de sa
+bbox.
+
+- **Rect** → tombe exactement sur le coin.
+- **Cercle** → sur la diagonale, 135° (CCW) / 225° (CW).
+- **Polygone quelconque** → le **sommet** le plus proche, jamais un point inséré au milieu d'une
+  arête : un sommet donne la bissectrice diagonale que `_chfIdealLeadAngle` sait dégager
+  proprement, un point d'arête donnerait une perpendiculaire.
+
+Le sens de parcours effectif vient de `_chfTravelCCW` = orientation intrinsèque du contour
+(`_chfSignedArea`, aire signée en monde Y-haut) combinée à `_chfReverse` — la règle suit donc le
+parcours réel, qu'il vienne du dessin ou du bouton **Sens**.
+
+Deux exclusions volontaires :
+
+- un **`_chfStartPoint` posé à la main** (clic, `CHFSTART`) reste prioritaire — régression déjà
+  vécue en retour terrain, un point choisi ne doit jamais être recalculé ;
+- les **trous** gardent leur comportement d'origine : la demande ne vise que l'extérieur.
+
+Cohérent avec le fichier natif SC2000 (`laser_6mm.chf`), dont les contours à amorce activée
+démarrent tous au coin haut-gauche.
+
 ### Angle exporté : relatif au sens de parcours
 
 L'aperçu raisonne en angle **absolu monde**. Le fichier `.chf`, lui, stocke l'angle **entre le
