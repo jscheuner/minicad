@@ -69,6 +69,126 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## ✅ Terminé (résumé)
 
+- ✅ **`CHFSTART` interactif + `CHFSTARTAUTO` pour le plugin CHF_EXPORT** — `CHFSTART`
+  s'adapte désormais à l'état de la sélection : rien sélectionné → arme la boîte de
+  sélection (`S._chfStartPending`, patron `EXPLODE`/`GROUP`/`CHFCOMP`) ; objet valide
+  sélectionné → picking du point de départ (1 clic) enchaîne automatiquement sur un 2ᵉ
+  clic qui trace longueur/angle de l'amorce à la souris (nouvel outil `chf_leadvector`).
+  Nouvelle commande **`CHFSTARTAUTO`** (+ bouton toolbar) : applique en lot
+  `_chfLeadLength`/`_chfLeadAngle` à toute la sélection depuis deux nouveaux champs
+  toolbar (`chf-start-length`/`chf-start-angle`, défauts **5 mm / 90°**), sans poser de
+  point de départ explicite (reste "Auto (défaut)", calculé à l'export). **Bug latent
+  découvert et corrigé** (indépendant de cette fonctionnalité mais révélé par elle) :
+  `cmdInput` a son propre gestionnaire `keydown` local qui s'exécute avant le
+  gestionnaire global `document` (bulle DOM, `cmdInput` a le focus la plupart du temps
+  via `smartFocus()`) — un état pending/tool non listé dans les DEUX gestionnaires voit
+  son Échap/Entrée absorbé silencieusement par le bloc générique du gestionnaire local
+  avant d'atteindre le bon handler. Un premier correctif ajouté uniquement côté global
+  passait 28/28 sur une suite basée sur des appels directs mais échouait avec de vrais
+  événements clavier — corrigé en ajoutant aussi les 4 nouveaux cas dans la chaîne du
+  gestionnaire local. Vérifié par 28 assertions d'état (appels directs) **+ 4 scénarios
+  avec de vrais événements souris/clavier simulés via CDP** (ce second passage a
+  spécifiquement révélé le bug ci-dessus) + capture d'écran (toolbar rendue
+  correctement). Non testé sur machine SC2000 réelle (réserve déjà connue sur le bloc
+  `<GuideCurve Para>`, voir entrée `CHFSTART` ci-dessous).
+- ✅ **Amorce : repère carré+croix + détection auto trou/extérieur pour `CHFSTARTAUTO`** —
+  la prévisualisation de l'amorce affiche un repère carré+croix au point de percée
+  (extrémité opposée à la flèche, qui pointe vers l'entrée dans le contour). `CHFSTARTAUTO`
+  détecte maintenant trou vs extérieur pour chaque objet rond/rectangulaire de la sélection
+  en réutilisant tel quel le mécanisme d'imbrication de `CHFCOMP` (`_chfNestDepth` + même
+  sélecteur toolbar Alterné/Binaire, désormais partagé) : un trou pointe automatiquement son
+  amorce vers son propre centre, un objet extérieur (ou d'un autre type) garde l'angle
+  toolbar. Vérifié par test headless (5 objets dont un cas à double imbrication qui bascule
+  correctement entre les deux modes) + capture d'écran recadrée confirmant le rendu du repère
+  et le sens des flèches vers le centre des deux trous.
+- ✅ **CHFCOMP — Compensation auto (extérieur/intérieur) pour le plugin CHF_EXPORT** —
+  nouvel outil dans la barre Export laser : sélectionner des objets, régler un décalage
+  (mm) dans un champ toolbar dédié, appliquer — le sens (agrandir/rétrécir) est
+  déterminé automatiquement par la profondeur d'imbrication au sein de la sélection
+  (cercle : test de distance ; sinon `pointInPolygon`), avec un sélecteur **Alterné**
+  (parité, correct dès 3 niveaux — ex. anneau + moyeu) / **Binaire** (extérieur
+  seulement si non imbriqué), "Alterné" par défaut — les deux modes proposés à la
+  demande explicite de l'utilisateur plutôt que de trancher à sa place. Contours
+  ouverts ignorés (comptés dans le message terminal). Ré-exécuter **remplace** la
+  compensation, jamais de cumul. `_chfCompensation` devient une valeur signée
+  (positif=extérieur, négatif=intérieur) sans changement requis côté export (déjà
+  traité comme tel). Prévisualisation pointillée du contour compensé, recalculée à
+  chaque rendu (jamais stockée) via `computeOffsetGeom` déjà existant (point de
+  référence fixé loin à l'extérieur de la bbox ⇒ signe interne toujours +1, donc le
+  signe de `_chfCompensation` seul pilote agrandir/rétrécir). Nouveau hook cœur additif
+  **`pluginDecorateEntity(e, ctx)`** (2 points d'appel `drawEntity()`, couches
+  statique+dynamique ; contrairement à `pluginExtraPropsHandler`, appelle TOUS les
+  plugins ayant un handler `decorateEntity` ; `ctx` passé en paramètre explicite,
+  jamais lu comme variable globale) — réutilisable par de futurs plugins. Vérifié
+  headless (harness étendu, 66/66 checks dont 19 nouveaux) : divergence Alterné/Binaire
+  sur un cas à 3 niveaux, contour ouvert ignoré avec décompte correct, remplacement
+  idempotent, signe du fantôme de prévisualisation, imbrication via `pointInPolygon`
+  sur des rectangles (pas seulement le raccourci cercle natif). **Réserve inchangée** :
+  le sens réel attendu par SC2000 pour la compensation (intérieur/extérieur) n'est
+  confirmé par aucun exemple disponible — recommandé de tester sur une chute avant
+  toute pièce définitive. Lancer `CHFCOMP` sans sélection arme désormais la boîte de
+  sélection (`S._chfCompPending`, patron `EXPLODE`/`GROUP`/`UNGROUP`/`WBLOCK` : curseur
+  `'pick'`, Entrée réapplique, Échap annule) au lieu de juste avertir sans rien faire —
+  vérifié headless (72/72, 2 nouveaux cas côté plugin ; câblage cœur curseur/Entrée/
+  Échap/purge non retesté séparément, identique à un mécanisme déjà éprouvé ailleurs).
+  Fantôme pointillé : **flèches de sens de coupe** (`_chfArrowSamples`/
+  `_chfDrawDirArrow`/`_chfDrawDirectionArrows`, appelées depuis `decorateEntity` après
+  `drawEntity(ghost)`) — 3 flèches sur contour fermé (cercle : 3×120° ; polygone : 3
+  points échantillonnés, tangente vers le point suivant), ≤2 sur contour ouvert ; sens
+  piloté par `e._chfReverse` (tangente basculée de π). Réutilise `drawArrowHead`/`w2s`
+  du cœur (accessibles depuis un plugin car `function`-déclarées ; résolubles à
+  l'appel même si leur corps lit `ctx`/`canvasW`/`canvasH`, des `let` de portée module,
+  car elles s'exécutent dans leur propre closure). Pas de transform canvas ambiante
+  (confirmé via `drawGrips`) : chaque point de flèche passe par `w2s()`. Vérifié
+  headless (78/78, 2 nouveaux cas) : nombre de flèches + inversion exacte de π de
+  l'angle quand `_chfReverse` bascule, sur cercle et rectangle. **Non vérifié en
+  navigateur réel** (blocage `file://` MCP inchangé) : calcul angle/position couvert,
+  pas le rendu visuel (lisibilité/taille/chevauchement) — à contrôler dès que possible.
+  **`CHFREV`** — icône toolbar (`chf-rev-toggle`) qui bascule `_chfReverse` de chaque
+  objet supporté de la sélection **individuellement** (comme `MIRROR`, pas une valeur
+  forcée commune comme le select "Sens" en multi-sélection) ; types non supportés
+  ignorés (décompte hors message) ; sélection vide → avertit sans armer de boîte de
+  sélection (non demandé pour cet outil). Vérifié headless (84/84, 6 nouveaux cas).
+  **`CHFSTART`** — amorce de départ (départ hors-pièce puis entrée dans la pièce) :
+  nouveaux champs `_chfLeadLength` (mm)/`_chfLeadAngle` (°, monde, 0°=+X CCW+),
+  réglables au panneau propriétés (mono + multi-sélection, zéro câblage cœur — le
+  mécanisme générique `_propChange` gère déjà n'importe quel champ) et via un nouveau
+  bouton toolbar (`chf-start-pick`) qui raccourcit vers le picking manuel déjà
+  existant du point de départ. Prévisualisation pointillée (`_chfDrawLeadInPreview`) :
+  segment du point d'entrée réel (`_chfEntryPoint`, réutilise `_chfCircleStart`/
+  `_chfOrderContourPoints` — même source que l'export, ne peut pas diverger) vers un
+  point extérieur décalé longueur/angle, flèche pointant vers l'entrée.
+  `decorateEntity` restructuré en deux blocs indépendants (fantôme compensation +
+  amorce peuvent coexister). Export : bloc `<GuideCurve Para>` du `.chf` (jusqu'ici
+  constant, jamais exploré) construit dynamiquement par `_chfBuildGuideCurve(e)`,
+  longueur 0 → comportement inchangé. **RÉSERVE FORTE** (plus incertaine que les 3
+  autres réserves du plugin) : mapping des 5 champs du bloc basé sur un **seul point
+  de donnée** (un seul graphe de l'exemple d'origine, jamais recoupé sur plusieurs
+  graphes ni sur machine réelle) — à tester en priorité sur une chute. Vérifié
+  headless (**118/118**, 34 nouveaux cas). **Non vérifié en navigateur réel.**
+- ✅ **Plugin CHF_EXPORT — export découpe laser SC2000** (`src/plugins/chf_export.js`, commande
+  `EXPORTCHF`/`ECHF`) — format `.chf` rétro-ingénierié (aucune doc publique) à partir d'un fichier
+  d'exemple fourni par l'utilisateur (`laser_6mm.chf`, 38 graphes), recoupé avec le manuel SC2000
+  V1.00. Trois réglages par objet dans le panneau propriétés (`line, wall, rect, circle, arc,
+  polyline, cable, spline, ellipse`) : **Sens** (normal/inversé), **Compensation** (mm), **Point
+  de départ** (auto par défaut, ou repositionnable en cliquant sur le contour — contours fermés
+  uniquement). Résolution de contour unifiée (`_chfResolveContour`) partagée entre le picking et
+  l'export ; tessellation arcs/ellipses par tolérance de corde 0.1mm (cohérent avec la constante
+  observée dans l'exemple). Nouveau hook cœur additif `pluginExtraPropsHandler[Multi]` (sœur de
+  `pluginPropsHandler`, qui remplace au lieu d'ajouter) — réutilisable par de futurs plugins.
+  Vérification algorithmique poussée en headless (harness Node exécutant le vrai code du plugin
+  + les vraies fonctions géométriques du cœur extraites de `src/minicad.html`, 47 contrôles) :
+  reproduit **exactement** les valeurs numériques de l'exemple (longueur totale, bbox, point de
+  départ/fin, code craft) sur les graphes cercle et rectangle-à-encoche ; invariant de chaînage
+  dir vérifié y compris avec point de départ manuel mi-segment. **Non vérifié sur machine réelle**
+  (aucun logiciel/machine SC2000 disponible) : sens `dir=-1` sur un cercle (l'exemple n'a que des
+  cercles `dir=1`), point de départ non-défaut sur un cercle, et le sens (intérieur/extérieur) de
+  la compensation. Recommandé : premier essai réel sur une chute, pièce simple, avant toute pièce
+  définitive. **Test UI en direct impossible cette session** : le connecteur MCP (`mcp-server/`)
+  fonctionne, mais le chargement de *tous* les plugins échoue dans la session live actuelle
+  (`Failed to fetch`, y compris pour `gradrule` déjà existant) — probablement le fichier ouvert en
+  `file://` plutôt que servi en `http://`, ce qui bloque `fetch()` d'un fichier sibling dans
+  Chromium. Pré-existant, sans rapport avec ce plugin — à investiguer séparément.
 - ✅ **BLOCK / INSERT** — définitions de blocs nommées et réutilisables (`S.blocks`), entité `insert` (position/angle/échelle propres par instance). `BLOCK [nom]` sur une sélection + point de base ; `INSERT nom` pour poser une nouvelle instance, ou `INSERT` sans argument pour ouvrir une popup (liste des blocs du dessin + import de blocs depuis un autre fichier `.mcad`/`.json` via sélecteur de fichier). MOVE/COPY/ROTATE/SCALE/MIRROR/ERASE/EXPLODE et grips fonctionnent nativement (mêmes chemins génériques que TEXT, MIRROR avec un drapeau `mirror` dédié qui flip aussi le contenu du bloc — pas seulement la position de l'instance). Persistant en `.mcad`. Accessible via menu (Modifier/Insérer) et barre d'outils, en plus du terminal. Export DXF : pas de vrai `BLOCK`/`INSERT` DXF — chaque instance est aplatie en géométrie transformée à l'export (amélioration par rapport à GROUP, qui n'a toujours aucun export DXF). `REFEDIT` reste à faire (ligne ci-dessus). `BLOCK` sans nom fourni demande le nom via `prompt()` (annulable) plutôt que d'auto-nommer ; collision de nom auto-suffixée (`_2`, `_3`...). Renommage d'un bloc (`renameBlock()`, bouton ✎ dans la popup INSERT) : propage le nouveau nom à toutes les entités `insert` qui le référencent. `WBLOCK [nom]` (alias `WB`/`WBLOC`) : écrit un bloc dans un fichier `.mcad` externe autonome, réutilisable dans un autre dessin (réciproque de l'import de bloc depuis un fichier de la popup INSERT).
 - ✅ **OSNAP Insertion** — mode dédié au point d'insertion des blocs (`e.type==='insert'`), sur le modèle d'AutoCAD (Insertion ≠ Extrémité). Corrige l'imprécision du déplacement par poignée d'une instance de bloc, qui ne pouvait jusqu'ici s'accrocher à rien.
 - ✅ **OSNAP sur le contenu des blocs** — tous les modes standards (extrémité/milieu/centre/plus proche/intersection/perpendiculaire/tangente/quadrant) fonctionnent aussi sur la géométrie interne d'une instance de bloc (pas seulement son point d'insertion), via aplatissement dans `findOsnap()`. Récursif (blocs imbriqués). Limite connue : DIMASSOC ne peut pas s'accrocher/suivre un enfant de bloc (id synthétique, pas d'entité réelle correspondante).

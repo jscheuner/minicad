@@ -7,6 +7,355 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.1] — 2026-06-16 — Version courante
 
 ### Ajouté
+- **`CHFSTART` interactif + `CHFSTARTAUTO`** — `CHFSTART` sait désormais s'adapter à l'état
+  de la sélection au lieu d'exiger un objet déjà sélectionné : rien sélectionné → arme la
+  boîte de sélection (même patron `S._chfStartPending`/`Entrée`/`Échap` que `CHFCOMP`) ; un
+  objet valide sélectionné → le picking du point de départ (1 clic) enchaîne désormais
+  automatiquement sur un 2ᵉ clic qui trace longueur et angle de l'amorce directement à la
+  souris (nouvel outil `chf_leadvector`), sans repasser par le panneau propriétés.
+
+  Nouvelle commande **`CHFSTARTAUTO`** (+ bouton toolbar dédié) : applique en lot la
+  longueur/l'angle d'amorce à toute la sélection sans aucun clic sur le dessin, à partir de
+  deux nouveaux champs numériques dans la barre Export laser (`chf-start-length` /
+  `chf-start-angle`, **défauts 5 mm / 90°** comme demandé). Ne pose pas de point de départ
+  explicite sur les objets : seuls `_chfLeadLength`/`_chfLeadAngle` sont réglés, le point
+  d'entrée réel sur le contour reste calculé automatiquement à l'export (`_chfEntryPoint`) —
+  cohérent avec le mode "Auto (défaut)" déjà affiché dans le panneau propriétés quand aucun
+  point n'est fixé manuellement.
+
+  **Bug découvert et corrigé en cours de session, indépendant de la fonctionnalité mais
+  révélé par elle** : `cmdInput` a son propre gestionnaire `keydown` local (Entrée = exécute
+  la commande tapée, Échap = annule l'état en cours), qui s'exécute **avant** le gestionnaire
+  global `document` puisque `cmdInput` a le focus la plupart du temps (`smartFocus()` le
+  refocalise après quasi chaque clic). Les nouveaux états (`chf_leadvector`, `chf_startpoint`,
+  `_chfStartPending`, `_chfStartAutoPending`) n'étant listés que côté gestionnaire global,
+  Échap tombait dans le bloc générique du gestionnaire local (`setTool('select')` sans purger
+  les variables de picking) avant même d'atteindre le bon handler — un premier correctif
+  ajouté uniquement côté global semblait fonctionner (28/28 sur une suite de tests basée sur
+  des appels directs) mais échouait silencieusement avec de vrais événements clavier. Corrigé
+  en ajoutant aussi les 4 cas dans la chaîne du gestionnaire local de `cmdInput`, même patron
+  que les états préexistants (`copyPending`, `offsetAwaitDist`, `fillet`...) à cet endroit.
+
+  Vérifié par 28 assertions d'état (appels directs) **plus 4 scénarios rejoués avec de vrais
+  événements souris/clavier simulés via CDP** (clic réel aux coordonnées écran calculées,
+  vrais `keyDown`/`keyUp`) — ce second passage, plus coûteux mais plus fidèle à un usage réel,
+  est ce qui a révélé le bug ci-dessus après que la suite basée sur des appels directs soit
+  passée au vert. Vérification visuelle par capture d'écran (toolbar : champs et bouton
+  rendus correctement, valeurs par défaut et tooltips corrects). Non testé sur machine SC2000
+  réelle (réserve déjà connue sur le bloc `<GuideCurve Para>`, voir l'entrée `CHFSTART`
+  ci-dessous, inchangée).
+
+- **Amorce : repère visuel + détection auto trou/extérieur pour `CHFSTARTAUTO`** —
+  la prévisualisation en pointillé de l'amorce (`_chfDrawLeadInPreview`) affiche désormais
+  un repère carré+croix au point de percée hors-pièce (l'extrémité du segment opposée à la
+  flèche, qui elle pointe vers l'entrée dans le contour), en trait plein pour rester lisible
+  même superposé à la ligne pointillée.
+
+  `CHFSTARTAUTO` détecte maintenant si chaque objet rond ou rectangulaire de la sélection est
+  un **trou** (contour imbriqué) ou le **bord extérieur**, en réutilisant tel quel le mécanisme
+  de profondeur d'imbrication déjà écrit pour `CHFCOMP` (`_chfNestDepth`/`_chfRepPoint`/
+  `_chfPointInContour`) — et le même sélecteur toolbar Alterné/Binaire (`chf-comp-mode`,
+  désormais partagé entre les deux fonctions, tooltip mis à jour en conséquence). Un objet
+  détecté trou ignore l'angle réglé dans le champ toolbar et pointe automatiquement son amorce
+  vers son propre centre (perce dans la zone rebut plutôt que dans la matière conservée) ; un
+  objet extérieur, ou d'un type autre que cercle/rect (pas de notion de centre non ambiguë),
+  garde l'angle toolbar comme avant. Le message de confirmation dans le terminal distingue les
+  deux cas (nombre de trous détectés vs angle uniforme appliqué).
+
+  Vérifié par un test headless dédié (5 objets : rect extérieur, trou rond, îlot rond imbriqué
+  deux fois — pair en Alterné donc traité comme extérieur, impair en Binaire donc traité comme
+  trou —, trou rectangulaire, et une ligne en contour ouvert qui doit rester insensible à toute
+  cette logique) : angles obtenus conformes au calcul manuel dans les deux modes, plus
+  vérification visuelle par capture d'écran (recadrée) confirmant le rendu net du repère
+  carré+croix et le sens correct des flèches vers le centre des deux trous.
+
+- **`CHFSTART` — Amorce de départ (départ hors-pièce) dans la barre Export laser** —
+  nouveaux champs par objet `_chfLeadLength` (mm, défaut 0 = désactivé) et
+  `_chfLeadAngle` (°, monde absolu, 0°=+X, CCW+), réglables via deux nouvelles lignes
+  numériques du panneau Propriétés (mono-sélection : `inp('_chfLeadLength', …)` /
+  `inp('_chfLeadAngle', …)`, zéro câblage cœur nouveau — le mécanisme générique
+  `_propChange` gère déjà n'importe quel nom de champ ; multi-sélection : nouvelles
+  fonctions `window._chfPropLeadLengthMulti`/`_chfPropLeadAngleMulti`, même patron que
+  `_chfPropCompensationMulti`). Nouveau bouton toolbar (`data-tbid="chf-start-pick"`,
+  commande `CHFSTART`) qui raccourcit vers le mécanisme de picking manuel du point de
+  départ déjà existant (`window._chfPickStartPoint`, jusque-là accessible seulement
+  via le bouton ⌖ du panneau propriétés d'un objet déjà sélectionné) — exige
+  exactement un objet sélectionné, à contour fermé supporté (`_chfSupportsStartPoint`).
+
+  Prévisualisation en pointillé (`_chfDrawLeadInPreview`, branchée dans
+  `decorateEntity`) : segment du point d'entrée réel du contour (calculé par
+  `_chfEntryPoint`, qui réutilise tel quel `_chfCircleStart`/`_chfOrderContourPoints`
+  — déjà la source de vérité utilisée par l'export, donc la prévisualisation ne peut
+  pas diverger de ce qui sera effectivement exporté) vers un point extérieur décalé de
+  `_chfLeadLength` à `_chfLeadAngle`, avec flèche pointant vers l'entrée (sens réel de
+  coupe : extérieur → entrée → contour). `decorateEntity` restructuré : le fantôme de
+  compensation et l'amorce sont maintenant deux blocs indépendants (chacun gated sur
+  son propre champ) plutôt qu'un seul early-return sur `_chfCompensation`, pour
+  qu'ils puissent coexister sur le même objet.
+
+  Câblage export : le bloc `<GuideCurve Para>` du fichier `.chf` (jusqu'ici recopié
+  verbatim et constant pour tous les graphes, jamais exploré — hors-périmètre de la
+  session de rétro-ingénierie initiale) est désormais construit dynamiquement par
+  `_chfBuildGuideCurve(e)` à partir de `_chfLeadLength`/`_chfLeadAngle` (longueur 0 →
+  reproduit exactement l'ancien bloc constant, comportement par défaut inchangé).
+  **RÉSERVE FORTE, plus incertaine que les 3 autres réserves déjà connues du plugin**
+  (celles-ci recoupées sur les 38 graphes de l'exemple fourni) : le mapping des 5
+  champs du bloc (ligne 2 = angle°, ligne 3 = longueur mm, ligne 5 = flag actif 0/1)
+  repose sur un **seul point de donnée** (`1 / 90.000000 / 4.000000 / 1.000000 / 0`,
+  un seul graphe de l'exemple d'origine, fichier `laser_6mm.chf` non ré-examinable
+  cette session) — jamais recoupé contre plusieurs graphes ni contre une machine
+  réelle. **À tester en priorité sur une chute avant toute pièce définitive**, plus
+  encore que les autres réserves du plugin.
+
+  Vérifié par harness Node headless (34 nouveaux cas, **118/118** au total) :
+  géométrie de l'amorce (point d'entrée = source de vérité de l'export, décalage par
+  longueur/angle, y compris rotation de direction avec l'angle), non-tracé quand
+  `_chfLeadLength` est nul, coexistence indépendante fantôme-compensation/amorce
+  (0/1/1/2 flèches selon les combinaisons), garde-fous `CHFSTART` (0, 2+ sélectionnés,
+  type non supporté → avertissement sans effet ; 1 objet valide → picking armé),
+  multi-sélection (`_chfPropLeadLengthMulti`/`_chfPropLeadAngleMulti`, y compris NaN
+  ignoré), et bout-en-bout sur `chfBuildFileContent` (bloc `<GuideCurve Para>`
+  correctement encadré par `<PWM Control>`/`<coolPos Para>` dans le fichier final, cas
+  désactivé et activé). `node --check` OK sur les deux copies du plugin. **Non
+  vérifié en navigateur réel** (blocage `file://` MCP inchangé) : seuls le calcul
+  géométrique et la grammaire de sortie sont couverts, ni le rendu visuel ni le
+  comportement réel de la machine SC2000 face au bloc `<GuideCurve Para>`.
+- **`CHFCOMP` — Compensation auto (extérieur/intérieur) dans la barre Export laser** —
+  applique en un clic un décalage signé (`_chfCompensation`) à toute une sélection
+  d'objets : on règle une magnitude (mm) dans un nouveau champ toolbar puis on
+  applique — le sens (agrandir vers l'extérieur / rétrécir vers l'intérieur) est
+  déterminé automatiquement par la profondeur d'imbrication au sein de la sélection
+  (nombre d'autres contours sélectionnés qui contiennent le point représentatif de
+  l'objet — cercle : test de distance ; sinon `pointInPolygon`). Deux règles au choix
+  via un nouveau sélecteur toolbar (`data-tbid="chf-comp-mode"`, "Alterné" par défaut)
+  — proposées toutes les deux plutôt qu'une seule tranchée d'office, à la demande de
+  l'utilisateur : **Alterné** (parité pair/impair, correct dès 3 niveaux d'imbrication,
+  ex. anneau + moyeu plein) vs **Binaire** (extérieur seulement si non imbriqué du
+  tout — diverge de Alterné dès le 3ᵉ niveau). Contours ouverts (ligne, mur, polyligne
+  non fermée...) ignorés, comptés dans le message terminal. Ré-exécuter la commande
+  **remplace** la compensation existante, jamais de cumul. `_chfCompensation` devient
+  une valeur signée (positif = extérieur, négatif = intérieur) — réinterprétation
+  non-cassante, l'export (`_chfBuildGraph`) traitait déjà ce champ comme signé, aucun
+  changement requis côté grammaire `.chf`.
+
+  Prévisualisation en pointillé du contour compensé (nouveau handler
+  `decorateEntity`), recalculée à chaque rendu depuis la géométrie courante — jamais
+  stockée, reste donc automatiquement synchrone après un déplacement/rotation/échelle
+  — en réutilisant `computeOffsetGeom` déjà existant : point de référence fixé loin à
+  l'extérieur de la bbox de l'objet, ce qui fait toujours résoudre le signe interne de
+  `computeOffsetGeom` à +1, donc le signe de `_chfCompensation` seul pilote
+  agrandir/rétrécir sans écrire de nouvelle géométrie d'offset.
+
+  Nouveau hook cœur additif **`pluginDecorateEntity(e, ctx)`**, branché aux deux
+  points d'appel `drawEntity()` existants (couche statique `_drawStaticLayer` et
+  couche dynamique `_drawDynamicLayer`, car les entités sélectionnées sont exclues de
+  la couche statique). Contrairement à `pluginExtraPropsHandler` (un seul gagnant par
+  type), appelle TOUS les plugins ayant un handler `decorateEntity` — chacun décide en
+  interne s'il a quelque chose à dessiner pour l'entité. `ctx` passé en paramètre
+  explicite (jamais lu comme variable globale : `ctx`/`TC` sont des `let` de portée
+  module, invisibles depuis un plugin chargé via `new Function()`). Réutilisable par
+  tout futur plugin voulant superposer un rendu additif sur les entités existantes.
+
+  Vérifié par harness Node headless (prolongement de celui de `chf_export`, 66/66
+  checks dont 19 nouveaux, code réel du plugin + fonctions géométriques réelles du
+  cœur) : divergence Alterné/Binaire reproduite sur un cas à 3 niveaux d'imbrication
+  (anneau + moyeu), contour ouvert ignoré avec décompte correct dans le message,
+  remplacement idempotent (ré-exécution avec une nouvelle magnitude, pas de cumul),
+  signe du fantôme de prévisualisation (rayon +mag/-mag), et imbrication via
+  `pointInPolygon` vérifiée sur des rectangles (pas seulement le raccourci cercle
+  natif). **Réserve inchangée** (déjà signalée pour `chf_export`) : le sens réel
+  attendu par SC2000 pour le champ de compensation (intérieur vs extérieur) n'est
+  confirmé par aucun exemple disponible — recommandé de tester sur une chute avant
+  toute pièce définitive.
+
+  Lancer `CHFCOMP` sans sélection active **arme désormais la boîte de sélection**
+  (fenêtre/croisement/clic) au lieu de simplement avertir sans rien faire — nouveau
+  flag `S._chfCompPending` calqué sur le patron déjà utilisé par `EXPLODE`/`GROUP`/
+  `UNGROUP`/`WBLOCK` (`S.xPending` + `setTool('select')`, curseur en mode `'pick'`
+  tant que la sélection est en cours, **Entrée** ré-exécute `CHFCOMP` avec la
+  sélection faite, **Échap** annule) : 4 points d'ancrage dans `src/minicad.html`
+  (curseur `~L9900`, purge à changement d'outil `~L14104`, gestionnaires Entrée/Échap
+  `~L17597` et `~L17701`) plus le nouveau garde en tête de
+  `_chfApplyCompensationToSelection()` côté plugin. Vérifié par harness (2 nouveaux
+  cas, 72/72 au total) : le flag s'arme et se désarme correctement, `setTool`/le
+  message d'avertissement sont bien déclenchés, et la compensation s'applique
+  normalement une fois la sélection faite. Le câblage cœur (curseur/Entrée/Échap/
+  purge) suit à l'identique un mécanisme déjà éprouvé ailleurs dans le fichier —
+  non retesté séparément en harness, seule la logique côté plugin (nouvelle) l'est.
+
+  Fantôme de compensation : **flèches de sens de coupe** le long du pointillé
+  (nouvelles fonctions `_chfArrowSamples`/`_chfDrawDirArrow`/`_chfDrawDirectionArrows`,
+  appelées depuis `decorateEntity` juste après `drawEntity(ghost)`) — 3 flèches
+  réparties sur un contour fermé (cercle : 3 angles à 120° ; polygone/polyligne :
+  3 points échantillonnés par index, tangente = segment vers le point suivant),
+  jusqu'à 2 sur un contour ouvert. Sens piloté par `e._chfReverse` (case "Inverse"
+  du panneau propriétés) : la tangente est basculée de π avant tracé. Réutilise
+  `drawArrowHead` et `w2s` du cœur, accessibles depuis un plugin car `function`-
+  déclarées (contrairement à `ctx`/`canvasW`/`canvasH`, des `let` de portée module
+  — mais résolubles quand même à l'appel, ces fonctions cœur s'exécutant dans leur
+  propre closure, celle où ces variables sont visibles). Aucune conversion
+  monde→écran ambiante sur le canvas (confirmé via `drawGrips`, qui appelle
+  explicitement `w2s()` avant tout `ctx.fillRect` en pixels) : chaque point
+  d'ancrage de flèche passe donc lui aussi par `w2s()` avant tracé.
+
+  Vérifié par harness Node headless (2 nouveaux cas, 78/78 au total) : sur cercle
+  et sur rectangle (deux chemins de code distincts dans `_chfArrowSamples`), le
+  nombre de flèches tracées et surtout — la propriété qui compte vraiment pour la
+  fonctionnalité demandée — l'inversion exacte de π de l'angle de chaque flèche
+  quand `_chfReverse` bascule. Un angle absolu de référence (échantillon 0 du
+  cercle) vérifié à la main en plus. **Non vérifié en navigateur réel** (blocage
+  `file://` du connecteur MCP inchangé cette session) : seul le calcul angle/
+  position est couvert, pas le rendu visuel (lisibilité, taille, chevauchement sur
+  petits contours) — à contrôler visuellement dès que possible.
+
+  **`CHFREV` — icône toolbar pour inverser le sens de coupe** — nouveau bouton dans
+  la barre Export laser (`data-tbid="chf-rev-toggle"`, icône double-flèche) qui
+  bascule `_chfReverse` de chaque objet supporté de la sélection **individuellement**
+  (chacun inverse son propre état courant — comme `MIRROR` bascule chaque objet
+  indépendamment — contrairement au select "Sens" du panneau propriétés en mode
+  multi-sélection, qui force tous les objets à une même valeur choisie). Types non
+  supportés dans la sélection ignorés silencieusement (comptés hors du message).
+  Aucune sélection : avertit sans rien faire (pas d'armement de boîte de sélection
+  comme `CHFCOMP` — non demandé pour cet outil, comportement par défaut le plus
+  courant du cœur). Vérifié par harness Node headless (6 nouveaux cas, **84/84** au
+  total) : bascule individuelle vraie/faux sur deux objets aux états initiaux
+  opposés, type non supporté laissé intact, décompte correct dans le message,
+  sélection vide → avertissement sans effet. `node --check` OK sur les deux copies
+  du plugin. **Non vérifié en navigateur réel** (blocage `file://` MCP inchangé).
+- **Nouveau plugin `chf_export` — export `.chf` pour découpe laser SC2000** —
+  nouvelle commande `EXPORTCHF` (alias `ECHF`) qui exporte tout ou partie du
+  dessin (sélection ou dessin entier, blocs `insert` aplatis récursivement,
+  profondeur max 5) vers le format `.chf` lu par le logiciel de pilotage
+  laser SC2000 (Au3Tech). Format rétro-ingénierié à partir d'un fichier
+  d'exemple fourni par l'utilisateur (aucune documentation publique
+  disponible) : grammaire de graphes/Gly, règle de chaînage (`dir` de
+  parcours), élargissement de bbox par la compensation — tout validé à la
+  main contre l'exemple avant implémentation. Trois réglages par objet dans
+  le panneau Propriétés (types supportés : ligne, mur, rectangle, cercle,
+  arc, polyligne, câble, spline, ellipse) :
+  - **Sens** — normal/inversé, select dédié (mono et multi-sélection).
+  - **Compensation (mm)** — jeu de coupe/largeur de trait, appliqué à la
+    bbox déclarée du graphe (pas aux points stockés) pour les contours
+    non-cercle, fidèle au comportement observé sur l'exemple.
+  - **Point de départ** — bouton "cliquer sur le contour" (nouvel outil
+    `chf_startpoint`, branché dans `handleClick`/Échap comme le point de
+    base de `WBLOCK`), proposé uniquement sur les contours fermés (rect,
+    cercle, arc/ellipse pleins, polyligne/câble/spline fermé(e)s), avec
+    réinitialisation possible vers le défaut auto. Le point est toujours
+    re-projeté sur la géométrie courante à l'export (résiste à un
+    déplacement/redimensionnement ultérieur de l'objet) et reste fixe sous
+    inversion du Sens — seule la direction de parcours change.
+
+  Résolution de contour unifiée (`_chfResolveContour`), partagée par le
+  picking et l'algorithme d'export pour garantir leur cohérence géométrique
+  — comble au passage un manque de `getEntitySegments` (aucun cas
+  cercle/arc, pas de tessellation des bulges polyligne/câble).
+
+  Nouveau hook cœur additif **`pluginExtraPropsHandler(type)` /
+  `pluginExtraPropsHandlerMulti(type)`** (à côté de `pluginPropsHandler`,
+  inchangé) : contrairement à ce dernier qui *remplace* tout le rendu
+  Propriétés d'un type, celui-ci *ajoute* du HTML après le rendu natif ou
+  remplacé — nécessaire pour qu'un plugin ajoute quelques lignes (Sens/
+  Compensation/Point de départ) sur des types déjà gérés nativement (ligne,
+  rect, cercle...) sans avoir à réimplémenter tout leur rendu. Réutilisable
+  par tout futur plugin.
+
+  **Réserves non vérifiées sur machine réelle** (absentes de l'unique
+  exemple disponible) : le sens `dir=-1` sur un cercle, un point de départ
+  non-défaut sur un cercle, et le sens intérieur/extérieur de la
+  compensation — premier essai recommandé sur une chute, avec un objet
+  simple (sans inversion ni compensation) avant toute pièce définitive.
+- **Copier/coller entre onglets MiniCAD** — `Ctrl+C`/`Ctrl+X` déposent
+  désormais aussi un export JSON des objets sélectionnés dans le presse-
+  papiers du système d'exploitation (`navigator.clipboard.writeText()`), en
+  plus du presse-papiers interne (`S.clipboard`, inchangé). Repli silencieux
+  si l'API Clipboard est indisponible — le presse-papiers interne suffit
+  toujours pour coller dans le même onglet.
+  Côté collage, `Ctrl+V` s'appuie sur l'évènement natif `paste` du navigateur
+  (accès synchrone à `ev.clipboardData`) plutôt que sur
+  `navigator.clipboard.readText()` : cette dernière exige une permission
+  dédiée et échouait silencieusement dans plusieurs contextes — notamment le
+  fichier local `file://` utilisé pour ouvrir MiniCAD (repli sur le presse-
+  papiers interne vide → "Presse-papiers vide" à tort, signalé sur Opera).
+  Le nouveau listener `document.addEventListener('paste', ...)` lit
+  `ev.clipboardData`, remplace `S.clipboard` si le texte est un export
+  MiniCAD reconnu (`__minicad_clipboard`) — permettant de copier dans un
+  onglet/fenêtre MiniCAD et coller dans un autre — sinon conserve le presse-
+  papiers interne existant. Même garde que pour Ctrl+C/X/V au clavier : un
+  champ de dialogue ouvert (renommer un bloc, TEXTE...) autre que `cmdInput`
+  garde son collage de texte natif, non intercepté. L'ancien
+  `ev.preventDefault()` sur le `keydown` Ctrl+V a été retiré (il supprimait
+  l'évènement `paste` avant qu'il ne se déclenche) ; `clipboardPaste()` est
+  redevenue synchrone. L'entrée "Coller" du menu Ctrl+clic-droit reste
+  toujours active (même presse-papiers interne vide) : un clic sur cette
+  entrée ne peut de toute façon jamais déclencher l'évènement `paste` natif
+  (seul un vrai Ctrl+V clavier le peut), donc griser l'entrée selon l'état
+  du presse-papiers interne serait trompeur et empêcherait de découvrir la
+  fonctionnalité dans un onglet neuf. `clipboardPaste()` reste le filet de
+  sécurité et avertit ("Presse-papiers vide") si rien n'est réellement
+  disponible — le collage cross-onglet nécessite un vrai Ctrl+V, pas un
+  clic sur "Coller".
+- **Cause réelle du bug Opera identifiée et corrigée** — le diagnostic ajouté
+  a montré que `navigator.clipboard` est carrément absent sur cet Opera (pas
+  une permission refusée : la branche "API indisponible" s'affichait), donc
+  `clipboardCopy()` n'écrivait jamais rien dans le presse-papiers système —
+  ce que l'onglet 2 confirmait en lisant un presse-papiers vide via
+  Ctrl+V. Cause probable : `navigator.clipboard` exige un contexte
+  "sécurisé", et `file://` (utilisé pour ouvrir MiniCAD) n'est pas
+  systématiquement traité comme tel selon le navigateur.
+  Nouvelle fonction `writeSystemClipboard(text)` : écrit désormais via
+  `document.execCommand('copy')` (textarea temporaire hors écran,
+  sélectionné puis copié) — API dépréciée mais synchrone et indépendante du
+  statut "contexte sécurisé", donc disponible y compris sur ce cas Opera.
+  `navigator.clipboard.writeText()` reste tenté en secours si disponible.
+  Le côté lecture (`paste` natif) n'a pas besoin de ce changement : il n'a
+  jamais été concerné par cette restriction.
+- **Menu Ctrl+clic-droit : historique des 5 dernières commandes** — la liste
+  "Répéter X" n'affichait que la toute dernière commande ; elle montre
+  désormais jusqu'à 5 entrées (la plus récente en gras avec le raccourci
+  Entrée), chacune cliquable pour la relancer directement. Nouvel état
+  `S.cmdRepeatHistory` (5 entrées max, la plus récente en tête, dédoublonnée
+  sur l'entrée immédiatement précédente) alimenté par la nouvelle fonction
+  `_pushCmdRepeat(raw)`, appelée aux trois points où `S.lastCmdRaw` était
+  auparavant assigné directement (commande `CMD{}` exécutée, commande de
+  module, sélection d'un outil via la barre d'outils/`_toolCmdName`) —
+  `S.lastCmdRaw` reste alimenté en parallèle pour le clic droit simple.
+- **`DEPUIS` (FROM, façon AutoCAD)** — nouvelle entrée "Depuis..." dans le menu
+  contextuel Ctrl+clic-droit (`showCanvasContext()`), activée dès qu'un point
+  est attendu (`getCursorMode()==='draw'` — dessin en cours, point de base
+  MOVE/COPY/ROTATE/SCALE...). Auparavant Ctrl+clic-droit n'ouvrait ce menu
+  qu'à l'arrêt (outil `select` idle) ; le raccourci fonctionne désormais aussi
+  en pleine saisie de point (`_rightClickAction()` teste `ev.ctrlKey` avant la
+  confirmation "Entrée" du clic droit simple). "Depuis" arme la capture d'un
+  point de référence (`S._fromArmed`) : le clic suivant le mémorise
+  (`S._fromBase`) sans faire avancer la commande — Échap annule cette seule
+  sous-étape. Le point réel se donne ensuite au clavier par une coordonnée
+  relative/polaire (`@dx,dy`, `dist<angle`, `#x,y`) résolue depuis ce point de
+  référence via `parseDistanceInput()` (déjà utilisé pour les points 2+ d'une
+  entité) — comblant un manque réel : jusqu'ici, le tout premier point d'une
+  entité ne pouvait être saisi qu'en absolu, aucun point de référence
+  n'existant encore pour un décalage relatif. Un clic normal (sans taper de
+  décalage) ignore la référence, exactement comme AutoCAD. Référence
+  consommée une seule fois (remise à `null` à chaque clic normal et à chaque
+  changement d'outil via `setTool()`), pour ne jamais fausser une commande
+  ultérieure sans rapport. La bulle de saisie dynamique (D/A) reflète elle
+  aussi la référence : `getDIMode()` bascule en mode Distance/Angle (au lieu
+  de X,Y brut) dès que `S._fromBase` est armé, `updateDynamicInput()` calcule
+  ces valeurs par rapport au point de référence, et `confirmDynamicInput()`
+  résout le point réel (référence + distance/angle) à la confirmation —
+  la mesure affichée part donc bien du point "Depuis", plus de l'origine.
+  Un aperçu en pointillés avec la distance live (même style que les repères
+  OFFSET/AXIS) est aussi tracé entre la référence et le curseur — quel que
+  soit le point concerné (1er point d'une entité, ou un point suivant : ex.
+  2ème point d'une LIGNE déjà commencée). Correction d'un deuxième manque :
+  la référence n'était utilisée que pour le tout premier point d'une entité —
+  armer "Depuis" pour un point suivant (déjà en train de dessiner) retombait
+  sur le dernier point réel de l'entité, ignorant la référence choisie
+  (`updateDynamicInput()`/`confirmDynamicInput()`/le bloc terminal « SECOND+
+  POINT INPUT » ne consultaient pas `S._fromBase`). Les trois font désormais
+  systématiquement primer `S._fromBase` sur `S.drawPoints[...]` tant qu'il est
+  armé, et Échap peut aussi annuler une référence déjà acquise mais pas
+  encore utilisée, sans toucher à la commande en cours.
 - **Nom de bloc demandé + renommage propagé** — `BLOCK` sans nom fourni en
   argument ouvre désormais une invite (`prompt()`) au lieu d'auto-nommer
   silencieusement en `Bloc1`/`Bloc2`... (Échap/annuler abandonne la création).

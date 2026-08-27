@@ -2861,8 +2861,9 @@ const S = {
   rotateStep: 0,   // 1=await base, 2=await angle
   rotateBase: null,
   rotateIds: [],
-  // Dernière commande pour répétition (clic droit)
+  // Dernière commande pour répétition (clic droit) + historique (menu Ctrl+clic-droit)
   lastCmdRaw: null,
+  cmdRepeatHistory: [],
   // TEXT
   _textContent: 'Texte',
   _textSize: 14,
@@ -5086,6 +5087,17 @@ function _drawDynamicLayer() {
   }
   if (S.axisDistPt1 && mouseOnCanvas) {
     const [x1,y1]=S.axisDistPt1, [mx,my]=S.mouseWorld;
+    const [sx1,sy1]=w2s(x1,y1), [smx,smy]=w2s(mx,my);
+    const d=Math.hypot(mx-x1,my-y1);
+    ctx.save(); ctx.strokeStyle=TC.label; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(sx1,sy1); ctx.lineTo(smx,smy); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle=TC.label; ctx.font='11px JetBrains Mono';
+    ctx.textAlign='left'; ctx.textBaseline='bottom';
+    ctx.fillText(d.toFixed(1),(sx1+smx)/2+6,(sy1+smy)/2-4);
+    ctx.restore();
+  }
+  if (S._fromBase && mouseOnCanvas) {
+    const [x1,y1]=S._fromBase, [mx,my]=S.mouseWorld;
     const [sx1,sy1]=w2s(x1,y1), [smx,smy]=w2s(mx,my);
     const d=Math.hypot(mx-x1,my-y1);
     ctx.save(); ctx.strokeStyle=TC.label; ctx.lineWidth=1; ctx.setLineDash([4,4]);
@@ -9402,8 +9414,8 @@ const diUnit2 = document.getElementById('di-unit2');
 // Returns the input mode for the current tool and drawing state
 function getDIMode() {
   const drawingTools = ['line','xline','ray','ray_rev','rect','rectcenter','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube','ellipse','polygon'];
-  // First point: show X,Y
-  if (!S.drawing && drawingTools.includes(S.tool)) return 'xy';
+  // First point: show X,Y — sauf DEPUIS actif, où D/A (relatif au point de référence)
+  if (!S.drawing && drawingTools.includes(S.tool)) return S._fromBase ? 'polar' : 'xy';
   if (S.tool === 'rect' || S.tool === 'rectcenter') return 'wh'; // Width × Height
   if (S.tool === 'circle') return 'radius'; // Radius only
   return 'polar'; // Distance + Angle (line, polyline, wall, etc.)
@@ -9454,15 +9466,21 @@ function updateDynamicInput() {
   }
 
   // === NOT DRAWING and not xy mode ===
-  if (!S.drawing || S.drawPoints.length === 0) {
+  // Exception : DEPUIS armé → le point de référence tient lieu de "dernier point"
+  // pour afficher Distance/Angle avant même que le dessin ne commence.
+  const fromPending = !S.drawing && S._fromBase;
+  if ((!S.drawing || S.drawPoints.length === 0) && !fromPending) {
     diContainer.classList.remove('visible');
     if (pi) pi.style.display = 'none';
     cmdInput.placeholder = 'Commande ou mesure (100,100 ou 100<45 ou 200)...';
     return;
   }
 
-  // === DRAWING MODE ===
-  const last = S.drawPoints[S.drawPoints.length - 1];
+  // === DRAWING MODE (ou DEPUIS, avant le 1er point comme sur un point suivant) ===
+  // DEPUIS prime sur le dernier point de l'entité tant qu'il est armé — que ce
+  // soit pour le tout premier point (fromPending) ou pour un point ultérieur
+  // (ex: 2ème point d'une LIGNE déjà commencée).
+  const last = S._fromBase || S.drawPoints[S.drawPoints.length - 1];
   let [mx, my] = S.mouseWorld;
   if (S.currentOsnap) { mx = S.currentOsnap.x; my = S.currentOsnap.y; }
   else { [mx, my] = snapToGrid(mx, my); }
@@ -9616,6 +9634,29 @@ function confirmDynamicInput() {
     render(); setTimeout(smartFocus, 0); return;
   }
 
+  // === PREMIER POINT VIA DEPUIS (D/A relatifs au point de référence) ===
+  if (!S.drawing && S._fromBase) {
+    const d = parseFloat(diDist.value);
+    const a = parseFloat(diAngle.value);
+    if (isNaN(d)) { termPrint('Distance invalide', 'error'); return; }
+    const aRad = (isNaN(a) ? 0 : a) * Math.PI / 180;
+    const x = S._fromBase[0] + d * Math.cos(aRad);
+    const y = S._fromBase[1] + d * Math.sin(aRad);
+    S._fromBase = null;
+    S.diLocked = false; diDist.blur(); diAngle.blur();
+    S.drawing = true;
+    S.drawPoints = [[x, y]];
+    S.awaitingInput = true;
+    if (S.tool === 'tube') S.tubePoints = [[x, y]];
+    termPrint('Point 1 (DEPUIS): (' + x.toFixed(1) + ', ' + y.toFixed(1) + ')', 'info');
+    if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
+    else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
+    else if (S.tool === 'dim_angular') termPrint('DIMANGULAR: cliquez la 1ère ligne', 'info');
+    else if (S.tool === 'tube') termPrint('Longueur (ex: 500) ou 500<45 — Entrée pour terminer', 'warning');
+    else termPrint('2ème point ou longueur (ex: 150, 100<45, 100,50)', 'warning');
+    render(); setTimeout(smartFocus, 0); return;
+  }
+
   if (!S.drawing || S.drawPoints.length === 0) return;
 
   // === CLORE polyligne via bulle DI ===
@@ -9697,7 +9738,9 @@ function confirmDynamicInput() {
     updateProperties(); render(); return;
   }
 
-  const base = S.drawPoints[S.drawPoints.length - 1];
+  // DEPUIS armé sur ce point (ex: 2ème point d'une LIGNE) : prime sur le
+  // dernier point de l'entité, même logique que la saisie au terminal.
+  const base = S._fromBase || S.drawPoints[S.drawPoints.length - 1];
   let nx, ny;
 
   // Lecture robuste d'un champ numérique : évalue l'expression si présente
@@ -9752,6 +9795,7 @@ function confirmDynamicInput() {
 
   S.diLocked = false;
   diDist.blur(); diAngle.blur();
+  S._fromBase = null;
 
   // For 2-point tools: finish
   if (['line','rect','rectcenter','circle','wall','leader'].includes(S.tool)) {
@@ -10642,6 +10686,23 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
   // wx/wy: snapped position — use for new point creation
   if (rawWx === undefined) { rawWx = wx; rawWy = wy; }
   const tool = S.tool;
+
+  // DEPUIS (FROM, façon AutoCAD) : ce clic ne fait que mémoriser le point de
+  // référence — la commande en cours n'avance pas. Le point réel se donne
+  // ensuite par un clic normal (qui l'ignore) ou par une coordonnée relative
+  // tapée au clavier (@dx,dy / dist<angle), résolue depuis ce point (voir le
+  // bloc « FIRST POINT INPUT » du terminal). Consommé une seule fois.
+  if (S._fromArmed) {
+    S._fromArmed = false;
+    S._fromBase = [wx, wy];
+    termPrint('DEPUIS : point de référence (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ') — entrez un point relatif (ex: @50,30 ou 100<45) ou cliquez le point réel', 'warning');
+    render();
+    return;
+  }
+  // Le point de référence n'a été utile que pour l'interaction qui suit
+  // immédiatement son acquisition (clic ou saisie) — au-delà, on l'oublie
+  // pour ne pas fausser une future commande sans rapport.
+  S._fromBase = null;
 
   // Chaque clic invalide les points d'extension acquis (OTRACK) : un nouveau
   // point de départ (ex. segment suivant d'une polyligne/ligne) ne doit pas
@@ -11601,6 +11662,43 @@ function applyCopy(ids, dx, dy) {
 }
 
 // ===== CLIPBOARD CUT / COPY / PASTE =====
+// Presse-papiers interne (S.clipboard, pour coller dans le même onglet) +
+// presse-papiers système (JSON texte via l'API Clipboard native) qui permet
+// de copier/coller des objets entre deux onglets ou fenêtres MiniCAD — aucune
+// dépendance externe, juste du texte structuré déposé dans le presse-papiers
+// du système d'exploitation.
+// Écrit dans le presse-papiers du système : document.execCommand('copy')
+// (ancienne API, synchrone) plutôt que navigator.clipboard.writeText().
+// Constaté sur Opera : navigator.clipboard est carrément absent (pas juste
+// une permission refusée) en dehors d'un contexte jugé "sécurisé" par le
+// navigateur, et file:// (utilisé pour ouvrir MiniCAD) n'en fait pas
+// toujours partie selon le navigateur. execCommand('copy'), bien que
+// déprécié, ne dépend pas de ce statut et reste supporté partout — et son
+// résultat est un booléen synchrone, donc on peut fiabiliser le message
+// affiché à l'utilisateur.
+function writeSystemClipboard(text) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '-9999px';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (ok) return true;
+  } catch (e) { /* repli ci-dessous */ }
+  // Repli sur l'API moderne si dispo (best-effort, résultat non observable
+  // ici puisqu'asynchrone) — inutile de bloquer sur son absence.
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => {});
+  }
+  return false;
+}
+
 function clipboardCopy() {
   if (!S.selected.length) { termPrint('Aucun objet sélectionné', 'warning'); return; }
   const ids = new Set(S.selected);
@@ -11610,7 +11708,12 @@ function clipboardCopy() {
     const e = S.entities.find(e => e.id === id);
     return e ? JSON.parse(JSON.stringify(e)) : null;
   }).filter(Boolean);
-  termPrint(S.clipboard.length + ' objet(s) copié(s) dans le presse-papiers  (Ctrl+V pour coller)', 'success');
+  const ok = writeSystemClipboard(JSON.stringify({ __minicad_clipboard: true, entities: S.clipboard }));
+  if (ok) {
+    termPrint(S.clipboard.length + ' objet(s) copié(s)  (Ctrl+V pour coller, y compris dans un autre onglet MiniCAD)', 'success');
+  } else {
+    termPrint(S.clipboard.length + ' objet(s) copié(s) dans le presse-papiers interne (accès au presse-papiers système refusé par le navigateur — le collage cross-onglet ne fonctionnera pas)', 'warning');
+  }
 }
 
 function clipboardCut() {
@@ -11630,6 +11733,42 @@ function clipboardPaste() {
   termPrint('COLLER: Cliquer le point d\'insertion (Echap=annuler)', 'info');
   setTimeout(smartFocus, 0);
 }
+
+// Collage cross-onglet : on s'appuie sur l'évènement natif 'paste' (déclenché
+// par Ctrl+V ou le menu Édition du navigateur) plutôt que sur
+// navigator.clipboard.readText(), qui exige une permission dédiée et échoue
+// silencieusement dans bien des contextes (notamment le fichier local
+// file:// utilisé pour MiniCAD, cas signalé sur Opera). L'évènement 'paste'
+// donne un accès synchrone à ev.clipboardData sans permission supplémentaire,
+// puisqu'il répond directement à l'action de collage de l'utilisateur.
+// MiniCAD ne colle jamais de texte brut : preventDefault() est systématique
+// pour éviter qu'un Ctrl+V n'insère du JSON dans le champ de commande.
+document.addEventListener('paste', (ev) => {
+  // Ne pas voler le collage texte natif d'un champ de dialogue ouvert
+  // (renommer un bloc, dialogue TEXTE, etc.) — même garde que pour
+  // Ctrl+C/X/V au clavier : seuls cmdInput ou un élément non éditable
+  // (canvas) déclenchent le collage d'objets CAO.
+  const ae = document.activeElement;
+  if (ae && ae !== cmdInput && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) return;
+  ev.preventDefault();
+  const text = (ev.clipboardData || window.clipboardData)?.getData('text/plain') || '';
+  let fromOtherTab = false;
+  try {
+    const data = JSON.parse(text);
+    if (data && data.__minicad_clipboard && Array.isArray(data.entities) && data.entities.length) {
+      S.clipboard = data.entities; // ex: copié depuis un autre onglet/fenêtre MiniCAD
+      fromOtherTab = true;
+    }
+  } catch (e) { /* pas du JSON MiniCAD → on garde le presse-papiers interne existant */ }
+  // Diagnostic : si le presse-papiers navigateur est vide ET le presse-papiers
+  // interne aussi, préciser que c'est côté lecture (pas juste "vide") — aide à
+  // distinguer un blocage du 'paste' natif d'un simple presse-papiers vide.
+  if (!fromOtherTab && !text && !S.clipboard.length) {
+    termPrint('Presse-papiers du navigateur vide ou inaccessible (permissions Opera/Chrome) — recopiez avec Ctrl+C', 'warning');
+    return;
+  }
+  clipboardPaste();
+});
 
 function applyPaste(wx, wy) {
   if (!S.clipboard.length) return;
@@ -13932,7 +14071,16 @@ const _toolCmdName = {
   point:'POINT', divide_pick:'DIVIDE', measure:'MESURER',
   rectcenter:'RECTCENTER',
 };
+// Historique des commandes pour le menu Ctrl+clic-droit (5 dernières, plus
+// récente en tête) — alimente aussi S.lastCmdRaw pour le clic droit simple.
+function _pushCmdRepeat(raw) {
+  if (!raw) return;
+  S.lastCmdRaw = raw;
+  if (S.cmdRepeatHistory[0] !== raw) S.cmdRepeatHistory.unshift(raw);
+  if (S.cmdRepeatHistory.length > 5) S.cmdRepeatHistory.length = 5;
+}
 function setTool(t) {
+  S._fromArmed=false; S._fromBase=null; // DEPUIS : n'a de sens que pour la commande en cours
   if(t !== 'select' && t !== 'copy') S.copyPending=false;
   if(t !== 'select') S.explodePending=false;
   if(t !== 'select') S.groupPending=false;
@@ -13948,7 +14096,7 @@ function setTool(t) {
   if(t !== 'select') { S.axisOverPending=false; S.axisAwaitDist=false; S.axisDistPt1=null; }
   if(t !== 'stretch') { S.stretchRect=null; S.stretchStep=0; }
   if(t !== 'divide_pick') { S.divideStep=0; S.divideEntId=null; }
-  if(_toolCmdName[t]) S.lastCmdRaw = _toolCmdName[t];
+  if(_toolCmdName[t]) _pushCmdRepeat(_toolCmdName[t]);
   if(t !== 'circle') S.circleDiamMode=false;
   S.tool=t; S.drawing=false; S.drawPoints=[]; S.awaitingInput=false;
   if(t !== 'tube') S.tubePoints=[];
@@ -17102,6 +17250,27 @@ function executeCommand(input) {
   // ---- FIRST POINT INPUT: tool active but no drawing started yet ----
   const drawingTools = ['line','xline','ray','ray_rev','rect','rectcenter','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube','ellipse','polygon'];
   if (!S.drawing && drawingTools.includes(S.tool)) {
+    // DEPUIS (FROM) actif : le point de référence choisi via le menu contextuel
+    // Ctrl+clic-droit sert de base à une coordonnée relative/polaire — seul moyen
+    // de placer ce tout premier point ailleurs qu'en absolu (aucun point
+    // précédent n'existe encore pour cette entité).
+    if (S._fromBase) {
+      const fromResolved = parseDistanceInput(raw, S._fromBase, S.mouseWorld);
+      if (fromResolved) {
+        const [fx, fy] = fromResolved;
+        S._fromBase = null;
+        termPrint('❯ ' + raw, '');
+        termPrint('Point 1 (DEPUIS): (' + fx.toFixed(1) + ', ' + fy.toFixed(1) + ')', 'info');
+        S.drawing = true;
+        S.drawPoints = [[fx, fy]];
+        S.awaitingInput = true;
+        if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
+        else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
+        else if (S.tool === 'dim_angular') termPrint('DIMANGULAR: cliquez la 1ère ligne', 'info');
+        else termPrint('2ème point ou longueur (ex: 150, 100<45, 100,50)', 'warning');
+        render(); return;
+      }
+    }
     // Try to parse as absolute coordinates for the 1st point
     const fpMatch = raw.match(/^#?\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
     if (fpMatch) {
@@ -17148,9 +17317,13 @@ function executeCommand(input) {
   // ---- SECOND+ POINT INPUT: already drawing ----
   // If we're drawing and awaiting input, try distance/coordinate input first
   if (S.drawing && S.awaitingInput && S.drawPoints.length > 0) {
-    const base = S.drawPoints[S.drawPoints.length - 1];
+    // DEPUIS actif pour ce point (armé après le point 1, ex: 2ème point d'une
+    // LIGNE) : la distance/angle tapée est relative à ce point de référence,
+    // pas au dernier point de l'entité — même logique que le tout premier point.
+    const base = S._fromBase || S.drawPoints[S.drawPoints.length - 1];
     const resolved = parseDistanceInput(raw, base, S.mouseWorld);
     if (resolved) {
+      S._fromBase = null;
       termPrint('❯ ' + raw, '');
       const [nx, ny] = resolved;
 
@@ -17214,7 +17387,7 @@ function executeCommand(input) {
   for(const[name,c]of Object.entries(CMD)){
     if(cmd===name||(c.alias&&c.alias.includes(cmd))){
       const noRepeat=['UNDO','REDO','U','ANNULER','REFAIRE'];
-      if(!noRepeat.includes(cmd)) S.lastCmdRaw=raw;
+      if(!noRepeat.includes(cmd)) _pushCmdRepeat(raw);
       c.exec(args);return;
     }
   }
@@ -17222,7 +17395,7 @@ function executeCommand(input) {
   // Module commands
   for(const[key,mod]of Object.entries(modules)){
     if(!mod.loaded)continue;
-    if(mod.commands[cmd]){ S.lastCmdRaw=raw; mod.commands[cmd].exec(args);return;}
+    if(mod.commands[cmd]){ _pushCmdRepeat(raw); mod.commands[cmd].exec(args);return;}
   }
 
   // Unloaded module hint
@@ -17340,6 +17513,16 @@ document.addEventListener('keydown',(ev)=>{
   if(ev.key==='Escape'){
     const cm=document.getElementById('canvas-context');
     if(cm && cm.classList.contains('show')){ ev.preventDefault(); cm.classList.remove('show'); return; }
+  }
+  // ESC prioritaire : DEPUIS — annule l'attente du point de référence sans
+  // toucher à la commande en cours (comme les autres sous-étapes « pending »).
+  if(ev.key==='Escape' && S._fromArmed){
+    S._fromArmed=false; termPrint('DEPUIS annulé','warning'); return;
+  }
+  // ESC prioritaire : DEPUIS — point de référence déjà acquis mais pas encore
+  // consommé par une saisie : on l'oublie sans toucher à la commande en cours.
+  if(ev.key==='Escape' && S._fromBase){
+    S._fromBase=null; termPrint('DEPUIS : référence oubliée','warning'); render(); return;
   }
   // ESC prioritaire : effacer le résultat de mesure visible (avant tout filtre focus)
   if(ev.key==='Escape' && S.measureResult){
@@ -17655,7 +17838,8 @@ document.addEventListener('keydown',(ev)=>{
   }
   if(ev.ctrlKey&&ev.key==='x'){ev.preventDefault();clipboardCut();}
   if(ev.ctrlKey&&ev.key==='c'){ev.preventDefault();clipboardCopy();}
-  if(ev.ctrlKey&&ev.key==='v'){ev.preventDefault();clipboardPaste();}
+  // Ctrl+V : pas de preventDefault ici — géré par le listener 'paste' natif
+  // (voir clipboardPaste()), qui a seul accès synchrone à ev.clipboardData.
   if(ev.key==='Delete')CMD.ERASE.exec();
   // Skip single-letter tool shortcuts during fillet/chamfer (those tools handle keys via cmdInput)
   if(!ev.ctrlKey && !ev.metaKey && S.tool!=='fillet' && S.tool!=='chamfer' && S.tool!=='join') {
@@ -18798,11 +18982,19 @@ async function kdriveDoSave() {
 async function saveWithPicker(content, baseName, ext, mime, description, existingHandle) {
   if (existingHandle) {
     try {
+      // La permission accordée par showSaveFilePicker() peut repasser à 'prompt'
+      // (délai écoulé, sélections/clics intermédiaires) : la revalider explicitement
+      // avant l'écriture évite un createWritable() qui échoue silencieusement.
+      if (await existingHandle.queryPermission({ mode: 'readwrite' }) !== 'granted') {
+        await existingHandle.requestPermission({ mode: 'readwrite' });
+      }
       const writable = await existingHandle.createWritable();
       await writable.write(content);
       await writable.close();
       return existingHandle.name;
-    } catch (e) { /* handle périmé/permission révoquée → repli sur le sélecteur normal */ }
+    } catch (e) {
+      termPrint('Écriture directe impossible (' + (e.message || e.name || e) + ') — nouvelle sélection du fichier.', 'warning');
+    }
   }
   const suggested = baseName + '.' + ext;
   if ('showSaveFilePicker' in window) {
@@ -20392,6 +20584,11 @@ function _rightClickAction(ev) {
     return;
   }
 
+  // Ctrl+clic droit → menu contextuel, à tout moment (y compris en pleine
+  // saisie de point, pour DEPUIS) — passe devant la confirmation « Entrée »
+  // ci-dessous, qui ne doit s'appliquer qu'au clic droit simple.
+  if (ev.ctrlKey) { showCanvasContext(ev); return; }
+
   // Pendant une saisie active → confirme comme Entrée
   if (S.drawing || S.gripEdit) {
     if (['polyline','cable'].includes(S.tool)) {
@@ -20523,14 +20720,20 @@ function _rightClickAction(ev) {
   // Outil actif mais pas encore commencé → retour à select
   if (S.tool !== 'select') { setTool('select'); render(); return; }
 
-  // Ctrl+clic droit en mode idle → menu contextuel
-  if (ev.ctrlKey) { showCanvasContext(ev); return; }
-
   // Clic droit simple → répéter la dernière commande
   if (S.lastCmdRaw) {
     termPrint('Répéter: ' + S.lastCmdRaw.toUpperCase(), 'info');
     executeCommand(S.lastCmdRaw);
   }
+}
+
+// DEPUIS (FROM, façon AutoCAD) : arme la capture du point de référence — le
+// prochain clic canvas (OSNAP actif comme n'importe quel point) le mémorise
+// dans S._fromBase sans faire avancer la commande en cours (voir handleClick).
+function cmdFrom() {
+  if (getCursorMode() !== 'draw') { termPrint('DEPUIS : disponible uniquement en attente d\'un point', 'warning'); return; }
+  S._fromArmed = true;
+  termPrint('DEPUIS : cliquer le point de référence (OSNAP actif)', 'info');
 }
 
 function showCanvasContext(ev) {
@@ -20550,13 +20753,21 @@ function showCanvasContext(ev) {
     const el = document.createElement('div'); el.className = 'tb-ctx-sep'; return el;
   }
 
-  // Répéter dernière commande
-  if (S.lastCmdRaw) {
-    const repeatEl = item('Répéter ' + S.lastCmdRaw.toUpperCase(), 'Enter', () => {
-      executeCommand(S.lastCmdRaw);
+  // DEPUIS (FROM, façon AutoCAD) — uniquement utile en attente d'un point
+  // (dessin en cours, point de base MOVE/COPY/etc.) : mémorise un point de
+  // référence, saisi ensuite au clavier via un décalage relatif (@dx,dy,
+  // dist<angle) — voir handleClick() et le bloc « FIRST POINT INPUT ».
+  const awaitingPoint = getCursorMode() === 'draw';
+  menu.appendChild(item('Depuis...', '', () => cmdFrom(), !awaitingPoint));
+  menu.appendChild(sep());
+
+  // Répéter une des 5 dernières commandes (plus récente en tête, avec Entrée)
+  if (S.cmdRepeatHistory.length) {
+    S.cmdRepeatHistory.slice(0, 5).forEach((raw, i) => {
+      const el = item('Répéter ' + raw.toUpperCase(), i === 0 ? 'Enter' : '', () => executeCommand(raw));
+      if (i === 0) el.style.fontWeight = '600';
+      menu.appendChild(el);
     });
-    repeatEl.style.fontWeight = '600';
-    menu.appendChild(repeatEl);
     menu.appendChild(sep());
   }
 
@@ -20566,11 +20777,16 @@ function showCanvasContext(ev) {
   menu.appendChild(sep());
 
   // Presse-papiers
+  // "Coller" reste actif même si S.clipboard (interne) est vide : un clic ne
+  // peut pas déclencher l'évènement 'paste' natif (seul un vrai Ctrl+V le
+  // peut), donc on ne peut pas savoir à l'avance si le presse-papiers système
+  // contient un export MiniCAD d'un autre onglet — griser l'entrée sur le
+  // seul état interne serait trompeur. clipboardPaste() reste le filet de
+  // sécurité (avertit si vraiment rien à coller).
   const hasSel = S.selected.length > 0;
-  const hasClip = S.clipboard.length > 0;
   menu.appendChild(item('Couper', 'Ctrl+X', () => clipboardCut(), !hasSel));
   menu.appendChild(item('Copier', 'Ctrl+C', () => clipboardCopy(), !hasSel));
-  menu.appendChild(item('Coller', 'Ctrl+V', () => clipboardPaste(), !hasClip));
+  menu.appendChild(item('Coller', 'Ctrl+V', () => clipboardPaste(), false));
   menu.appendChild(sep());
 
   // Actions objet

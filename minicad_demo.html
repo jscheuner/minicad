@@ -624,7 +624,7 @@
   .cb.wide   { grid-column: span 2; }
 
   /* ===== ARRAY DIALOG ===== */
-  #array-dialog, #polar-array-dialog, #insert-block-dialog {
+  #array-dialog, #polar-array-dialog, #insert-block-dialog, #wblock-dialog {
     position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
     background: var(--bg-elev); border: 1px solid color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 8px;
     z-index: 952; width: 320px; box-shadow: 0 12px 48px rgba(0,0,0,0.8);
@@ -645,6 +645,7 @@
     font-family: 'JetBrains Mono', monospace; box-sizing: border-box;
   }
   .ar-input:focus { outline: none; border-color: var(--accent); }
+  .ar-input:disabled, .ar-pick-btn:disabled { opacity: 0.4; cursor: default; }
   .ar-pick-row { display: flex; gap: 4px; }
   .ar-pick-row .ar-input { flex: 1; min-width: 0; }
   .ar-pick-btn {
@@ -1454,6 +1455,7 @@
         <div class="menu-dropdown-item" onclick="executeCommand('EXPLODE');closeMenus()"><span>Éclater (X)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('MATCHPROP');closeMenus()"><span>Copier les propriétés</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('BLOCK');closeMenus()"><span>Créer un bloc (BLOCK)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('WBLOCK');closeMenus()"><span>Écrire un bloc dans un fichier (WBLOCK)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('GROUP');closeMenus()"><span>Grouper (GROUPE)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('UNGROUP');closeMenus()"><span>Dégrouper (DÉGROUPER)</span></div>
         <div class="menu-dropdown-sep"></div>
@@ -1481,6 +1483,8 @@
       <div class="menu-dropdown-list" id="menu-cotation-list">
         <div class="menu-dropdown-item" onclick="executeCommand('DIMLINEAR');closeMenus()"><span>Cote linéaire</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('DIMALIGNED');closeMenus()"><span>Cote parallèle</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMCONTINUE');closeMenus()"><span>Cote continue</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('DIMBASELINE');closeMenus()"><span>Cote de base</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('DIMANGULAR');closeMenus()"><span>Cote angulaire</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('DIMRADIUS');closeMenus()"><span>Cote rayon</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('DIMDIAMETER');closeMenus()"><span>Cote diamètre</span></div>
@@ -1871,6 +1875,12 @@
       <button class="tool-btn" title="Cote parallèle" onclick="executeCommand('LOAD dim');executeCommand('DIMALIGNED')">
         <svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="18" y2="6"/><line x1="2" y1="14" x2="8" y2="20"/><line x1="14" y1="2" x2="20" y2="8"/></svg>
       </button>
+      <button class="tool-btn" title="Cote continue" onclick="executeCommand('LOAD dim');executeCommand('DIMCONTINUE')">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="18" x2="9" y2="18"/><line x1="11" y1="18" x2="17" y2="18"/><line x1="19" y1="18" x2="21" y2="18"/><line x1="3" y1="12" x2="3" y2="20"/><line x1="9" y1="12" x2="9" y2="20"/><line x1="17" y1="12" x2="17" y2="20"/></svg>
+      </button>
+      <button class="tool-btn" title="Cote de base" onclick="executeCommand('LOAD dim');executeCommand('DIMBASELINE')">
+        <svg viewBox="0 0 24 24"><line x1="4" y1="4" x2="4" y2="20"/><line x1="4" y1="8" x2="10" y2="8"/><line x1="4" y1="13" x2="15" y2="13"/><line x1="4" y1="18" x2="20" y2="18"/><line x1="10" y1="6" x2="10" y2="10"/><line x1="15" y1="11" x2="15" y2="15"/><line x1="20" y1="16" x2="20" y2="20"/></svg>
+      </button>
       <button class="tool-btn" title="Cote angulaire" onclick="executeCommand('LOAD dim');executeCommand('DIMANGULAR')">
         <svg viewBox="0 0 24 24"><path d="M4 20l16-4M4 20l4-16"/><path d="M10 11 A7 7 0 0 0 14 15"/></svg>
       </button>
@@ -2135,7 +2145,7 @@
   <div class="lm-table">
     <table class="lm-grid">
       <thead><tr>
-        <th>Nom</th><th>Texte (mm)</th><th>Flèche (mm)</th><th>Attache (mm)</th><th>Retrait (mm)</th><th title="Distance entre le trait de cote et le dessous du texte">Écart txt (mm)</th><th>Déc.</th><th></th>
+        <th>Nom</th><th>Texte (mm)</th><th>Flèche (mm)</th><th>Attache (mm)</th><th>Retrait (mm)</th><th title="Distance entre le trait de cote et le dessous du texte">Écart txt (mm)</th><th>Déc.</th><th title="Écart entre deux cotes empilées (DIMBASELINE)">Écart cotes (mm)</th><th></th>
       </tr></thead>
       <tbody id="dsm-body"></tbody>
     </table>
@@ -2228,7 +2238,10 @@
   <div class="ar-body" style="grid-template-columns:1fr">
     <div class="ar-group">
       <div class="ar-label">Bloc</div>
-      <select id="ib-select" class="ar-input"></select>
+      <div class="ar-pick-row">
+        <select id="ib-select" class="ar-input"></select>
+        <button id="ib-rename-btn" class="ar-pick-btn" type="button" title="Renommer le bloc…" onclick="ibRenameBlock()">✎</button>
+      </div>
     </div>
     <div class="ar-group">
       <div class="ar-label">Importer depuis un fichier</div>
@@ -2242,6 +2255,56 @@
   <div class="ar-footer">
     <button class="ar-btn cancel" onclick="closeInsertBlockDialog()">Annuler</button>
     <button class="ar-btn ok" id="ib-ok-btn" onclick="confirmInsertBlock()">OK</button>
+  </div>
+</div>
+
+<div id="wblock-dialog">
+  <div class="ar-header">
+    <span>ÉCRIRE UN BLOC (WBLOCK)</span>
+    <span class="lm-close" onclick="closeWblockDialog()">×</span>
+  </div>
+  <div class="ar-body" style="grid-template-columns:1fr">
+    <div class="ar-group">
+      <div class="ar-label">Source</div>
+      <select id="wb-source" class="ar-input" onchange="_wbSourceChanged()">
+        <option value="block">Bloc existant du dessin</option>
+        <option value="selection">Objets sélectionnés</option>
+        <option value="drawing">Dessin entier</option>
+      </select>
+    </div>
+    <div class="ar-group" id="wb-block-group">
+      <div class="ar-label">Bloc</div>
+      <select id="wb-block-select" class="ar-input"></select>
+    </div>
+    <div class="ar-group" id="wb-sel-group">
+      <div class="ar-label">Objets</div>
+      <div class="ar-pick-row">
+        <input id="wb-sel-count" class="ar-input" type="text" readonly>
+        <button class="ar-pick-btn" type="button" title="Sélectionner des objets" onclick="wbPickObjects()">◱</button>
+      </div>
+    </div>
+    <div class="ar-group" id="wb-basept-group">
+      <div class="ar-label">Point de base</div>
+      <div class="ar-pick-row">
+        <input id="wb-basept" class="ar-input" type="text" readonly>
+        <button class="ar-pick-btn" type="button" title="Choisir le point de base" onclick="wbPickBasePoint()">⌖</button>
+      </div>
+    </div>
+    <div class="ar-group" id="wb-name-group">
+      <div class="ar-label">Nom</div>
+      <input id="wb-name" class="ar-input" type="text">
+    </div>
+    <div class="ar-group" id="wb-path-group">
+      <div class="ar-label">Chemin</div>
+      <div class="ar-pick-row">
+        <input id="wb-path" class="ar-input" type="text" readonly placeholder="Dossier de téléchargements par défaut">
+        <button class="ar-pick-btn" type="button" title="Choisir l'emplacement du fichier" onclick="wbPickPath()">📁</button>
+      </div>
+    </div>
+  </div>
+  <div class="ar-footer">
+    <button class="ar-btn cancel" onclick="closeWblockDialog()">Annuler</button>
+    <button class="ar-btn ok" id="wb-ok-btn" onclick="confirmWblockDialog()">OK</button>
   </div>
 </div>
 
@@ -2632,6 +2695,7 @@ const USER_PREFS = {
   gridVis: true,
   osnapEnabled: true,
   osnapModes: { endpoint:true, midpoint:true, center:true, nearest:false, intersection:true, perpendicular:false, tangent:false, quadrant:true, extension:false, insertion:true },
+  osnapExtTimeout: 3,
   ortho: false,
   polar: true,
   polarAngle: 15,
@@ -2666,13 +2730,13 @@ const S = {
     { name: '3 - Texte',       color: '#ffab40', printColor: '#000000', visible: true, lineWidth: 0.25, lineType: 'solid' },
   ],
   dimStyles: [
-    { name: '1:1',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, extOff:  2.0, textGap:  1.0, decimals: 1 },
-    { name: '1:2',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, extOff:  4.0, textGap:  1.0, decimals: 1 },
-    { name: '1:5',   textHeight:   5, arrowSize:  3.0, extGap:  2.0, extOff:  6.0, textGap:  1.5, decimals: 1 },
-    { name: '1:10',  textHeight:  10, arrowSize:  6.0, extGap:  4.0, extOff: 10.0, textGap:  3.0, decimals: 0 },
-    { name: '1:20',  textHeight:  20, arrowSize: 12.0, extGap:  8.0, extOff: 20.0, textGap:  6.0, decimals: 0 },
-    { name: '1:50',  textHeight:  50, arrowSize: 30.0, extGap: 20.0, extOff: 20.0, textGap: 15.0, decimals: 0 },
-    { name: '1:100', textHeight: 100, arrowSize: 60.0, extGap: 40.0, extOff: 20.0, textGap: 30.0, decimals: 0 },
+    { name: '1:1',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, extOff:  2.0, textGap:  1.0, decimals: 1, baselineSpacing:  11.2 },
+    { name: '1:2',   textHeight:   4, arrowSize:  2.5, extGap:  1.5, extOff:  4.0, textGap:  1.0, decimals: 1, baselineSpacing:  11.2 },
+    { name: '1:5',   textHeight:   5, arrowSize:  3.0, extGap:  2.0, extOff:  6.0, textGap:  1.5, decimals: 1, baselineSpacing:  14.0 },
+    { name: '1:10',  textHeight:  10, arrowSize:  6.0, extGap:  4.0, extOff: 10.0, textGap:  3.0, decimals: 0, baselineSpacing:  28.0 },
+    { name: '1:20',  textHeight:  20, arrowSize: 12.0, extGap:  8.0, extOff: 20.0, textGap:  6.0, decimals: 0, baselineSpacing:  56.0 },
+    { name: '1:50',  textHeight:  50, arrowSize: 30.0, extGap: 20.0, extOff: 20.0, textGap: 15.0, decimals: 0, baselineSpacing: 140.0 },
+    { name: '1:100', textHeight: 100, arrowSize: 60.0, extGap: 40.0, extOff: 20.0, textGap: 30.0, decimals: 0, baselineSpacing: 280.0 },
   ],
   currentDimStyle: '1:1',
   currentLayer: 0,
@@ -2713,7 +2777,8 @@ const S = {
     extension: false,
     insertion: true,
   },
-  osnapAcquired: [], // [{ax,ay,dx,dy}] — extension acquired points
+  osnapAcquired: [], // [{ax,ay,dx,dy,t}] — extension acquired points
+  osnapExtTimeout: 3, // secondes avant expiration auto d'un point acquis (0 = jamais)
   currentOsnap: null, // { x, y, type, entity }
   // DEFERRED TANGENT (tangente entre 2 cercles)
   _tanFromCircle: null,   // {cx,cy,r} — cercle 1 en attente
@@ -3486,6 +3551,13 @@ function findOsnap(wx, wy) {
             !S.osnapAcquired.some(a => Math.hypot(a.ax - snap.ax, a.ay - snap.ay) < 2 / S.zoom)) {
           S.osnapAcquired.push(snap);
           if (S.osnapAcquired.length > 3) S.osnapAcquired.shift();
+          // Expiration auto après osnapExtTimeout secondes (0 = jamais)
+          if (S.osnapExtTimeout > 0) {
+            setTimeout(() => {
+              const idx = S.osnapAcquired.indexOf(snap);
+              if (idx >= 0) { S.osnapAcquired.splice(idx, 1); _osnapCache.wx = NaN; scheduleRender(); }
+            }, S.osnapExtTimeout * 1000);
+          }
         }
         _acqPending = null; _acqTimer = null;
         _osnapCache.wx = NaN; scheduleRender();
@@ -3866,6 +3938,8 @@ modules.electrical.commands = {
 modules.dimensioning.commands = {
   DIMLINEAR: { desc: 'Cote linéaire (H ou V)', exec() { setTool('dim_linear'); termPrint('COTE LINÉAIRE: cliquez deux points — ou Espace pour sélectionner une ligne', 'info'); }},
   DIMALIGNED: { alias: ['DIMPAR','DIMPARALLEL'], desc: 'Cote parallèle (alignée)', exec() { setTool('dim_aligned'); termPrint('COTE PARALLÈLE: cliquez deux points — ou Espace pour sélectionner une ligne', 'info'); }},
+  DIMCONTINUE: { alias: ['DCO','DIMCONT'], desc: 'Cote continue (chaîne depuis la dernière cote ou la cote sélectionnée)', exec() { startDimContinue(); }},
+  DIMBASELINE: { alias: ['DBA','DIMBASE'], desc: 'Cote de base (empilée depuis l\'origine de la dernière cote ou de la cote sélectionnée)', exec() { startDimBaseline(); }},
   DIMANGULAR: { alias: ['DIMANG','ANGLE'], desc: 'Cote angulaire (cliquer ligne1, ligne2, puis placer)', exec() {
     S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null;
     S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null; S._dimAngArc=false;
@@ -4485,11 +4559,36 @@ const CMD = {
       termPrint('BLOC : sélectionner les objets, puis Entrée — Échap pour annuler', 'info');
       return;
     }
+    let name = (args && args[0]) ? args[0].replace(/"/g,'') : null;
+    if (!name) {
+      name = prompt('Nom du bloc :', _nextBlockName());
+      if (name === null) { termPrint('Création de bloc annulée', 'warning'); return; }
+      name = name.trim();
+      if (!name) { termPrint('Création de bloc annulée (nom vide)', 'warning'); return; }
+    }
+    if (S.blocks[name]) {
+      let i = 2; const base = name;
+      while (S.blocks[base + '_' + i]) i++;
+      name = base + '_' + i;
+      termPrint('Un bloc "' + base + '" existe déjà — nouveau bloc créé sous "' + name + '"', 'warning');
+    }
     S.blockPending = false;
     S._blockPendingEnts = targets;
-    S._blockPendingName = (args && args[0]) ? args[0].replace(/"/g,'') : _nextBlockName();
+    S._blockPendingName = name;
     setTool('block_base');
-    termPrint('BLOC "' + S._blockPendingName + '" : cliquer le point de base', 'info');
+    termPrint('BLOC "' + name + '" : cliquer le point de base', 'info');
+  }},
+
+  WBLOCK: { alias: ['WB','WBLOC'], desc: 'Écrire un bloc, une sélection ou le dessin entier dans un fichier externe (.mcad)', exec: (args) => {
+    const name = (args && args[0]) ? args[0].replace(/"/g,'') : null;
+    if (!name) { openWblockDialog(); return; } // sans argument (menu/terminal vide) → popup façon AutoCAD
+    if (!S.blocks[name]) {
+      const names = Object.keys(S.blocks);
+      termPrint('Bloc "' + name + '" introuvable.', 'warning');
+      if (names.length) termPrint('Blocs disponibles : ' + names.join(', '), 'info');
+      return;
+    }
+    wblockSaveToFile(name, S.blocks[name]);
   }},
 
   INSERT: { alias: ['I','INS','INSERER','INSÉRER'], desc: 'Insérer un bloc', exec: (args) => {
@@ -8036,9 +8135,11 @@ function computeDimOffset(tool, p1, p2, mousePos) {
   }
 }
 
-// Draw a dimension preview (for offset positioning phase)
-function drawDimPreview(tool, p1, p2, mouseWorld) {
-  const off = computeDimOffset(tool, p1, p2, mouseWorld);
+// Draw a dimension preview (for offset positioning phase).
+// forceOff/forceIsHoriz : utilisés par DIMCONTINUE pour figer la ligne de cote
+// héritée de la cote de base plutôt que de la déduire de la position souris.
+function drawDimPreview(tool, p1, p2, mouseWorld, forceOff, forceIsHoriz) {
+  const off = forceOff !== undefined ? forceOff : computeDimOffset(tool, p1, p2, mouseWorld);
   ctx.save();
   ctx.strokeStyle = TC.ink+'88'; ctx.fillStyle = TC.ink+'88'; ctx.lineWidth = 1; ctx.setLineDash([]);
 
@@ -8048,7 +8149,7 @@ function drawDimPreview(tool, p1, p2, mouseWorld) {
   const _egap = _ds.extGap * S.zoom;
   const _eoff = (_ds.extOff || 0) * S.zoom;
   if (tool === 'dim_linear') {
-    const isHoriz = dimIsHoriz(p1, p2, mouseWorld);
+    const isHoriz = forceIsHoriz !== undefined ? forceIsHoriz : dimIsHoriz(p1, p2, mouseWorld);
     if (isHoriz) {
       const dimY = (p1[1] + p2[1]) / 2 + off;
       const [a1,b1]=w2s(p1[0],dimY), [a2,b2]=w2s(p2[0],dimY);
@@ -8268,6 +8369,22 @@ function drawPreview() {
   } else if ((tool === 'dim_linear' || tool === 'dim_aligned') && pts.length === 2) {
     // Offset placement preview
     drawDimPreview(tool, pts[0], pts[1], [mx, my]);
+  } else if (tool === 'dim_continue' && !S._dimContPickBase && S._dimContBase && pts.length === 1) {
+    // Prévisualisation DIMCONTINUE : ligne de cote figée héritée de la cote de base
+    const base = S._dimContBase;
+    const p1 = pts[0];
+    let [tx, ty] = [mx, my];
+    if (base.type === 'dim_linear') [tx, ty] = applyConstraint(p1[0], p1[1], mx, my);
+    const offDist = _dimContOffsetFor(base, p1, [tx, ty]);
+    drawDimPreview(base.type, p1, [tx, ty], [tx, ty], offDist, base.type === 'dim_linear' ? base.isHoriz : undefined);
+  } else if (tool === 'dim_baseline' && !S._dimBasePickBase && S._dimBaseBase && pts.length === 1) {
+    // Prévisualisation DIMBASELINE : ligne de cote décalée d'un cran de plus vers l'extérieur
+    const base = S._dimBaseBase;
+    const p1 = pts[0];
+    let [tx, ty] = [mx, my];
+    if (base.type === 'dim_linear') [tx, ty] = applyConstraint(p1[0], p1[1], mx, my);
+    const offDist = _dimBaselineOffsetFor(base, p1, [tx, ty], S._dimBaseN + 1);
+    drawDimPreview(base.type, p1, [tx, ty], [tx, ty], offDist, base.type === 'dim_linear' ? base.isHoriz : undefined);
   } else if ((tool === 'dim_radius' || tool === 'dim_diameter') && S._dimCircle && pts.length >= 1) {
     const c = S._dimCircle;
     const a = Math.atan2(my - c.cy, mx - c.cx);
@@ -9476,6 +9593,7 @@ diAngle.addEventListener('keydown', (ev) => {
 });
 
 function confirmDynamicInput() {
+  S.osnapAcquired = []; // saisie de coordonnées = équivalent d'un clic : reset OTRACK
   const mode = getDIMode();
 
   // === FIRST POINT (X,Y) ===
@@ -9733,13 +9851,15 @@ function getCursorMode() {
   if (t === 'area') return S._areaMode === 'points' ? 'draw' : 'pick';
   if (t === 'polygon') return 'draw';
   if (t === 'ellipse') return 'draw';
-  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.groupPending || S.ungroupPending || S.blockPending || S.arrayPending || S.polarArrayPending || S.axisOverPending) ? 'pick' : 'idle';
+  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.groupPending || S.ungroupPending || S.blockPending || S.arrayPending || S.polarArrayPending || S.axisOverPending || S._wbSelectPending) ? 'pick' : 'idle';
   if (t === 'stretch' && S.stretchStep === 0) return 'pick';
   if (t === 'trim' || t === 'extend') return 'pick';
   if (t === 'fillet' || t === 'chamfer' || t === 'join' || t === 'hatch') return 'pick';
   if (t === 'offset') return 'draw';
   if (t === 'dim_angular' && !S._dimAngVtx) return 'pick';
   if ((t === 'dim_linear' || t === 'dim_aligned') && S._dimPick) return 'pick';
+  if (t === 'dim_continue' && S._dimContPickBase) return 'pick';
+  if (t === 'dim_baseline' && S._dimBasePickBase) return 'pick';
   if ((t === 'dim_radius' || t === 'dim_diameter') && !S._dimCircle) return 'pick';
   if (t === 'dim_arc' && !S._dimArc) return 'pick';
   if (t === 'divide_pick') return 'pick';
@@ -9867,10 +9987,15 @@ canvas.addEventListener('mousemove', (ev) => {
   if ((S.tool === 'offset' && S.offsetTargetId === null) ||
       S.tool === 'fillet' || S.tool === 'chamfer' || S.tool === 'join' || S.tool === 'trim' || S.tool === 'extend' || S.tool === 'hatch' || S.tool === 'matchprop' ||
       (((S.tool === 'dim_linear' || S.tool === 'dim_aligned') && S._dimPick)) ||
+      (S.tool === 'dim_continue' && S._dimContPickBase) ||
+      (S.tool === 'dim_baseline' && S._dimBasePickBase) ||
       S.offsetPending) {
     const _dimPickHover = (S.tool === 'dim_linear' || S.tool === 'dim_aligned') && S._dimPick;
+    const _dimContPickHover = (S.tool === 'dim_continue' && S._dimContPickBase) || (S.tool === 'dim_baseline' && S._dimBasePickBase);
     const hit = _dimPickHover
       ? hitTest(wx, wy, en => ['line','wall','polyline','cable','rect','tube'].includes(en.type))
+      : _dimContPickHover
+      ? hitTest(wx, wy, en => en.type === 'dim_linear' || en.type === 'dim_aligned')
       : hitTest(wx, wy);
     S.hoverEntityId = hit ? hit.id : null;
   } else {
@@ -10518,6 +10643,11 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
   if (rawWx === undefined) { rawWx = wx; rawWy = wy; }
   const tool = S.tool;
 
+  // Chaque clic invalide les points d'extension acquis (OTRACK) : un nouveau
+  // point de départ (ex. segment suivant d'une polyligne/ligne) ne doit pas
+  // hériter des accroches de prolongement du point précédent.
+  S.osnapAcquired = [];
+
   // === GRIP EDIT: confirm placement ===
   if (S.gripEdit) {
     let [gx, gy] = [wx, wy];
@@ -10727,12 +10857,81 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       }
       S._dimAssoc1 = S._dimAssoc2 = null;
       S.entities.push(ent);
+      S._lastDimId = ent.id;
       const dist = tool === 'dim_linear'
         ? (isH ? Math.abs(p2[0]-p1[0]) : Math.abs(p2[1]-p1[1]))
         : Math.hypot(p2[0]-p1[0], p2[1]-p1[1]);
       termPrint('#'+ent.id+' '+ent.type+' = '+dist.toFixed(1), 'success');
       S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
     }
+    render(); return;
+  }
+
+  // DIMCONTINUE — chaîne des cotes depuis le 2e point d'une cote existante,
+  // en conservant la même ligne de cote (comme AutoCAD DIMCONTINUE / DCO).
+  if (tool === 'dim_continue') {
+    if (S._dimContPickBase) {
+      const hit = hitTest(rawWx, rawWy, en => en.type === 'dim_linear' || en.type === 'dim_aligned');
+      if (!hit) { termPrint('COTE CONTINUE: cliquez une cote linéaire/parallèle existante', 'warning'); render(); return; }
+      S._dimContBase = hit;
+      S._dimContPickBase = false;
+      S.drawing = true; S.awaitingInput = true;
+      S.drawPoints = [[hit.x2, hit.y2]];
+      termPrint('COTE CONTINUE depuis #' + hit.id + ' — cliquez le point suivant (Echap pour terminer)', 'warning');
+      render(); return;
+    }
+    const base = S._dimContBase;
+    const p1 = S.drawPoints[0];
+    let [tx, ty] = [wx, wy];
+    if (base.type === 'dim_linear') [tx, ty] = applyConstraint(p1[0], p1[1], wx, wy);
+    const p2 = [tx, ty];
+    pushUndo();
+    const offDist = _dimContOffsetFor(base, p1, p2);
+    const ent = { type: base.type, x1:p1[0], y1:p1[1], x2:p2[0], y2:p2[1], offset:offDist,
+                  dimStyle: base.dimStyle, id:S.nextId++, layer: base.layer };
+    if (base.type === 'dim_linear') ent.isHoriz = base.isHoriz;
+    S.entities.push(ent);
+    S._lastDimId = ent.id;
+    const dist = base.type === 'dim_linear'
+      ? (ent.isHoriz ? Math.abs(p2[0]-p1[0]) : Math.abs(p2[1]-p1[1]))
+      : Math.hypot(p2[0]-p1[0], p2[1]-p1[1]);
+    termPrint('#'+ent.id+' '+ent.type+' (continue) = '+dist.toFixed(1), 'success');
+    S.drawPoints = [[p2[0], p2[1]]]; // repart du dernier point — chaîne suivante
+    render(); return;
+  }
+
+  // DIMBASELINE — empile des cotes depuis la même origine (1er point) qu'une cote
+  // existante, chacune décalée davantage vers l'extérieur (comme AutoCAD DIMBASELINE / DBA).
+  if (tool === 'dim_baseline') {
+    if (S._dimBasePickBase) {
+      const hit = hitTest(rawWx, rawWy, en => en.type === 'dim_linear' || en.type === 'dim_aligned');
+      if (!hit) { termPrint('COTE DE BASE: cliquez une cote linéaire/parallèle existante', 'warning'); render(); return; }
+      S._dimBaseBase = hit;
+      S._dimBasePickBase = false;
+      S._dimBaseN = 0;
+      S.drawing = true; S.awaitingInput = true;
+      S.drawPoints = [[hit.x1, hit.y1]];
+      termPrint('COTE DE BASE depuis #' + hit.id + ' — cliquez le point suivant (Echap pour terminer)', 'warning');
+      render(); return;
+    }
+    const base = S._dimBaseBase;
+    const p1 = S.drawPoints[0]; // toujours l'origine de la cote de base — fixe pour toute la chaîne
+    let [tx, ty] = [wx, wy];
+    if (base.type === 'dim_linear') [tx, ty] = applyConstraint(p1[0], p1[1], wx, wy);
+    const p2 = [tx, ty];
+    pushUndo();
+    const n = ++S._dimBaseN;
+    const offDist = _dimBaselineOffsetFor(base, p1, p2, n);
+    const ent = { type: base.type, x1:p1[0], y1:p1[1], x2:p2[0], y2:p2[1], offset:offDist,
+                  dimStyle: base.dimStyle, id:S.nextId++, layer: base.layer };
+    if (base.type === 'dim_linear') ent.isHoriz = base.isHoriz;
+    S.entities.push(ent);
+    S._lastDimId = ent.id;
+    const dist = base.type === 'dim_linear'
+      ? (ent.isHoriz ? Math.abs(p2[0]-p1[0]) : Math.abs(p2[1]-p1[1]))
+      : Math.hypot(p2[0]-p1[0], p2[1]-p1[1]);
+    termPrint('#'+ent.id+' '+ent.type+' (base) = '+dist.toFixed(1), 'success');
+    S.drawPoints = [[p1[0], p1[1]]]; // reste sur l'origine — chaîne suivante depuis le même point
     render(); return;
   }
 
@@ -10931,23 +11130,20 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     const ents = S._blockPendingEnts || [];
     if (!ents.length) { setTool('select'); render(); return; }
     const name = S._blockPendingName || _nextBlockName();
-    pushUndo();
-    const defEnts = ents.map(srcEnt => {
-      const c = JSON.parse(JSON.stringify(srcEnt));
-      offsetEntity(c, -wx, -wy);
-      return c;
-    });
-    ents.forEach(srcEnt => {
-      const i = S.entities.findIndex(e => e.id === srcEnt.id);
-      if (i !== -1) S.entities.splice(i, 1);
-    });
-    S.blocks[name] = { entities: defEnts, base: { x:0, y:0 } };
-    const inst = { type:'insert', id:S.nextId++, layer:S.currentLayer, blockName:name, x:wx, y:wy, angle:0, scale:1 };
-    S.entities.push(inst);
-    S.selected = [inst.id];
+    _createBlockFromEntities(ents, name, wx, wy);
     S._blockPendingEnts = null; S._blockPendingName = null;
-    termPrint('Bloc "'+name+'" créé — '+defEnts.length+' entité(s) (#'+inst.id+')','success');
-    setTool('select'); updateSaveIndicator('modified'); autoSave(); render(); updateUI(); return;
+    setTool('select'); render(); updateUI(); return;
+  }
+
+  // WBLOCK (dialogue, source « Objets sélectionnés ») — clic = point de base,
+  // mémorisé sans créer le bloc tout de suite (retour au dialogue pour confirmer/OK)
+  if (tool === 'wb_basepoint') {
+    S._wbBasePoint = { x: wx, y: wy };
+    S._wbPickBasePending = false;
+    setTool('select');
+    _wbSourceChanged(); _wbShowDialog();
+    render();
+    return;
   }
 
   // Offset — clic sur le côté → décale tous les sélectionnés
@@ -12503,6 +12699,61 @@ function _nextBlockName() {
   return 'Bloc' + n;
 }
 
+// Crée effectivement un bloc à partir d'entités + nom + point de base : recentre
+// les entités sur ce point, les retire du dessin, enregistre S.blocks[name] et pose
+// une instance insert au point de base. Réutilisé par le clic canvas de l'outil
+// 'block_base' (BLOCK classique) et par la source « Objets sélectionnés » du
+// dialogue WBLOCK (point de base choisi via bouton, sans clic canvas nécessaire).
+// Retourne le nom effectivement utilisé (suffixé en cas de collision).
+function _createBlockFromEntities(ents, name, bx, by) {
+  if (S.blocks[name]) {
+    let i = 2; const base = name;
+    while (S.blocks[base + '_' + i]) i++;
+    name = base + '_' + i;
+    termPrint('Un bloc "' + base + '" existe déjà — nouveau bloc créé sous "' + name + '"', 'warning');
+  }
+  pushUndo();
+  const defEnts = ents.map(srcEnt => {
+    const c = JSON.parse(JSON.stringify(srcEnt));
+    offsetEntity(c, -bx, -by);
+    return c;
+  });
+  ents.forEach(srcEnt => {
+    const i = S.entities.findIndex(e => e.id === srcEnt.id);
+    if (i !== -1) S.entities.splice(i, 1);
+  });
+  S.blocks[name] = { entities: defEnts, base: { x: 0, y: 0 } };
+  const inst = { type: 'insert', id: S.nextId++, layer: S.currentLayer, blockName: name, x: bx, y: by, angle: 0, scale: 1 };
+  S.entities.push(inst);
+  S.selected = [inst.id];
+  termPrint('Bloc "' + name + '" créé — ' + defEnts.length + ' entité(s) (#' + inst.id + ')', 'success');
+  updateSaveIndicator('modified'); autoSave();
+  return name;
+}
+
+// Renomme une définition de bloc et met à jour toutes les instances (insert.blockName) qui la référencent.
+// Retourne true si le renommage a eu lieu (false : nom vide/inchangé/collision, déjà signalé via termPrint).
+function _renameBlockTo(oldName, newName) {
+  newName = (newName || '').trim();
+  if (!newName || newName === oldName) return false;
+  if (S.blocks[newName]) { termPrint('Un bloc "' + newName + '" existe déjà — choisir un autre nom', 'warning'); return false; }
+  S.blocks[newName] = S.blocks[oldName];
+  delete S.blocks[oldName];
+  let count = 0;
+  S.entities.forEach(e => { if (e.type === 'insert' && e.blockName === oldName) { e.blockName = newName; count++; } });
+  if (S._insertBlockName === oldName) S._insertBlockName = newName;
+  updateSaveIndicator('modified'); autoSave(); render(); updateUI();
+  termPrint('Bloc "' + oldName + '" renommé en "' + newName + '" (' + count + ' instance(s) mise(s) à jour)', 'success');
+  return true;
+}
+
+function renameBlock(oldName) {
+  if (!S.blocks[oldName]) return;
+  const input = prompt('Renommer le bloc :', oldName);
+  if (input === null) return;
+  _renameBlockTo(oldName, input);
+}
+
 // Entités d'une définition de bloc, transformées en coordonnées monde pour une instance
 // donnée (insert.scale, insert.angle, insert.x/y). Réutilisé par le rendu, la bbox, le
 // hit-test et l'éclatement.
@@ -13456,6 +13707,100 @@ function getDimLinePoints(e) {
   }
 }
 
+// DIMCONTINUE — calcule l'offset à donner à la nouvelle cote (p1→p2) pour que
+// sa ligne de cote coïncide exactement avec celle de la cote de base (mêmes
+// dimY/dimX pour dim_linear, même droite support pour dim_aligned).
+function _dimContOffsetFor(base, p1, p2) {
+  const lp = getDimLinePoints(base);
+  if (!lp) return base.offset || 30;
+  if (base.type === 'dim_linear') {
+    const isH = base.isHoriz !== undefined ? base.isHoriz : (Math.abs(base.x2-base.x1) >= Math.abs(base.y2-base.y1));
+    return isH ? (lp[1] - (p1[1]+p2[1])/2) : (lp[0] - (p1[0]+p2[0])/2);
+  }
+  // dim_aligned : distance perpendiculaire signée de p1 (point de reprise, situé
+  // sur la ligne de base de la cote précédente) à la ligne de cote de base.
+  const dLx = lp[2]-lp[0], dLy = lp[3]-lp[1], len = Math.hypot(dLx,dLy) || 1;
+  const ux = dLx/len, uy = dLy/len;
+  const dx = p1[0]-lp[0], dy = p1[1]-lp[1];
+  return dx*uy - dy*ux;
+}
+
+// DIMBASELINE — écart entre deux lignes de cote empilées successives (analogue à
+// DIMDLI d'AutoCAD), dérivé de la hauteur de texte du style de la cote de base.
+function _dimBaselineSpacing(base) {
+  const ds = getDimStyle(base);
+  return ds.baselineSpacing != null ? ds.baselineSpacing : (ds.textHeight || 4) * 2.8;
+}
+
+// DIMBASELINE — calcule l'offset à donner à la n-ième cote empilée (p1→p2, p1 fixe =
+// origine de la cote de base) pour que sa ligne de cote coïncide avec la ligne de la
+// cote de base décalée de n crans vers l'extérieur. Réutilise _dimContOffsetFor en lui
+// passant un clone de la cote de base dont l'offset a déjà été poussé de n crans —
+// getDimLinePoints() sur ce clone donne directement la ligne cible.
+function _dimBaselineOffsetFor(base, p1, p2, n) {
+  const spacing = _dimBaselineSpacing(base);
+  const sign = (base.offset || 30) < 0 ? -1 : 1;
+  const target = Object.assign({}, base, { offset: (base.offset || 30) + sign * spacing * n });
+  return _dimContOffsetFor(target, p1, p2);
+}
+
+// Démarre une chaîne DIMCONTINUE à partir d'une cote de base (dim_linear/dim_aligned).
+function _startDimContinueFrom(base) {
+  setTool('dim_continue');
+  S._dimContBase = base;
+  S._dimContPickBase = false;
+  S.drawing = true; S.awaitingInput = true;
+  S.drawPoints = [[base.x2, base.y2]];
+  termPrint('COTE CONTINUE depuis #' + base.id + ' — cliquez le point suivant (Echap pour terminer)', 'warning');
+  render();
+}
+
+function startDimContinue() {
+  let base = null;
+  if (S.selected.length === 1) {
+    const e = S.entities.find(en => en.id === S.selected[0]);
+    if (e && (e.type === 'dim_linear' || e.type === 'dim_aligned')) base = e;
+  }
+  if (!base && S._lastDimId != null) {
+    const e = S.entities.find(en => en.id === S._lastDimId);
+    if (e && (e.type === 'dim_linear' || e.type === 'dim_aligned')) base = e;
+  }
+  if (base) { _startDimContinueFrom(base); return; }
+  setTool('dim_continue');
+  S._dimContPickBase = true;
+  termPrint('COTE CONTINUE: cliquez une cote linéaire/parallèle existante pour continuer', 'info');
+  render();
+}
+
+// Démarre une chaîne DIMBASELINE à partir d'une cote de base (dim_linear/dim_aligned).
+function _startDimBaselineFrom(base) {
+  setTool('dim_baseline');
+  S._dimBaseBase = base;
+  S._dimBasePickBase = false;
+  S._dimBaseN = 0;
+  S.drawing = true; S.awaitingInput = true;
+  S.drawPoints = [[base.x1, base.y1]];
+  termPrint('COTE DE BASE depuis #' + base.id + ' — cliquez le point suivant (Echap pour terminer)', 'warning');
+  render();
+}
+
+function startDimBaseline() {
+  let base = null;
+  if (S.selected.length === 1) {
+    const e = S.entities.find(en => en.id === S.selected[0]);
+    if (e && (e.type === 'dim_linear' || e.type === 'dim_aligned')) base = e;
+  }
+  if (!base && S._lastDimId != null) {
+    const e = S.entities.find(en => en.id === S._lastDimId);
+    if (e && (e.type === 'dim_linear' || e.type === 'dim_aligned')) base = e;
+  }
+  if (base) { _startDimBaselineFrom(base); return; }
+  setTool('dim_baseline');
+  S._dimBasePickBase = true;
+  termPrint('COTE DE BASE: cliquez une cote linéaire/parallèle existante pour continuer', 'info');
+  render();
+}
+
 function distToSeg(px,py,x1,y1,x2,y2){
   const dx=x2-x1,dy=y2-y1,len2=dx*dx+dy*dy;
   if(len2===0)return Math.hypot(px-x1,py-y1);
@@ -13609,6 +13954,8 @@ function setTool(t) {
   if(t !== 'tube') S.tubePoints=[];
   if(t !== 'dim_angular') { S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null; S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null; S._dimAngArc=false; }
   if(t !== 'dim_arc') S._dimArc=null;
+  if(t !== 'dim_continue') { S._dimContBase=null; S._dimContPickBase=false; }
+  if(t !== 'dim_baseline') { S._dimBaseBase=null; S._dimBasePickBase=false; S._dimBaseN=0; }
   S._dimPick = false; // mode « sélection d'objet » des cotes linéaire/parallèle (Espace)
   if(t !== 'matchprop') S.matchSource = null;
   if(t !== 'measure' && t !== 'select') { S.measurePt1=null; S.measureResult=null; }
@@ -13807,6 +14154,15 @@ function _propChangeInsertAngle(id, valDeg) {
   render(); autoSave(); updateProperties();
 }
 
+function _propChangeInsertBlockName(id, val) {
+  const e = S.entities.find(en => en.id === id);
+  if (!e || e.type !== 'insert') return;
+  const oldName = e.blockName;
+  pushUndo();
+  if (!_renameBlockTo(oldName, val)) S.history.pop();
+  updateProperties();
+}
+
 function _propChangeLongueurMulti(val) {
   const newLen = parseFloat(val);
   if (isNaN(newLen) || newLen <= 0) return;
@@ -13959,7 +14315,7 @@ function _updatePropertiesSingle(e) {
     h += row('Y', inp('y', e.y.toFixed(2)));
   }
   if (e.type === 'insert') {
-    h += row('Bloc', '<span class="prop-value">'+e.blockName+'</span>');
+    h += row('Bloc', '<input type="text" class="prop-input" value="'+String(e.blockName).replace(/"/g,'&quot;')+'" onchange="_propChangeInsertBlockName('+id+',this.value)" />');
     h += row('Angle (°)', '<input type="number" class="prop-input" step="any" value="'+((e.angle||0)*180/Math.PI).toFixed(2)+'" onchange="_propChangeInsertAngle('+id+',this.value)" />');
     h += row('Échelle', inp('scale', (e.scale ?? 1)));
     const mirrorSel = '<select class="prop-select" onchange="_propChangeInsertMirror('+id+',this.value)">'+
@@ -14249,6 +14605,8 @@ function refreshDimStyleManagerTable() {
         ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsProp('+i+',\'textGap\',+this.value)"></td>'+
       '<td><input type="number" class="lm-name-input" style="width:44px" step="1" min="0" max="6" value="'+(ds.decimals != null ? ds.decimals : 1)+'"'+
         ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsDecimals('+i+',+this.value)"></td>'+
+      '<td><input type="number" class="lm-name-input" style="width:60px" step="0.5" min="0.5" value="'+(ds.baselineSpacing != null ? ds.baselineSpacing : +(ds.textHeight*2.8).toFixed(1)).toFixed(1)+'"'+
+        ' onclick="event.stopPropagation()" onchange="event.stopPropagation();_dsProp('+i+',\'baselineSpacing\',+this.value)"></td>'+
       '<td><button class="lm-del-btn" onclick="event.stopPropagation();_dsDelete('+i+')" title="Supprimer">✕</button></td>'+
       '</tr>';
   }).join('');
@@ -14261,7 +14619,7 @@ function _dsSet(name) {
 }
 function _dsAdd() {
   const n = 'Style ' + (S.dimStyles.length + 1);
-  S.dimStyles.push({ name: n, textHeight: 3.5, arrowSize: 3.5, extGap: 1.5, extOff: 1.5, textGap: 1.0, decimals: 1 });
+  S.dimStyles.push({ name: n, textHeight: 3.5, arrowSize: 3.5, extGap: 1.5, extOff: 1.5, textGap: 1.0, decimals: 1, baselineSpacing: 9.8 });
   refreshDimStylePanel(); refreshDimStyleManagerTable(); autoSave();
 }
 function _dsDecimals(i, v) {
@@ -15222,6 +15580,21 @@ function _ibRefreshSelect() {
     okBtn.disabled = false;
   }
   sel.innerHTML = html;
+  const imported = importedNames.length > 0;
+  sel.disabled = imported;
+  document.getElementById('ib-rename-btn').disabled = imported;
+}
+
+function ibRenameBlock() {
+  const sel = document.getElementById('ib-select');
+  const val = sel.value;
+  if (!val) return;
+  const sep = val.indexOf(':');
+  const origin = val.slice(0, sep);
+  const name = val.slice(sep + 1);
+  if (origin !== 'drawing') { termPrint('Seul un bloc déjà présent dans le dessin peut être renommé', 'warning'); return; }
+  renameBlock(name);
+  _ibRefreshSelect();
 }
 
 function ibBrowseFile() {
@@ -15232,7 +15605,7 @@ function ibFileSelected(event) {
   const file = event.target.files[0];
   if (!file) return;
   event.target.value = ''; // permet de resélectionner le même fichier
-  document.getElementById('ib-path').value = file.name;
+  document.getElementById('ib-path').value = file.name || '';
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
@@ -15283,6 +15656,138 @@ function confirmInsertBlock() {
   S._insertBlockName = name;
   setTool('insert_place');
   termPrint('INSERT "' + name + '" : cliquer le point d\'insertion', 'info');
+}
+
+// ===== DIALOGUE WBLOCK (façon AutoCAD : choix de la source à écrire dans un fichier .mcad) =====
+// Source « Objets sélectionnés » : objets + point de base choisis via deux boutons
+// dédiés (comme la boîte AutoCAD « Écrire le bloc »), le dialogue se cache
+// temporairement pendant la sélection/le clic canvas puis se réaffiche (voir
+// wbPickObjects/wbPickBasePoint et les gestionnaires Entrée/Échap globaux).
+function openWblockDialog() {
+  S._wbSelIds = S.selected.slice();
+  S._wbBasePoint = null;
+  S._wbFileHandle = null;
+  document.getElementById('wb-name').value = '';
+  document.getElementById('wb-path').value = '';
+  const sel = document.getElementById('wb-source');
+  const hasBlocks = Object.keys(S.blocks).length > 0;
+  const hasSelection = S._wbSelIds.length > 0;
+  const hasEntities = S.entities.length > 0;
+  sel.querySelector('option[value="block"]').disabled = !hasBlocks;
+  sel.querySelector('option[value="selection"]').disabled = !hasEntities; // les objets se choisissent dans le dialogue, pas besoin de présélection
+  sel.querySelector('option[value="drawing"]').disabled = !hasEntities;
+  sel.value = hasSelection ? 'selection' : (hasBlocks ? 'block' : 'drawing');
+  _wbRefreshBlockSelect();
+  _wbSourceChanged();
+  _wbShowDialog();
+}
+
+function closeWblockDialog() {
+  document.getElementById('wblock-dialog').style.display = 'none';
+}
+
+// Réaffiche le dialogue (sans réinitialiser source/nom) après un retour de
+// wbPickObjects/wbPickBasePoint, et rafraîchit les deux champs en lecture seule.
+function _wbShowDialog() {
+  document.getElementById('wb-sel-count').value = (S._wbSelIds && S._wbSelIds.length)
+    ? S._wbSelIds.length + ' objet(s) sélectionné(s)' : 'Aucun objet sélectionné';
+  document.getElementById('wb-basept').value = S._wbBasePoint
+    ? S._wbBasePoint.x.toFixed(2) + ', ' + S._wbBasePoint.y.toFixed(2) : '0, 0 (origine)';
+  document.getElementById('wb-path').value = S._wbFileHandle ? S._wbFileHandle.name : '';
+  document.getElementById('wblock-dialog').style.display = 'flex';
+}
+
+function _wbRefreshBlockSelect() {
+  const sel = document.getElementById('wb-block-select');
+  sel.innerHTML = Object.keys(S.blocks).map(n => '<option value="'+n+'">'+n+'</option>').join('');
+}
+
+function _wbSourceChanged() {
+  const src = document.getElementById('wb-source').value;
+  document.getElementById('wb-block-group').style.display = (src === 'block') ? '' : 'none';
+  const showSel = (src === 'selection');
+  document.getElementById('wb-sel-group').style.display = showSel ? '' : 'none';
+  document.getElementById('wb-basept-group').style.display = showSel ? '' : 'none';
+  document.getElementById('wb-name-group').style.display = (src === 'block') ? 'none' : '';
+  const nameInput = document.getElementById('wb-name');
+  if (src === 'selection' && !nameInput.value) nameInput.value = _nextBlockName();
+  else if (src === 'drawing' && !nameInput.value) nameInput.value = (_fileHandle && _fileHandle.name) ? _fileHandle.name.replace(/\.mcad$/i, '') : 'dessin';
+  const okBtn = document.getElementById('wb-ok-btn');
+  okBtn.disabled = (src === 'block' && !Object.keys(S.blocks).length) ||
+                   (src === 'selection' && !(S._wbSelIds && S._wbSelIds.length)) ||
+                   (src === 'drawing' && !S.entities.length);
+}
+
+// Bouton « Sélectionner des objets » : cache le dialogue, bascule sur l'outil
+// sélection standard (fenêtre/croisement/clic, comme pour ARRAY) ; Entrée valide,
+// Échap annule — dans les deux cas le dialogue WBLOCK se réaffiche.
+function wbPickObjects() {
+  document.getElementById('wblock-dialog').style.display = 'none';
+  S.selected = (S._wbSelIds || []).slice();
+  S._wbSelectPending = true;
+  setTool('select');
+  termPrint('WBLOC : sélectionner les objets du bloc, puis Entrée — Échap pour revenir à la boîte de dialogue', 'info');
+  render();
+}
+
+// Bouton « Point de base » : cache le dialogue, attend un clic canvas (outil dédié
+// 'wb_basepoint', voir handleClick) sans créer le bloc immédiatement.
+function wbPickBasePoint() {
+  document.getElementById('wblock-dialog').style.display = 'none';
+  S._wbPickBasePending = true;
+  setTool('wb_basepoint');
+  termPrint('WBLOC : cliquer le point de base — Échap pour revenir à la boîte de dialogue', 'info');
+}
+
+// Bouton « Chemin » : ouvre directement le sélecteur natif d'enregistrement
+// pour choisir la destination à l'avance (comme le champ « File name and path »
+// d'AutoCAD) ; le handle est conservé et réutilisé par OK, sans repasser par un
+// second sélecteur. Nécessite File System Access API — indisponible ⇒ le
+// fichier sera simplement téléchargé dans le dossier de téléchargements à l'OK.
+async function wbPickPath() {
+  if (!('showSaveFilePicker' in window)) {
+    termPrint('Choix de l\'emplacement non disponible dans ce navigateur — le fichier sera téléchargé dans le dossier de téléchargements.', 'warning');
+    return;
+  }
+  const src = document.getElementById('wb-source').value;
+  let base = (src === 'block')
+    ? (document.getElementById('wb-block-select').value || 'bloc')
+    : ((document.getElementById('wb-name').value || '').trim() || _nextBlockName());
+  try {
+    const fh = await window.showSaveFilePicker({
+      suggestedName: base + '.mcad',
+      types: [{ description: 'Fichier MiniCAD', accept: { 'application/json': ['.mcad'] } }],
+    });
+    S._wbFileHandle = fh;
+    document.getElementById('wb-path').value = fh.name;
+  } catch (e) {
+    if (e.name !== 'AbortError') termPrint('Choix de l\'emplacement annulé.', 'warning');
+  }
+}
+
+function confirmWblockDialog() {
+  const src = document.getElementById('wb-source').value;
+  const handle = S._wbFileHandle || null;
+  if (src === 'block') {
+    const name = document.getElementById('wb-block-select').value;
+    closeWblockDialog();
+    if (!name || !S.blocks[name]) return;
+    wblockSaveToFile(name, S.blocks[name], handle);
+  } else if (src === 'selection') {
+    const ents = (S._wbSelIds || []).map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+    if (!ents.length) { termPrint('WBLOC : aucun objet sélectionné', 'warning'); return; }
+    const name = (document.getElementById('wb-name').value || '').trim() || _nextBlockName();
+    const bp = S._wbBasePoint || { x: 0, y: 0 };
+    closeWblockDialog();
+    const finalName = _createBlockFromEntities(ents, name, bp.x, bp.y);
+    render(); updateUI();
+    wblockSaveToFile(finalName, S.blocks[finalName], handle);
+  } else if (src === 'drawing') {
+    const name = (document.getElementById('wb-name').value || '').trim() || 'dessin';
+    closeWblockDialog();
+    wblockSaveDrawingToFile(name, handle);
+  }
+  S._wbFileHandle = null;
 }
 
 function polarArrayPickCenter() {
@@ -15398,9 +15903,9 @@ function updateUI() {
   // OSNAP panel
   updateOsnapPanel();
 
-  // Modules (Architecture/Électricité masqués du frontend, code conservé)
+  // Modules
   const ml=document.getElementById('modules-list');
-  ml.innerHTML=Object.entries(modules).filter(([k])=>k!=='architecture'&&k!=='electrical').map(([k,m])=>
+  ml.innerHTML=Object.entries(modules).map(([k,m])=>
     '<div class="module-item'+(m.loaded?' loaded':'')+'" onclick="executeCommand(\'LOAD '+k+'\')">'+
     '<div class="module-dot" style="background:'+m.color+(m.loaded?'':';opacity:0.3')+'"></div>'+
     '<div><div style="font-size:11px;">'+m.name+'</div><div style="font-size:9px;color:var(--text-dim);">'+m.desc+'</div></div>'+
@@ -15423,7 +15928,7 @@ function updateStatusBar() {
   document.getElementById('status-layer').textContent='Calque: '+S.layers[S.currentLayer].name;
   const mode = S.ortho ? 'ORTHO (90°)' : S.polar ? 'POLAIRE ('+S.polarAngle+'°)' : 'Libre';
   document.getElementById('status-mode').textContent='Mode: '+mode;
-  const visibleModules=Object.entries(modules).filter(([k])=>k!=='architecture'&&k!=='electrical').map(([,m])=>m);
+  const visibleModules=Object.entries(modules).map(([,m])=>m);
   const loaded=visibleModules.filter(m=>m.loaded).length;
   document.getElementById('status-module').textContent='Modules: '+loaded+'/'+visibleModules.length;
 }
@@ -16888,6 +17393,16 @@ document.addEventListener('keydown',(ev)=>{
     S.blockPending=false; CMD.BLOCK.exec(S._blockPendingArgs||[]); return;
   }
 
+  // Enter global: WBLOCK — sélection d'objets confirmée (bouton dans le dialogue) → retour au dialogue
+  if(ev.key==='Enter' && S._wbSelectPending){
+    ev.preventDefault();
+    S._wbSelectPending=false;
+    S._wbSelIds=[...S.selected];
+    setTool('select');
+    _wbSourceChanged(); _wbShowDialog();
+    return;
+  }
+
   // Enter global: valider sélection arrayPending
   if(ev.key==='Enter' && S.arrayPending){
     ev.preventDefault();
@@ -16974,6 +17489,12 @@ document.addEventListener('keydown',(ev)=>{
   }
   if(ev.key==='Escape' && S.tool==='block_base'){
     S._blockPendingEnts=null; termPrint('Bloc annulé','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S._wbSelectPending){
+    S._wbSelectPending=false; setTool('select'); termPrint('Sélection annulée — retour à la boîte WBLOCK','warning'); _wbShowDialog(); return;
+  }
+  if(ev.key==='Escape' && S.tool==='wb_basepoint'){
+    S._wbPickBasePending=false; setTool('select'); termPrint('Point de base annulé — retour à la boîte WBLOCK','warning'); _wbShowDialog(); return;
   }
   if(ev.key==='Escape' && S.arrayPickAxis){
     S.arrayPickAxis=null; S.arrayPickPt1=null;
@@ -18274,7 +18795,23 @@ async function kdriveDoSave() {
 // Enregistre `content` via une fenêtre « Enregistrer sous » (showSaveFilePicker) :
 // nom proposé + choix de l'emplacement. Fallback Firefox/Safari : téléchargement direct.
 // Retourne le nom de fichier utilisé, ou null si l'utilisateur a annulé.
-async function saveWithPicker(content, baseName, ext, mime, description) {
+async function saveWithPicker(content, baseName, ext, mime, description, existingHandle) {
+  if (existingHandle) {
+    try {
+      // La permission accordée par showSaveFilePicker() peut repasser à 'prompt'
+      // (délai écoulé, sélections/clics intermédiaires) : la revalider explicitement
+      // avant l'écriture évite un createWritable() qui échoue silencieusement.
+      if (await existingHandle.queryPermission({ mode: 'readwrite' }) !== 'granted') {
+        await existingHandle.requestPermission({ mode: 'readwrite' });
+      }
+      const writable = await existingHandle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      return existingHandle.name;
+    } catch (e) {
+      termPrint('Écriture directe impossible (' + (e.message || e.name || e) + ') — nouvelle sélection du fichier.', 'warning');
+    }
+  }
   const suggested = baseName + '.' + ext;
   if ('showSaveFilePicker' in window) {
     try {
@@ -18293,6 +18830,23 @@ async function saveWithPicker(content, baseName, ext, mime, description) {
   }
   downloadBlob(content, mime, suggested);
   return suggested;
+}
+
+// Écrit une définition de bloc dans un fichier .mcad autonome (format compatible
+// avec l'import de la boîte INSERT — voir ibFileSelected), pour réutilisation
+// dans un autre dessin.
+async function wblockSaveToFile(name, def, existingHandle) {
+  const data = { version: '0.1', app: 'MiniCAD', date: new Date().toISOString(), blocks: { [name]: def } };
+  const finalName = await saveWithPicker(JSON.stringify(data, null, 1), name, 'mcad', 'application/json', 'Bloc MiniCAD', existingHandle);
+  if (finalName) termPrint('✓ Bloc "' + name + '" écrit dans ' + finalName, 'success');
+}
+
+// WBLOCK, source « tout le dessin » : écrit une copie complète du projet (comme
+// buildSaveData) sans toucher au fichier/handle courant du dessin ouvert.
+async function wblockSaveDrawingToFile(name, existingHandle) {
+  const data = buildSaveData(name);
+  const finalName = await saveWithPicker(JSON.stringify(data, null, 1), name, 'mcad', 'application/json', 'Projet MiniCAD', existingHandle);
+  if (finalName) termPrint('✓ Dessin complet écrit dans ' + finalName, 'success');
 }
 
 // ===== PERSISTANCE =====
@@ -18333,6 +18887,7 @@ function captureUserPrefs() {
     gridVis: S.gridVis,
     osnapEnabled: S.osnapEnabled,
     osnapModes: { ...S.osnapModes },
+    osnapExtTimeout: S.osnapExtTimeout,
     ortho: S.ortho,
     polar: S.polar,
     polarAngle: S.polarAngle,
@@ -18373,6 +18928,7 @@ function applyUserPrefs(prefs) {
   if (prefs.gridVis !== undefined)      S.gridVis = prefs.gridVis;
   if (prefs.osnapEnabled !== undefined) S.osnapEnabled = prefs.osnapEnabled;
   if (prefs.osnapModes)                 Object.assign(S.osnapModes, prefs.osnapModes);
+  if (prefs.osnapExtTimeout !== undefined) S.osnapExtTimeout = Math.max(0, Math.min(30, prefs.osnapExtTimeout));
   if (prefs.ortho !== undefined)        S.ortho = prefs.ortho;
   if (prefs.polar !== undefined)        S.polar = prefs.polar;
   if (prefs.polarAngle !== undefined)   S.polarAngle = prefs.polarAngle;
@@ -18516,6 +19072,7 @@ function openPrefsDialog() {
           `<label><input type="checkbox" id="pd-os-${m}" ${p.osnapModes[m]?'checked':''}>${osLabels[m]}</label>`
         ).join('')}
       </div>
+      ${row(`Expiration points d'extension (Otrack)`, num('osnapExtTimeout', p.osnapExtTimeout ?? 3, 1, 0, 30), 's')}
 
       ${sec(`Saisie & curseur`)}
       ${row(`Mode ortho <span class="pf-unit">F8</span>`, chk('ortho', p.ortho))}
@@ -18564,6 +19121,7 @@ function openPrefsDialog() {
       osnapEnabled: g('osnapEnabled').checked,
       osnapTolPx: parseFloat(g('osnapTolPx').value) || 15,
       osnapModes: Object.fromEntries(_PD_OS_MODES.map(m => [m, document.getElementById('pd-os-'+m).checked])),
+      osnapExtTimeout: parseFloat(g('osnapExtTimeout').value) || 0,
       ortho: g('ortho').checked,
       polar: g('polar').checked,
       polarAngle: parseFloat(g('polarAngle').value) || 15,
@@ -18666,7 +19224,7 @@ function closeDrawing(confirmQuestion) {
     }
   }
   if (S.entities.length) pushUndo();
-  S.entities = []; S.selected = [];
+  S.entities = []; S.selected = []; S.blocks = {};
   // Calques par défaut : sans cette remise à zéro, ouvrir un DXF après coup empile
   // ses calques sur ceux du dessin précédent (doublons « 0 », « 1_-_Construction »…).
   S.layers = [
