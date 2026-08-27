@@ -69,6 +69,92 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## ✅ Terminé (résumé)
 
+- ✅ **Amorce : angle exporté relatif au sens de parcours (réserve #4 refermée)** — retour
+  terrain (2026-08-27, captures MiniCAD + SC2000) : *« ok côté minicad c'est bon […] par contre
+  si j'exporte le chf et que je l'importe les amorces changent d'angle »*. Preuve croisée :
+  `laser_6mm.chf` (produit **par le SC2000**, 38 graphes de formes différentes) écrit
+  `90.000000` sur les 38 — impossible avec un angle absolu ; `export_corrigé.chf` (validé
+  machine) écrit `90.000000` sur ses trous ; notre ancien export écrivait l'absolu (180) et
+  coupait faux. Une **première** correction (`absolu − parcours`) était encore fausse — cercle
+  juste, rectangles faux au second retour terrain — car calée sur un seul échantillon à 90°, où
+  3 des 8 conventions coïncident. Formule exacte par **élimination croisée** sur 4 contraintes
+  physiques (amorces activées/**désactivées** du fichier natif + le seul échantillon non-90°,
+  20.074123°, du fichier validé machine) : **`angle écrit = parcours − absolu + 180`**, soit
+  l'angle *entre le trait d'amorce et le contour* (90° = perpendiculaire — d'où le défaut
+  universel), point d'amorçage à gauche du parcours. Implémentée dans `_chfExportLeadAngle`
+  (normalisé `[0,360[`), consommée par `_chfBuildGuideCurve` seul ; `_chfTravelTangent` honore
+  `_chfReverse` **aussi sur un cercle** (`_chfCircleStart().dir`). Aperçu MiniCAD strictement
+  intact comme demandé. Headless 159/159, dont l'invariant aller-retour `parcours − écrit + 180
+  == absolu prévisualisé`. ⚠ Sur un cercle les deux formules coïncident toujours : ne jamais
+  valider cette convention sur un cercle seul. ⚠ Signe (CCW positif) = hypothèse ; miroir = un signe.
+- ✅ **Amorce : choix de l'angle supprimé, direction 100 % calculée par le plugin** — retour
+  terrain (2 captures, 2026-08-27) : *« les amorces intérieur (trous) doivent aller en
+  direction du centre. et dans tout les cas l'amorce ne doit pas être par dessus un trait de
+  la pièce. enlève le choix de l'angle. c'est au plugin de trouver la meilleure solution »*.
+  Cause racine : sur un coin de polygone, la perpendiculaire à une arête est colinéaire avec
+  l'arête voisine. Corrigé par bissectrice extérieure au sommet (perpendiculaire seulement en
+  milieu d'arête) + contrôle anti-collision qui pivote par pas de 10° (±80°) jusqu'à dégager
+  le segment de tous les contours du dessin. Champs Angle (toolbar + propriétés simple/multi),
+  `_chfPropLeadAngleMulti` et `_chfLeadManual` supprimés ; `CHFSTART`/`CHFSTARTAUTO` ne
+  fixent plus que la longueur. `_chfAutoLeadAngle` devient la seule source de vérité, partagée
+  par l'aperçu et l'export → plus de divergence possible. Vérifié headless (153/153).
+  ⚠ Change l'angle exporté : à re-tester sur chute avant une pièce définitive.
+- ✅ **Détection auto extérieur/trou par imbrication abandonnée (CHFCOMP/CHFSTARTAUTO) — valeur/
+  angle toolbar désormais appliqués uniformément** — retour terrain réel SC2000 (2026-08-27) :
+  *« le décalage contre l'intérieur des trous n'était pas sur l'export »* + *« le sens des
+  amorces ne correspond pas au dessin, l'angle a l'air de changer »*. Un premier correctif
+  (profondeur d'imbrication `_chfNestDepth` calculée sur tout `S.entities` plutôt que la seule
+  sélection) s'est révélé insuffisant : il supposait la détection auto extérieur/trou
+  globalement correcte, seulement mal comparée. Comparaison fine du fichier que l'utilisateur a
+  corrigé à la main, **redécoupé sur le SC2000 et confirmé bon** (`export_corrigé.chf`), contre
+  `export.chf` : le fichier validé utilise la MÊME compensation signée et le MÊME angle d'amorce
+  brut pour le carré extérieur ET ses 4 trous — la détection auto elle-même était fausse, pas
+  seulement sa portée. `CHFCOMP`/`CHFSTARTAUTO` simplifiées en conséquence : valeur/angle
+  toolbar appliqués tels quels, uniformément, à toute la sélection, sans aucune détection
+  extérieur/trou — suppression du code devenu mort (`_chfNestDepth`, `_chfRepPoint`,
+  `_chfPointInContour`, `_chfHoleCenter`) et du sélecteur toolbar Alterné/Binaire.
+  **Rend obsolètes les entrées ci-dessous décrivant l'ancien mécanisme d'imbrication/
+  Alterné-Binaire** (conservées comme historique de la conception, pas comme comportement
+  actuel). Vérifié headless (123/123). Détail complet dans `suivi/CHANGELOG.md` et
+  `src/plugins/chf_export.md` (réserve #3) — y compris la réserve restant ouverte sur le mapping
+  exact du bloc `<GuideCurve Para>`.
+- ✅ **CHFCOMP : sens de l'aperçu pointillé de nouveau sensible à l'imbrication — le fichier
+  exporté reste uniforme** — même jour (2026-08-27), suite immédiate de l'entrée ci-dessus :
+  l'utilisateur a signalé que « la compensation se fait toujours vers l'extérieur » y compris
+  sur les trous ; clarifié après question explicite que c'était l'**aperçu MiniCAD**, pas un
+  nouveau test machine contredisant `export_corrigé.chf`. `_chfNestDepth`/`_chfRepPoint`/
+  `_chfPointInContour`/`_chfIsHole` et le sélecteur toolbar Alterné/Binaire (`chf-comp-mode`)
+  sont donc réintroduits, mais **cloisonnés à `decorateEntity`** (choix du point de référence du
+  fantôme) — `_chfApplyCompensationToSelection` ne les appelle jamais, la valeur écrite dans le
+  fichier reste la même pour tous les objets. **Nuance l'entrée ci-dessus** : elle reste exacte
+  pour le fichier exporté et pour `CHFSTARTAUTO` (toujours sans auto-centrage), mais plus pour le
+  sélecteur toolbar Alterné/Binaire ni pour le sens du fantôme `CHFCOMP`, qui redeviennent actifs
+  — au rendu seulement. Vérifié headless : 136/136 (13 nouveaux tests dont un scénario carré + 4
+  trous répliquant le cas terrain). Détail dans `suivi/CHANGELOG.md` et `src/plugins/chf_export.md`
+  (réserve #3).
+- ✅ **Amorce : direction de l'aperçu auto-calculée sur contour fermé, export inchangé** — même
+  jour (2026-08-27), troisième retour (capture d'écran) : un trou dont le repère de percée
+  pointait hors de lui-même au lieu de vers son centre, et un coin de plaque dont le segment
+  d'amorce suivait exactement un bord. `_chfLeadInGeom` ignore désormais `_chfLeadAngle` sur tout
+  contour fermé et calcule la direction via une nouvelle `_chfEntryOutwardAngle` (perpendiculaire
+  à la tangente au point d'entrée, signée par la même détection d'imbrication `_chfNestDepth`/
+  `_chfIsHole` que `CHFCOMP` ci-dessus — extérieur s'écarte du contour, trou plonge vers son
+  centre). Contour ouvert (ligne, mur...) : comportement inchangé, angle brut toujours utilisé.
+  **Portée volontairement limitée au plugin/aperçu** (consigne explicite de l'utilisateur, export
+  repris plus tard) : `_chfLeadAngle`, `_chfStartAutoApply`/`CHFSTARTAUTO` et
+  `_chfBuildGuideCurve` (export) restent strictement inchangés — un objet fermé peut donc
+  temporairement montrer un aperçu qui diverge de l'angle réellement exporté, attendu pour
+  l'instant. Vérifié headless : 144/144 (8 nouveaux tests). Détail dans `suivi/CHANGELOG.md` et
+  `src/plugins/chf_export.md` (section « Amorce : direction automatique », réserve #3).
+- ✅ **Amorce : le picking manuel `CHFSTART` (2ᵉ clic) ne semblait plus tenir compte du point
+  cliqué — corrigé** — même jour (2026-08-27), quatrième retour : l'entrée ci-dessus ignorait
+  `_chfLeadAngle` sur tout contour fermé sans exception, ce qui écrasait silencieusement l'angle
+  posé par le 2ᵉ clic du picking manuel (toujours sur contour fermé en pratique). Corrigé :
+  `_chfLeadInGeom` n'invoque l'auto-calcul que si `_chfLeadAngle` n'a **jamais** été fixé
+  (`== null`) — valeur par défaut, plus jamais une correction d'une valeur déjà posée par clic,
+  saisie ou `CHFSTARTAUTO`. `_chfLeadAngle`/`_chfStartAutoApply`/`_chfBuildGuideCurve` (export)
+  inchangés. Vérifié headless : 145/145. Détail dans `suivi/CHANGELOG.md` et
+  `src/plugins/chf_export.md`.
 - ✅ **`CHFSTART` interactif + `CHFSTARTAUTO` pour le plugin CHF_EXPORT** — `CHFSTART`
   s'adapte désormais à l'état de la sélection : rien sélectionné → arme la boîte de
   sélection (`S._chfStartPending`, patron `EXPLODE`/`GROUP`/`CHFCOMP`) ; objet valide

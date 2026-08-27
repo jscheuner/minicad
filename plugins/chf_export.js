@@ -156,34 +156,20 @@ function _chfSupportsStartPoint(e) {
   return !!(c && (c.native === 'circle' || c.closed));
 }
 
-// ======== COMPENSATION AUTO (extérieur/intérieur selon imbrication) ========
-// Point représentatif d'un contour résolu, pour les tests d'imbrication.
-function _chfRepPoint(c) {
-  if (c.native === 'circle') return [c.cx + c.r, c.cy];
-  return c.points && c.points[0] ? [c.points[0][0], c.points[0][1]] : null;
-}
-function _chfPointInContour(qx, qy, c) {
-  if (c.native === 'circle') return Math.hypot(qx - c.cx, qy - c.cy) < c.r;
-  return pointInPolygon(qx, qy, c.points);
-}
-// Profondeur d'imbrication = nombre d'AUTRES contours (parmi `resolved`) qui contiennent
-// le point représentatif de `target`. 0 = le plus extérieur.
-function _chfNestDepth(target, resolved) {
-  const p = _chfRepPoint(target.c);
-  if (!p) return 0;
-  let depth = 0;
-  for (const other of resolved) {
-    if (other === target) continue;
-    if (_chfPointInContour(p[0], p[1], other.c)) depth++;
-  }
-  return depth;
-}
-
-// Applique la compensation (champ toolbar data-tbid="chf-comp-value") aux objets sélectionnés :
-// signe déterminé automatiquement par la profondeur d'imbrication au sein de la sélection
-// (data-tbid="chf-comp-mode" : "alt" = alterné à chaque niveau, "binary" = extérieur seulement
-// si non imbriqué du tout). Contours ouverts (pas de notion d'intérieur/extérieur) ignorés.
-// Ré-exécuter réécrit _chfCompensation : pas de cumul, la nouvelle valeur remplace l'ancienne.
+// ======== COMPENSATION (valeur uniforme sur la sélection) ========
+// Applique la valeur signée du champ toolbar (data-tbid="chf-comp-value") telle quelle à TOUS
+// les objets à contour fermé de la sélection — plus de détection auto extérieur/trou.
+// Retour terrain SC2000 réel (2026-08-27, export.chf vs export_corrigé.chf, ce dernier
+// redécoupé et confirmé bon par l'utilisateur) : la version précédente inversait
+// automatiquement le signe pour les objets détectés « trou » par profondeur d'imbrication
+// (+mag extérieur / -mag intérieur). Le fichier de référence validé sur machine montre au
+// contraire la MÊME valeur signée sur le contour extérieur et les 4 trous imbriqués
+// (0.200000 partout, jamais -0.200000) — l'inversion auto était une hypothèse de conception
+// non vérifiée, invalidée par ce test réel. Le champ toolbar n'est donc plus une magnitude
+// (Math.abs) : le signe tapé par l'utilisateur est appliqué tel quel à toute la sélection.
+// Contours ouverts (pas de notion d'intérieur/extérieur, donc pas de compensation exploitable)
+// ignorés. Ré-exécuter réécrit _chfCompensation : pas de cumul, la nouvelle valeur remplace
+// l'ancienne.
 function _chfApplyCompensationToSelection() {
   if (!S.selected.length) {
     S._chfCompPending = true; setTool('select');
@@ -192,27 +178,19 @@ function _chfApplyCompensationToSelection() {
   S._chfCompPending = false;
 
   const valInput = document.querySelector('[data-tbid="chf-comp-value"]');
-  const mag = Math.abs(parseFloat(valInput && valInput.value)) || 0;
-  if (!mag) { termPrint('CHF : entrez un décalage non nul dans le champ Compensation', 'warning'); return; }
+  const val = parseFloat(valInput && valInput.value);
+  if (!val) { termPrint('CHF : entrez un décalage non nul dans le champ Compensation', 'warning'); return; }
 
-  const modeSel = document.querySelector('[data-tbid="chf-comp-mode"]');
-  const alternating = !modeSel || modeSel.value !== 'binary'; // "alt" = défaut
-
-  const all = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
-  const closed = all.filter(e => CHF_SUPPORTED_TYPES.includes(e.type) && _chfSupportsStartPoint(e));
-  const resolved = closed.map(e => ({ e, c: _chfResolveContour(e) })).filter(r => r.c);
-  if (!resolved.length) { termPrint('CHF : aucun contour fermé supporté dans la sélection', 'warning'); return; }
+  const targets = S.selected.map(id => S.entities.find(e => e.id === id))
+    .filter(e => e && CHF_SUPPORTED_TYPES.includes(e.type) && _chfSupportsStartPoint(e));
+  if (!targets.length) { termPrint('CHF : aucun contour fermé supporté dans la sélection', 'warning'); return; }
 
   pushUndo();
-  resolved.forEach(target => {
-    const depth = _chfNestDepth(target, resolved);
-    const outward = alternating ? (depth % 2 === 0) : (depth === 0);
-    target.e._chfCompensation = outward ? mag : -mag;
-  });
+  targets.forEach(e => { e._chfCompensation = val; });
   render(); autoSave(); updateProperties();
 
-  const skipped = all.length - resolved.length;
-  termPrint('CHF : compensation ' + mag + ' mm appliquée à ' + resolved.length + ' objet(s)' +
+  const skipped = S.selected.length - targets.length;
+  termPrint('CHF : compensation ' + val + ' mm appliquée à ' + targets.length + ' objet(s)' +
             (skipped ? ' (' + skipped + ' ignoré(s), contour ouvert)' : ''), 'success');
 }
 
@@ -278,16 +256,6 @@ window._chfPropLeadLengthMulti = function (val) {
   render(); autoSave(); updateProperties();
 };
 
-window._chfPropLeadAngleMulti = function (val) {
-  const n = parseFloat(val);
-  if (isNaN(n)) return;
-  const ents = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
-  if (!ents.length) return;
-  pushUndo();
-  ents.forEach(e => { e._chfLeadAngle = n; });
-  render(); autoSave(); updateProperties();
-};
-
 // Arme le picking : le clic suivant est intercepté par la branche `chf_startpoint`
 // de handleClick (cœur), qui pose e._chfStartPoint et rafraîchit le panneau.
 window._chfPickStartPoint = function (id) {
@@ -325,30 +293,20 @@ function _chfStartManualFromToolbar() {
   window._chfPickStartPoint(e.id);
 }
 
-// Centre d'un contour rond/rectangulaire résolu (seuls cas où « centre » est non
-// ambigu — cf. _chfStartAutoApply) : trivial pour un cercle natif ; moyenne des 4
-// sommets pour un rect (exact, un rect étant centro-symétrique — pas la formule
-// générale de centroïde de polygone, volontairement pas nécessaire ici).
-function _chfHoleCenter(e, c) {
-  if (c.native === 'circle') return [c.cx, c.cy];
-  if (e.type !== 'rect' || !c.points || !c.points.length) return null;
-  let cx = 0, cy = 0;
-  for (const p of c.points) { cx += p[0]; cy += p[1]; }
-  return [cx / c.points.length, cy / c.points.length];
-}
-
-// Bouton toolbar CHFSTARTAUTO : applique en lot la longueur/angle d'amorce
-// saisis dans les champs toolbar (data-tbid="chf-start-length"/"chf-start-angle")
-// à tous les objets sélectionnés — version batch, typée, de ce que le flux manuel
-// (picking point de départ + 2e clic, voir handleClick coeur) fait objet par objet
-// à la souris. Même patron que _chfApplyCompensationToSelection (CHFCOMP) : rien
-// sélectionné → arme _chfStartAutoPending et bascule sur l'outil select.
-// Angle : détection trou/extérieur par profondeur d'imbrication, EXACTEMENT le
-// mécanisme de CHFCOMP (_chfNestDepth + mode toolbar data-tbid="chf-comp-mode",
-// partagé — pas de second sélecteur redondant). Un objet rond ou rectangulaire
-// détecté « trou » (imbriqué) ignore l'angle toolbar et pointe automatiquement vers
-// son propre centre (perce dans la zone rebut plutôt que dans la matière conservée) ;
-// un objet « extérieur » (non imbriqué), ou d'un autre type, garde l'angle toolbar.
+// Bouton toolbar CHFSTARTAUTO : applique en lot la longueur/angle d'amorce saisis dans les
+// champ toolbar (data-tbid="chf-start-length") à tous les objets sélectionnés
+// — version batch, typée, de ce que le flux manuel (picking point de départ + 2e clic, voir
+// handleClick coeur) fait objet par objet à la souris. Même patron que
+// _chfApplyCompensationToSelection (CHFCOMP) : rien sélectionné → arme _chfStartAutoPending et
+// bascule sur l'outil select.
+// Angle appliqué tel quel à TOUS les objets, y compris cercles/rectangles. Retour terrain
+// SC2000 réel (2026-08-27, export.chf vs export_corrigé.chf, ce dernier redécoupé et confirmé
+// bon par l'utilisateur) : la version précédente pointait automatiquement l'amorce des trous
+// détectés (cercle/rect en profondeur d'imbrication impaire) vers leur propre centre, angle
+// recalculé au lieu de l'angle toolbar. Le fichier de référence validé sur machine montre au
+// contraire l'angle toolbar brut (90°) sur les 4 trous, jamais un angle recalculé — le
+// pointage auto vers le centre était une hypothèse de conception non vérifiée, invalidée par
+// ce test réel.
 function _chfStartAutoApply() {
   if (!S.selected.length) {
     S._chfStartAutoPending = true; setTool('select');
@@ -357,41 +315,23 @@ function _chfStartAutoApply() {
   S._chfStartAutoPending = false;
 
   const lenInput = document.querySelector('[data-tbid="chf-start-length"]');
-  const angInput = document.querySelector('[data-tbid="chf-start-angle"]');
   const len = parseFloat(lenInput && lenInput.value);
-  const ang = parseFloat(angInput && angInput.value);
   if (isNaN(len) || len < 0) { termPrint('CHF : entrez une longueur d\'amorce valide (≥ 0) dans le champ dédié', 'warning'); return; }
 
   const ents = S.selected.map(id => S.entities.find(e => e.id === id))
     .filter(e => e && CHF_SUPPORTED_TYPES.includes(e.type));
   if (!ents.length) { termPrint('CHF : aucun objet supporté dans la sélection', 'warning'); return; }
 
-  const modeSel = document.querySelector('[data-tbid="chf-comp-mode"]');
-  const alternating = !modeSel || modeSel.value !== 'binary'; // "alt" = défaut
-  const resolved = ents.filter(_chfSupportsStartPoint).map(e => ({ e, c: _chfResolveContour(e) })).filter(r => r.c);
-
   pushUndo();
-  const angVal = isNaN(ang) ? 0 : ang;
-  let holeCount = 0;
+  // Seule la LONGUEUR est appliquée : la direction est calculée par objet
+  // (_chfAutoLeadAngle), à l'affichage comme à l'export. Plus aucun angle stocké.
   ents.forEach(e => {
     e._chfLeadLength = len;
-    let a = angVal;
-    const target = (e.type === 'circle' || e.type === 'rect') && resolved.find(r => r.e === e);
-    if (target) {
-      const depth = _chfNestDepth(target, resolved);
-      const outward = alternating ? (depth % 2 === 0) : (depth === 0);
-      if (!outward) {
-        const center = _chfHoleCenter(e, target.c);
-        const entry = _chfEntryPoint(e, target.c);
-        if (center && entry) { a = Math.atan2(center[1] - entry[1], center[0] - entry[0]) * 180 / Math.PI; holeCount++; }
-      }
-    }
-    e._chfLeadAngle = a;
+    delete e._chfLeadAngle;
+    delete e._chfLeadManual;
   });
   render(); autoSave(); updateProperties();
-  termPrint(holeCount
-    ? 'CHF : amorce (' + len + ' mm) appliquée à ' + ents.length + ' objet(s) — ' + holeCount + ' trou(s) : angle auto vers le centre, autres : ' + angVal + '°'
-    : 'CHF : amorce (' + len + ' mm, ' + angVal + '°) appliquée à ' + ents.length + ' objet(s)', 'success');
+  termPrint('CHF : amorce ' + len + ' mm (direction auto) appliquée à ' + ents.length + ' objet(s)', 'success');
 }
 
 function _chfExtraRowsSingle(e, ctx) {
@@ -400,7 +340,12 @@ function _chfExtraRowsSingle(e, ctx) {
   h += row('Sens', _chfRevSelect(id, e._chfReverse));
   h += row('Compensation (mm)', inp('_chfCompensation', (e._chfCompensation ?? 0).toFixed(3)));
   h += row('Longueur amorce (mm)', inp('_chfLeadLength', (e._chfLeadLength ?? 0).toFixed(3)));
-  h += row('Angle amorce (°)', inp('_chfLeadAngle', (e._chfLeadAngle ?? 0).toFixed(3)));
+  // Pas de champ Angle : la direction est calculée par le plugin (_chfAutoLeadAngle),
+  // affichée ici en lecture seule pour information.
+  if (e._chfLeadLength) {
+    h += row('Direction amorce', '<input class="ar-input" type="text" readonly value="' +
+      _chfAutoLeadAngle(e).toFixed(1) + '° (auto)">');
+  }
   if (_chfSupportsStartPoint(e)) {
     const sp = e._chfStartPoint;
     const label = sp ? (sp.x.toFixed(2) + ', ' + sp.y.toFixed(2)) : 'Auto (défaut)';
@@ -439,13 +384,8 @@ function _chfExtraRowsMulti(ents, ctx) {
     ' value="' + (leadLenDiffers ? '' : leadLenCommon.toFixed(3)) + '"' +
     ' onchange="_chfPropLeadLengthMulti(this.value)" />');
 
-  const leadAngVals = ents.map(e => e._chfLeadAngle ?? 0);
-  const leadAngCommon = leadAngVals.every(v => v === leadAngVals[0]) ? leadAngVals[0] : null;
-  const leadAngDiffers = leadAngCommon === null;
-  h += row('Angle amorce (°)', '<input type="number" class="prop-input" step="any"' +
-    (leadAngDiffers ? ' style="color:var(--text-dim);font-style:italic" placeholder="*Valeurs différentes*"' : '') +
-    ' value="' + (leadAngDiffers ? '' : leadAngCommon.toFixed(3)) + '"' +
-    ' onchange="_chfPropLeadAngleMulti(this.value)" />');
+  // Pas de champ Angle en multi-sélection non plus : chaque objet reçoit sa propre
+  // direction calculée (_chfAutoLeadAngle), il n'y a rien à saisir en commun.
   return h;
 }
 
@@ -519,20 +459,24 @@ function _chfPt(x, y) { return _chfNum(x) + ',' + _chfNum(y); }
 const CHF_TAIL_HEAD = '<PWM Control>\n1\n0\n0\n<End PWM Control>\n0.0\n0.0\n';
 const CHF_TAIL_FOOT = '<coolPos Para>\n0\n<End coolPos Para>';
 
-// Bloc <GuideCurve Para> ("Lead Line"/amorce hors-pièce) : dans l'exemple fourni
-// (1 seul graphe exploité, hors-périmètre de la demande initiale), ce bloc valait
-// verbatim `1 / 90.000000 / 4.000000 / 1.000000 / 0`. RÉSERVE FORTE (mapping non
-// confirmé, un seul point de donnée) : on suppose ligne 2 = angle (°), ligne 3 =
-// longueur (mm), ligne 5 = flag actif/inactif (0/1) — cohérent avec les 2 valeurs
-// qui ressemblent à un angle et une longueur, mais jamais vérifié contre plusieurs
-// graphes différents ni contre une machine réelle (contrairement aux autres champs
-// du format, recoupés sur les 38 graphes de l'exemple). Piloté par _chfLeadLength/
-// _chfLeadAngle (mm/°, UI dédiée : panneau propriétés + prévisualisation en
-// pointillé) : longueur 0 (défaut) → bloc désactivé, valeurs figées comme avant.
+// Bloc <GuideCurve Para> ("Lead Line"/amorce hors-pièce) :
+//   ligne 2 = angle (°), ligne 3 = longueur (mm), ligne 5 = flag actif/inactif (0/1).
+// L'angle est RELATIF à la direction de parcours au point d'entrée, PAS absolu — voir la
+// démonstration détaillée au-dessus de _chfExportLeadAngle (fichier natif SC2000 laser_6mm.chf :
+// 90.000000 sur 38 graphes de formes toutes différentes ; export_corrigé.chf validé machine :
+// 90.000000 sur les 4 trous ; notre ancien export, mauvais à la coupe : l'angle absolu écrit
+// tel quel). Ça referme la réserve #4 sur le mapping du bloc.
+// Piloté par _chfLeadLength (longueur en mm) + _chfExportLeadAngle (direction calculée) :
+// longueur 0 (défaut) → bloc désactivé, valeurs figées comme avant.
 function _chfBuildGuideCurve(e) {
   const len = e._chfLeadLength || 0;
   if (!len) return '<GuideCurve Para>\n1\n90.000000\n4.000000\n1.000000\n0\n<End GuideCurve Para>\n';
-  const ang = e._chfLeadAngle || 0;
+  // Angle recalculé à l'export depuis la MÊME direction absolue que l'aperçu
+  // (_chfAutoLeadAngle) et non lu depuis un champ stocké : le champ Angle a été supprimé de
+  // l'UI sur demande (« enlève le choix de l'angle, c'est au plugin de trouver la meilleure
+  // solution »). Le recalcul au moment de l'export garantit aussi qu'un objet déplacé/pivoté
+  // après coup exporte une amorce toujours cohérente avec sa position réelle.
+  const ang = _chfExportLeadAngle(e);
   return '<GuideCurve Para>\n1\n' + _chfNum(ang) + '\n' + _chfNum(len) + '\n1.000000\n1\n<End GuideCurve Para>\n';
 }
 
@@ -791,6 +735,52 @@ const CHF_REV_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
 const CHF_START_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="14" cy="12" r="7" stroke-dasharray="2.2 2"/><path d="M2 12h10" stroke-linecap="round"/><path d="M8 8l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const CHF_START_AUTO_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="15" r="6" stroke-dasharray="2.2 2"/><path d="M2 15h5" stroke-linecap="round"/><path d="M5 12l3 3-3 3" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 3.5l1.1 2.4 2.4 1.1-2.4 1.1-1.1 2.4-1.1-2.4-2.4-1.1 2.4-1.1z" stroke-linejoin="round"/></svg>';
 
+// ======== DÉTECTION D'IMBRICATION (aperçu uniquement, n'affecte jamais l'export) ========
+// Sert UNIQUEMENT à orienter visuellement le fantôme de compensation (decorateEntity, plus
+// bas) : un trou détecté doit visuellement RÉTRÉCIR vers son centre (compensation "contre
+// l'intérieur") même quand sa valeur _chfCompensation est numériquement identique à celle du
+// contour extérieur qui le contient. Retour terrain SC2000 réel (2026-08-27) : export_corrigé.chf
+// (redécoupé et confirmé bon) garde bien la MÊME valeur signée pour le carré extérieur et ses 4
+// trous — mais le rendu MiniCAD, lui, doit quand même montrer le pointillé rétrécir pour un trou
+// et grossir pour l'extérieur, sans quoi l'aperçu contredit visuellement ce que fera la machine
+// (probablement une compensation relative au sens de parcours du contour côté SC2000, pas à un
+// signe absolu). CHFCOMP/_chfApplyCompensationToSelection n'appelle RIEN de cette section : la
+// valeur écrite dans le fichier .chf reste celle tapée par l'utilisateur, appliquée telle quelle,
+// uniformément, quelle que soit la profondeur d'imbrication réelle.
+function _chfRepPoint(c) {
+  if (c.native === 'circle') return [c.cx + c.r, c.cy];
+  return c.points && c.points[0] ? [c.points[0][0], c.points[0][1]] : null;
+}
+function _chfPointInContour(qx, qy, c) {
+  if (c.native === 'circle') return Math.hypot(qx - c.cx, qy - c.cy) < c.r;
+  return pointInPolygon(qx, qy, c.points);
+}
+// Profondeur d'imbrication de `e` au sein de TOUT le dessin (S.entities, pas seulement la
+// sélection courante — un trou reste visuellement un trou même si son contour englobant n'est
+// pas sélectionné au moment du rendu) : nombre d'autres contours CHF supportés qui contiennent
+// le point représentatif de `e`. 0 = le plus extérieur.
+function _chfNestDepth(e) {
+  const c = _chfResolveContour(e);
+  const p = c && _chfRepPoint(c);
+  if (!p) return 0;
+  let depth = 0;
+  for (const other of S.entities) {
+    if (other === e || !CHF_SUPPORTED_TYPES.includes(other.type)) continue;
+    const oc = _chfResolveContour(other);
+    if (oc && _chfPointInContour(p[0], p[1], oc)) depth++;
+  }
+  return depth;
+}
+// Règle Alterné (parité pair/impair, correcte à tout niveau d'imbrication : anneau + moyeu
+// plein au centre = 3 niveaux, le moyeu redevient "extérieur") ou Binaire (seule la profondeur
+// 0 est "extérieur", tout le reste est traité comme un trou) — sélecteur toolbar
+// data-tbid="chf-comp-mode", "alt" par défaut.
+function _chfIsHole(depth) {
+  const modeSel = document.querySelector('[data-tbid="chf-comp-mode"]');
+  const alternating = !modeSel || modeSel.value !== 'binary';
+  return alternating ? (depth % 2 === 1) : (depth > 0);
+}
+
 // ======== FLÈCHES DE SENS (prévisualisation du fantôme CHFCOMP) ========
 // Quelques points échantillonnés par index le long du contour résolu du fantôme
 // (_chfResolveContour, même fonction que pour le calcul d'imbrication) : tangente =
@@ -848,10 +838,236 @@ function _chfEntryPoint(e, contour) {
   return (pts && pts.length) ? pts[0] : null;
 }
 
-// Amorce = segment de _chfLeadLength mm, à _chfLeadAngle° (monde, 0°=+X, CCW+),
-// partant du point d'entrée VERS l'extérieur (hors-pièce) — le laser parcourt ce
-// segment en sens inverse (extérieur → entrée) pour "rentrer dans la pièce" avant
-// de suivre le contour, cf. demande utilisateur.
+// Tangente au contour au point d'entrée (radians, monde) : cercle → rayon+90° (formule
+// déjà utilisée par _chfArrowSamples) ; sinon → direction vers le point SUIVANT de
+// _chfOrderContourPoints (et non contour.points[1] : avec un point de départ manuel ou
+// _chfReverse, l'ordre réel diffère du contour brut — l'entrée est pts[0] par construction
+// de _chfEntryPoint, la tangente doit donc suivre le même ordre).
+function _chfEntryTangent(e, contour, entry) {
+  if (contour.native === 'circle') {
+    return Math.atan2(entry[1] - contour.cy, entry[0] - contour.cx) + Math.PI / 2;
+  }
+  const pts = _chfOrderContourPoints(e, contour);
+  if (!pts || pts.length < 2) return 0;
+  return Math.atan2(pts[1][1] - entry[1], pts[1][0] - entry[0]);
+}
+
+// ======== DIRECTION D'AMORCE 100 % AUTOMATIQUE ========
+// Retour terrain 2026-08-27 (2 captures d'écran successives) : *« les amorces intérieur
+// (trous) doivent aller en direction du centre. et dans tout les cas l'amorce ne doit pas
+// être par dessus un trait de la pièce. enlève le choix de l'angle. c'est au plugin de
+// trouver la meilleure solution »*. Le champ Angle (toolbar + panneau propriétés) et le
+// flag _chfLeadManual associé sont donc SUPPRIMÉS : la direction est intégralement
+// calculée ici, par une seule fonction consommée à la fois par l'aperçu (_chfLeadInGeom)
+// et par l'export (_chfBuildGuideCurve) — l'aperçu ne peut donc plus diverger du fichier.
+//
+// Cause racine du défaut résiduel de la 2e capture : sur un COIN de polygone, la
+// perpendiculaire à une arête est exactement COLINÉAIRE avec l'arête voisine — l'amorce
+// se posait donc dans le prolongement d'un trait de la pièce. Corrigé en distinguant
+// sommet (→ bissectrice extérieure des 2 arêtes, jamais alignée avec aucune des deux) et
+// milieu d'arête (→ perpendiculaire, correcte dans ce cas).
+
+// Distance point→segment (monde), utilitaire local du contrôle anti-collision ci-dessous.
+function _chfPtSegDist(px, py, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay;
+  const l2 = dx * dx + dy * dy;
+  if (l2 < 1e-18) return Math.hypot(px - ax, py - ay);
+  let t = ((px - ax) * dx + (py - ay) * dy) / l2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+// Distance d'un point au contour résolu (bord, pas surface) : le cercle est traité
+// nativement (|d - r|) pour éviter de tessellier inutilement.
+function _chfDistToContour(px, py, c) {
+  if (c.native === 'circle') return Math.abs(Math.hypot(px - c.cx, py - c.cy) - c.r);
+  const pts = c.points;
+  if (!pts || pts.length < 2) return Infinity;
+  const n = pts.length;
+  const segCount = c.closed ? n : n - 1;
+  let best = Infinity;
+  for (let i = 0; i < segCount; i++) {
+    const a = pts[i], b = pts[(i + 1) % n];
+    const d = _chfPtSegDist(px, py, a[0], a[1], b[0], b[1]);
+    if (d < best) best = d;
+  }
+  return best;
+}
+// Tous les contours du dessin (pas seulement la sélection) : une amorce ne doit se poser
+// sur AUCUN trait, y compris ceux d'objets non sélectionnés au moment du rendu.
+// Résolu une seule fois par frame : decorateEntity appelle _chfAutoLeadAngle pour chaque
+// objet amorcé, et sans cache on retesselerait tous les cercles/splines du dessin à chaque
+// fois (coût O(N²)). Le cache est purgé par un microtask : une passe de rendu est
+// synchrone, donc tous les appels d'une même frame le partagent, et il est relâché juste
+// après — jamais de contour périmé au frame suivant (contrairement à une invalidation par
+// signature, qui raterait une édition de sommet de polyligne).
+// Double garde : le microtask couvre l'édition en place (drag de poignée — le tableau
+// S.entities garde la même identité mais ses coordonnées changent), et la comparaison
+// d'identité/longueur couvre le remplacement du tableau au sein d'un même tick
+// (chargement de fichier, undo, et les scénarios de test enchaînés).
+let _chfContourCache = null, _chfContourCacheSrc = null, _chfContourCacheLen = -1;
+function _chfAllContours() {
+  if (_chfContourCache && _chfContourCacheSrc === S.entities && _chfContourCacheLen === S.entities.length) {
+    return _chfContourCache;
+  }
+  const out = [];
+  for (const o of S.entities) {
+    if (!CHF_SUPPORTED_TYPES.includes(o.type)) continue;
+    const c = _chfResolveContour(o);
+    if (c) out.push(c);
+  }
+  _chfContourCache = out;
+  _chfContourCacheSrc = S.entities;
+  _chfContourCacheLen = S.entities.length;
+  Promise.resolve().then(() => { _chfContourCache = null; _chfContourCacheSrc = null; });
+  return out;
+}
+// Le segment d'amorce entry→(entry + len·angle) est-il dégagé de tout trait du dessin ?
+// Échantillonné à partir de 20 % de sa longueur : le point d'entrée lui-même est par
+// définition SUR le contour, ce n'est pas une collision. `clear` exige une marge
+// proportionnelle à la longueur d'amorce (min 0.05 mm) pour rejeter aussi le cas
+// « parallèle très proche », pas seulement l'intersection franche.
+function _chfLeadIsClear(entry, ang, len, obstacles) {
+  const tol = Math.max(0.05, len * 0.15);
+  const ux = Math.cos(ang), uy = Math.sin(ang);
+  for (let k = 2; k <= 10; k++) {
+    const t = (k / 10) * len;
+    const px = entry[0] + t * ux, py = entry[1] + t * uy;
+    for (const c of obstacles) {
+      if (_chfDistToContour(px, py, c) < tol) return false;
+    }
+  }
+  return true;
+}
+
+// Direction « idéale » avant contrôle anti-collision (radians, monde) :
+//  - cercle  → radiale (vers le centre si trou détecté, en s'en éloignant sinon) ;
+//  - sommet  → bissectrice des 2 arêtes adjacentes, côté voulu (jamais alignée avec
+//              l'une d'elles, ce qui corrige le cas du coin de plaque) ;
+//  - milieu d'arête → perpendiculaire à cette arête, côté voulu.
+// Le côté voulu (dedans pour un trou, dehors sinon) est tranché par une sonde locale
+// (_chfPointInContour à 0.01 mm) plutôt que par une convention de signe. Sur un contour
+// OUVERT (ligne, mur, arc partiel) il n'y a pas de dedans/dehors : on part de la
+// perpendiculaire à l'extrémité et c'est le contrôle anti-collision de _chfAutoLeadAngle
+// qui départage les deux côtés.
+function _chfIdealLeadAngle(e, contour, entry) {
+  if (contour.native !== 'circle' && !contour.closed) {
+    return _chfEntryTangent(e, contour, entry) + Math.PI / 2;
+  }
+  const hole = _chfIsHole(_chfNestDepth(e));
+  if (contour.native === 'circle') {
+    const radial = Math.atan2(entry[1] - contour.cy, entry[0] - contour.cx);
+    return hole ? radial + Math.PI : radial;
+  }
+  const pts = _chfOrderContourPoints(e, contour);
+  const n = pts && pts.length;
+  if (!n || n < 2) return null;
+  let cand;
+  const next = pts[1], prev = pts[n - 1];
+  const vx = next[0] - entry[0], vy = next[1] - entry[1];
+  const ux = prev[0] - entry[0], uy = prev[1] - entry[1];
+  const vl = Math.hypot(vx, vy), ul = Math.hypot(ux, uy);
+  // Bissectrice = somme des 2 directions unitaires sortant du sommet. Quasi nulle quand
+  // les 2 arêtes sont alignées (sommet « plat » d'un contour tesselé) : on retombe alors
+  // sur la perpendiculaire, qui est le bon choix dans ce cas.
+  let bx = 0, by = 0;
+  if (vl > 1e-12 && ul > 1e-12) { bx = vx / vl + ux / ul; by = vy / vl + uy / ul; }
+  const bl = Math.hypot(bx, by);
+  if (bl > 1e-9) cand = Math.atan2(by, bx);
+  else cand = Math.atan2(vy, vx) + Math.PI / 2;
+  const probe = 0.01;
+  const px = entry[0] + probe * Math.cos(cand), py = entry[1] + probe * Math.sin(cand);
+  const candIsWantedSide = hole ? _chfPointInContour(px, py, contour) : !_chfPointInContour(px, py, contour);
+  return candIsWantedSide ? cand : cand + Math.PI;
+}
+
+// Angle d'amorce définitif (degrés, convention monde 0°=+X, CCW+) — SEULE source de
+// vérité, consommée par l'aperçu ET par l'export. Part de la direction idéale, puis, si
+// le segment se pose sur un trait du dessin, balaie de part et d'autre par pas de 10°
+// (±80° max, jamais au-delà : au-delà on repasserait du mauvais côté de la matière) et
+// retient la première direction dégagée. Si aucune ne l'est (trou plus petit que
+// l'amorce, zone très encombrée), garde l'idéale : mieux vaut une amorce imparfaite mais
+// du bon côté qu'une direction arbitraire.
+function _chfAutoLeadAngle(e) {
+  const contour = _chfResolveContour(e);
+  if (!contour) return 0;
+  const entry = _chfEntryPoint(e, contour);
+  if (!entry) return 0;
+  const ideal = _chfIdealLeadAngle(e, contour, entry);
+  if (ideal == null) return 0;
+  const len = e._chfLeadLength || 0;
+  if (!len) return ideal * 180 / Math.PI;
+  const obstacles = _chfAllContours();
+  if (_chfLeadIsClear(entry, ideal, len, obstacles)) return ideal * 180 / Math.PI;
+  const step = 10 * Math.PI / 180;
+  for (let k = 1; k <= 8; k++) {
+    for (const sign of [1, -1]) {
+      const a = ideal + sign * k * step;
+      if (_chfLeadIsClear(entry, a, len, obstacles)) return a * 180 / Math.PI;
+    }
+  }
+  return ideal * 180 / Math.PI;
+}
+
+// ======== CONVERSION MONDE → .chf (angle d'amorce RELATIF au sens de parcours) ========
+// Convention établie par ÉLIMINATION CROISÉE sur trois fichiers .chf réels — les 8 conventions
+// candidates (±parcours ±angle, +0/180) confrontées à 4 contraintes physiques indépendantes :
+//   A. laser_6mm.chf (produit PAR le SC2000), graphes 13/18/28/33 : départ au coin haut-gauche
+//      d'une pièce, parcours 0°, angle 90, amorce ACTIVÉE → doit sortir vers le haut, et
+//      surtout pas longer une arête.
+//   B. même fichier, graphes 5/9/23/38 : départ au coin haut-DROIT, parcours 180°, angle 90,
+//      amorce DÉSACTIVÉE (flag 0) → la direction automatique doit y être MAUVAISE, sinon
+//      l'opérateur n'aurait eu aucune raison de la couper. Contrainte très discriminante :
+//      c'est elle qui élimine l'hypothèse « angle absolu ». (Ces 8 contours forment 4 PAIRES
+//      de pièces identiques, une CW une CCW : des copies miroir, d'où l'inversion.)
+//   C. export_corrigé.chf (corrigé main, redécoupé, CONFIRMÉ BON sur machine), graphe 1 :
+//      seul échantillon à angle NON standard (20.074123°) — donc le seul qui sépare les
+//      conventions que 90° rend indistinguables. Le point d'amorçage doit tomber hors matière.
+//   D. même fichier, les 4 cercles (90°, validés machine) : amorce VERS LE CENTRE du trou.
+// Une seule convention passe les quatre :
+//        direction absolue de l'amorce = parcours − angle + 180        (donc :)
+//        angle écrit                   = parcours − absolu  + 180
+// Sens physique : `angle` est l'angle entre le TRAIT D'AMORCE et le CONTOUR au point d'entrée
+// (90° = amorce perpendiculaire au contour) — d'où 90 comme défaut universel. Autrement dit le
+// point d'amorçage se place à `180 − angle` du sens de parcours, soit à GAUCHE du parcours pour
+// 90°. C'est aussi ce qui explique la contrainte B : sur les copies miroir (parcours inversé),
+// « à gauche » bascule dans la matière, et l'amorce a dû être désactivée.
+// ⚠ Pour un CERCLE cette formule et l'ancienne (absolu − parcours) donnent TOUJOURS le même
+// résultat (parcours − absolu y vaut toujours ±90°) : c'est exactement pourquoi le retour
+// terrain montrait le cercle correct et les deux rectangles faux dans le SC2000.
+// L'aperçu MiniCAD reste en absolu (inchangé, sur demande) ; seule l'écriture du fichier
+// applique la conversion.
+
+// Direction de PARCOURS au point d'entrée (radians, monde) — contrairement à
+// _chfEntryTangent, respecte _chfReverse aussi sur un cercle (dir ±1 de _chfCircleStart) ;
+// sur un polygone, _chfOrderContourPoints a déjà appliqué le sens, la tangente ordonnée
+// EST la direction de parcours.
+function _chfTravelTangent(e, contour, entry) {
+  if (contour.native === 'circle') {
+    const radial = Math.atan2(entry[1] - contour.cy, entry[0] - contour.cx);
+    return radial + (_chfCircleStart(e, contour).dir >= 0 ? Math.PI / 2 : -Math.PI / 2);
+  }
+  return _chfEntryTangent(e, contour, entry);
+}
+
+// Angle à écrire dans <GuideCurve Para> : direction absolue voulue (_chfAutoLeadAngle,
+// la même que l'aperçu) ramenée en relatif au sens de parcours, normalisée dans [0, 360[.
+function _chfExportLeadAngle(e) {
+  const contour = _chfResolveContour(e);
+  if (!contour) return 0;
+  const entry = _chfEntryPoint(e, contour);
+  if (!entry) return 0;
+  const abs = _chfAutoLeadAngle(e) * Math.PI / 180;
+  const rel = (_chfTravelTangent(e, contour, entry) - abs) * 180 / Math.PI + 180;
+  return ((rel % 360) + 360) % 360;
+}
+
+// Amorce = segment de _chfLeadLength mm, partant du point d'entrée VERS l'extérieur
+// (hors-pièce) — le laser parcourt ce segment en sens inverse (extérieur → entrée) pour
+// "rentrer dans la pièce" avant de suivre le contour, cf. demande utilisateur initiale.
+// La direction n'est plus une saisie : elle vient intégralement de _chfAutoLeadAngle
+// (voir cette section plus haut pour l'historique des retours terrain), la même fonction
+// que celle utilisée par l'export — l'aperçu affiche donc exactement ce qui sera écrit
+// dans le fichier .chf, par construction.
 function _chfLeadInGeom(e) {
   const len = e._chfLeadLength || 0;
   if (!len) return null;
@@ -859,7 +1075,7 @@ function _chfLeadInGeom(e) {
   if (!contour) return null;
   const entry = _chfEntryPoint(e, contour);
   if (!entry) return null;
-  const ang = (e._chfLeadAngle || 0) * Math.PI / 180;
+  const ang = _chfAutoLeadAngle(e) * Math.PI / 180;
   const outside = [entry[0] + len * Math.cos(ang), entry[1] + len * Math.sin(ang)];
   return { entry, outside };
 }
@@ -914,10 +1130,18 @@ window.CHF_EXPORT_PLUGIN = {
     if (e._chfCompensation) {
       const bbox = getEntityBBox(e);
       if (bbox) {
-        // Point de référence loin à l'extérieur de la bbox → computeOffsetGeom résout
-        // toujours un signe interne +1, donc dist=e._chfCompensation signé pilote seul
-        // agrandir/rétrécir.
-        const refX = bbox.minX - 1e7, refY = bbox.minY - 1e7;
+        // Point de référence pour computeOffsetGeom : loin à l'extérieur de la bbox pour un
+        // contour détecté extérieur (signe interne résolu toujours +1, dist=e._chfCompensation
+        // signé pilote seul agrandir/rétrécir) ; à l'intérieur (centre) pour un trou détecté,
+        // afin que le pointillé rétrécisse visuellement vers l'intérieur avec la MÊME valeur —
+        // voir la section « détection d'imbrication » plus haut. Ne change jamais ce qui est
+        // écrit dans le fichier exporté (e._chfCompensation lui-même, non touché ici).
+        let refX = bbox.minX - 1e7, refY = bbox.minY - 1e7;
+        if (_chfIsHole(_chfNestDepth(e))) {
+          const c = _chfResolveContour(e);
+          if (c && c.native === 'circle') { refX = c.cx; refY = c.cy; }
+          else { refX = (bbox.minX + bbox.maxX) / 2; refY = (bbox.minY + bbox.maxY) / 2; }
+        }
         const ghost = computeOffsetGeom(e, e._chfCompensation, refX, refY);
         if (ghost) {
           ctx.save();
@@ -972,7 +1196,7 @@ window.CHF_EXPORT_PLUGIN = {
         }
         if (!cont.querySelector('[data-tbid="chf-comp-mode"]')) {
           cont.insertAdjacentHTML('beforeend',
-            `<select class="chf-comp-input" data-tbid="chf-comp-mode" title="Règle d'imbrication (compensation auto + amorce trous CHFSTARTAUTO)">
+            `<select class="chf-comp-input" data-tbid="chf-comp-mode" title="Règle d'imbrication pour l'aperçu pointillé (extérieur/trou) — n'affecte pas la valeur exportée">
                <option value="alt" selected>Alterné</option>
                <option value="binary">Binaire</option>
              </select>`);
@@ -980,7 +1204,7 @@ window.CHF_EXPORT_PLUGIN = {
         if (!cont.querySelector('[data-tbid="chf-comp-value"]')) {
           cont.insertAdjacentHTML('beforeend',
             `<input type="text" class="chf-comp-input" data-tbid="chf-comp-value" placeholder="mm"
-                    title="Décalage compensation (mm)"
+                    title="Décalage compensation (mm, signé — même valeur appliquée à toute la sélection)"
                     onkeydown="if(event.key==='Enter'){executeCommand('CHFCOMP');event.preventDefault();}">`);
         }
         if (!cont.querySelector('[data-tbid="chf-comp-apply"]')) {
@@ -999,12 +1223,6 @@ window.CHF_EXPORT_PLUGIN = {
           cont.insertAdjacentHTML('beforeend',
             `<input type="text" class="chf-comp-input" data-tbid="chf-start-length" value="5" placeholder="mm"
                     title="Longueur d'amorce auto (mm)"
-                    onkeydown="if(event.key==='Enter'){executeCommand('CHFSTARTAUTO');event.preventDefault();}">`);
-        }
-        if (!cont.querySelector('[data-tbid="chf-start-angle"]')) {
-          cont.insertAdjacentHTML('beforeend',
-            `<input type="text" class="chf-comp-input" data-tbid="chf-start-angle" value="90" placeholder="°"
-                    title="Angle d'amorce auto (°)"
                     onkeydown="if(event.key==='Enter'){executeCommand('CHFSTARTAUTO');event.preventDefault();}">`);
         }
         if (!cont.querySelector('[data-tbid="chf-start-auto"]')) {

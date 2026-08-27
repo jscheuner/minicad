@@ -11232,11 +11232,11 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
     return;
   }
 
-  // Plugin CHF export : 2e clic après chf_startpoint → longueur + angle de
-  // l'amorce (_chfLeadLength/_chfLeadAngle), déduits du vecteur point de départ
-  // (déjà posé) → point cliqué. Même convention d'angle monde (0°=+X, CCW+) que
-  // _chfLeadInGeom, qui consomme ces champs pour la prévisualisation/l'export —
-  // voir plugins/chf_export.js.
+  // Plugin CHF export : 2e clic après chf_startpoint → LONGUEUR de l'amorce
+  // (_chfLeadLength) = distance entre le point de départ (déjà posé) et le point
+  // cliqué. La DIRECTION n'est plus saisie : le plugin la calcule lui-même
+  // (_chfAutoLeadAngle, voir plugins/chf_export.js) pour l'aperçu comme pour
+  // l'export — l'angle du vecteur cliqué est donc volontairement ignoré ici.
   if (tool === 'chf_leadvector') {
     const _chfE = S.entities.find(en => en.id === S._chfLeadTargetId);
     S._chfLeadTargetId = null;
@@ -11248,7 +11248,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       if (len > 1e-6) {
         pushUndo();
         _chfE._chfLeadLength = len;
-        _chfE._chfLeadAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+        delete _chfE._chfLeadAngle;
         autoSave();
       }
     }

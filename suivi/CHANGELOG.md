@@ -6,6 +6,188 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ## [0.1] — 2026-06-16 — Version courante
 
+### Corrigé
+- **Amorce : l'angle exporté dans le `.chf` est RELATIF au sens de parcours, pas absolu** —
+  retour terrain (2026-08-27, captures MiniCAD + SC2000) : *« ok côté minicad c'est bon, si
+  possible on n'y touche plus. par contre si j'exporte le chf et que je l'importe les amorces
+  changent d'angle »*. L'aperçu était donc juste, seul le fichier était mal interprété par la
+  machine. **Preuve croisée sur trois fichiers réels** : `laser_6mm.chf`, produit **par le
+  SC2000 lui-même**, écrit `90.000000` sur ses **38** graphes de formes toutes différentes —
+  aucune convention d'angle *absolu* ne peut produire une valeur unique pour 38 contours
+  différents, alors que « amorce perpendiculaire au sens de coupe » (défaut standard des
+  logiciels de découpe), si ; `export_corrigé.chf`, corrigé main, redécoupé et **confirmé bon
+  sur machine**, écrit lui aussi `90.000000` sur ses 4 trous ; notre ancien `export.chf`,
+  mauvais à la coupe, écrivait `180.000000` — c'est-à-dire l'angle absolu tel quel, réinterprété
+  comme relatif par la machine.
+
+  **Formule exacte, établie par élimination croisée** (une première correction,
+  `absolu − parcours`, calée sur un seul échantillon à 90°, était encore fausse : retour terrain
+  *« ce n'est toujours pas bon »*, cercle correct mais **les deux rectangles faux** dans le
+  SC2000). Les 8 conventions candidates (`±parcours ±absolu`, `+0/180`) ont été confrontées à
+  4 contraintes physiques indépendantes tirées des fichiers réels :
+  **(A)** `laser_6mm.chf` g13/18/28/33, départ coin haut-gauche, parcours 0°, angle 90, amorce
+  **activée** → doit sortir vers le haut sans longer d'arête ;
+  **(B)** même fichier g5/9/23/38, départ coin haut-**droit**, parcours 180°, angle 90, amorce
+  **désactivée** (flag 0) → la direction auto doit y être *mauvaise*, sinon l'opérateur n'avait
+  aucune raison de la couper — **c'est cette contrainte qui élimine l'hypothèse « angle absolu »** ;
+  **(C)** `export_corrigé.chf` g1, **seul échantillon non-90° de tous les fichiers** (20.074123°),
+  donc le seul qui sépare les conventions que 90° rend indistinguables → point d'amorçage hors
+  matière ; **(D)** les 4 cercles du même fichier (validés machine) → amorce vers le centre.
+  Une seule convention passe les quatre :
+
+  > **angle écrit = parcours − absolu + 180**  (donc `absolu = parcours − angle + 180`)
+
+  Sens physique enfin limpide : `angle` est l'angle **entre le trait d'amorce et le contour** au
+  point d'entrée (90° = amorce perpendiculaire) — d'où `90` comme défaut universel, et d'où le
+  point d'amorçage à **gauche du sens de parcours** à 90°. Ça explique aussi (B) : les 8 contours
+  de `laser_6mm.chf` forment **4 paires de pièces identiques, une CW une CCW** (copies miroir) ;
+  sur la copie au parcours inversé, « à gauche » bascule dans la matière et l'amorce a dû être
+  désactivée. ⚠ **Sur un CERCLE l'ancienne formule et la nouvelle donnent toujours le même
+  résultat** (`parcours − absolu` y vaut toujours ±90°) : c'est exactement pourquoi le retour
+  terrain montrait le cercle juste et les deux rectangles faux.
+
+  Corrigé dans **`_chfExportLeadAngle`** (normalisé dans `[0,360[`), seule valeur écrite par
+  `_chfBuildGuideCurve`. `_chfTravelTangent` honore `_chfReverse` **y compris sur un cercle**
+  (via `_chfCircleStart().dir`), contrairement au `_chfEntryTangent` de l'aperçu qui n'en a pas
+  besoin. **L'aperçu MiniCAD est strictement inchangé** (`_chfAutoLeadAngle` et `_chfLeadInGeom`
+  non touchés), comme demandé. Referme la réserve #4 du plugin (mapping du bloc
+  `<GuideCurve Para>`). Vérifié en headless : 159/159, dont l'invariant aller-retour
+  « parcours − angle écrit + 180 == direction absolue prévisualisée » sur cercle, cercle inversé
+  et coin de polygone. ⚠ Reste une hypothèse : le **signe** de la convention (CCW positif —
+  lecture qui colle aux données validées machine) ; un résultat en miroir se corrigerait par un
+  seul signe. À valider sur chute.
+- **Amorce : le choix de l'angle est supprimé, la direction est entièrement calculée par le
+  plugin** — retour terrain (2 captures d'écran successives, 2026-08-27) : *« les amorces
+  intérieur (trous) doivent aller en direction du centre. et dans tout les cas l'amorce ne
+  doit pas être par dessus un trait de la pièce. enlève le choix de l'angle. c'est au plugin
+  de trouver la meilleure solution »*. Une première tentative gardait l'angle saisi et ne
+  corrigeait que l'aperçu via un flag `_chfLeadManual` : insuffisante, car le défaut était
+  géométrique. **Cause racine** : sur un COIN de polygone, la perpendiculaire à une arête est
+  exactement colinéaire avec l'arête voisine — l'amorce se posait donc dans le prolongement
+  d'un trait de la pièce. Corrigé en distinguant sommet (→ **bissectrice extérieure** des 2
+  arêtes, jamais alignée avec aucune des deux) et milieu d'arête (→ perpendiculaire), plus un
+  **contrôle anti-collision** qui échantillonne le segment d'amorce contre tous les contours
+  du dessin et pivote par pas de 10° (±80°) jusqu'à trouver une direction dégagée.
+  **Suppressions** : champ Angle de la barre d'outils (`chf-start-angle`), champ Angle du
+  panneau propriétés (simple et multi), `_chfPropLeadAngleMulti`, flag `_chfLeadManual`. Le
+  picking 2-clics `CHFSTART` ne fixe plus que la longueur ; `CHFSTARTAUTO` n'applique plus que
+  la longueur. Le panneau propriétés affiche la direction calculée en lecture seule.
+  **`_chfAutoLeadAngle` est désormais la seule source de vérité**, consommée à la fois par
+  l'aperçu (`_chfLeadInGeom`) et par l'export (`_chfBuildGuideCurve`) : l'aperçu ne peut plus
+  diverger du fichier, et un objet déplacé après coup exporte une amorce cohérente avec sa
+  position réelle. Contours ouverts (ligne, mur) : perpendiculaire à l'extrémité, côté
+  départagé par le contrôle anti-collision. Perf : liste des contours résolue une seule fois
+  par frame (cache microtask + garde d'identité du tableau `S.entities`). Vérifié en
+  headless : 153/153. ⚠ **Change l'angle réellement exporté** (le champ saisi n'existe plus) :
+  à re-tester sur chute avant une pièce définitive.
+- **CHFCOMP/CHFSTARTAUTO : détection auto extérieur/trou par imbrication abandonnée — valeur et
+  angle toolbar désormais appliqués uniformément à toute la sélection** — retour terrain réel
+  sur SC2000 (2026-08-27) : l'utilisateur a exporté `export.chf`, découpé sur la machine, et
+  signalé deux écarts : *« le décalage contre l'intérieur des trous n'était pas sur l'export »*
+  et *« le sens des amorces ne correspond pas au dessin, l'angle a l'air de changer »*. Un
+  premier correctif avait élargi le calcul de profondeur d'imbrication (`_chfNestDepth`) de la
+  sélection seule à tout le dessin (`S.entities`) — insuffisant : il supposait la détection auto
+  extérieur/trou globalement correcte, seulement mal comparée.
+
+  Comparaison fine du fichier que l'utilisateur a corrigé à la main, **redécoupé sur le SC2000
+  et confirmé bon** (`export_corrigé.chf`), contre `export.chf` : le fichier validé utilise la
+  MÊME compensation signée (0.2) et le MÊME angle d'amorce brut (90°, jamais recalculé) pour le
+  carré extérieur ET ses 4 trous — la détection auto elle-même (pas seulement sa portée) était
+  fausse. `CHFCOMP` et `CHFSTARTAUTO` ont donc été simplifiées : chacune applique désormais la
+  valeur/l'angle tel que tapé dans la barre d'outils, **de façon uniforme, à tous les objets de
+  la sélection**, sans aucune tentative de détection extérieur/trou — c'est à l'utilisateur de
+  choisir le signe/l'angle. Suppression complète du code devenu mort : `_chfNestDepth`,
+  `_chfRepPoint`, `_chfPointInContour`, `_chfHoleCenter`, et le sélecteur toolbar Alterné/
+  Binaire (`chf-comp-mode`, plus aucun signe à choisir automatiquement).
+
+  Vérifié par la réécriture des tests headless qui validaient l'ancienne détection auto
+  (désormais : même valeur/angle appliqué quel que soit le niveau d'imbrication, y compris une
+  valeur négative, y compris à 3 niveaux) — 123/123 au total. **Non revérifié sur machine pour
+  ce changement précis** au-delà d'`export_corrigé.chf`, déjà redécoupé et validé par
+  l'utilisateur avant même le correctif (c'est cette validation qui l'a motivé) ; la réserve sur
+  le mapping exact du bloc `<GuideCurve Para>` reste ouverte (voir `src/plugins/chf_export.md`,
+  réserve #4) — le retour terrain confirme la valeur d'angle appliquée mais pas la sémantique
+  complète du bloc côté SC2000. Détail complet dans `src/plugins/chf_export.md` (réserve #3).
+
+- **CHFCOMP : sens de l'aperçu pointillé de nouveau sensible à l'imbrication (extérieur/trou) —
+  la valeur écrite dans le fichier exporté reste, elle, strictement uniforme** — même jour
+  (2026-08-27), suite immédiate du correctif ci-dessus : l'utilisateur a signalé que « la
+  compensation se fait toujours vers l'extérieur » même sur les trous. Question posée avant
+  d'agir vu l'enjeu matière/machine : s'agit-il de l'aperçu MiniCAD ou d'un nouveau test machine
+  contredisant `export_corrigé.chf` ? Réponse : **l'aperçu MiniCAD uniquement** — le fichier
+  exporté n'a pas été remis en cause.
+
+  `_chfNestDepth`/`_chfRepPoint`/`_chfPointInContour`/`_chfIsHole` et le sélecteur toolbar
+  Alterné/Binaire (`chf-comp-mode`) sont donc réintroduits, mais **cloisonnés au rendu** :
+  `decorateEntity` choisit désormais un point de référence différent pour `computeOffsetGeom`
+  selon la profondeur d'imbrication détectée (loin à l'extérieur de la bbox pour un contour
+  extérieur → le fantôme grossit ; centre de la forme pour un trou détecté → le fantôme rétrécit
+  avec la **même** valeur stockée). `_chfApplyCompensationToSelection` (celle qui écrit
+  `_chfCompensation`, appelée par `CHFCOMP`) n'appelle jamais ces helpers — le fichier exporté
+  continue d'utiliser la même valeur uniforme qu'`export_corrigé.chf`, validée sur machine.
+  `_chfNestDepth` reste calculée sur tout `S.entities` (pas seulement la sélection), comme le
+  premier correctif l'avait déjà corrigé.
+
+  Vérifié headless : 136/136 (13 nouveaux tests, dont un scénario carré + 4 trous répliquant
+  exactement le cas terrain — même valeur exportée sur les 5 objets, fantôme carré qui grossit,
+  fantôme de trou qui rétrécit). Réserve #3 de `src/plugins/chf_export.md` mise à jour avec une
+  hypothèse de travail non confirmée pour réconcilier « valeur uniforme dans le fichier » et
+  « bon sens physique des deux côtés » (compensation résolue par le SC2000 relativement au sens
+  de parcours du contour, pas au signe absolu).
+
+- **Amorce : direction de l'aperçu calculée automatiquement sur contour fermé — `_chfLeadAngle`
+  et l'export restent inchangés** — même jour (2026-08-27), troisième retour (capture d'écran) :
+  le repère de percée d'un trou pointait hors de ce trou au lieu de vers son centre, et au coin
+  d'une plaque le segment d'amorce suivait exactement un bord au lieu de s'en écarter. L'angle
+  brut du champ « Angle amorce » (`_chfLeadAngle`), jusque-là utilisé tel quel par la
+  prévisualisation quelle que soit la géométrie réelle, pouvait par coïncidence numérique tomber
+  aligné sur un bord ou pointer vers l'extérieur d'un trou.
+
+  `_chfLeadInGeom` calcule désormais la direction du point extérieur automatiquement sur tout
+  contour **fermé** (cercle ou polygone/polyligne/spline/ellipse fermé), via une nouvelle
+  fonction `_chfEntryOutwardAngle` : tangente au contour au point d'entrée (`_chfEntryTangent`),
+  les deux perpendiculaires à cette tangente départagées par une sonde locale à 0,01 mm
+  (`_chfPointInContour`) plutôt que par une convention de signe — extérieur détecté → sonde côté
+  hors-contour ; trou détecté → sonde côté dans-le-contour, direction plonge vers son propre
+  centre. Même classification `_chfNestDepth`/`_chfIsHole` que le fantôme de compensation
+  ci-dessus, donc même sélecteur toolbar Alterné/Binaire. Sur un contour **ouvert** (ligne,
+  mur...), sans notion dedans/dehors, `_chfLeadAngle` continue de piloter la direction affichée,
+  inchangé.
+
+  Consigne explicite de l'utilisateur : ne toucher que le plugin/aperçu pour l'instant, l'export
+  sera repris séparément une fois l'interface aboutie. En conséquence, `_chfLeadAngle` lui-même
+  (stockage, panneau propriétés, champs toolbar `CHFSTARTAUTO`), `_chfStartAutoApply` et
+  `_chfBuildGuideCurve` (export du bloc `<GuideCurve Para>`) restent strictement inchangés — un
+  objet à contour fermé peut donc temporairement afficher un aperçu dont la direction diverge de
+  l'angle réellement exporté ; attendu tant que le volet export n'a pas été revu à son tour.
+  L'utilisateur a évoqué, en le nuançant, l'idée de retirer à terme le champ Angle amorce —
+  non tranché, champ/UI laissés intacts.
+
+  Vérifié headless : 144/144 (8 nouveaux tests couvrant cercle/rectangle × extérieur/trou ×
+  indépendance à la valeur stockée, plus un test de non-régression sur contour ouvert). Détail
+  complet dans `src/plugins/chf_export.md` (section « Amorce : direction automatique » + réserve
+  #3, précision « Troisième retour »).
+
+- **Amorce : le picking manuel `CHFSTART` (2ᵉ clic) était écrasé par le calcul automatique
+  ci-dessus** — même jour (2026-08-27), quatrième retour : le 2ᵉ clic du picking manuel
+  (point sur le contour, puis vecteur longueur/angle) semblait n'avoir aucun effet sur un
+  contour fermé. Cause : le correctif précédent faisait ignorer `_chfLeadAngle` sur **tout**
+  contour fermé sans exception, y compris quand l'utilisateur venait justement de le fixer à la
+  main via ce clic (`chf_leadvector`, `src/minicad.html` ~L11240, qui pose l'angle réel depuis
+  le vecteur cliqué).
+
+  `_chfLeadInGeom` n'invoque désormais `_chfEntryOutwardAngle` que si `_chfLeadAngle` n'a
+  **jamais** été fixé sur l'objet (`e._chfLeadAngle == null`) — le calcul automatique redevient
+  une valeur par défaut, jamais une correction silencieuse d'une valeur déjà posée. Dès qu'une
+  valeur — même 0 — a été écrite par un clic (`CHFSTART`), une saisie (panneau propriétés) ou
+  `CHFSTARTAUTO`, elle est désormais toujours respectée telle quelle par l'aperçu, sur un
+  contour fermé comme ouvert. `_chfLeadAngle`, `_chfStartAutoApply` et `_chfBuildGuideCurve`
+  (export) restent inchangés — un seul changement d'une ligne dans `_chfLeadInGeom`.
+
+  Vérifié headless : 145/145 (Test 44 étendu avec 3 nouveaux cas de non-régression prouvant
+  qu'une valeur explicitement posée — clic simulé à 60°, 0°, 200° — est honorée telle quelle sur
+  cercle extérieur, trou et coin de rectangle, plutôt que redirigée vers le résultat auto).
+
 ### Ajouté
 - **`CHFSTART` interactif + `CHFSTARTAUTO`** — `CHFSTART` sait désormais s'adapter à l'état
   de la sélection au lieu d'exiger un objet déjà sélectionné : rien sélectionné → arme la
