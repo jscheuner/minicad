@@ -7,6 +7,106 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.1] — 2026-06-16 — Version courante
 
 ### Ajouté
+- **Nouveau plugin `nesting` — optimisation de découpe de tôle (imbrication)** — à partir de
+  formes dessinées, imbrique des pièces dans des formats de tôle prédéfinis et **dessine le
+  résultat** (vraies entités sur calques `NEST-TÔLE` / `NEST-PIÈCES` / `NEST-COUPE` / `NEST-TEXTE`,
+  un seul `pushUndo`). Deux stratégies : **cisaille** (rectangles, bin-packing guillotine,
+  refentes bord à bord) et **laser** (formes quelconques, imbrication vraie **No-Fit-Polygon** =
+  somme de Minkowski de morceaux convexes + placement Bottom-Left-Fill, multi-départs bornés en
+  temps ; une pièce en L rentre dans le creux d'une autre). Rotation à **pas réglable 0–360°**.
+  Deux listes de tôles : **formats standards** dans un fichier livré `plugins/nesting_formats.conf`
+  (+ copie de travail `localStorage`, bouton *Exporter .conf*) et **chutes** (quantité finie,
+  consommées d'abord) persistées dans le `.mcad`. Liste des pièces + paramètres + mode également
+  dans le `.mcad` via un **nouveau sac générique `S.pluginData`** (sérialisé par `buildSaveData`,
+  restauré par `openJSON`/`loadFromLocalStorage`, remis à zéro par `closeDrawing` ; rétro-compatible :
+  `.mcad` sans la clé → `{}`, tout plugin peut y écrire `S.pluginData[<nom>]`). `build.py`
+  `sync_plugins()` copie désormais aussi les `.conf`/`.json` de `src/plugins/`. Commandes
+  `NESTING` / `NESTADD` / `NESTRUN` / `NESTFMT` / `NESTCLR`, barre d'outils *Imbrication*.
+  Tests : 26 assertions `node` sur les primitives géométriques (aire signée, Minkowski, NFP,
+  overlap avec contact bord à bord toléré, décomposition convexe d'un L, solveurs sans
+  chevauchement) + e2e headless CDP (chargement plugin, UI injectée, round-trip `.mcad`,
+  optimisation cisaille & laser de bout en bout, `NESTCLR`). Doc : `src/plugins/nesting.md`.
+- **Plugin `nesting` — finitions d'interface + coupes cisaille numérotées** (retours utilisateur) :
+  les trois popups (`nest-panel`, `nest-fmt`, `nest-run`) sont **déplaçables** par leur barre de
+  titre (`_nestMakeDraggable`) ; en mode **cisaille**, *Saignée* et *Espace pièces* sont **forcés
+  à 0, désactivés et grisés** (coupe guillotine bord à bord — `_nestEffectiveParams` force aussi
+  `kerf=0`/`partGap=0` au solveur, les valeurs laser saisies restent mémorisées) ; le panneau
+  principal s'ouvre en haut, décalé vers le centre (`top:104px; right:210px`) ; dans *Lancer
+  l'optimisation…* les **formats standards ne sont plus cochés par défaut** — l'utilisateur
+  choisit ceux qu'il veut (avertissement si aucun) ; les **traits de coupe cisaille sont
+  numérotés dans l'ordre de la mise en tôle**, le numéro reporté **à chaque extrémité** du trait
+  (calque `NEST-COUPE`, effacés par `NESTCLR` ; chiffres taille 36). Nouvelle option cisaille **« Grouper
+  par pièce »** (`params.groupByPart`, case cochable propre au mode cisaille) : chaque type de
+  pièce est coupé en **un seul bloc contigu** (toutes les P1, puis toutes les P2…), l'**ordre des
+  types** étant choisi pour minimiser la chute — permutations exhaustives jusqu'à 6 types, sinon
+  80 brassages aléatoires + tris par aire (`_solveShear` refactoré en `packOrder(ordered)`
+  réévaluable, score = surface de tôle engagée + pénalité pièces non placées ; 6 types × 30
+  exemplaires = 38 ms). Cœur : `loadPlugin()` charge les `.js` de plugin
+  en `cache:'no-cache'` (revalidation systématique — un serveur avec `Cache-Control` ne sert plus
+  une version périmée après mise à jour).
+- **Plugin `nesting` — cisaille : choix du format de tôle optimisé** (retour utilisateur : *« si
+  je sélectionne plusieurs formats… il me prend toujours le plus petit, il faut 3 feuilles alors
+  qu'une 3000×1500 suffit »*). `_solveShear` ne prenait plus que le **plus petit format qui
+  contient la pièce courante** à chaque nouvelle tôle → ouvrait plusieurs petites tôles là où une
+  grande aurait suffi. Désormais `packOrder(ordered, fcost)` prend une **stratégie de choix de
+  format** ; `solveOrdered()` rejoue chaque ordre avec plusieurs stratégies (plus petit d'abord,
+  plus grand d'abord, puis « privilégier CE format » pour chacun des standards cochés, ≤ 6) et
+  **garde la surface de tôle totale la plus faible**. Les chutes gardent la priorité absolue. Le
+  mode standard (non groupé) essaie en plus un ordre **regroupé par type** (`groupOrder`). Sur
+  l'exemple (P2 270×350 ×30 + P2 500×750 + P4 200×200 ×10 + P4 100×1480 ×3, formats
+  2000×1000 / 2500×1250 / 3000×1500) : **une seule 3000×1500** au lieu de 3× 2000×1000 (grouper
+  par pièce, 6 ms ; 6 types × 30 ≈ 0,7 s).
+- **Plugin `nesting` — cisaille : option « numéroter seulement les coupes de bord »**
+  (`params.edgeCutsOnly`, case cochable propre au mode cisaille). Par défaut toutes les coupes
+  guillotine sont numérotées ; cochée, seules celles dont une extrémité atteint le pourtour du
+  format complet (coupes traversantes de l'opérateur) reçoivent un numéro — les recoupes internes
+  n'en ont plus. Les traits de coupe restent tous tracés ; renumérotation 1..K contigüe.
+  Détection : extrémité à moins de `1,5 × marge rive` d'un bord de la tôle (`_nestDrawResult`).
+- **Plugin `nesting` — formats de tôle en convention tôlerie « largeur × longueur »** (retour
+  utilisateur : *« on parle toujours largeur de la feuille × la longueur de la feuille, 1000×2000 »*).
+  Formats standards livrés inversés — `1000 x 2000`, `1250 x 2500`, `1500 x 3000`, `2000 x 4000`…
+  (petit côté d'abord) dans `nesting_formats.conf` et le repli `_nestFallbackFormats()` ; ligne
+  « ＋ Ligne » par défaut `1000 × 2000` ; colonne « Hauteur » renommée **« Longueur »** dans le
+  gestionnaire de formats (standards + chutes). Les tôles se dessinent donc en portrait. Solveur
+  inchangé (rotation des pièces). ⚠ une copie de travail `localStorage` antérieure masque le
+  `.conf` — faire **« Réinitialiser »** dans le gestionnaire pour récupérer la nouvelle liste.
+- **Plugin `nesting` — sélection des formats de tôle pris en compte** (retour utilisateur : *« dans
+  les formats de tôle ajoute une colonne avec une case à cocher pour sélectionner les formats à
+  prendre en compte dans l'optimisation »*). Le gestionnaire de formats gagne une colonne **✓** en
+  tête du tableau des standards : chaque format porte un booléen `enabled` (défaut `true`, donc
+  rétro-compatible — un `.conf` ou un `localStorage` sans le champ = tous cochés). Cocher/décocher
+  écrit **aussitôt et en silence** la copie de travail `localStorage` (pas besoin de « Enregistrer »)
+  et met à jour le compteur du panneau (`N/M standard(s)`). Une ligne ajoutée est cochée par défaut.
+  Le dialogue **« Lancer l'optimisation »** pré-coche ses cases standards selon `enabled` (on peut
+  toujours ajuster ponctuellement avant de lancer). **« Exporter .conf »** conserve le champ.
+  Vérifié headless : colonne présente, persistance silencieuse, nouvelle ligne cochée, dialogue de
+  lancement aligné, rétro-compat (ancien `localStorage` sans `enabled` → tout coché).
+- **Plugin `nesting` — renommer les pièces** (retour utilisateur : *« j'aimerais pouvoir renommer
+  les pièces »*). La colonne « nom » du tableau des pièces devient un champ éditable (pré-rempli
+  avec le libellé courant) ; à la validation, `d.parts[i].label` est mis à jour et persisté. Un
+  nom vide est refusé (on garde l'ancien). Si un résultat est déjà dessiné, il est **redessiné**
+  pour refléter le nouveau nom sur les étiquettes des pièces.
+- **Plugin `nesting` — bascule d'affichage portrait / paysage du résultat** (retour utilisateur :
+  *« ajoute un bouton pour afficher le résultat de l'optimisation en portrait ou paysage »*).
+  Bouton **« ⟳ Portrait / Paysage »** dans le panneau (section « Affichage du résultat ») :
+  mémorise la préférence `params.resultLandscape` (dans le `.mcad`) et, si un résultat est déjà
+  dessiné, le **redessine sans recalcul** (`_nestLastResult` conservé après chaque optimisation).
+  Le lot entier (tôles + pièces + coupes + libellés) est pivoté de −90° autour de l'origine puis
+  recadré sur son ancrage ; les entités texte n'ont pas d'angle → seul leur point d'ancrage
+  tourne, les glyphes restent horizontaux et lisibles. Le récapitulatif est tracé **après**
+  rotation, à droite du lot. Fonctionne dans les deux modes (cisaille et laser).
+- **Plugin `nesting` — cisaille : sens des coupes traversantes** (retour utilisateur : *« une
+  option pour privilégier les coupes traversantes de la tôle complète sur la longueur ou sur la
+  largeur »*). Nouveau sélecteur **« Coupes traversantes »** (`params.cutThrough`, propre au mode
+  cisaille) : `auto` (comportement historique — coupe primaire selon le plus grand reste, règle
+  SAS), `sur la longueur` (coupe primaire **verticale pleine hauteur**), `sur la largeur` (coupe
+  primaire **horizontale pleine largeur**). Dans `_solveShear.tryPlace`, `vertPrimary` pilote à la
+  fois l'étendue des deux traits guillotine (primaire = pleine étendue du reste, secondaire =
+  bande de la pièce) et le découpage des rectangles libres. Chute minimale toujours recherchée
+  **sous** cette contrainte : forcer un sens peut coûter une tôle de plus (le solveur choisit
+  alors la combinaison de plus faible surface totale). Vérifié node + headless : `length` → coupes
+  verticales pleine hauteur, `width` → horizontales pleine largeur, aucun chevauchement ;
+  bascule portrait↔paysage idempotente (retour au pixel près).
 - **Amorce : point de départ automatique des contours EXTÉRIEURS, haut-gauche / bas-gauche** —
   demande utilisateur : *« pour les amorces extérieur j'aimerai qu'elle soit mise plutôt en haut
   à gauche pour le sens anti-horaire et en bas à gauche pour le sens horaire »*. Nouveau
