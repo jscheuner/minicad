@@ -69,6 +69,12 @@ Tâches classées par priorité. Cocher quand terminé, déplacer en CHANGELOG.
 
 ## ✅ Terminé (résumé)
 
+- ✅ **Plugin `nesting` — optimisation de découpe de tôle** — cisaille (guillotine) + laser
+  (No-Fit-Polygon + Bottom-Left-Fill), rotation à pas réglable 0–360°, formats standards en
+  `.conf` livré + chutes dans le `.mcad`, résultat dessiné sur calques `NEST-*`. Nouveau sac
+  générique `S.pluginData` pour la persistance plugin dans le `.mcad`. Doc `src/plugins/nesting.md`.
+  Reste possible : offset de contour exact (arcs de raccord) au lieu de la dilatation par
+  bissectrice ; recuit / optimisation globale du BLF ; miroir des pièces (champ prévu, non activé).
 - ✅ **Export : sens de la compensation = deux drapeaux entiers (rôle + côté)** — retour terrain
   2026-08-27 avec **notre export et le même fichier corrigé** : diff de 4 lignes sur les deux
   polygones-trous. Rôle (après `<End Glyphs>`) et côté (1ʳᵉ ligne `<Crafts>`) valent 1/1 pour un
