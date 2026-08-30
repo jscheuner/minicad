@@ -2913,6 +2913,8 @@ const S = {
   aiStreaming: false,
   aiPendingEntities: null,   // entités en attente de placement à la souris
   aiPendingCenter: null,     // [cx,cy] centre de la bbox des entités en attente
+  // PLUGIN DATA (sac générique persisté dans le .mcad — clé par plugin : S.pluginData[nom])
+  pluginData: {},
   // CLIPBOARD
   clipboard: [],
   // AREA
@@ -4281,6 +4283,15 @@ const CMD = {
   OPEN: { alias: ['OUVRIR','IMPORT'], desc: 'Ouvrir DXF/DWG/JSON', exec: () => cmdOpen() },
   PRINT: { alias: ['PDF','IMPRIMER'], desc: 'Exporter en PDF (fenêtre de sélection + paramètres)', exec: () => openPrintDialog() },
   SAVEAS: { desc: 'Sauvegarder sous (SAVEAS [nom])', exec: (args) => cmdSave(args[0], true) },
+  SAVEDIAG: { desc: 'Diagnostic de la sauvegarde directe (File System Access)', exec: () => {
+    termPrint('URL         : ' + location.href, 'info');
+    termPrint('Protocole   : ' + location.protocol + '   contexte sécurisé : ' + window.isSecureContext, 'info');
+    termPrint('Dans iframe : ' + (window.top !== window.self), 'info');
+    termPrint('showSaveFilePicker : ' + ('showSaveFilePicker' in window), 'info');
+    termPrint('Fichier lié : ' + (_fileHandle ? _fileHandle.name : '(aucun)') + (_kdFile ? '  [kDrive: ' + _kdFile.name + ']' : ''), 'info');
+    termPrint('Navigateur  : ' + navigator.userAgent, 'info');
+    termPrint('→ ' + _saveDirectWhyNot(), ('showSaveFilePicker' in window) ? 'success' : 'warning');
+  }},
   ARRAY: { alias: ['AR','RESEAU','RÉSEAU'], desc: 'Réseau rectangulaire (copies en grille)', exec: () => {
     if (!S.selected.length) {
       S.arrayPending = true;
@@ -19158,6 +19169,7 @@ function buildSaveData(name) {
     gridSize: S.gridSize, gridSizeY: S.gridSizeY,
     dimStyles: S.dimStyles, currentDimStyle: S.currentDimStyle,
     layouts: S.layouts, space: S.space,
+    pluginData: S.pluginData,
   };
 }
 
@@ -19459,6 +19471,7 @@ function loadFromLocalStorage() {
     if (data.layers) { S.layers = data.layers; S.layers.forEach(l=>{if(!l.lineWidth)l.lineWidth=0.25;if(!l.lineType)l.lineType='solid';if(!l.printColor)l.printColor='#000000';}); }
     S.entities = data.entities.filter(e => e.type !== 'ellipse' || (e.rx > 0 && e.ry > 0));
     if (data.blocks) S.blocks = data.blocks;
+    S.pluginData = data.pluginData || {};
     if (data.currentLayer !== undefined) S.currentLayer = data.currentLayer;
     if (data.nextId) S.nextId = data.nextId;
     if (data.gridSize) S.gridSize = data.gridSize;
@@ -19489,6 +19502,17 @@ async function cmdSave(name, forceNew) {
           types: [{ description: 'MiniCAD Project', accept: { 'application/json': ['.mcad', '.json'] } }],
         });
       }
+      // La permission « readwrite » accordée par showSaveFilePicker() peut
+      // repasser à 'prompt' (délai, navigation, clics intermédiaires) : la
+      // revalider avant createWritable() évite un échec qui basculait
+      // silencieusement sur le téléchargement (« utilisez Chrome/Edge »).
+      if (_fileHandle.queryPermission) {
+        let perm = await _fileHandle.queryPermission({ mode: 'readwrite' });
+        if (perm !== 'granted' && _fileHandle.requestPermission) {
+          perm = await _fileHandle.requestPermission({ mode: 'readwrite' });
+        }
+        if (perm && perm !== 'granted') throw new Error('autorisation d\'écriture refusée (' + perm + ')');
+      }
       const writable = await _fileHandle.createWritable();
       await writable.write(json);
       await writable.close();
@@ -19499,14 +19523,41 @@ async function cmdSave(name, forceNew) {
     } catch(e) {
       if (e.name === 'AbortError') return;
       _fileHandle = null;
+      // Ne pas masquer la cause : l'ancien code retombait sur le téléchargement
+      // sans rien dire, d'où l'impression que « ça ne marche plus ».
+      termPrint('Sauvegarde directe impossible (' + (e.name || 'erreur') + ' : ' + (e.message || e) + ') — téléchargement à la place.', 'warning');
       // fallthrough → téléchargement
     }
   }
 
-  // Fallback Firefox / Safari : téléchargement
+  // Fallback Firefox / Safari : téléchargement.
+  // Le message dit POURQUOI on est retombé ici : l'ancien texte « utilisez
+  // Chrome/Edge » était trompeur quand l'utilisateur EST déjà sous Chrome —
+  // la vraie cause est presque toujours le contexte de la page (file://,
+  // iframe, contexte non sécurisé) et non le navigateur.
   const filename = (data.name || 'minicad_projet') + '.mcad';
   downloadBlob(json, 'application/json', filename);
-  termPrint('Téléchargé: ' + filename + ' (utilisez Chrome/Edge pour la sauvegarde directe)', 'info');
+  termPrint('Téléchargé: ' + filename + ' — ' + _saveDirectWhyNot(), 'info');
+}
+
+// Explique en clair pourquoi la sauvegarde directe (File System Access API)
+// n'est pas utilisable ici. Utilisé par le message de repli de cmdSave() et
+// par la commande SAVEDIAG.
+function _saveDirectWhyNot() {
+  if (!('showSaveFilePicker' in window)) {
+    const why = [];
+    if (!window.isSecureContext) why.push('contexte non sécurisé');
+    if (location.protocol === 'file:') why.push('page ouverte en file:// (double-clic sur le fichier)');
+    if (window.top !== window.self) why.push('page affichée dans une iframe');
+    const ua = navigator.userAgent;
+    if (/Firefox|Safari/.test(ua) && !/Chrome|Chromium|Edg|OPR/.test(ua)) why.push('navigateur sans File System Access API');
+    return 'sauvegarde directe indisponible : API File System Access absente ('
+      + (why.length ? why.join(', ') : 'cause inconnue')
+      + ' — protocole ' + location.protocol + ', secure=' + window.isSecureContext + ').'
+      + ' Ouvrez MiniCAD via http(s):// (par ex. minicad.org) pour l\'activer.';
+  }
+  return 'API File System Access disponible ici — si la sauvegarde retombe malgré tout '
+    + 'en téléchargement, la cause exacte est affichée juste au-dessus au moment de l\'enregistrement.';
 }
 
 // Ferme le dessin courant (vide S.entities, réinitialise l'état fichier).
@@ -19519,7 +19570,7 @@ function closeDrawing(confirmQuestion) {
     }
   }
   if (S.entities.length) pushUndo();
-  S.entities = []; S.selected = []; S.blocks = {};
+  S.entities = []; S.selected = []; S.blocks = {}; S.pluginData = {};
   // Calques par défaut : sans cette remise à zéro, ouvrir un DXF après coup empile
   // ses calques sur ceux du dessin précédent (doublons « 0 », « 1_-_Construction »…).
   S.layers = [
@@ -19632,6 +19683,7 @@ function openJSON(content, filename) {
   if (data.layers) { S.layers = data.layers; S.layers.forEach(l=>{if(!l.lineWidth)l.lineWidth=0.25;if(!l.lineType)l.lineType='solid';if(!l.printColor)l.printColor='#000000';}); }
   if (data.entities) S.entities = data.entities;
   if (data.blocks) S.blocks = data.blocks;
+  S.pluginData = data.pluginData || {};
   if (data.currentLayer !== undefined) S.currentLayer = data.currentLayer;
   if (data.nextId) S.nextId = data.nextId;
   if (data.gridSize) S.gridSize = data.gridSize;
@@ -20382,6 +20434,7 @@ const _pluginsInFlight = {}; // garde anti-race : chargements async en cours
 const AVAILABLE_PLUGINS = [
   { name: 'gradrule', label: 'Disques, règles & arcs gradués (GRADISC, GRADRULE, GRADARC)' },
   { name: 'chf_export', label: 'Export CHF (découpe laser SC2000)' },
+  { name: 'nesting', label: 'Optimisation découpe tôle — imbrication (NESTING)' },
 ];
 
 // Charger un plugin dynamiquement (fetch + eval)
@@ -20392,7 +20445,10 @@ async function loadPlugin(name) {
   _pluginsInFlight[name] = true;
   try {
     const url = `plugins/${name}.js`;
-    const resp = await fetch(url);
+    // cache:'no-cache' → toujours revalider avec le serveur (304 si inchangé).
+    // Sinon un serveur qui envoie Cache-Control:max-age (npx serve, CDN) sert
+    // une version périmée du plugin après une mise à jour.
+    const resp = await fetch(url, { cache: 'no-cache' });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const code = await resp.text();
     const fn = new Function(code);
