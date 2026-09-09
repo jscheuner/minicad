@@ -4334,7 +4334,7 @@ const CMD = {
   OPEN: { alias: ['OUVRIR','IMPORT'], desc: 'Ouvrir DXF/DWG/JSON', exec: () => cmdOpen() },
   PRINT: { alias: ['PDF','IMPRIMER'], desc: 'Exporter en PDF (fenêtre de sélection + paramètres)', exec: () => openPrintDialog() },
   SAVEAS: { desc: 'Sauvegarder sous (SAVEAS [nom])', exec: (args) => cmdSave(args[0], true) },
-  WORKDIR: { alias: ['DOSSIER','WD','PROJET'], desc: 'Choisir le dossier de travail (chemin relatif dans la barre) — WORKDIR [off]', exec: (args) => {
+  WORKDIR: { alias: ['DOSSIER','WD','PROJET'], desc: 'Dossier de travail de cet onglet (chemin relatif dans la barre) — WORKDIR [off]', exec: (args) => {
     const a = (args[0] || '').toLowerCase();
     if (['off','-','aucun','none','clear'].includes(a)) { pickWorkDir(true); return; }
     pickWorkDir(false);
@@ -19273,11 +19273,11 @@ function updateFileStatus() {
   if (wd) {
     if (_dirHandle && _dirHandle.name) {
       wd.textContent = '📁 ' + _dirHandle.name;
-      wd.title = 'Dossier de travail — les chemins de la barre y sont relatifs. Clic : changer (WORKDIR).';
+      wd.title = 'Dossier de travail de cet onglet — les chemins de la barre y sont relatifs.\nClic : changer (WORKDIR).';
       wd.style.display = '';
     } else {
       wd.textContent = '📁 —';
-      wd.title = 'Aucun dossier de travail. Clic : en choisir un (WORKDIR) pour afficher des chemins relatifs.';
+      wd.title = 'Aucun dossier de travail pour cet onglet. Clic : en choisir un (WORKDIR) pour afficher des chemins relatifs.';
       wd.style.display = '';
     }
     wd.style.opacity = _dirHandle ? '0.9' : '0.45';
@@ -19323,9 +19323,17 @@ async function refreshFilePath() {
 
 // ─ Persistance des handles entre rechargements (F5) ─────────────────────────
 // Chromium sérialise FileSystemFileHandle / FileSystemDirectoryHandle dans
-// IndexedDB. On les restaure au démarrage : Ctrl+S continue d'écrire dans le
-// même .mcad (une seule confirmation Chrome), et le dossier de travail persiste.
-const _FH_DB = 'minicad', _FH_STORE = 'kv', _FH_KEY = 'fileHandle', _DH_KEY = 'dirHandle';
+// IndexedDB. Ctrl+S continue d'écrire dans le même .mcad (une confirmation
+// Chrome). Le DOSSIER DE TRAVAIL est propre à chaque ONGLET : id en
+// sessionStorage (survit au F5 et à la restauration d'onglet), + une entrée
+// « dir:last » de repli pour un onglet neuf. GC des entrées > 30 j au démarrage.
+const _FH_DB = 'minicad', _FH_STORE = 'kv', _FH_KEY = 'fileHandle';
+let _tabId = 'x';
+try {
+  _tabId = sessionStorage.getItem('minicad_tab') || '';
+  if (!_tabId) { _tabId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7); sessionStorage.setItem('minicad_tab', _tabId); }
+} catch (e) {}
+const _DH_KEY = 'dir:' + _tabId, _DH_LAST = 'dir:last';
 function _fhOpenDB() {
   return new Promise((res, rej) => {
     const rq = indexedDB.open(_FH_DB, 1);
@@ -19349,13 +19357,39 @@ async function _fhIdb(mode, fn) {
 }
 function rememberFileHandle(h) { if (h) _fhIdb('readwrite', st => st.put(h, _FH_KEY)); }
 function forgetFileHandle()    { _fhIdb('readwrite', st => st.delete(_FH_KEY)); }
-function rememberDirHandle(h)  { if (h) _fhIdb('readwrite', st => st.put(h, _DH_KEY)); }
+function rememberDirHandle(h)  {
+  if (!h) return;
+  const rec = { h, ts: Date.now() };
+  _fhIdb('readwrite', st => st.put(rec, _DH_KEY));   // cet onglet
+  _fhIdb('readwrite', st => st.put(rec, _DH_LAST));  // repli pour un onglet neuf
+}
 function forgetDirHandle()     { _fhIdb('readwrite', st => st.delete(_DH_KEY)); }
+async function _restoreDirHandle() {
+  _fhIdb('readwrite', st => st.delete('dirHandle'));   // purge de l'ancien format global
+  let rec = await _fhIdb('readonly', st => st.get(_DH_KEY));
+  let fromLast = false;
+  if (!rec) { rec = await _fhIdb('readonly', st => st.get(_DH_LAST)); fromLast = true; }
+  const h = rec && (rec.h || (rec.name ? rec : null));   // tolère l'ancien handle nu
+  if (h && h.name) { _dirHandle = h; if (fromLast) rememberDirHandle(h); }  // ancre le repli sur cet onglet
+  _gcDirHandles();
+}
+async function _gcDirHandles() {
+  try {
+    const keys = await _fhIdb('readonly', st => st.getAllKeys());
+    if (!Array.isArray(keys)) return;
+    const cutoff = Date.now() - 30 * 864e5;
+    for (const k of keys) {
+      if (typeof k !== 'string' || !k.startsWith('dir:') || k === _DH_KEY || k === _DH_LAST) continue;
+      const rec = await _fhIdb('readonly', st => st.get(k));
+      if (!rec || !rec.ts || rec.ts < cutoff) _fhIdb('readwrite', st => st.delete(k));
+    }
+  } catch (e) {}
+}
 
 async function pickWorkDir(clear) {
   if (clear) {
     _dirHandle = null; forgetDirHandle(); refreshFilePath();
-    termPrint('Dossier de travail retiré — la barre affiche à nouveau le nom seul.', 'info');
+    termPrint('Dossier de travail retiré pour cet onglet — la barre affiche à nouveau le nom seul.', 'info');
     return;
   }
   if (!('showDirectoryPicker' in window)) {
@@ -19366,15 +19400,12 @@ async function pickWorkDir(clear) {
     const dir = await window.showDirectoryPicker({ id: 'minicad-workdir', mode: 'readwrite' });
     _dirHandle = dir; rememberDirHandle(dir);
     await refreshFilePath();
-    termPrint('Dossier de travail : ' + dir.name + ' — la barre du bas affiche le chemin relatif.', 'success');
+    termPrint('Dossier de travail de cet onglet : ' + dir.name + ' — chemin relatif affiché dans la barre du bas.', 'success');
   } catch (e) { if (e.name !== 'AbortError') termPrint('WORKDIR : ' + (e.message || e), 'warning'); }
 }
 
 async function restoreFileHandle() {
-  try {
-    const dh = await _fhIdb('readonly', st => st.get(_DH_KEY));
-    if (dh && dh.name) _dirHandle = dh;             // dossier de travail : persiste toujours
-  } catch (e) {}
+  await _restoreDirHandle();                        // dossier de travail : propre à l'onglet
   if (('showSaveFilePicker' in window) && !_fileHandle && !_kdFile && S.entities.length) {
     const h = await _fhIdb('readonly', st => st.get(_FH_KEY));
     if (h && h.name) {
