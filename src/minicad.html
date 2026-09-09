@@ -1187,6 +1187,12 @@
   #cmd-complete .cc-name .cc-hit { text-decoration: underline; }
   #cmd-complete .cc-alias { color: var(--text-dim); font-size: 10px; }
   #cmd-complete .cc-desc  { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+  #cmd-complete .cc-foot {
+    padding: 4px 8px 3px; margin-top: 2px;
+    border-top: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    color: var(--text-dim); opacity: 0.7; white-space: nowrap;
+  }
   #cmd-complete::-webkit-scrollbar { width: 4px; }
   #cmd-complete::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 2px; }
 
@@ -17207,13 +17213,23 @@ function _ccRenderHighlight() {
   [...cmdComplete.children].forEach((c, i) => c.classList.toggle('sel', i === _ccIdx));
   if (_ccIdx >= 0) cmdComplete.children[_ccIdx].scrollIntoView({ block: 'nearest' });
 }
-function _ccAccept(i) {
+// execute=true → lance la commande tout de suite (Tab, clic, Entrée sur sélection)
+// execute=false → insère juste « NOM  » pour saisir des arguments (Shift+Tab)
+function _ccAccept(i, execute) {
   const p = _ccItems[i] || _ccItems[0];
   if (!p) return;
-  cmdInput.value = p.name + ' ';
   hideCmdComplete();
   cmdInput.focus();
-  cmdInput.setSelectionRange(cmdInput.value.length, cmdInput.value.length);
+  if (execute) {
+    if (S.cmdHistory[0] !== p.name) S.cmdHistory.unshift(p.name);
+    if (S.cmdHistory.length > 50) S.cmdHistory.length = 50;
+    S.cmdHistoryIdx = -1;
+    cmdInput.value = '';
+    executeCommand(p.name);
+  } else {
+    cmdInput.value = p.name + ' ';
+    cmdInput.setSelectionRange(cmdInput.value.length, cmdInput.value.length);
+  }
 }
 function updateCmdComplete() {
   const v = cmdInput.value;
@@ -17237,9 +17253,13 @@ function updateCmdComplete() {
       (m.aliases[0] ? '<span class="cc-alias">' + m.aliases[0] + '</span>' : '') +
       (m.module ? '<span class="cc-alias">[' + m.module + ']</span>' : '') +
       '<span class="cc-desc">' + (m.desc || '').replace(/</g, '&lt;') + '</span>';
-    row.addEventListener('mousedown', e => { e.preventDefault(); _ccAccept(i); });
+    row.addEventListener('mousedown', e => { e.preventDefault(); _ccAccept(i, true); });
     cmdComplete.appendChild(row);
   });
+  const foot = document.createElement('div');
+  foot.className = 'cc-foot';
+  foot.textContent = 'Tab / Entrée : lancer   ·   ⇧Tab : compléter (arguments)';
+  cmdComplete.appendChild(foot);
   cmdComplete.hidden = false;
 }
 cmdInput.addEventListener('input', updateCmdComplete);
@@ -17248,14 +17268,14 @@ cmdInput.addEventListener('blur', () => setTimeout(hideCmdComplete, 120));
 cmdInput.addEventListener('keydown',(ev)=>{
   // Autocomplétion ouverte : Tab / ↑ / ↓ / Échap / Entrée(sélection) prioritaires
   if(!cmdComplete.hidden){
-    if(ev.key==='Tab'){ ev.preventDefault(); _ccAccept(_ccIdx>=0?_ccIdx:0); return; }
+    if(ev.key==='Tab'){ ev.preventDefault(); _ccAccept(_ccIdx>=0?_ccIdx:0, !ev.shiftKey); return; }
     if(ev.key==='ArrowDown'){ ev.preventDefault(); _ccIdx=(_ccIdx+1)%_ccItems.length; _ccRenderHighlight(); return; }
     if(ev.key==='ArrowUp'){ ev.preventDefault(); _ccIdx=(_ccIdx-1+_ccItems.length)%_ccItems.length; _ccRenderHighlight(); return; }
     if(ev.key==='Escape'){ ev.preventDefault(); ev.stopPropagation(); hideCmdComplete(); return; }
-    if(ev.key==='Enter' && _ccIdx>=0){ ev.preventDefault(); _ccAccept(_ccIdx); return; }
+    if(ev.key==='Enter'){ ev.preventDefault(); _ccAccept(_ccIdx>=0?_ccIdx:0, true); return; }
   } else if(ev.key==='Tab' && /^[A-Za-z_]+$/.test(cmdInput.value)){
     updateCmdComplete();
-    if(!cmdComplete.hidden){ ev.preventDefault(); _ccAccept(0); return; }
+    if(!cmdComplete.hidden){ ev.preventDefault(); _ccAccept(0, !ev.shiftKey); return; }
   }
   // Espace sur poignée active → DÉPLACER l'objet entier (seulement si rien n'est tapé)
   if(ev.key===' ' && S.gripEdit && cmdInput.value.trim()===''){
