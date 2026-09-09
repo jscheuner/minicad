@@ -2712,6 +2712,7 @@
   <div class="status-item" id="status-layer">Calque: 0</div>
   <div class="status-item" id="status-mode">Mode: Libre</div>
   <div class="status-item" id="status-module">Modules: 0/4</div>
+  <div class="status-item" id="status-file" style="margin-left:auto;max-width:60%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="">📄 (non enregistré)</div>
 </div>
 
 <script>
@@ -16402,6 +16403,7 @@ function updateStatusBar() {
   const visibleModules=Object.entries(modules).map(([,m])=>m);
   const loaded=visibleModules.filter(m=>m.loaded).length;
   document.getElementById('status-module').textContent='Modules: '+loaded+'/'+visibleModules.length;
+  updateFileStatus();
 }
 
 // ===== AI ASSISTANT (OLLAMA) =====
@@ -19385,7 +19387,7 @@ async function _kdItemClick(idx) {
     const txt = await r.text();
     openJSON(txt, f.name);
     _kdFile = { dirId: _kdCurrentFolder(), name: f.name, fileId: f.id }; // Ctrl+S → kDrive
-    _fileHandle = null;
+    _fileHandle = null; forgetFileHandle();
     updateSaveIndicator('saved');
     closeKdriveBrowser();
     termPrint('☁ Ouvert depuis kDrive : ' + f.name + ' — Ctrl+S ré-enregistre ici', 'success');
@@ -19440,7 +19442,7 @@ async function kdriveDoSave() {
     const resp = await _kdJson('/3/drive/' + _kdrive.driveId + '/upload' + q,
       { method:'POST', headers:{ 'Content-Type':'application/octet-stream' }, body: content });
     _kdFile = { dirId: _kdCurrentFolder(), name, fileId: resp && resp.data && resp.data.id }; // Ctrl+S → kDrive
-    _fileHandle = null;
+    _fileHandle = null; forgetFileHandle();
     closeKdriveBrowser();
     termPrint('☁ Enregistré sur kDrive : ' + name + ' — Ctrl+S ré-enregistre ici', 'success');
     updateSaveIndicator('saved');
@@ -19801,14 +19803,81 @@ function openPrefsDialog() {
 function updateSaveIndicator(state) {
   S._saveState = state; // mémorisé pour la sécurité « Nouveau » (données non sauvegardées)
   const el = document.getElementById('save-indicator');
-  if (!el) return;
-  if (state === 'saved') {
-    el.textContent = '● SAUVEGARDÉ'; el.style.color = 'var(--success)'; el.style.opacity = '0.8';
-  } else if (state === 'modified') {
-    el.textContent = '● MODIFIÉ'; el.style.color = 'var(--warning)'; el.style.opacity = '0.8';
-  } else {
-    el.textContent = '● NOUVEAU'; el.style.color = 'var(--text-dim)'; el.style.opacity = '0.5';
+  if (el) {
+    if (state === 'saved') {
+      el.textContent = '● SAUVEGARDÉ'; el.style.color = 'var(--success)'; el.style.opacity = '0.8';
+    } else if (state === 'modified') {
+      el.textContent = '● MODIFIÉ'; el.style.color = 'var(--warning)'; el.style.opacity = '0.8';
+    } else {
+      el.textContent = '● NOUVEAU'; el.style.color = 'var(--text-dim)'; el.style.opacity = '0.5';
+    }
   }
+  updateFileStatus();
+}
+
+// ─ Barre du bas : nom du fichier lié ────────────────────────────────────────
+// NB : l'API File System Access ne communique PAS le chemin absolu du dossier
+// (choix de sécurité des navigateurs). On affiche donc le nom du fichier + sa
+// source (fichier local / kDrive). Le survol rappelle la limitation.
+function updateFileStatus() {
+  const el = document.getElementById('status-file');
+  if (!el) return;
+  try { void _fileHandle; void _kdFile; } catch (e) { return; }  // avant l'init des variables (TDZ)
+  const dirty = S._saveState === 'modified';
+  let label, title;
+  if (_kdFile && _kdFile.name) {
+    label = 'kDrive : ' + _kdFile.name;
+    title = 'Fichier kDrive — Ctrl+S ré-enregistre dessus.';
+  } else if (_fileHandle && _fileHandle.name) {
+    label = _fileHandle.name;
+    title = 'Fichier lié — Ctrl+S enregistre directement dessus.\n'
+          + 'Le navigateur ne fournit pas le chemin absolu du dossier (sécurité).';
+  } else {
+    label = '(non enregistré)';
+    title = 'Aucun fichier lié — Ctrl+S ouvrira « Enregistrer sous ».';
+  }
+  el.textContent = '📄 ' + label + (dirty && (_fileHandle || _kdFile) ? ' •' : '');
+  el.title = title;
+  el.style.opacity = (_fileHandle || _kdFile) ? '0.9' : '0.5';
+}
+
+// ─ Persistance du handle fichier entre rechargements (F5) ───────────────────
+// Chromium sérialise un FileSystemFileHandle dans IndexedDB. On le restaure au
+// démarrage : Ctrl+S continue alors d'écrire dans le même .mcad après un F5,
+// avec une seule confirmation d'autorisation Chrome au 1er enregistrement.
+const _FH_DB = 'minicad', _FH_STORE = 'kv', _FH_KEY = 'fileHandle';
+function _fhOpenDB() {
+  return new Promise((res, rej) => {
+    const rq = indexedDB.open(_FH_DB, 1);
+    rq.onupgradeneeded = () => { if (!rq.result.objectStoreNames.contains(_FH_STORE)) rq.result.createObjectStore(_FH_STORE); };
+    rq.onsuccess = () => res(rq.result);
+    rq.onerror = () => rej(rq.error);
+  });
+}
+async function _fhIdb(mode, fn) {
+  try {
+    const db = await _fhOpenDB();
+    const out = await new Promise((res, rej) => {
+      const tx = db.transaction(_FH_STORE, mode);
+      const r = fn(tx.objectStore(_FH_STORE));
+      tx.oncomplete = () => res(r && r.result);
+      tx.onerror = () => rej(tx.error);
+    });
+    db.close();
+    return out;
+  } catch (e) { return undefined; }
+}
+function rememberFileHandle(h) { if (h) _fhIdb('readwrite', st => st.put(h, _FH_KEY)); }
+function forgetFileHandle()    { _fhIdb('readwrite', st => st.delete(_FH_KEY)); }
+async function restoreFileHandle() {
+  if (!('showSaveFilePicker' in window) || _fileHandle || _kdFile) return;
+  if (!S.entities.length) return;                 // page vierge → pas de contexte fichier
+  const h = await _fhIdb('readonly', st => st.get(_FH_KEY));
+  if (!h || !h.name) return;
+  _fileHandle = h;
+  updateFileStatus();
+  termPrint('Fichier lié restauré : ' + h.name + ' — Ctrl+S enregistrera dessus '
+    + '(Chrome demandera l\'autorisation une fois).', 'info');
 }
 
 function loadFromLocalStorage() {
@@ -19866,12 +19935,13 @@ async function cmdSave(name, forceNew) {
       await writable.write(json);
       await writable.close();
       localStorage.setItem('minicad_autosave', json);
+      rememberFileHandle(_fileHandle);   // survit à un F5 → Ctrl+S ré-enregistre dessus
       updateSaveIndicator('saved');
       termPrint('✓ Sauvegardé: ' + _fileHandle.name, 'success');
       return;
     } catch(e) {
       if (e.name === 'AbortError') return;
-      _fileHandle = null;
+      _fileHandle = null; forgetFileHandle();
       // Ne pas masquer la cause : l'ancien code retombait sur le téléchargement
       // sans rien dire, d'où l'impression que « ça ne marche plus ».
       termPrint('Sauvegarde directe impossible (' + (e.name || 'erreur') + ' : ' + (e.message || e) + ') — téléchargement à la place.', 'warning');
@@ -19929,7 +19999,8 @@ function closeDrawing(confirmQuestion) {
     { name: '3 - Texte',       color: '#ffab40', printColor: '#000000', visible: true, lineWidth: 0.25, lineType: 'solid' },
   ];
   S.currentLayer = 0;
-  _fileHandle = null; _kdFile = null; localStorage.removeItem('minicad_autosave'); updateSaveIndicator('new');
+  _fileHandle = null; _kdFile = null; forgetFileHandle();
+  localStorage.removeItem('minicad_autosave'); updateSaveIndicator('new');
   updateUI(); syncUIState(); render();
   return true;
 }
@@ -19950,11 +20021,17 @@ async function cmdOpen() {
       const ext = file.name.split('.').pop().toLowerCase();
       if (!closeDrawing('Ouvrir un autre dessin quand même ?')) { termPrint('Ouverture annulée', 'info'); return; }
       termPrint('Ouverture: ' + file.name + ' (' + (content.length/1024).toFixed(1) + ' Ko)', 'info');
-      _fileHandle = null; // sera redemandé au prochain Ctrl+S
-      if (ext === 'json' || ext === 'mcad') openJSON(content, file.name);
-      else if (ext === 'dxf') openDXF(content, file.name);
-      else if (ext === 'dwg') warnDwgNotSupported(file);
-      else termPrint('Format non supporté: .' + ext, 'error');
+      if (ext === 'json' || ext === 'mcad') {
+        openJSON(content, file.name);
+        _fileHandle = handle;              // Ctrl+S ré-enregistre sur ce fichier
+        rememberFileHandle(handle);
+        updateFileStatus();
+      } else {
+        _fileHandle = null; forgetFileHandle();   // DXF/DWG : format différent → pas de lien direct
+        if (ext === 'dxf') openDXF(content, file.name);
+        else if (ext === 'dwg') warnDwgNotSupported(file);
+        else termPrint('Format non supporté: .' + ext, 'error');
+      }
       return;
     } catch(e) {
       if (e.name === 'AbortError') return;
@@ -21567,6 +21644,7 @@ if (S.loadedPlugins === null) {
 }
 window.addEventListener('beforeunload', autoSave);
 loadFromLocalStorage();
+restoreFileHandle();   // relie le .mcad précédent après un F5 (File System Access API)
 
 // Bouton téléchargement — affiché uniquement sur minicad.org
 if (['minicad.org','www.minicad.org'].includes(window.location.hostname)) {
