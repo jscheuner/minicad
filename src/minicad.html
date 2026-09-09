@@ -1159,7 +1159,36 @@
     gap: 6px;
     border-top: 1px solid color-mix(in srgb, var(--ink) 3%, transparent);
     flex-shrink: 0;
+    position: relative;
   }
+
+  /* Autocomplétion de la barre de commande */
+  #cmd-complete {
+    position: absolute;
+    left: 8px; right: 8px;
+    bottom: calc(100% + 3px);
+    max-height: 230px;
+    overflow-y: auto;
+    background: var(--bg-panel);
+    border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+    border-radius: 6px;
+    box-shadow: 0 -6px 20px rgba(0,0,0,0.4);
+    z-index: 60;
+    padding: 3px;
+  }
+  #cmd-complete .cc-item {
+    display: flex; align-items: baseline; gap: 7px;
+    padding: 3px 8px; border-radius: 4px; cursor: pointer;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    white-space: nowrap; overflow: hidden;
+  }
+  #cmd-complete .cc-item.sel { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+  #cmd-complete .cc-name  { color: var(--accent); font-weight: 600; }
+  #cmd-complete .cc-name .cc-hit { text-decoration: underline; }
+  #cmd-complete .cc-alias { color: var(--text-dim); font-size: 10px; }
+  #cmd-complete .cc-desc  { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+  #cmd-complete::-webkit-scrollbar { width: 4px; }
+  #cmd-complete::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--ink) 13%, transparent); border-radius: 2px; }
 
   .terminal-input-row .prompt-icon {
     color: var(--accent);
@@ -2673,6 +2702,7 @@
   <div class="terminal-input-row">
     <span class="prompt-icon">❯</span>
     <input type="text" id="cmd-input" placeholder="{{cmd.placeholder}}" data-i18n-placeholder="cmd.placeholder" autocomplete="off" spellcheck="false">
+    <div id="cmd-complete" hidden></div>
   </div>
 </div>
 
@@ -17133,13 +17163,96 @@ function executeCommand(input) {
   termPrint('Commande inconnue: "'+cmd+'". Tapez HELP','error');
 }
 
+// ═══ Autocomplétion de la barre de commande ══════════════════════════════════
+// Suggère les noms de commandes (CMD + commandes des modules chargés) pendant
+// la frappe d'un NOM de commande (lettres/_ uniquement, hors tracé en cours).
+// Tab/Entrée(si sélection) = compléter ; ↑/↓ = naviguer ; Échap = fermer.
+const cmdComplete = document.getElementById('cmd-complete');
+let _ccItems = [];
+let _ccIdx = -1;   // -1 = pas de sélection active → Entrée exécute le texte tel quel
+
+function _ccAllCommands() {
+  const out = [];
+  for (const [name, c] of Object.entries(CMD))
+    out.push({ name, aliases: c.alias || [], desc: c.desc || '' });
+  for (const mod of Object.values(modules)) {
+    if (!mod || !mod.loaded || !mod.commands) continue;
+    for (const [name, c] of Object.entries(mod.commands))
+      out.push({ name, aliases: c.alias || [], desc: c.desc || '', module: mod.name });
+  }
+  return out;
+}
+function _ccScore(e, q) {
+  const n = e.name.toUpperCase();
+  if (n === q) return 0;
+  if (n.startsWith(q)) return 1;
+  for (const a of e.aliases) { const au = String(a).toUpperCase(); if (au === q) return 2; if (au.startsWith(q)) return 3; }
+  if (n.includes(q)) return 4;
+  if (e.aliases.some(a => String(a).toUpperCase().includes(q))) return 5;
+  return 99;
+}
+function hideCmdComplete() { cmdComplete.hidden = true; _ccItems = []; _ccIdx = -1; }
+function _ccRenderHighlight() {
+  [...cmdComplete.children].forEach((c, i) => c.classList.toggle('sel', i === _ccIdx));
+  if (_ccIdx >= 0) cmdComplete.children[_ccIdx].scrollIntoView({ block: 'nearest' });
+}
+function _ccAccept(i) {
+  const p = _ccItems[i] || _ccItems[0];
+  if (!p) return;
+  cmdInput.value = p.name + ' ';
+  hideCmdComplete();
+  cmdInput.focus();
+  cmdInput.setSelectionRange(cmdInput.value.length, cmdInput.value.length);
+}
+function updateCmdComplete() {
+  const v = cmdInput.value;
+  if (S.drawing || !/^[A-Za-z_]{1,}$/.test(v)) { hideCmdComplete(); return; }
+  const q = v.toUpperCase();
+  const matches = _ccAllCommands()
+    .map(e => ({ e, s: _ccScore(e, q) }))
+    .filter(x => x.s < 99)
+    .sort((a, b) => a.s - b.s || a.e.name.localeCompare(b.e.name))
+    .slice(0, 12).map(x => x.e);
+  if (!matches.length || (matches.length === 1 && matches[0].name.toUpperCase() === q)) { hideCmdComplete(); return; }
+  _ccItems = matches; _ccIdx = -1;
+  cmdComplete.innerHTML = '';
+  matches.forEach((m, i) => {
+    const nm = m.name.toUpperCase().startsWith(q)
+      ? '<span class="cc-hit">' + m.name.slice(0, q.length) + '</span>' + m.name.slice(q.length)
+      : m.name;
+    const row = document.createElement('div');
+    row.className = 'cc-item';
+    row.innerHTML = '<span class="cc-name">' + nm + '</span>' +
+      (m.aliases[0] ? '<span class="cc-alias">' + m.aliases[0] + '</span>' : '') +
+      (m.module ? '<span class="cc-alias">[' + m.module + ']</span>' : '') +
+      '<span class="cc-desc">' + (m.desc || '').replace(/</g, '&lt;') + '</span>';
+    row.addEventListener('mousedown', e => { e.preventDefault(); _ccAccept(i); });
+    cmdComplete.appendChild(row);
+  });
+  cmdComplete.hidden = false;
+}
+cmdInput.addEventListener('input', updateCmdComplete);
+cmdInput.addEventListener('blur', () => setTimeout(hideCmdComplete, 120));
+
 cmdInput.addEventListener('keydown',(ev)=>{
+  // Autocomplétion ouverte : Tab / ↑ / ↓ / Échap / Entrée(sélection) prioritaires
+  if(!cmdComplete.hidden){
+    if(ev.key==='Tab'){ ev.preventDefault(); _ccAccept(_ccIdx>=0?_ccIdx:0); return; }
+    if(ev.key==='ArrowDown'){ ev.preventDefault(); _ccIdx=(_ccIdx+1)%_ccItems.length; _ccRenderHighlight(); return; }
+    if(ev.key==='ArrowUp'){ ev.preventDefault(); _ccIdx=(_ccIdx-1+_ccItems.length)%_ccItems.length; _ccRenderHighlight(); return; }
+    if(ev.key==='Escape'){ ev.preventDefault(); ev.stopPropagation(); hideCmdComplete(); return; }
+    if(ev.key==='Enter' && _ccIdx>=0){ ev.preventDefault(); _ccAccept(_ccIdx); return; }
+  } else if(ev.key==='Tab' && /^[A-Za-z_]+$/.test(cmdInput.value)){
+    updateCmdComplete();
+    if(!cmdComplete.hidden){ ev.preventDefault(); _ccAccept(0); return; }
+  }
   // Espace sur poignée active → DÉPLACER l'objet entier (seulement si rien n'est tapé)
   if(ev.key===' ' && S.gripEdit && cmdInput.value.trim()===''){
     ev.preventDefault(); ev.stopPropagation();
     gripToMove(); return;
   }
   if(ev.key==='Enter'){
+    hideCmdComplete();
     const cmd = cmdInput.value.trim();
     if(cmd){
       if(S.cmdHistory[0] !== cmd) S.cmdHistory.unshift(cmd);
