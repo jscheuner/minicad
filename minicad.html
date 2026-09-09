@@ -5228,9 +5228,35 @@ function _drawDynamicLayer() {
       ctx.setLineDash([]); ctx.restore();
     }
   }
+  if (S._joinGaps) drawJoinGaps();
   drawCursor();
   updateStatusBar();
   updateDynamicInput();
+}
+
+// Cercles rouges sur les extrémités libres après un JOIN qui ne forme pas
+// une chaîne continue. S'estompe puis disparaît au bout de ~6 s.
+function drawJoinGaps() {
+  const g = S._joinGaps;
+  const age = performance.now() - g.t0;
+  const LIFE = 6000;
+  if (age > LIFE) { S._joinGaps = null; return; }
+  const fade = age > LIFE - 1000 ? (LIFE - age) / 1000 : 1;
+  const pulse = 0.6 + 0.4 * Math.sin(age / 180);
+  ctx.save();
+  ctx.strokeStyle = '#ff3b30';
+  ctx.fillStyle = '#ff3b30';
+  ctx.setLineDash([]);
+  g.pts.forEach(p => {
+    const [sx, sy] = w2s(p[0], p[1]);
+    ctx.globalAlpha = fade;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(sx, sy, 9, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = fade * pulse;
+    ctx.beginPath(); ctx.arc(sx, sy, 2.5, 0, Math.PI * 2); ctx.fill();
+  });
+  ctx.restore();
+  scheduleRender(); // garder l'animation vivante jusqu'à expiration
 }
 
 function drawArrayPreview() {
@@ -9047,12 +9073,27 @@ function applyJoin(ellipseSegs) {
     return rem.length===0 ? chain : null;
   }
 
+  S._joinGaps = null;
   let chain = null;
   for (const ent of ents) {
     chain = tryChain(ent,false) || tryChain(ent,true);
     if (chain) break;
   }
-  if (!chain) { termPrint('Les entités ne forment pas une chaîne continue', 'warning'); return; }
+  if (!chain) {
+    // Repérer les extrémités « libres » : celles qui ne coïncident (à TOL près)
+    // avec aucune extrémité d'une AUTRE entité de la sélection. Ce sont les
+    // points où la chaîne se rompt → cercles rouges à l'écran.
+    const allEnds = [];
+    ents.forEach((e, ei) => { const ep = endpts(e); allEnds.push({ p: ep.s, ei }, { p: ep.e, ei }); });
+    const gaps = allEnds
+      .filter(a => !allEnds.some(b => b.ei !== a.ei && close(a.p, b.p)))
+      .map(a => a.p);
+    if (gaps.length) S._joinGaps = { pts: gaps, t0: performance.now() };
+    termPrint('Les entités ne forment pas une chaîne continue'
+      + (gaps.length ? ' — ' + gaps.length + ' extrémité(s) libre(s) en rouge' : ''), 'warning');
+    render();
+    return;
+  }
 
   let allPts = [];
   for (let i=0;i<chain.length;i++) {
@@ -14159,6 +14200,7 @@ function setTool(t) {
   if(t !== 'select') { S.axisOverPending=false; S.axisAwaitDist=false; S.axisDistPt1=null; }
   if(t !== 'stretch') { S.stretchRect=null; S.stretchStep=0; }
   if(t !== 'divide_pick') { S.divideStep=0; S.divideEntId=null; }
+  if(t !== 'join') S._joinGaps=null;
   if(_toolCmdName[t]) _pushCmdRepeat(_toolCmdName[t]);
   if(t !== 'circle') S.circleDiamMode=false;
   S.tool=t; S.drawing=false; S.drawPoints=[]; S.awaitingInput=false;
