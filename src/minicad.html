@@ -9119,10 +9119,15 @@ function applyJoin(ellipseSegs) {
     Math.hypot(allPts[0][0]-allPts[allPts.length-1][0], allPts[0][1]-allPts[allPts.length-1][1]) < TOL;
 
   // Boucle fermée : le dernier point double le premier (à TOL près, sans être
-  // identique). On le retire pour que le segment de fermeture de la polyligne
-  // reparte du dernier sommet réel en conservant son bulge — sinon un arrondi
-  // de couture est coupé par un petit segment droit (jusqu'à TOL de long).
-  if (closed && allPts.length > 3) allPts.pop();
+  // strictement identique). On le cale exactement sur le premier pour que la
+  // polyligne se referme sans petit segment droit parasite à la couture — un
+  // arrondi (bulge porté par l'avant-dernier point) rejoint alors proprement
+  // le point de départ.
+  if (closed) {
+    const last = allPts[allPts.length-1];
+    last[0] = allPts[0][0];
+    last[1] = allPts[0][1];
+  }
 
   pushUndo();
   const type = chain.some(c=>c.ent.type==='cable') ? 'cable' : 'polyline';
