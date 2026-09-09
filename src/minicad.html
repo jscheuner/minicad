@@ -7999,9 +7999,22 @@ function getGripPoints(e) {
       });
       break;
     }
-    case 'xline': case 'ray':
-      gp(e.x, e.y, (ent, nx, ny) => { ent.x = nx; ent.y = ny; });
+    case 'xline': case 'ray': {
+      // XLINE / RAY (infinies) ne sont pas « ajustables » telles quelles : dès
+      // qu'on tire une poignée, l'entité devient une LIGNE finie. 2 poignées :
+      // le point de base et un point ~80 px plus loin le long de la direction.
+      const _L = 80 / (S.zoom || 1);
+      const _dx = e.dx || 0, _dy = e.dy || 0;
+      const _bx = e.x, _by = e.y, _px = e.x + _dx*_L, _py = e.y + _dy*_L;
+      const _toLine = (ent, ax, ay, cx, cy) => {
+        ent.type = 'line';
+        ent.x1 = ax; ent.y1 = ay; ent.x2 = cx; ent.y2 = cy;
+        delete ent.x; delete ent.y; delete ent.dx; delete ent.dy;
+      };
+      gp(_bx, _by, (ent, nx, ny) => _toLine(ent, nx, ny, _px, _py));  // base
+      gp(_px, _py, (ent, nx, ny) => _toLine(ent, _bx, _by, nx, ny));  // direction
       break;
+    }
     case 'hatch': {
       const hpts = getHatchPoints(e);
       if (!hpts?.length) break;
