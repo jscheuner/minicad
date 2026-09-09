@@ -9054,19 +9054,28 @@ function applyJoin(ellipseSegs) {
     return rev;
   }
 
+  // Raccord au PLUS PROCHE voisin, pas au premier trouvé. Sur une pièce à petits
+  // congés (r=0.15, entités plus courtes que TOL) une extrémité a souvent plusieurs
+  // candidats sous TOL : prendre le premier de la liste enchaîne au hasard et fait
+  // échouer la chaîne (ou greffe un arc sur la mauvaise corde → arc quasi plat).
   function tryChain(startEnt, startRev) {
     const rem = ents.filter(e=>e!==startEnt);
     const chain = [{ent:startEnt, rev:startRev}];
     let ep = endpts(startEnt);
     let tail = startRev ? ep.s : ep.e;
-    let changed = true;
-    while (rem.length>0 && changed) {
-      changed = false;
+    while (rem.length>0) {
+      let best = null, bestD = TOL;
       for (let i=0;i<rem.length;i++) {
-        const e=rem[i], ep2=endpts(e);
-        if (close(tail,ep2.s))      { chain.push({ent:e,rev:false}); tail=ep2.e; rem.splice(i,1); changed=true; break; }
-        else if (close(tail,ep2.e)) { chain.push({ent:e,rev:true});  tail=ep2.s; rem.splice(i,1); changed=true; break; }
+        const ep2 = endpts(rem[i]);
+        const ds = Math.hypot(tail[0]-ep2.s[0], tail[1]-ep2.s[1]);
+        if (ds < bestD) { bestD=ds; best={i, rev:false, next:ep2.e}; }
+        const de = Math.hypot(tail[0]-ep2.e[0], tail[1]-ep2.e[1]);
+        if (de < bestD) { bestD=de; best={i, rev:true,  next:ep2.s}; }
       }
+      if (!best) break;
+      chain.push({ent:rem[best.i], rev:best.rev});
+      tail = best.next;
+      rem.splice(best.i, 1);
     }
     return rem.length===0 ? chain : null;
   }
@@ -9103,12 +9112,12 @@ function applyJoin(ellipseSegs) {
     if (i===0) {
       allPts = pts;
     } else {
-      // Transfer bulge from pts[0] to the junction point (last of allPts)
+      // Segment courbe : le bulge ne vaut que pour la corde PROPRE de l'arc. On
+      // cale donc la jonction sur son point de départ réel au lieu de garder celui
+      // de l'entité précédente — sinon le moindre jeu de raccord déforme le rayon
+      // (0.05 d'écart sur un congé r=0.5 → r=4.5 au rendu, soit un arc quasi plat).
       const b = pts[0][2];
-      if (b) {
-        const j = allPts[allPts.length-1];
-        allPts[allPts.length-1] = [j[0], j[1], b];
-      }
+      if (b) allPts[allPts.length-1] = [pts[0][0], pts[0][1], b];
       allPts = allPts.concat(pts.slice(1));
     }
   }
