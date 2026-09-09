@@ -1401,6 +1401,9 @@
         <div class="menu-dropdown-item" onclick="cmdSave(null,true);closeMenus()">
           <span data-i18n="menu.file.save_as">{{menu.file.save_as}}</span>
         </div>
+        <div class="menu-dropdown-item" onclick="executeCommand('WORKDIR');closeMenus()">
+          <span>Dossier de travail…</span>
+        </div>
         <div class="menu-dropdown-sep"></div>
         <div class="menu-dropdown-item" onclick="exportDXF();closeMenus()">
           <span data-i18n="menu.file.export_dxf">{{menu.file.export_dxf}}</span>
@@ -4330,6 +4333,11 @@ const CMD = {
   OPEN: { alias: ['OUVRIR','IMPORT'], desc: 'Ouvrir DXF/DWG/JSON', exec: () => cmdOpen() },
   PRINT: { alias: ['PDF','IMPRIMER'], desc: 'Exporter en PDF (fenêtre de sélection + paramètres)', exec: () => openPrintDialog() },
   SAVEAS: { desc: 'Sauvegarder sous (SAVEAS [nom])', exec: (args) => cmdSave(args[0], true) },
+  WORKDIR: { alias: ['DOSSIER','WD','PROJET'], desc: 'Choisir le dossier de travail (chemin relatif dans la barre) — WORKDIR [off]', exec: (args) => {
+    const a = (args[0] || '').toLowerCase();
+    if (['off','-','aucun','none','clear'].includes(a)) { pickWorkDir(true); return; }
+    pickWorkDir(false);
+  }},
   SAVEDIAG: { desc: 'Diagnostic de la sauvegarde directe (File System Access)', exec: () => {
     termPrint('URL         : ' + location.href, 'info');
     termPrint('Protocole   : ' + location.protocol + '   contexte sécurisé : ' + window.isSecureContext, 'info');
@@ -18815,6 +18823,7 @@ async function _kdItemClick(idx) {
     openJSON(txt, f.name);
     _kdFile = { dirId: _kdCurrentFolder(), name: f.name, fileId: f.id }; // Ctrl+S → kDrive
     _fileHandle = null; forgetFileHandle();
+    refreshFilePath();
     updateSaveIndicator('saved');
     closeKdriveBrowser();
     termPrint('☁ Ouvert depuis kDrive : ' + f.name + ' — Ctrl+S ré-enregistre ici', 'success');
@@ -18869,7 +18878,7 @@ async function kdriveDoSave() {
     const resp = await _kdJson('/3/drive/' + _kdrive.driveId + '/upload' + q,
       { method:'POST', headers:{ 'Content-Type':'application/octet-stream' }, body: content });
     _kdFile = { dirId: _kdCurrentFolder(), name, fileId: resp && resp.data && resp.data.id }; // Ctrl+S → kDrive
-    _fileHandle = null; forgetFileHandle();
+    _fileHandle = null; forgetFileHandle(); refreshFilePath();
     closeKdriveBrowser();
     termPrint('☁ Enregistré sur kDrive : ' + name + ' — Ctrl+S ré-enregistre ici', 'success');
     updateSaveIndicator('saved');
@@ -18934,7 +18943,9 @@ async function wblockSaveDrawingToFile(name, existingHandle) {
 }
 
 // ===== PERSISTANCE =====
-let _fileHandle = null; // File System Access API — handle fichier courant
+let _fileHandle = null;      // File System Access API — handle fichier courant
+let _dirHandle = null;       // dossier de travail (showDirectoryPicker) → chemin relatif
+let _fileDisplayPath = '';   // libellé calculé pour la barre du bas (chemin relatif ou nom)
 
 function buildSaveData(name) {
   return {
@@ -19242,37 +19253,57 @@ function updateSaveIndicator(state) {
   updateFileStatus();
 }
 
-// ─ Barre du bas : nom du fichier lié ────────────────────────────────────────
-// NB : l'API File System Access ne communique PAS le chemin absolu du dossier
-// (choix de sécurité des navigateurs). On affiche donc le nom du fichier + sa
-// source (fichier local / kDrive). Le survol rappelle la limitation.
+// ─ Barre du bas : chemin du fichier lié ────────────────────────────────────
+// L'API File System Access ne donne pas le chemin ABSOLU (sécurité navigateur).
+// Avec un « dossier de travail » (WORKDIR → showDirectoryPicker), on affiche le
+// chemin RELATIF à ce dossier, calculé par dirHandle.resolve(fileHandle).
+// `_fileDisplayPath` est rafraîchi par refreshFilePath() (async) ; ici on ne
+// fait que l'afficher.
 function updateFileStatus() {
   const el = document.getElementById('status-file');
   if (!el) return;
   try { void _fileHandle; void _kdFile; } catch (e) { return; }  // avant l'init des variables (TDZ)
   const dirty = S._saveState === 'modified';
+  const linked = !!(_fileHandle || _kdFile);
   let label, title;
   if (_kdFile && _kdFile.name) {
     label = 'kDrive : ' + _kdFile.name;
     title = 'Fichier kDrive — Ctrl+S ré-enregistre dessus.';
   } else if (_fileHandle && _fileHandle.name) {
-    label = _fileHandle.name;
+    label = _fileDisplayPath || _fileHandle.name;
     title = 'Fichier lié — Ctrl+S enregistre directement dessus.\n'
-          + 'Le navigateur ne fournit pas le chemin absolu du dossier (sécurité).';
+          + (_fileDisplayPath && _fileDisplayPath.indexOf('/') >= 0
+              ? 'Chemin relatif au dossier de travail (WORKDIR).'
+              : 'Chemin relatif indisponible : définir un dossier de travail via WORKDIR.\n'
+                + 'Le chemin absolu n\'est jamais exposé par le navigateur (sécurité).');
   } else {
     label = '(non enregistré)';
     title = 'Aucun fichier lié — Ctrl+S ouvrira « Enregistrer sous ».';
   }
-  el.textContent = '📄 ' + label + (dirty && (_fileHandle || _kdFile) ? ' •' : '');
+  el.textContent = '📄 ' + label + (dirty && linked ? ' •' : '');
   el.title = title;
-  el.style.opacity = (_fileHandle || _kdFile) ? '0.9' : '0.5';
+  el.style.opacity = linked ? '0.9' : '0.5';
 }
 
-// ─ Persistance du handle fichier entre rechargements (F5) ───────────────────
-// Chromium sérialise un FileSystemFileHandle dans IndexedDB. On le restaure au
-// démarrage : Ctrl+S continue alors d'écrire dans le même .mcad après un F5,
-// avec une seule confirmation d'autorisation Chrome au 1er enregistrement.
-const _FH_DB = 'minicad', _FH_STORE = 'kv', _FH_KEY = 'fileHandle';
+// Recalcule _fileDisplayPath : chemin relatif au dossier de travail si le
+// fichier en est un descendant, sinon le nom seul.
+async function refreshFilePath() {
+  _fileDisplayPath = '';
+  try {
+    if (_fileHandle && _fileHandle.name) {
+      let rel = null;
+      if (_dirHandle) { try { rel = await _dirHandle.resolve(_fileHandle); } catch (e) {} }
+      _fileDisplayPath = rel ? _dirHandle.name + '/' + rel.join('/') : _fileHandle.name;
+    }
+  } catch (e) {}
+  updateFileStatus();
+}
+
+// ─ Persistance des handles entre rechargements (F5) ─────────────────────────
+// Chromium sérialise FileSystemFileHandle / FileSystemDirectoryHandle dans
+// IndexedDB. On les restaure au démarrage : Ctrl+S continue d'écrire dans le
+// même .mcad (une seule confirmation Chrome), et le dossier de travail persiste.
+const _FH_DB = 'minicad', _FH_STORE = 'kv', _FH_KEY = 'fileHandle', _DH_KEY = 'dirHandle';
 function _fhOpenDB() {
   return new Promise((res, rej) => {
     const rq = indexedDB.open(_FH_DB, 1);
@@ -19296,15 +19327,41 @@ async function _fhIdb(mode, fn) {
 }
 function rememberFileHandle(h) { if (h) _fhIdb('readwrite', st => st.put(h, _FH_KEY)); }
 function forgetFileHandle()    { _fhIdb('readwrite', st => st.delete(_FH_KEY)); }
+function rememberDirHandle(h)  { if (h) _fhIdb('readwrite', st => st.put(h, _DH_KEY)); }
+function forgetDirHandle()     { _fhIdb('readwrite', st => st.delete(_DH_KEY)); }
+
+async function pickWorkDir(clear) {
+  if (clear) {
+    _dirHandle = null; forgetDirHandle(); refreshFilePath();
+    termPrint('Dossier de travail retiré — la barre affiche à nouveau le nom seul.', 'info');
+    return;
+  }
+  if (!('showDirectoryPicker' in window)) {
+    termPrint('WORKDIR indisponible ici (API absente). Ouvrez MiniCAD via http(s):// pour l\'activer.', 'warning');
+    return;
+  }
+  try {
+    const dir = await window.showDirectoryPicker({ id: 'minicad-workdir', mode: 'readwrite' });
+    _dirHandle = dir; rememberDirHandle(dir);
+    await refreshFilePath();
+    termPrint('Dossier de travail : ' + dir.name + ' — la barre du bas affiche le chemin relatif.', 'success');
+  } catch (e) { if (e.name !== 'AbortError') termPrint('WORKDIR : ' + (e.message || e), 'warning'); }
+}
+
 async function restoreFileHandle() {
-  if (!('showSaveFilePicker' in window) || _fileHandle || _kdFile) return;
-  if (!S.entities.length) return;                 // page vierge → pas de contexte fichier
-  const h = await _fhIdb('readonly', st => st.get(_FH_KEY));
-  if (!h || !h.name) return;
-  _fileHandle = h;
-  updateFileStatus();
-  termPrint('Fichier lié restauré : ' + h.name + ' — Ctrl+S enregistrera dessus '
-    + '(Chrome demandera l\'autorisation une fois).', 'info');
+  try {
+    const dh = await _fhIdb('readonly', st => st.get(_DH_KEY));
+    if (dh && dh.name) _dirHandle = dh;             // dossier de travail : persiste toujours
+  } catch (e) {}
+  if (('showSaveFilePicker' in window) && !_fileHandle && !_kdFile && S.entities.length) {
+    const h = await _fhIdb('readonly', st => st.get(_FH_KEY));
+    if (h && h.name) {
+      _fileHandle = h;
+      termPrint('Fichier lié restauré : ' + h.name + ' — Ctrl+S enregistrera dessus '
+        + '(Chrome demandera l\'autorisation une fois).', 'info');
+    }
+  }
+  refreshFilePath();
 }
 
 function loadFromLocalStorage() {
@@ -19364,11 +19421,12 @@ async function cmdSave(name, forceNew) {
       localStorage.setItem('minicad_autosave', json);
       rememberFileHandle(_fileHandle);   // survit à un F5 → Ctrl+S ré-enregistre dessus
       updateSaveIndicator('saved');
+      refreshFilePath();
       termPrint('✓ Sauvegardé: ' + _fileHandle.name, 'success');
       return;
     } catch(e) {
       if (e.name === 'AbortError') return;
-      _fileHandle = null; forgetFileHandle();
+      _fileHandle = null; forgetFileHandle(); refreshFilePath();
       // Ne pas masquer la cause : l'ancien code retombait sur le téléchargement
       // sans rien dire, d'où l'impression que « ça ne marche plus ».
       termPrint('Sauvegarde directe impossible (' + (e.name || 'erreur') + ' : ' + (e.message || e) + ') — téléchargement à la place.', 'warning');
@@ -19426,7 +19484,7 @@ function closeDrawing(confirmQuestion) {
     { name: '3 - Texte',       color: '#ffab40', printColor: '#000000', visible: true, lineWidth: 0.25, lineType: 'solid' },
   ];
   S.currentLayer = 0;
-  _fileHandle = null; _kdFile = null; forgetFileHandle();
+  _fileHandle = null; _kdFile = null; forgetFileHandle(); refreshFilePath();
   localStorage.removeItem('minicad_autosave'); updateSaveIndicator('new');
   updateUI(); syncUIState(); render();
   return true;
@@ -19452,9 +19510,9 @@ async function cmdOpen() {
         openJSON(content, file.name);
         _fileHandle = handle;              // Ctrl+S ré-enregistre sur ce fichier
         rememberFileHandle(handle);
-        updateFileStatus();
+        refreshFilePath();
       } else {
-        _fileHandle = null; forgetFileHandle();   // DXF/DWG : format différent → pas de lien direct
+        _fileHandle = null; forgetFileHandle(); refreshFilePath();   // DXF/DWG : format différent → pas de lien direct
         if (ext === 'dxf') openDXF(content, file.name);
         else if (ext === 'dwg') warnDwgNotSupported(file);
         else termPrint('Format non supporté: .' + ext, 'error');
