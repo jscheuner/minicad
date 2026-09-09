@@ -2715,7 +2715,8 @@
   <div class="status-item" id="status-layer">Calque: 0</div>
   <div class="status-item" id="status-mode">Mode: Libre</div>
   <div class="status-item" id="status-module">Modules: 0/4</div>
-  <div class="status-item" id="status-file" style="margin-left:auto;max-width:60%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="">📄 (non enregistré)</div>
+  <div class="status-item" id="status-workdir" style="margin-left:auto;cursor:pointer;max-width:28%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;opacity:0.45" title="" onclick="executeCommand('WORKDIR')">📁 —</div>
+  <div class="status-item" id="status-file" style="max-width:44%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" title="">📄 (non enregistré)</div>
 </div>
 
 <script>
@@ -19518,7 +19519,8 @@ async function wblockSaveDrawingToFile(name, existingHandle) {
 // ===== PERSISTANCE =====
 let _fileHandle = null;      // File System Access API — handle fichier courant
 let _dirHandle = null;       // dossier de travail (showDirectoryPicker) → chemin relatif
-let _fileDisplayPath = '';   // libellé calculé pour la barre du bas (chemin relatif ou nom)
+let _fileDisplayPath = '';   // « dossier/sous/dessin.mcad » (complet) — pour l'infobulle
+let _fileRelToDir = '';      // « sous/dessin.mcad » (relatif au dossier de travail) — barre
 
 function buildSaveData(name) {
   return {
@@ -19835,19 +19837,38 @@ function updateSaveIndicator(state) {
 function updateFileStatus() {
   const el = document.getElementById('status-file');
   if (!el) return;
-  try { void _fileHandle; void _kdFile; } catch (e) { return; }  // avant l'init des variables (TDZ)
+  try { void _fileHandle; void _kdFile; void _dirHandle; } catch (e) { return; }  // avant l'init des variables (TDZ)
   const dirty = S._saveState === 'modified';
   const linked = !!(_fileHandle || _kdFile);
+
+  // Item « dossier de travail » (à gauche du nom de fichier)
+  const wd = document.getElementById('status-workdir');
+  if (wd) {
+    if (_dirHandle && _dirHandle.name) {
+      wd.textContent = '📁 ' + _dirHandle.name;
+      wd.title = 'Dossier de travail — les chemins de la barre y sont relatifs. Clic : changer (WORKDIR).';
+      wd.style.display = '';
+    } else {
+      wd.textContent = '📁 —';
+      wd.title = 'Aucun dossier de travail. Clic : en choisir un (WORKDIR) pour afficher des chemins relatifs.';
+      wd.style.display = '';
+    }
+    wd.style.opacity = _dirHandle ? '0.9' : '0.45';
+  }
+
   let label, title;
   if (_kdFile && _kdFile.name) {
     label = 'kDrive : ' + _kdFile.name;
     title = 'Fichier kDrive — Ctrl+S ré-enregistre dessus.';
   } else if (_fileHandle && _fileHandle.name) {
-    label = _fileDisplayPath || _fileHandle.name;
+    // le nom de dossier est déjà affiché dans #status-workdir → on montre le
+    // chemin relatif AU dossier (sans le répéter), sinon le nom seul.
+    label = _fileRelToDir || _fileHandle.name;
     title = 'Fichier lié — Ctrl+S enregistre directement dessus.\n'
-          + (_fileDisplayPath && _fileDisplayPath.indexOf('/') >= 0
-              ? 'Chemin relatif au dossier de travail (WORKDIR).'
-              : 'Chemin relatif indisponible : définir un dossier de travail via WORKDIR.\n'
+          + (_fileRelToDir
+              ? 'Chemin relatif au dossier de travail : ' + (_dirHandle ? _dirHandle.name + '/' : '') + _fileRelToDir
+              : (_dirHandle ? 'Ce fichier n\'est pas dans le dossier de travail.'
+                            : 'Définir un dossier de travail (WORKDIR) pour un chemin relatif.') + '\n'
                 + 'Le chemin absolu n\'est jamais exposé par le navigateur (sécurité).');
   } else {
     label = '(non enregistré)';
@@ -19858,15 +19879,16 @@ function updateFileStatus() {
   el.style.opacity = linked ? '0.9' : '0.5';
 }
 
-// Recalcule _fileDisplayPath : chemin relatif au dossier de travail si le
-// fichier en est un descendant, sinon le nom seul.
+// Recalcule le chemin du fichier relatif au dossier de travail (rel array via
+// dirHandle.resolve) : `_fileRelToDir` = « sous-dossier/dessin.mcad » ou ''.
 async function refreshFilePath() {
-  _fileDisplayPath = '';
+  _fileDisplayPath = ''; _fileRelToDir = '';
   try {
     if (_fileHandle && _fileHandle.name) {
       let rel = null;
       if (_dirHandle) { try { rel = await _dirHandle.resolve(_fileHandle); } catch (e) {} }
-      _fileDisplayPath = rel ? _dirHandle.name + '/' + rel.join('/') : _fileHandle.name;
+      if (rel) { _fileRelToDir = rel.join('/'); _fileDisplayPath = _dirHandle.name + '/' + _fileRelToDir; }
+      else _fileDisplayPath = _fileHandle.name;
     }
   } catch (e) {}
   updateFileStatus();
