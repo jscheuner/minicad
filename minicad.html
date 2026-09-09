@@ -1447,6 +1447,7 @@
         <div class="menu-dropdown-item" onclick="executeCommand('FILLET');closeMenus()"><span>Raccord (F)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('CHAMFER');closeMenus()"><span>Chanfrein (CHA)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('JOIN');closeMenus()"><span>Joindre en polyligne (J)</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('OVERKILL');closeMenus()"><span>Supprimer les doublons</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('SMOOTH');closeMenus()"><span>Lisser (polyligne)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('STRETCH');closeMenus()"><span>Étirer (ET)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('DIVIDE');closeMenus()"><span>Diviser (DIV)</span></div>
@@ -4144,6 +4145,23 @@ const CMD = {
     setTool('join');
     termPrint('JOIN — Cliquer les entités à joindre, Entrée pour confirmer (Echap=fin)','info');
     setTimeout(smartFocus,0);
+  }},
+  OVERKILL: { alias: ['SUPPRDOUBLONS','SUPPRDOUBLON','NETTOYERDOUBLONS','PURGEDOUBLONS'], desc: 'Supprimer/fusionner les traits superposés et doublons — OVERKILL [tolérance]', exec(args) {
+    let tol = args[0] ? parseFloat(String(args[0]).replace(',', '.')) : 1e-3;
+    if (!(tol > 0)) tol = 1e-3;
+    const sel = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+    const scope = sel.length ? sel : S.entities.slice();
+    if (!scope.length) { termPrint('OVERKILL — aucune entité à nettoyer', 'warning'); return; }
+    const snap = JSON.stringify(S.entities);
+    const { removed, merged } = cleanOverlaps(scope, tol);
+    if (!removed && !merged) {
+      termPrint('OVERKILL — aucun trait superposé ni doublon (tolérance ' + tol + (sel.length ? ', sélection' : ', dessin entier') + ')', 'info');
+      return;
+    }
+    S.history.push(snap); if (S.history.length > 50) S.history.shift(); S.redoStack = [];
+    S.selected = [];
+    termPrint('OVERKILL — ' + removed + ' doublon(s) supprimé(s), ' + merged + ' recouvrement(s) fusionné(s) (tol ' + tol + ')', 'success');
+    updateSaveIndicator('modified'); autoSave(); render();
   }},
   SMOOTH: { alias: ['LISSER','LISSAGE'], desc: 'Lisser une polyligne (Catmull-Rom — augmente la précision)', exec() {
     const polys = S.selected.map(id => S.entities.find(e => e.id === id))
@@ -9145,6 +9163,117 @@ function applyJoin(ellipseSegs) {
   termPrint('JOIN — '+chain.length+' entités fusionnées'+(closed?' (fermée)':''),'success');
   S.joinSelection=[]; S.selected=[]; setTool('select');
   updateSaveIndicator('modified'); autoSave(); render();
+}
+
+// ── OVERKILL — nettoyage des traits superposés / redondants ─────────────────
+// Traite un lot d'entités (`ents`) :
+//   1. doublons exacts (tous types) → suppression, signature géométrique arrondie
+//   2. lignes colinéaires qui se RECOUVRENT (longueurs libres, recouvrement
+//      partiel, inclusion) → fusion en un seul segment couvrant l'union
+//   3. arcs concentriques de même rayon dont les secteurs se recouvrent → fusion
+//      (secteur complet ⇒ conversion en cercle)
+// `tol` = tolérance en unités dessin (écart perpendiculaire + rayon + angle).
+// Retourne { removed, merged }. Mute S.entities directement.
+function cleanOverlaps(ents, tol) {
+  tol = (tol > 0) ? tol : 1e-3;
+  const TAU = Math.PI * 2;
+  let removed = 0, merged = 0;
+
+  const idset = new Set(ents.map(e => e.id));
+  const del = id => { const i = S.entities.findIndex(e => e.id === id); if (i >= 0) S.entities.splice(i, 1); };
+
+  // 1) Doublons exacts — signature géométrique quantifiée au pas `tol`
+  const q = 1 / Math.max(tol, 1e-9);
+  const rnd = v => Math.round((v || 0) * q) / q;
+  const sig = e => {
+    switch (e.type) {
+      case 'line': case 'wall': {
+        const a = rnd(e.x1) + ',' + rnd(e.y1), b = rnd(e.x2) + ',' + rnd(e.y2);
+        return e.type + ':' + (a < b ? a + '|' + b : b + '|' + a);   // insensible au sens
+      }
+      case 'circle': return 'circle:' + rnd(e.cx) + ',' + rnd(e.cy) + ',' + rnd(e.r);
+      case 'arc':    return 'arc:' + rnd(e.cx) + ',' + rnd(e.cy) + ',' + rnd(e.r) + ',' + rnd(e.startAngle) + ',' + rnd(e.endAngle);
+      case 'point':  return 'point:' + rnd(e.x) + ',' + rnd(e.y);
+      case 'polyline': case 'cable': case 'spline':
+        return e.type + ':' + (e.closed ? 'C' : 'O') + ':' +
+               e.points.map(p => rnd(p[0]) + ',' + rnd(p[1]) + ',' + rnd(p[2])).join(';');
+      default: return null;
+    }
+  };
+  const seen = new Set();
+  for (const e of ents.slice()) {
+    if (!S.entities.includes(e)) continue;
+    const s = sig(e);
+    if (s == null) continue;
+    if (seen.has(s)) { del(e.id); removed++; }
+    else seen.add(s);
+  }
+
+  // 2) Lignes colinéaires qui se recouvrent → fusion
+  let lines = S.entities.filter(e => e.type === 'line' && idset.has(e.id));
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < lines.length && !changed; i++) {
+      const A = lines[i];
+      let ax = A.x2 - A.x1, ay = A.y2 - A.y1;
+      const alen = Math.hypot(ax, ay);
+      if (alen < 1e-12) continue;
+      const ux = ax / alen, uy = ay / alen;
+      for (let j = i + 1; j < lines.length; j++) {
+        const B = lines[j];
+        // les 2 extrémités de B doivent longer la droite support de A
+        const perp = (px, py) => Math.abs((px - A.x1) * uy - (py - A.y1) * ux);
+        if (perp(B.x1, B.y1) > tol || perp(B.x2, B.y2) > tol) continue;
+        const t = (px, py) => (px - A.x1) * ux + (py - A.y1) * uy;
+        const b1 = t(B.x1, B.y1), b2 = t(B.x2, B.y2);
+        const bLo = Math.min(b1, b2), bHi = Math.max(b1, b2);
+        // vrai recouvrement requis (le bout à bout colinéaire, c'est le rôle de JOIN)
+        const overlap = Math.min(alen, bHi) - Math.max(0, bLo);
+        if (overlap <= tol) continue;
+        const lo = Math.min(0, bLo), hi = Math.max(alen, bHi);
+        const x0 = A.x1 + ux * lo, y0 = A.y1 + uy * lo;
+        A.x1 = x0; A.y1 = y0;
+        A.x2 = x0 + ux * (hi - lo); A.y2 = y0 + uy * (hi - lo);
+        if (Math.hypot(B.x2 - B.x1, B.y2 - B.y1) > alen) {   // le plus long impose la mise en forme
+          A.layer = B.layer;
+          if (B.color != null) A.color = B.color; else delete A.color;
+          if (B.lineWidth != null) A.lineWidth = B.lineWidth;
+        }
+        del(B.id); lines.splice(j, 1); merged++; changed = true; break;
+      }
+    }
+  }
+
+  // 3) Arcs concentriques de même rayon, secteurs recouvrants → fusion
+  const norm = a => ((a % TAU) + TAU) % TAU;
+  let arcs = S.entities.filter(e => e.type === 'arc' && idset.has(e.id));
+  changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < arcs.length && !changed; i++) {
+      const A = arcs[i];
+      for (let j = i + 1; j < arcs.length; j++) {
+        const B = arcs[j];
+        if (Math.abs(A.cx - B.cx) > tol || Math.abs(A.cy - B.cy) > tol || Math.abs(A.r - B.r) > tol) continue;
+        const spanA = norm(A.endAngle - A.startAngle) || TAU;
+        const bStart = norm(B.startAngle - A.startAngle);
+        const bEnd = bStart + (norm(B.endAngle - B.startAngle) || TAU);
+        let mLo = null, mHi = null;
+        for (const sh of [0, -TAU]) {          // -TAU : recouvrement à cheval sur 0
+          const s = bStart + sh, e2 = bEnd + sh;
+          if (s > spanA + tol || e2 < -tol) continue;
+          mLo = Math.min(0, s); mHi = Math.max(spanA, e2); break;
+        }
+        if (mLo == null) continue;
+        if (mHi - mLo >= TAU - tol) { A.type = 'circle'; delete A.startAngle; delete A.endAngle; }
+        else { const s0 = A.startAngle + mLo; A.startAngle = s0; A.endAngle = s0 + (mHi - mLo); }
+        del(B.id); arcs.splice(j, 1); merged++; changed = true; break;
+      }
+    }
+  }
+
+  return { removed, merged };
 }
 
 // Popup numérique générique (réutilise le style .tube-def-popup).
