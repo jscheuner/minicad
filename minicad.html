@@ -19965,17 +19965,19 @@ async function refreshFilePath() {
 
 // ─ Persistance des handles entre rechargements (F5) ─────────────────────────
 // Chromium sérialise FileSystemFileHandle / FileSystemDirectoryHandle dans
-// IndexedDB. Ctrl+S continue d'écrire dans le même .mcad (une confirmation
-// Chrome). Le DOSSIER DE TRAVAIL est propre à chaque ONGLET : id en
-// sessionStorage (survit au F5 et à la restauration d'onglet), + une entrée
-// « dir:last » de repli pour un onglet neuf. GC des entrées > 30 j au démarrage.
-const _FH_DB = 'minicad', _FH_STORE = 'kv', _FH_KEY = 'fileHandle';
+// IndexedDB. TOUT est PROPRE À L'ONGLET (id en sessionStorage, survit au F5 et
+// à la restauration d'onglet) : sinon deux onglets ouverts sur des dessins
+// différents se partagent la même clé et Ctrl+S écrit dans le mauvais fichier.
+// Le dossier de travail garde en plus une entrée « dir:last » de repli pour un
+// onglet neuf (pas le fichier : trop risqué d'écraser un fichier au hasard).
+// GC des entrées > 30 j au démarrage.
+const _FH_DB = 'minicad', _FH_STORE = 'kv';
 let _tabId = 'x';
 try {
   _tabId = sessionStorage.getItem('minicad_tab') || '';
   if (!_tabId) { _tabId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7); sessionStorage.setItem('minicad_tab', _tabId); }
 } catch (e) {}
-const _DH_KEY = 'dir:' + _tabId, _DH_LAST = 'dir:last';
+const _FH_KEY = 'file:' + _tabId, _DH_KEY = 'dir:' + _tabId, _DH_LAST = 'dir:last';
 function _fhOpenDB() {
   return new Promise((res, rej) => {
     const rq = indexedDB.open(_FH_DB, 1);
@@ -19997,7 +19999,7 @@ async function _fhIdb(mode, fn) {
     return out;
   } catch (e) { return undefined; }
 }
-function rememberFileHandle(h) { if (h) _fhIdb('readwrite', st => st.put(h, _FH_KEY)); }
+function rememberFileHandle(h) { if (h) _fhIdb('readwrite', st => st.put({ h, ts: Date.now() }, _FH_KEY)); }
 function forgetFileHandle()    { _fhIdb('readwrite', st => st.delete(_FH_KEY)); }
 function rememberDirHandle(h)  {
   if (!h) return;
@@ -20007,7 +20009,8 @@ function rememberDirHandle(h)  {
 }
 function forgetDirHandle()     { _fhIdb('readwrite', st => st.delete(_DH_KEY)); }
 async function _restoreDirHandle() {
-  _fhIdb('readwrite', st => st.delete('dirHandle'));   // purge de l'ancien format global
+  _fhIdb('readwrite', st => st.delete('dirHandle'));    // purge des anciennes clés globales
+  _fhIdb('readwrite', st => st.delete('fileHandle'));
   let rec = await _fhIdb('readonly', st => st.get(_DH_KEY));
   let fromLast = false;
   if (!rec) { rec = await _fhIdb('readonly', st => st.get(_DH_LAST)); fromLast = true; }
@@ -20021,7 +20024,9 @@ async function _gcDirHandles() {
     if (!Array.isArray(keys)) return;
     const cutoff = Date.now() - 30 * 864e5;
     for (const k of keys) {
-      if (typeof k !== 'string' || !k.startsWith('dir:') || k === _DH_KEY || k === _DH_LAST) continue;
+      if (typeof k !== 'string') continue;
+      const isDir = k.startsWith('dir:'), isFile = k.startsWith('file:');
+      if ((!isDir && !isFile) || k === _DH_KEY || k === _DH_LAST || k === _FH_KEY) continue;
       const rec = await _fhIdb('readonly', st => st.get(k));
       if (!rec || !rec.ts || rec.ts < cutoff) _fhIdb('readwrite', st => st.delete(k));
     }
@@ -20049,7 +20054,8 @@ async function pickWorkDir(clear) {
 async function restoreFileHandle() {
   await _restoreDirHandle();                        // dossier de travail : propre à l'onglet
   if (('showSaveFilePicker' in window) && !_fileHandle && !_kdFile && S.entities.length) {
-    const h = await _fhIdb('readonly', st => st.get(_FH_KEY));
+    const rec = await _fhIdb('readonly', st => st.get(_FH_KEY));
+    const h = rec && (rec.h || (rec.name ? rec : null));   // tolère l'ancien handle nu
     if (h && h.name) {
       _fileHandle = h;
       termPrint('Fichier lié restauré : ' + h.name + ' — Ctrl+S enregistrera dessus '
