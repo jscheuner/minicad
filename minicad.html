@@ -9166,21 +9166,21 @@ function applyJoin(ellipseSegs) {
 }
 
 // ── OVERKILL — nettoyage des traits superposés / redondants ─────────────────
-// Traite un lot d'entités (`ents`) :
+// Traite un lot d'entités (`ents`, références directes dans S.entities) :
 //   1. doublons exacts (tous types) → suppression, signature géométrique arrondie
 //   2. lignes colinéaires qui se RECOUVRENT (longueurs libres, recouvrement
 //      partiel, inclusion) → fusion en un seul segment couvrant l'union
 //   3. arcs concentriques de même rayon dont les secteurs se recouvrent → fusion
 //      (secteur complet ⇒ conversion en cercle)
 // `tol` = tolérance en unités dessin (écart perpendiculaire + rayon + angle).
-// Retourne { removed, merged }. Mute S.entities directement.
+// O(n²) avec pré-filtre bbox ; les entités mortes sont marquées puis retirées
+// en une passe (pas de findIndex/splice dans les boucles). Retourne {removed,merged}.
 function cleanOverlaps(ents, tol) {
   tol = (tol > 0) ? tol : 1e-3;
   const TAU = Math.PI * 2;
   let removed = 0, merged = 0;
-
-  const idset = new Set(ents.map(e => e.id));
-  const del = id => { const i = S.entities.findIndex(e => e.id === id); if (i >= 0) S.entities.splice(i, 1); };
+  const kill = e => { e._okDead = true; };
+  const pool = ents.filter(e => e && !e._okDead);
 
   // 1) Doublons exacts — signature géométrique quantifiée au pas `tol`
   const q = 1 / Math.max(tol, 1e-9);
@@ -9201,78 +9201,87 @@ function cleanOverlaps(ents, tol) {
     }
   };
   const seen = new Set();
-  for (const e of ents.slice()) {
-    if (!S.entities.includes(e)) continue;
+  for (const e of pool) {
     const s = sig(e);
     if (s == null) continue;
-    if (seen.has(s)) { del(e.id); removed++; }
+    if (seen.has(s)) { kill(e); removed++; }
     else seen.add(s);
   }
 
-  // 2) Lignes colinéaires qui se recouvrent → fusion
-  let lines = S.entities.filter(e => e.type === 'line' && idset.has(e.id));
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (let i = 0; i < lines.length && !changed; i++) {
-      const A = lines[i];
-      let ax = A.x2 - A.x1, ay = A.y2 - A.y1;
+  const bbOv = (a, b) => a[0] <= b[2] && b[0] <= a[2] && a[1] <= b[3] && b[1] <= a[3];
+
+  // 2) Lignes colinéaires qui se recouvrent → fusion (O(n²), rebalayage borné)
+  const lines = pool.filter(e => e.type === 'line' && !e._okDead);
+  const lbb = e => [Math.min(e.x1,e.x2)-tol, Math.min(e.y1,e.y2)-tol,
+                    Math.max(e.x1,e.x2)+tol, Math.max(e.y1,e.y2)+tol];
+  for (let i = 0; i < lines.length; i++) {
+    const A = lines[i];
+    if (A._okDead) continue;
+    for (let j = i + 1; j < lines.length; j++) {
+      const B = lines[j];
+      if (B._okDead) continue;
+      const ax = A.x2 - A.x1, ay = A.y2 - A.y1;
       const alen = Math.hypot(ax, ay);
-      if (alen < 1e-12) continue;
-      const ux = ax / alen, uy = ay / alen;
-      for (let j = i + 1; j < lines.length; j++) {
-        const B = lines[j];
-        // les 2 extrémités de B doivent longer la droite support de A
-        const perp = (px, py) => Math.abs((px - A.x1) * uy - (py - A.y1) * ux);
-        if (perp(B.x1, B.y1) > tol || perp(B.x2, B.y2) > tol) continue;
-        const t = (px, py) => (px - A.x1) * ux + (py - A.y1) * uy;
-        const b1 = t(B.x1, B.y1), b2 = t(B.x2, B.y2);
-        const bLo = Math.min(b1, b2), bHi = Math.max(b1, b2);
-        // vrai recouvrement requis (le bout à bout colinéaire, c'est le rôle de JOIN)
-        const overlap = Math.min(alen, bHi) - Math.max(0, bLo);
-        if (overlap <= tol) continue;
-        const lo = Math.min(0, bLo), hi = Math.max(alen, bHi);
-        const x0 = A.x1 + ux * lo, y0 = A.y1 + uy * lo;
-        A.x1 = x0; A.y1 = y0;
-        A.x2 = x0 + ux * (hi - lo); A.y2 = y0 + uy * (hi - lo);
-        if (Math.hypot(B.x2 - B.x1, B.y2 - B.y1) > alen) {   // le plus long impose la mise en forme
-          A.layer = B.layer;
-          if (B.color != null) A.color = B.color; else delete A.color;
-          if (B.lineWidth != null) A.lineWidth = B.lineWidth;
-        }
-        del(B.id); lines.splice(j, 1); merged++; changed = true; break;
+      if (alen < 1e-9) break;
+      if (!bbOv(lbb(A), lbb(B))) continue;
+      const ux = ax/alen, uy = ay/alen;
+      // les 2 extrémités de B doivent longer la droite support de A
+      if (Math.abs((B.x1-A.x1)*uy - (B.y1-A.y1)*ux) > tol) continue;
+      if (Math.abs((B.x2-A.x1)*uy - (B.y2-A.y1)*ux) > tol) continue;
+      const t1 = (B.x1-A.x1)*ux + (B.y1-A.y1)*uy;
+      const t2 = (B.x2-A.x1)*ux + (B.y2-A.y1)*uy;
+      const bLo = Math.min(t1,t2), bHi = Math.max(t1,t2);
+      // vrai recouvrement requis (le bout à bout colinéaire, c'est le rôle de JOIN)
+      if (Math.min(alen,bHi) - Math.max(0,bLo) <= tol) continue;
+      const lo = Math.min(0,bLo), hi = Math.max(alen,bHi);
+      const blen = Math.hypot(B.x2-B.x1, B.y2-B.y1);
+      const x0 = A.x1 + ux*lo, y0 = A.y1 + uy*lo;
+      A.x1 = x0; A.y1 = y0; A.x2 = x0 + ux*(hi-lo); A.y2 = y0 + uy*(hi-lo);
+      if (blen > alen) {                       // le plus long impose la mise en forme
+        A.layer = B.layer;
+        if (B.color != null) A.color = B.color; else delete A.color;
+        if (B.lineWidth != null) A.lineWidth = B.lineWidth;
       }
+      kill(B); merged++;
+      j = i;                                    // A a grandi → rebalayer depuis i+1
     }
   }
 
-  // 3) Arcs concentriques de même rayon, secteurs recouvrants → fusion
+  // 3) Arcs concentriques de même rayon, secteurs recouvrants → fusion (O(n²))
   const norm = a => ((a % TAU) + TAU) % TAU;
-  let arcs = S.entities.filter(e => e.type === 'arc' && idset.has(e.id));
-  changed = true;
-  while (changed) {
-    changed = false;
-    for (let i = 0; i < arcs.length && !changed; i++) {
-      const A = arcs[i];
-      for (let j = i + 1; j < arcs.length; j++) {
-        const B = arcs[j];
-        if (Math.abs(A.cx - B.cx) > tol || Math.abs(A.cy - B.cy) > tol || Math.abs(A.r - B.r) > tol) continue;
-        const spanA = norm(A.endAngle - A.startAngle) || TAU;
-        const bStart = norm(B.startAngle - A.startAngle);
-        const bEnd = bStart + (norm(B.endAngle - B.startAngle) || TAU);
-        let mLo = null, mHi = null;
-        for (const sh of [0, -TAU]) {          // -TAU : recouvrement à cheval sur 0
-          const s = bStart + sh, e2 = bEnd + sh;
-          if (s > spanA + tol || e2 < -tol) continue;
-          mLo = Math.min(0, s); mHi = Math.max(spanA, e2); break;
-        }
-        if (mLo == null) continue;
-        if (mHi - mLo >= TAU - tol) { A.type = 'circle'; delete A.startAngle; delete A.endAngle; }
-        else { const s0 = A.startAngle + mLo; A.startAngle = s0; A.endAngle = s0 + (mHi - mLo); }
-        del(B.id); arcs.splice(j, 1); merged++; changed = true; break;
+  const arcs = pool.filter(e => e.type === 'arc' && !e._okDead);
+  for (let i = 0; i < arcs.length; i++) {
+    const A = arcs[i];
+    if (A._okDead || A.type !== 'arc') continue;
+    for (let j = i + 1; j < arcs.length; j++) {
+      const B = arcs[j];
+      if (B._okDead || B.type !== 'arc') continue;
+      if (Math.abs(A.cx-B.cx) > tol || Math.abs(A.cy-B.cy) > tol || Math.abs(A.r-B.r) > tol) continue;
+      const spanA = norm(A.endAngle - A.startAngle) || TAU;
+      const bStart = norm(B.startAngle - A.startAngle);
+      const bEnd = bStart + (norm(B.endAngle - B.startAngle) || TAU);
+      let mLo = null, mHi = null;
+      for (const sh of [0, -TAU]) {             // -TAU : recouvrement à cheval sur 0
+        const s = bStart + sh, e2 = bEnd + sh;
+        if (s > spanA + tol || e2 < -tol) continue;
+        mLo = Math.min(0, s); mHi = Math.max(spanA, e2); break;
       }
+      if (mLo == null || !isFinite(mLo) || !isFinite(mHi)) continue;
+      if (mHi - mLo >= TAU - tol) { A.type = 'circle'; delete A.startAngle; delete A.endAngle; kill(B); merged++; break; }
+      const s0 = A.startAngle + mLo;
+      A.startAngle = s0; A.endAngle = s0 + (mHi - mLo);
+      kill(B); merged++;
+      j = i;                                    // A a grandi
     }
   }
 
+  // Retrait effectif — une seule passe, par identité (pas par id)
+  if (removed || merged) {
+    for (let i = S.entities.length - 1; i >= 0; i--) {
+      if (S.entities[i]._okDead) { delete S.entities[i]._okDead; S.entities.splice(i, 1); }
+    }
+  }
+  for (const e of pool) delete e._okDead;
   return { removed, merged };
 }
 
