@@ -9028,16 +9028,14 @@ function applyJoin(ellipseSegs) {
   function getPts(e) {
     if (e.type==='line'||e.type==='wall') return [[e.x1,e.y1],[e.x2,e.y2]];
     if (e.type==='arc') {
+      // Les arcs MiniCAD sont parcourus startAngle→endAngle dans le sens trigo
+      // (CCW, monde Y haut) : le bulge du segment startPt→endPt est donc toujours
+      // +tan(dth/4), avec dth la portée CCW normalisée dans (0, 2π). L'ancien
+      // calcul de signe via la position du centre inversait les arcs majeurs.
       const dth = ((e.endAngle - e.startAngle) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
-      const absBulge = Math.tan(dth / 4);
       const sx = e.cx + e.r*Math.cos(e.startAngle), sy = e.cy + e.r*Math.sin(e.startAngle);
       const ex = e.cx + e.r*Math.cos(e.endAngle),   ey = e.cy + e.r*Math.sin(e.endAngle);
-      // Signe du bulge : centre sur le côté CCW (+) ou CW (-) de la corde startPt→endPt
-      const perpX = -(ey - sy), perpY = ex - sx; // CCW perp de la corde (non normalisé)
-      const midX = (sx + ex) / 2, midY = (sy + ey) / 2;
-      const sign = ((e.cx - midX) * perpX + (e.cy - midY) * perpY) >= 0 ? 1 : -1;
-      const b = sign * absBulge;
-      return [[sx, sy, b], [ex, ey]];
+      return [[sx, sy, Math.tan(dth / 4)], [ex, ey]];
     }
     if (e.type==='ellipse') {
       // Arc d'ellipse → segments de droite (lissage ~5°/segment), comme au rendu.
@@ -9119,6 +9117,12 @@ function applyJoin(ellipseSegs) {
   // (sinon décalage/offset traite la couture comme ouverte → angle non joint)
   const closed = allPts.length > 3 &&
     Math.hypot(allPts[0][0]-allPts[allPts.length-1][0], allPts[0][1]-allPts[allPts.length-1][1]) < TOL;
+
+  // Boucle fermée : le dernier point double le premier (à TOL près, sans être
+  // identique). On le retire pour que le segment de fermeture de la polyligne
+  // reparte du dernier sommet réel en conservant son bulge — sinon un arrondi
+  // de couture est coupé par un petit segment droit (jusqu'à TOL de long).
+  if (closed && allPts.length > 3) allPts.pop();
 
   pushUndo();
   const type = chain.some(c=>c.ent.type==='cable') ? 'cable' : 'polyline';
