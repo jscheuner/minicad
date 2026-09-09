@@ -14413,6 +14413,7 @@ function setTool(t) {
   if(t !== 'select') S.groupPending=false;
   if(t !== 'select') S.ungroupPending=false;
   if(t !== 'select') S.overkillPending=false;
+  if(t !== 'select' && typeof hideCmdComplete === 'function') hideCmdComplete(); // pas de complétion pendant un outil
   if(t !== 'select') S._chfCompPending=false;
   if(t !== 'select') S._chfStartPending=false;
   if(t !== 'select') S._chfStartAutoPending=false;
@@ -17208,7 +17209,7 @@ function _ccScore(e, q) {
   if (e.aliases.some(a => String(a).toUpperCase().includes(q))) return 5;
   return 99;
 }
-function hideCmdComplete() { cmdComplete.hidden = true; _ccItems = []; _ccIdx = -1; }
+function hideCmdComplete() { try { cmdComplete.hidden = true; _ccItems = []; _ccIdx = -1; } catch (e) {} }
 function _ccRenderHighlight() {
   [...cmdComplete.children].forEach((c, i) => c.classList.toggle('sel', i === _ccIdx));
   if (_ccIdx >= 0) cmdComplete.children[_ccIdx].scrollIntoView({ block: 'nearest' });
@@ -17233,7 +17234,10 @@ function _ccAccept(i, execute) {
 }
 function updateCmdComplete() {
   const v = cmdInput.value;
-  if (S.drawing || !/^[A-Za-z_]{1,}$/.test(v)) { hideCmdComplete(); return; }
+  // Aucune complétion tant qu'une commande / un outil est en cours : pendant
+  // FILLET, TRIM, OFFSET… le terminal sert à ses propres options (R, D, EC…),
+  // pas à lancer une autre commande.
+  if (S.tool !== 'select' || S.drawing || S.awaitingInput || !/^[A-Za-z_]{1,}$/.test(v)) { hideCmdComplete(); return; }
   const q = v.toUpperCase();
   const matches = _ccAllCommands()
     .map(e => ({ e, s: _ccScore(e, q) }))
