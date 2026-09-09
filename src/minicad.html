@@ -12606,6 +12606,11 @@ function getCutterPrimitives(e) {
   } else if(e.type==='polyline'||e.type==='cable') {
     for(let i=0;i<e.points.length-1;i++)
       p.push({type:'seg',x1:e.points[i][0],y1:e.points[i][1],x2:e.points[i+1][0],y2:e.points[i+1][1]});
+  } else if(e.type==='xline'||e.type==='ray') {
+    const dx=e.dx||0, dy=e.dy||0, BIG=1e6;
+    const bx = e.type==='xline' ? e.x-dx*BIG : e.x;
+    const by = e.type==='xline' ? e.y-dy*BIG : e.y;
+    p.push({type:'seg', x1:bx, y1:by, x2:e.x+dx*BIG, y2:e.y+dy*BIG});
   }
   return p;
 }
@@ -12903,14 +12908,41 @@ function applyTrimEllipse(ent, prims, clickWx, clickWy) {
   return mkArcs(kept);
 }
 
+// TRIM d'une XLINE / RAY : on la matérialise en segment fini très long (2 sens
+// pour xline, avant seul pour ray) puis on délègue à applyTrimLine → le résultat
+// est une (ou deux) LIGNE(s), cohérent avec « xline/ray ajustée = ligne ».
+function applyTrimXline(ent, prims, clickWx, clickWy) {
+  const dx=ent.dx||0, dy=ent.dy||0;
+  if(Math.hypot(dx,dy)<1e-12) return false;
+  let far=Math.hypot(clickWx-ent.x, clickWy-ent.y);
+  for(const p of prims){
+    if(p.type==='seg') far=Math.max(far, Math.hypot(p.x1-ent.x,p.y1-ent.y), Math.hypot(p.x2-ent.x,p.y2-ent.y));
+    else far=Math.max(far, Math.hypot((p.cx||0)-ent.x,(p.cy||0)-ent.y)+(p.r||0)+(p.rx||0)+(p.ry||0));
+  }
+  const ext=Math.max(far*3+1000, 1e4);
+  const back=ent.type==='xline'?ext:0;
+  const line={ type:'line', id:ent.id, layer:ent.layer,
+    x1:ent.x-dx*back, y1:ent.y-dy*back, x2:ent.x+dx*ext, y2:ent.y+dy*ext };
+  if(ent.color!=null) line.color=ent.color;
+  if(ent.lineWidth!=null) line.lineWidth=ent.lineWidth;
+  if(ent.dash) line.dash=ent.dash;
+  const idx=S.entities.findIndex(e=>e.id===ent.id);
+  if(idx<0) return false;
+  S.entities[idx]=line;
+  if(applyTrimLine(line,prims,clickWx,clickWy)) return true;
+  S.entities[idx]=ent;   // rien coupé → on restaure l'xline/ray
+  return false;
+}
+
 function applyTrim(trimmedId, prims, clickWx, clickWy) {
   const ent=S.entities.find(e=>e.id===trimmedId);
   if(!ent) return;
-  const supported=['line','wall','arc','circle','polyline','cable','rect','ellipse'];
+  const supported=['line','wall','arc','circle','polyline','cable','rect','ellipse','xline','ray'];
   if(!supported.includes(ent.type)){ termPrint('TRIM: non supporté pour '+ent.type,'warning'); return; }
   pushUndo();
   let ok=false;
-  if(ent.type==='line'||ent.type==='wall')           ok=applyTrimLine(ent,prims,clickWx,clickWy);
+  if(ent.type==='xline'||ent.type==='ray')           ok=applyTrimXline(ent,prims,clickWx,clickWy);
+  else if(ent.type==='line'||ent.type==='wall')      ok=applyTrimLine(ent,prims,clickWx,clickWy);
   else if(ent.type==='arc')                           ok=applyTrimArc(ent,prims,clickWx,clickWy);
   else if(ent.type==='circle')                        ok=applyTrimCircle(ent,prims,clickWx,clickWy);
   else if(ent.type==='ellipse')                       ok=applyTrimEllipse(ent,prims,clickWx,clickWy);
