@@ -9080,17 +9080,21 @@ function applyJoin(ellipseSegs) {
     if (chain) break;
   }
   if (!chain) {
-    // Repérer les extrémités « libres » : celles qui ne coïncident (à TOL près)
-    // avec aucune extrémité d'une AUTRE entité de la sélection. Ce sont les
-    // points où la chaîne se rompt → cercles rouges à l'écran.
-    const allEnds = [];
-    ents.forEach((e, ei) => { const ep = endpts(e); allEnds.push({ p: ep.s, ei }, { p: ep.e, ei }); });
-    const gaps = allEnds
-      .filter(a => !allEnds.some(b => b.ei !== a.ei && close(a.p, b.p)))
-      .map(a => a.p);
-    if (gaps.length) S._joinGaps = { pts: gaps, t0: performance.now() };
+    // Graphe des extrémités : nœud = point partagé (à TOL près), degré = nb
+    // d'extrémités d'entités qui y aboutissent. Une chaîne continue unique ⇒
+    // tout nœud de degré 2 (fermée) ou 2 nœuds de degré 1 (ouverte). On signale
+    // en rouge tout nœud de degré ≠ 2 : extrémité libre / coupure (degré 1) ou
+    // jonction en T / doublon (degré ≥ 3).
+    const nodes = [];
+    const nodeOf = p => {
+      for (const n of nodes) if (Math.hypot(n.x - p[0], n.y - p[1]) < TOL) return n;
+      const n = { x: p[0], y: p[1], deg: 0 }; nodes.push(n); return n;
+    };
+    ents.forEach(e => { const ep = endpts(e); nodeOf(ep.s).deg++; nodeOf(ep.e).deg++; });
+    const bad = nodes.filter(n => n.deg !== 2).map(n => [n.x, n.y]);
+    if (bad.length) S._joinGaps = { pts: bad, t0: performance.now() };
     termPrint('Les entités ne forment pas une chaîne continue'
-      + (gaps.length ? ' — ' + gaps.length + ' extrémité(s) libre(s) en rouge' : ''), 'warning');
+      + (bad.length ? ' — ' + bad.length + ' point(s) de rupture en rouge' : ''), 'warning');
     render();
     return;
   }
