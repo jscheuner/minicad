@@ -1448,6 +1448,7 @@
         <div class="menu-dropdown-item" onclick="executeCommand('CHAMFER');closeMenus()"><span data-i18n="tool.chamfer">{{tool.chamfer}}</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('JOIN');closeMenus()"><span data-i18n="tool.join">{{tool.join}}</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('OVERKILL');closeMenus()"><span>Supprimer les doublons</span></div>
+        <div class="menu-dropdown-item" onclick="executeCommand('OVERKILLSELECT');closeMenus()"><span>Supprimer les doublons (sélection)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('SMOOTH');closeMenus()"><span>Lisser (polyligne)</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('STRETCH');closeMenus()"><span data-i18n="tool.stretch">{{tool.stretch}}</span></div>
         <div class="menu-dropdown-item" onclick="executeCommand('DIVIDE');closeMenus()"><span data-i18n="tool.divide">{{tool.divide}}</span></div>
@@ -2796,6 +2797,7 @@ const S = {
   explodePending: false,
   groupPending: false,
   ungroupPending: false,
+  overkillPending: false,
   blockPending: false,
   // MIRROR pending selection
   mirrorPending: false,
@@ -4146,22 +4148,18 @@ const CMD = {
     termPrint('JOIN — Cliquer les entités à joindre, Entrée pour confirmer (Echap=fin)','info');
     setTimeout(smartFocus,0);
   }},
-  OVERKILL: { alias: ['SUPPRDOUBLONS','SUPPRDOUBLON','NETTOYERDOUBLONS','PURGEDOUBLONS'], desc: 'Supprimer/fusionner les traits superposés et doublons — OVERKILL [tolérance]', exec(args) {
-    let tol = args[0] ? parseFloat(String(args[0]).replace(',', '.')) : 1e-3;
-    if (!(tol > 0)) tol = 1e-3;
+  OVERKILL: { alias: ['SUPPRDOUBLONS','SUPPRDOUBLON','NETTOYERDOUBLONS','PURGEDOUBLONS'], desc: 'Supprimer/fusionner les traits superposés et doublons (sélection sinon dessin entier) — OVERKILL [tol]', exec(args) {
+    const tol = _overkillTol(args[0]);
     const sel = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
-    const scope = sel.length ? sel : S.entities.slice();
-    if (!scope.length) { termPrint('OVERKILL — aucune entité à nettoyer', 'warning'); return; }
-    const snap = JSON.stringify(S.entities);
-    const { removed, merged } = cleanOverlaps(scope, tol);
-    if (!removed && !merged) {
-      termPrint('OVERKILL — aucun trait superposé ni doublon (tolérance ' + tol + (sel.length ? ', sélection' : ', dessin entier') + ')', 'info');
-      return;
-    }
-    S.history.push(snap); if (S.history.length > 50) S.history.shift(); S.redoStack = [];
-    S.selected = [];
-    termPrint('OVERKILL — ' + removed + ' doublon(s) supprimé(s), ' + merged + ' recouvrement(s) fusionné(s) (tol ' + tol + ')', 'success');
-    updateSaveIndicator('modified'); autoSave(); render();
+    _overkillRun(sel.length ? sel : S.entities.slice(), tol, sel.length ? 'sélection' : 'dessin entier');
+  }},
+  OVERKILLSELECT: { alias: ['OKS','OVERKILLSEL','SUPPRDOUBLONSSEL','SUPPRDOUBLONSSELECTION'], desc: 'Comme OVERKILL mais strictement limité à une sélection — OVERKILLSELECT [tol]', exec(args) {
+    S._overkillTol = _overkillTol(args[0]);
+    const sel = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+    if (sel.length) { S.overkillPending = false; _overkillRun(sel, S._overkillTol, 'sélection'); return; }
+    S.overkillPending = true; setTool('select');
+    termPrint('OVERKILL (sélection) — sélectionnez les entités puis Entrée (Échap = annuler)', 'warning');
+    setTimeout(smartFocus, 0);
   }},
   SMOOTH: { alias: ['LISSER','LISSAGE'], desc: 'Lisser une polyligne (Catmull-Rom — augmente la précision)', exec() {
     const polys = S.selected.map(id => S.entities.find(e => e.id === id))
@@ -9165,6 +9163,28 @@ function applyJoin(ellipseSegs) {
   updateSaveIndicator('modified'); autoSave(); render();
 }
 
+// Tolérance OVERKILL depuis un argument texte (accepte la virgule décimale) ; défaut 1e-3.
+function _overkillTol(a) {
+  const v = a != null ? parseFloat(String(a).replace(',', '.')) : NaN;
+  return (v > 0) ? v : 1e-3;
+}
+
+// Exécute OVERKILL sur `scope` (tableau d'entités, réf. directes dans S.entities),
+// gère l'undo et le compte-rendu. `label` = 'sélection' | 'dessin entier'.
+function _overkillRun(scope, tol, label) {
+  if (!scope || !scope.length) { termPrint('OVERKILL — aucune entité à traiter', 'warning'); return; }
+  const snap = JSON.stringify(S.entities);
+  const { removed, merged } = cleanOverlaps(scope, tol);
+  if (!removed && !merged) {
+    termPrint('OVERKILL — aucun trait superposé ni doublon (' + label + ', tolérance ' + tol + ')', 'info');
+    return;
+  }
+  S.history.push(snap); if (S.history.length > 50) S.history.shift(); S.redoStack = [];
+  S.selected = [];
+  termPrint('OVERKILL — ' + removed + ' doublon(s) supprimé(s), ' + merged + ' recouvrement(s) fusionné(s) (' + label + ', tol ' + tol + ')', 'success');
+  updateSaveIndicator('modified'); autoSave(); render();
+}
+
 // ── OVERKILL — nettoyage des traits superposés / redondants ─────────────────
 // Traite un lot d'entités (`ents`, références directes dans S.entities) :
 //   1. doublons exacts (tous types) → suppression, signature géométrique arrondie
@@ -10109,7 +10129,7 @@ function getCursorMode() {
   if (t === 'area') return S._areaMode === 'points' ? 'draw' : 'pick';
   if (t === 'polygon') return 'draw';
   if (t === 'ellipse') return 'draw';
-  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.groupPending || S.ungroupPending || S.blockPending || S.arrayPending || S.polarArrayPending || S.axisOverPending || S._wbSelectPending || S._chfCompPending || S._chfStartPending || S._chfStartAutoPending) ? 'pick' : 'idle';
+  if (t === 'select') return (S.movePending || S.scalePending || S.rotatePending || S.copyPending || S.mirrorPending || S.offsetPending || S.explodePending || S.groupPending || S.ungroupPending || S.overkillPending || S.blockPending || S.arrayPending || S.polarArrayPending || S.axisOverPending || S._wbSelectPending || S._chfCompPending || S._chfStartPending || S._chfStartAutoPending) ? 'pick' : 'idle';
   if (t === 'stretch' && S.stretchStep === 0) return 'pick';
   if (t === 'trim' || t === 'extend') return 'pick';
   if (t === 'fillet' || t === 'chamfer' || t === 'join' || t === 'hatch') return 'pick';
@@ -14346,6 +14366,7 @@ function setTool(t) {
   if(t !== 'select') S.explodePending=false;
   if(t !== 'select') S.groupPending=false;
   if(t !== 'select') S.ungroupPending=false;
+  if(t !== 'select') S.overkillPending=false;
   if(t !== 'select') S._chfCompPending=false;
   if(t !== 'select') S._chfStartPending=false;
   if(t !== 'select') S._chfStartAutoPending=false;
@@ -17296,6 +17317,16 @@ document.addEventListener('keydown',(ev)=>{
     S.ungroupPending=false; CMD.UNGROUP.exec(); return;
   }
 
+  // Enter global: OVERKILL sur sélection
+  if(ev.key==='Enter' && S.overkillPending){
+    ev.preventDefault();
+    if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
+    S.overkillPending=false;
+    const sel = S.selected.map(id => S.entities.find(e => e.id === id)).filter(Boolean);
+    _overkillRun(sel, S._overkillTol || 1e-3, 'sélection');
+    return;
+  }
+
   // Enter global: compensation auto CHF (CHFCOMP)
   if(ev.key==='Enter' && S._chfCompPending){
     ev.preventDefault();
@@ -17414,6 +17445,9 @@ document.addEventListener('keydown',(ev)=>{
   }
   if(ev.key==='Escape' && S.ungroupPending){
     S.ungroupPending=false; termPrint('Dégroupage annulé','warning'); setTool('select'); return;
+  }
+  if(ev.key==='Escape' && S.overkillPending){
+    S.overkillPending=false; termPrint('OVERKILL annulé','warning'); setTool('select'); return;
   }
   if(ev.key==='Escape' && S._chfCompPending){
     S._chfCompPending=false; termPrint('Compensation annulée','warning'); setTool('select'); return;
