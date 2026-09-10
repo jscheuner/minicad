@@ -100,25 +100,37 @@ minicad_click(300, 50)   # point de base
 minicad_click(350, 50)   # destination
 ```
 
-## Installation
+## Installation (Omarchy / Arch Linux)
+
+Arch marque l'environnement Python comme *externally-managed* (PEP 668) : on
+installe donc dans un **virtualenv dédié**, pas en global. Le SDK `mcp` doit
+rester en **v1** — la v2 a supprimé `mcp.server.fastmcp` (`FastMCP`) utilisé
+par `server.py`, d'où `requirements.txt` qui épingle `mcp>=1.27.0,<2`.
 
 ```bash
-pip install -r requirements.txt   # mcp, websockets (déjà présents dans cet environnement)
+sudo pacman -S --needed chromium python                 # navigateur piloté + Python
+cd ~/minicad/mcp-server
+python -m venv venv-mcp
+./venv-mcp/bin/pip install -r requirements.txt          # mcp<2, websockets
 ```
+
+> Debian/Ubuntu : `apt install chromium` puis même séquence de venv.
 
 ## Enregistrement dans Claude Code
 
-Le serveur a besoin de `DISPLAY`/`XAUTHORITY` pour ouvrir une fenêtre
-Chromium visible (Claude Code lance les serveurs MCP avec un environnement
-restreint par défaut) :
+Sur Omarchy la session est Wayland/Hyprland ; le serveur ouvre Chromium via
+XWayland, il suffit donc de passer `DISPLAY=:0` (pas besoin de `XAUTHORITY`).
+Pointer explicitement le **python du venv** et le **chemin absolu réel** de
+`server.py` (adapter `~` / le nom d'utilisateur) :
 
 ```bash
-claude mcp add minicad -e DISPLAY="$DISPLAY" -e XAUTHORITY="$XAUTHORITY" \
-  -- python3 /home/joel/minicad/mcp-server/server.py
+claude mcp add minicad -s local -e DISPLAY=":0" \
+  -- ~/minicad/mcp-server/venv-mcp/bin/python ~/minicad/mcp-server/server.py
 ```
 
-Redémarrer Claude Code (ou reconnecter les serveurs MCP) pour que le
-connecteur soit actif.
+Vérifier : `claude mcp get minicad` doit afficher `✔ Connected`. Redémarrer
+Claude Code (ou reconnecter les serveurs MCP) pour que le connecteur soit
+actif.
 
 ## Enregistrement dans OpenCode
 
@@ -130,10 +142,12 @@ utilisateur, active dans tous les projets), section `mcp` :
   "mcp": {
     "minicad": {
       "type": "local",
-      "command": ["python3", "/home/joel/minicad/mcp-server/server.py"],
+      "command": [
+        "/home/USER/minicad/mcp-server/venv-mcp/bin/python",
+        "/home/USER/minicad/mcp-server/server.py"
+      ],
       "environment": {
-        "DISPLAY": ":0",
-        "XAUTHORITY": "/run/user/1000/gdm/Xauthority"
+        "DISPLAY": ":0"
       }
     }
   }
@@ -157,9 +171,8 @@ même objet `environment`.
 Exemple pour basculer sur Opera :
 
 ```bash
-claude mcp add minicad -e DISPLAY="$DISPLAY" -e XAUTHORITY="$XAUTHORITY" \
-  -e MINICAD_BROWSER=opera \
-  -- python3 /home/joel/minicad/mcp-server/server.py
+claude mcp add minicad -s local -e DISPLAY=":0" -e MINICAD_BROWSER=opera \
+  -- ~/minicad/mcp-server/venv-mcp/bin/python ~/minicad/mcp-server/server.py
 ```
 
 ## Fonctionnement
@@ -199,3 +212,20 @@ laisser un s'ouvrir automatiquement dedans) :
 Limite du protocole CDP (pas de notre outil) : il est impossible d'activer le
 débogage a posteriori sur un navigateur déjà lancé sans le flag — il faut
 redémarrer le navigateur avec `--remote-debugging-port` dès le départ.
+
+## Dépannage
+
+`claude mcp get minicad` → `CONNECTION_CLOSED` / `Failed to connect` : le
+process serveur meurt au démarrage. Causes vues :
+
+- **Mauvais chemin enregistré** — le `claude mcp add` a été fait avec un chemin
+  d'un autre poste (`/home/joel/...`). Vérifier avec `claude mcp get minicad`,
+  puis `claude mcp remove minicad -s local` et re-`add` avec le vrai chemin
+  absolu.
+- **`ModuleNotFoundError: No module named 'mcp.server.fastmcp'`** — le venv a
+  `mcp` 2.x. Corriger : `./venv-mcp/bin/pip install 'mcp<2'`.
+- **`mcp` introuvable** — la commande enregistrée utilise `python3` (système)
+  au lieu de `venv-mcp/bin/python`. Re-`add` en pointant le python du venv.
+
+Test manuel : `./venv-mcp/bin/python server.py` doit rester en attente sur
+stdin sans traceback (Ctrl+C pour quitter).
