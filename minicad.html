@@ -4300,7 +4300,7 @@ const CMD = {
     else termPrint('Usage: ZOOM E | ZOOM [facteur]', 'info');
     render();
   }},
-  PAN: { alias: ['P'], desc: 'Panoramique', exec: () => { setTool('pan'); termPrint('PAN: Cliquez-glissez', 'info'); }},
+  PAN: { alias: [], desc: 'Panoramique', exec: () => { setTool('pan'); termPrint('PAN: Cliquez-glissez', 'info'); }},
   LAYER: { alias: ['LA','CALQUE'], desc: 'Calque (LAYER [n])', exec: (args) => {
     const n = parseInt(args[0]);
     if (!isNaN(n) && n >= 0 && n < S.layers.length) { S.currentLayer = n; termPrint('Calque actif: ' + S.layers[n].name, 'success'); }
