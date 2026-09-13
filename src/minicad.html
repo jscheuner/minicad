@@ -14197,6 +14197,16 @@ function segIntersectsRect(x1,y1,x2,y2, rx1,ry1,rx2,ry2){
 }
 
 function entityInRect(e, minX, minY, maxX, maxY, windowMode) {
+  if (e.type === 'xline' || e.type === 'ray') {
+    // Infinies → getEntityBBox() renvoie null (jamais cullées) et jamais entièrement
+    // contenues dans une fenêtre finie : sélectionnables seulement en croisement,
+    // via intersection du grand segment avec le rectangle (même technique BIG que TRIM/OSNAP).
+    if (windowMode) return false;
+    const BIG = 1e6;
+    const bx = e.type === 'xline' ? e.x - e.dx * BIG : e.x;
+    const by = e.type === 'xline' ? e.y - e.dy * BIG : e.y;
+    return segIntersectsRect(bx, by, e.x + e.dx * BIG, e.y + e.dy * BIG, minX, minY, maxX, maxY);
+  }
   const bb = getEntityBBox(e, true);  // bbox serrée (sans marge de culling)
   if (!bb) return false;
   if (windowMode) {
