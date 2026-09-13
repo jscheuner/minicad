@@ -3598,9 +3598,12 @@ function findOsnap(wx, wy) {
     // n'existe pas encore dans S.entities, donc la boucle INTERSECTION normale (sur
     // les entités déjà créées) ne le voit pas. On matérialise ici le rayon base→curseur
     // (même technique BIG que pour xline/ray) et on le croise avec les entités proches.
-    if (S.osnapModes.intersection) {
+    // Limité à Ortho/Polaire actif : sans contrainte d'angle, la direction souris est
+    // arbitraire et « accrocherait » des intersections non voulues à chaque frame.
+    if (S.osnapModes.intersection && (S.ortho || S.polar)) {
       const base = pts[pts.length - 1];
-      const rdx = wx - base[0], rdy = wy - base[1];
+      const [twx, twy] = S.ortho ? applyOrtho(base[0], base[1], wx, wy) : applyPolar(base[0], base[1], wx, wy);
+      const rdx = twx - base[0], rdy = twy - base[1];
       const rlen = Math.hypot(rdx, rdy);
       if (rlen > 1e-9) {
         const ux = rdx / rlen, uy = rdy / rlen, BIG = 1e6;
