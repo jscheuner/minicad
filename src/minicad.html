@@ -5126,7 +5126,9 @@ function _drawDynamicLayer() {
     const isJoinHover    = S.tool==='join' && e.id===S.hoverEntityId && !S.joinSelection.includes(e.id);
     const isHatchHover   = S.tool==='hatch' && e.id===S.hoverEntityId;
     const isTrimCutting  = S.tool==='trim'   && S.trimCuttingIds.includes(e.id);
-    const isTrimHover    = S.tool==='trim'   && e.id===S.hoverEntityId && !S.trimCuttingIds.includes(e.id);
+    // Étape 2 : pas de surbrillance pleine entité — l'aperçu dédié (drawTrimPreview) montre
+    // précisément la portion supprimée, une surbrillance globale nuirait à sa lisibilité.
+    const isTrimHover    = S.tool==='trim'   && S.trimStep===1 && e.id===S.hoverEntityId && !S.trimCuttingIds.includes(e.id);
     const isExtendBound  = S.tool==='extend' && S.extendBoundaryIds.includes(e.id);
     const isExtendHover  = S.tool==='extend' && e.id===S.hoverEntityId && !S.extendBoundaryIds.includes(e.id);
     const isStretchAffected = S.tool==='stretch' && S.stretchRect && (() => {
@@ -13335,8 +13337,14 @@ function drawTrimPreview() {
   const piece = computeTrimRemovedPiece(ent, prims, mx, my);
   if (!piece) return;
   ctx.save();
-  ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 2.5; ctx.globalAlpha = 0.85;
-  ctx.setLineDash([6,4]);
+  ctx.lineCap = 'round';
+  // Halo (couleur de fond) : détache l'aperçu de l'entité déjà dessinée en dessous
+  // (quelle que soit sa couleur) pour que le rouge ressorte nettement par-dessus.
+  ctx.strokeStyle = TC.bg; ctx.lineWidth = 6; ctx.globalAlpha = 0.95; ctx.setLineDash([]);
+  drawEntity(piece);
+  // Portion qui sera supprimée, en rouge vif et bien épais
+  ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 3; ctx.globalAlpha = 1;
+  ctx.setLineDash([7,5]);
   drawEntity(piece);
   ctx.setLineDash([]);
   ctx.restore();
