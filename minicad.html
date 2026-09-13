@@ -13159,7 +13159,11 @@ function applyTrimBox(minX, minY, maxX, maxY, cuttingIds) {
 // TRIM : calcule la portion qui serait supprimée par un clic à ce point, sans modifier
 // aucune entité — sert à l'aperçu (drawTrimPreview). Reprend la même logique de recherche
 // du "morceau cliqué" que les fonctions applyTrim* correspondantes, en lecture seule.
-function computeTrimRemovedPiece(ent, prims, clickWx, clickWy) {
+// TRIM : calcule, sans rien modifier, la portion qui serait supprimée par un clic à ce point
+// ET les portions qui resteraient — sert à l'aperçu (drawTrimPreview). Reprend la même logique
+// de recherche du "morceau cliqué" que les fonctions applyTrim* correspondantes, en lecture seule.
+// Renvoie {removed, kept} où kept est un tableau (0 à 2 primitifs selon le cas).
+function computeTrimPreviewPieces(ent, prims, clickWx, clickWy) {
   if (ent.type === 'line' || ent.type === 'wall') {
     const ox1=ent.x1,oy1=ent.y1, dx=ent.x2-ent.x1, dy=ent.y2-ent.y1;
     const len2=dx*dx+dy*dy; if(len2<1e-12) return null;
@@ -13170,8 +13174,11 @@ function computeTrimRemovedPiece(ent, prims, clickWx, clickWy) {
     const breaks=[0,...ts,1];
     let remIdx=0;
     for(let i=0;i<breaks.length-1;i++){ if(clickT>=breaks[i]-1e-9&&clickT<=breaks[i+1]+1e-9){remIdx=i;break;} }
-    const t1=breaks[remIdx], t2=breaks[remIdx+1];
-    return {type:'line', x1:ox1+t1*dx, y1:oy1+t1*dy, x2:ox1+t2*dx, y2:oy1+t2*dy};
+    const mk=(a,b)=>({type:'line', x1:ox1+a*dx, y1:oy1+a*dy, x2:ox1+b*dx, y2:oy1+b*dy});
+    const kept=[];
+    if(remIdx>0) kept.push(mk(0,breaks[remIdx]));
+    if(remIdx<breaks.length-2) kept.push(mk(breaks[remIdx+1],1));
+    return {removed:mk(breaks[remIdx],breaks[remIdx+1]), kept};
   }
   if (ent.type === 'xline' || ent.type === 'ray') {
     const dx=ent.dx||0, dy=ent.dy||0;
@@ -13184,7 +13191,7 @@ function computeTrimRemovedPiece(ent, prims, clickWx, clickWy) {
     const ext=Math.max(far*3+1000, 1e4);
     const back=ent.type==='xline'?ext:0;
     const line={ type:'line', x1:ent.x-dx*back, y1:ent.y-dy*back, x2:ent.x+dx*ext, y2:ent.y+dy*ext };
-    return computeTrimRemovedPiece(line, prims, clickWx, clickWy);
+    return computeTrimPreviewPieces(line, prims, clickWx, clickWy);
   }
   if (ent.type === 'arc') {
     const rawAngles=getTrimAnglesForArc(ent,prims);
@@ -13200,7 +13207,11 @@ function computeTrimRemovedPiece(ent, prims, clickWx, clickWy) {
     const breaks=[sa,...norm,ea];
     let remIdx=0;
     for(let i=0;i<breaks.length-1;i++){ if(clickA>=breaks[i]-1e-9&&clickA<=breaks[i+1]+1e-9){remIdx=i;break;} }
-    return {type:'arc', cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:breaks[remIdx], endAngle:breaks[remIdx+1]};
+    const mk=(a,b)=>({type:'arc', cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:a, endAngle:b});
+    const kept=[];
+    if(remIdx>0) kept.push(mk(sa,breaks[remIdx]));
+    if(remIdx<breaks.length-2) kept.push(mk(breaks[remIdx+1],ea));
+    return {removed:mk(breaks[remIdx],breaks[remIdx+1]), kept};
   }
   if (ent.type === 'circle') {
     const TAU=Math.PI*2;
@@ -13220,7 +13231,11 @@ function computeTrimRemovedPiece(ent, prims, clickWx, clickWy) {
     const a1=rawAngles[remIdx];
     const a2n=rawAngles[(remIdx+1)%rawAngles.length];
     const a2w=a2n>a1?a2n:a2n+TAU;
-    return {type:'arc', cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:a1, endAngle:a2w};
+    let keptEa=a1; while(keptEa<=a2w+1e-9) keptEa+=TAU;
+    return {
+      removed:{type:'arc', cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:a1, endAngle:a2w},
+      kept:[{type:'arc', cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:a2w, endAngle:keptEa}]
+    };
   }
   if (ent.type === 'ellipse') {
     const el={cx:ent.cx,cy:ent.cy,rx:ent.rx,ry:ent.ry,ang:ent.angle||0,sa:ent.startAngle,ea:ent.endAngle};
@@ -13230,13 +13245,15 @@ function computeTrimRemovedPiece(ent, prims, clickWx, clickWy) {
     const sa0 = ent.startAngle ?? 0, ea0 = ent.endAngle ?? TAU;
     const full = Math.abs((ea0-sa0) - TAU) < 1e-9;
     const clickA=ellipseParam(el, clickWx, clickWy);
+    const mk=(a,b)=>({type:'ellipse', cx:ent.cx, cy:ent.cy, rx:ent.rx, ry:ent.ry, angle:ent.angle||0, startAngle:a, endAngle:b});
     if(full){
       let angs=raw.map(norm).sort((a,b)=>a-b).filter((a,i,arr)=> i===0 || a-arr[i-1]>1e-6);
       if(angs.length<2) return null;
       let ca=norm(clickA), remIdx=0;
       for(let i=0;i<angs.length;i++){ const a1=angs[i], a2=(i+1<angs.length?angs[i+1]:angs[0]+TAU); let cc=ca; while(cc<a1-1e-9) cc+=TAU; if(cc>=a1-1e-9&&cc<=a2+1e-9){remIdx=i;break;} }
       const a1=angs[remIdx], a2=(remIdx+1<angs.length?angs[remIdx+1]:angs[0]+TAU);
-      return {type:'ellipse', cx:ent.cx, cy:ent.cy, rx:ent.rx, ry:ent.ry, angle:ent.angle||0, startAngle:a1, endAngle:a2};
+      let keptEa=a1; while(keptEa<=a2+1e-9) keptEa+=TAU;
+      return {removed:mk(a1,a2), kept:[mk(a2,keptEa)]};
     }
     const sa=sa0; let ea=ea0; while(ea<sa) ea+=TAU;
     const inside=raw.map(a=>{let b=a;while(b<sa)b+=TAU;return b;}).filter(a=>a>sa+1e-9&&a<ea-1e-9).sort((x,y)=>x-y);
@@ -13244,12 +13261,15 @@ function computeTrimRemovedPiece(ent, prims, clickWx, clickWy) {
     let ca=clickA; while(ca<sa) ca+=TAU;
     const breaks=[sa,...inside,ea]; let remIdx=0;
     for(let i=0;i<breaks.length-1;i++){ if(ca>=breaks[i]-1e-9&&ca<=breaks[i+1]+1e-9){remIdx=i;break;} }
-    return {type:'ellipse', cx:ent.cx, cy:ent.cy, rx:ent.rx, ry:ent.ry, angle:ent.angle||0, startAngle:breaks[remIdx], endAngle:breaks[remIdx+1]};
+    const kept=[];
+    if(remIdx>0) kept.push(mk(sa,breaks[remIdx]));
+    if(remIdx<breaks.length-2) kept.push(mk(breaks[remIdx+1],ea));
+    return {removed:mk(breaks[remIdx],breaks[remIdx+1]), kept};
   }
   if (ent.type === 'rect') {
     const {x1,y1,x2,y2} = ent;
     const poly = { type:'polyline', points:[[x1,y1],[x2,y1],[x2,y2],[x1,y2],[x1,y1]] };
-    return computeTrimRemovedPiece(poly, prims, clickWx, clickWy);
+    return computeTrimPreviewPieces(poly, prims, clickWx, clickWy);
   }
   if (ent.type === 'polyline' || ent.type === 'cable') {
     const pts=ent.points, nSegs=pts.length-1;
@@ -13290,7 +13310,14 @@ function computeTrimRemovedPiece(ent, prims, clickWx, clickWy) {
       const d=Math.hypot(p1[0]+lt*dx-clickWx,p1[1]+lt*dy-clickWy);
       if(d<minDist){minDist=d;clickGlobalT=i+lt;}
     }
-    let t1,t2;
+    // Extrait un segment de la boucle [a,b] où b peut dépasser nSegs (repli sur la couture
+    // d'un contour fermé) — factorise le repli utilisé pour la pièce retirée ET les pièces gardées.
+    const extractWrapped=(a,b)=>{
+      if(b<=nSegs+1e-9) return extractSubPoly(pts,nSegs,a,b);
+      const part1=extractSubPoly(pts,nSegs,a,nSegs);
+      const part2=extractSubPoly(pts,nSegs,0,b-nSegs);
+      return part1.slice(0,-1).concat(part2);
+    };
     if(isClosed){
       const M=globalTs.length;
       let rem=-1;
@@ -13300,29 +13327,28 @@ function computeTrimRemovedPiece(ent, prims, clickWx, clickWy) {
         if(c>=a-1e-9 && c<=b+1e-9){rem=k;break;}
       }
       if(rem<0) rem=0;
-      t1=globalTs[rem]; t2=(rem+1<M)?globalTs[rem+1]:globalTs[0]+nSegs;
-    } else {
-      const breaks=[0,...globalTs,nSegs];
-      let remIdx=0;
-      for(let i=0;i<breaks.length-1;i++){if(clickGlobalT>=breaks[i]-1e-9&&clickGlobalT<=breaks[i+1]+1e-9){remIdx=i;break;}}
-      t1=breaks[remIdx]; t2=breaks[remIdx+1];
+      const t1=globalTs[rem], t2=(rem+1<M)?globalTs[rem+1]:globalTs[0]+nSegs;
+      // La partie gardée est l'unique complément de [t1,t2] sur le cycle entier.
+      const ka=((t2%nSegs)+nSegs)%nSegs, kb=ka+(nSegs-(t2-t1));
+      return {
+        removed:{type:'polyline', points:extractWrapped(t1,t2)},
+        kept:[{type:'polyline', points:extractWrapped(ka,kb)}]
+      };
     }
-    let points;
-    if(t2<=nSegs){
-      points=extractSubPoly(pts,nSegs,t1,t2);
-    } else {
-      const part1=extractSubPoly(pts,nSegs,t1,nSegs);
-      const part2=extractSubPoly(pts,nSegs,0,t2-nSegs);
-      points=part1.slice(0,-1).concat(part2);
-    }
-    return {type:'polyline', points};
+    const breaks=[0,...globalTs,nSegs];
+    let remIdx=0;
+    for(let i=0;i<breaks.length-1;i++){if(clickGlobalT>=breaks[i]-1e-9&&clickGlobalT<=breaks[i+1]+1e-9){remIdx=i;break;}}
+    const kept=[];
+    if(remIdx>0) kept.push({type:'polyline', points:extractSubPoly(pts,nSegs,0,breaks[remIdx])});
+    if(remIdx<breaks.length-2) kept.push({type:'polyline', points:extractSubPoly(pts,nSegs,breaks[remIdx+1],nSegs)});
+    return {removed:{type:'polyline', points:extractSubPoly(pts,nSegs,breaks[remIdx],breaks[remIdx+1])}, kept};
   }
   return null;
 }
 
-// TRIM : dessine, avant le clic, la portion de l'entité survolée qui serait supprimée —
-// même principe que drawExtendPreview() mais signale une SUPPRESSION (couleur rouge) plutôt
-// qu'un ajout, pour distinguer visuellement ce qui va disparaître.
+// TRIM : dessine, avant le clic, la portion de l'entité survolée qui serait supprimée (traitillé
+// bleu, même couleur d'accent que drawExtendPreview()) ainsi que la ou les portions qui resteraient
+// (surbrillance pleine, comme l'ancien survol plein-entité mais restreinte à la géométrie conservée).
 function drawTrimPreview() {
   const ent = S.entities.find(e => e.id === S.hoverEntityId);
   if (!ent || !TRIM_SUPPORTED_TYPES.includes(ent.type)) return;
@@ -13334,18 +13360,19 @@ function drawTrimPreview() {
     prims = S.trimCuttingIds.filter(id => id !== ent.id).flatMap(id => { const e = S.entities.find(en => en.id === id); return e ? getCutterPrimitives(e) : []; });
   }
   if (!prims.length) return;
-  const piece = computeTrimRemovedPiece(ent, prims, mx, my);
-  if (!piece) return;
+  const pieces = computeTrimPreviewPieces(ent, prims, mx, my);
+  if (!pieces) return;
   ctx.save();
   ctx.lineCap = 'round';
-  // Halo (couleur de fond) : détache l'aperçu de l'entité déjà dessinée en dessous
-  // (quelle que soit sa couleur) pour que le rouge ressorte nettement par-dessus.
+  // Portion(s) qui resteraient : surbrillance pleine (même style que l'ancien survol plein-entité).
+  ctx.strokeStyle = TC.ink; ctx.lineWidth = 2; ctx.globalAlpha = 1; ctx.setLineDash([]);
+  for (const k of pieces.kept) drawEntity(k);
+  // Portion qui sera supprimée, en bleu (accent) traitillé, halo de fond pour ressortir.
   ctx.strokeStyle = TC.bg; ctx.lineWidth = 6; ctx.globalAlpha = 0.95; ctx.setLineDash([]);
-  drawEntity(piece);
-  // Portion qui sera supprimée, en rouge vif et bien épais
-  ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 3; ctx.globalAlpha = 1;
+  drawEntity(pieces.removed);
+  ctx.strokeStyle = TC.accent; ctx.lineWidth = 3; ctx.globalAlpha = 1;
   ctx.setLineDash([7,5]);
-  drawEntity(piece);
+  drawEntity(pieces.removed);
   ctx.setLineDash([]);
   ctx.restore();
 }
