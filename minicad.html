@@ -10680,8 +10680,10 @@ canvas.addEventListener('mousedown', (ev) => {
     return;
   }
 
-  // TRIM step 2 : clic sur entité → coupe immédiatement (comportement existant, via handleClick
-  // plus bas) ; clic dans le vide → rubber band pour couper plusieurs entités en une fois.
+  // TRIM step 2 : clic sur entité → coupe immédiatement (comportement existant) ; clic dans
+  // le vide → rubber band pour couper plusieurs entités en une fois. Entièrement autonome
+  // (comme JOIN) : ne retombe jamais dans le handleClick générique plus bas, pour éviter
+  // tout double traitement du même clic.
   if (ev.button === 0 && S.tool === 'trim' && S.trimStep === 2) {
     S._selectHitOnMousedown = false;
     if (isRubberBand) {
@@ -10691,17 +10693,12 @@ canvas.addEventListener('mousedown', (ev) => {
       const minY = Math.min(rbStart.wy, wy), maxY = Math.max(rbStart.wy, wy);
       rbStart = null; rbEnd = null;
       applyTrimBox(minX, minY, maxX, maxY, S.trimCuttingIds);
-      setTimeout(smartFocus, 0);
-      return;
-    }
-    if (hitTest(wx, wy)) {
-      S._selectHitOnMousedown = true;
-      // Entité touchée → laisse tomber vers handleClick plus bas (clic unique inchangé)
     } else {
-      // Clic dans le vide → rubber band démarré au mouseup
-      setTimeout(smartFocus, 0);
-      return;
+      S._selectHitOnMousedown = trimStep2Click(wx, wy);
+      // Pas de hit → rubber band démarré au mouseup
     }
+    setTimeout(smartFocus, 0);
+    return;
   }
 
   const rawWx = wx, rawWy = wy;
@@ -11063,6 +11060,31 @@ function _arcFinish(arc) {
   S.entities.push(arc);
   termPrint('#'+arc.id+' arc créé r='+arc.r.toFixed(1),'success');
   S.drawing=false; S.drawPoints=[]; S.awaitingInput=false; S._arcMode='3p';
+}
+
+// TRIM étape 2 (couper) pour un point donné : source unique utilisée par le clic simple
+// (handleClick) et par le clic sur entité en mousedown (avant de démarrer un rubber band).
+// Renvoie true si une entité a été touchée (que la coupe ait réussi ou non) — sert au
+// mousedown à savoir si le clic doit être traité comme une coupe ou comme le début d'une
+// fenêtre de sélection.
+function trimStep2Click(cx, cy) {
+  const hit = hitTest(cx, cy);
+  if (!hit) { termPrint('TRIM: cliquer sur une entité à couper', 'warning'); return false; }
+  let allPrims;
+  if (S.trimCuttingIds.length === 0) {
+    // Mode tout couper : toutes les entités visibles sauf celle cliquée
+    allPrims = S.entities
+      .filter(e => e.id !== hit.id && S.layers[e.layer]?.visible)
+      .flatMap(e => getCutterPrimitives(e));
+  } else {
+    // Limites explicites : exclure l'entité cliquée d'elle-même (elle peut être dans les limites)
+    allPrims = S.trimCuttingIds
+      .filter(id => id !== hit.id)
+      .flatMap(id => { const e = S.entities.find(en => en.id === id); return e ? getCutterPrimitives(e) : []; });
+  }
+  if (!allPrims.length) { termPrint('TRIM: aucune limite disponible pour cette entité', 'warning'); return true; }
+  applyTrim(hit.id, allPrims, cx, cy);
+  return true;
 }
 
 function handleClick(wx, wy, ev, rawWx, rawWy) {
@@ -11750,24 +11772,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       }
       render(); return;
     }
-    if (S.trimStep === 2) {
-      if (!hit) { termPrint('TRIM: cliquer sur une entité à couper', 'warning'); return; }
-      let allPrims;
-      if (S.trimCuttingIds.length === 0) {
-        // Mode tout couper : toutes les entités visibles sauf celle cliquée
-        allPrims = S.entities
-          .filter(e => e.id !== hit.id && S.layers[e.layer]?.visible)
-          .flatMap(e => getCutterPrimitives(e));
-      } else {
-        // Limites explicites : exclure l'entité cliquée d'elle-même (elle peut être dans les limites)
-        allPrims = S.trimCuttingIds
-          .filter(id => id !== hit.id)
-          .flatMap(id => { const e = S.entities.find(en => en.id === id); return e ? getCutterPrimitives(e) : []; });
-      }
-      if (!allPrims.length) { termPrint('TRIM: aucune limite disponible pour cette entité', 'warning'); return; }
-      applyTrim(hit.id, allPrims, cx, cy);
-      return;
-    }
+    if (S.trimStep === 2) { trimStep2Click(cx, cy); return; }
   }
 
   // Extend
