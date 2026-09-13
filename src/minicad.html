@@ -10693,6 +10693,9 @@ canvas.addEventListener('mousedown', (ev) => {
       const minY = Math.min(rbStart.wy, wy), maxY = Math.max(rbStart.wy, wy);
       rbStart = null; rbEnd = null;
       applyTrimBox(minX, minY, maxX, maxY, S.trimCuttingIds);
+      // Le mouseup qui suit ce même clic ne doit pas être interprété comme un clic dans
+      // le vide (sinon il redémarrerait aussitôt un nouveau rubber band à ce point).
+      S._selectHitOnMousedown = true;
     } else {
       S._selectHitOnMousedown = trimStep2Click(wx, wy);
       // Pas de hit → rubber band démarré au mouseup
