@@ -17268,6 +17268,22 @@ function executeCommand(input) {
       S.offsetPending=false;
       termPrint('DÉCALER: Cliquer du côté à décaler','info');
       setTool('offset');
+    } else if(S.explodePending){
+      // Dupliqué du handler global (Entrée hors terminal) : nécessaire car le focus reste sur
+      // cmdInput après une saisie comme "P" (Previous) — l'Entrée suivante passe par ici, pas
+      // par le handler document, donc sans ce cas ÉCLATER restait bloqué après un "P".
+      if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
+      S.explodePending=false; executeCommand('EXPLODE');
+    } else if(S.arrayPending){
+      if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
+      S.arrayPending=false;
+      S.arraySourceIds=[...S.selected];
+      openArrayDialog();
+    } else if(S.polarArrayPending){
+      if(!S.selected.length){ termPrint('Aucun objet sélectionné','warning'); return; }
+      S.polarArrayPending=false;
+      S.polarArraySourceIds=[...S.selected];
+      openPolarArrayDialog();
     }
     return;
   }
