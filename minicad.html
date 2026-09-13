@@ -5158,6 +5158,7 @@ function _drawDynamicLayer() {
   if ((S.drawing && S.drawPoints.length>0 && !S.gripEdit) || (S.tool==='tube' && S.drawing && S.tubePoints.length>=1)) drawPreview();
   if (S._textLivePreview) drawTextLivePreview();
   if (S.tool==='offset' && S.selected.length && mouseOnCanvas) drawOffsetGhost();
+  if (S.tool==='trim' && S.trimStep===2 && S.hoverEntityId && mouseOnCanvas) drawTrimPreview();
   if (S.tool==='extend' && S.extendStep===2 && S.hoverEntityId && mouseOnCanvas) drawExtendPreview();
   if (S.tool==='rotate' && S.rotateStep===2 && mouseOnCanvas) drawRotatePreview();
   if (S.tool==='scale'  && S.scaleStep===2  && mouseOnCanvas) drawScalePreview();
@@ -13151,6 +13152,194 @@ function applyTrimBox(minX, minY, maxX, maxY, cuttingIds) {
   if(!count){ S.history.pop(); termPrint('TRIM: aucune intersection trouvée dans la sélection','warning'); return; }
   termPrint('TRIM — '+count+' entité(s) coupée(s)','success');
   updateSaveIndicator('modified'); autoSave(); render();
+}
+
+// TRIM : calcule la portion qui serait supprimée par un clic à ce point, sans modifier
+// aucune entité — sert à l'aperçu (drawTrimPreview). Reprend la même logique de recherche
+// du "morceau cliqué" que les fonctions applyTrim* correspondantes, en lecture seule.
+function computeTrimRemovedPiece(ent, prims, clickWx, clickWy) {
+  if (ent.type === 'line' || ent.type === 'wall') {
+    const ox1=ent.x1,oy1=ent.y1, dx=ent.x2-ent.x1, dy=ent.y2-ent.y1;
+    const len2=dx*dx+dy*dy; if(len2<1e-12) return null;
+    const ts=getTrimTsForLine(ent.x1,ent.y1,ent.x2,ent.y2,prims);
+    if(!ts.length) return null;
+    ts.sort((a,b)=>a-b);
+    const clickT=Math.max(0,Math.min(1,((clickWx-ox1)*dx+(clickWy-oy1)*dy)/len2));
+    const breaks=[0,...ts,1];
+    let remIdx=0;
+    for(let i=0;i<breaks.length-1;i++){ if(clickT>=breaks[i]-1e-9&&clickT<=breaks[i+1]+1e-9){remIdx=i;break;} }
+    const t1=breaks[remIdx], t2=breaks[remIdx+1];
+    return {type:'line', x1:ox1+t1*dx, y1:oy1+t1*dy, x2:ox1+t2*dx, y2:oy1+t2*dy};
+  }
+  if (ent.type === 'xline' || ent.type === 'ray') {
+    const dx=ent.dx||0, dy=ent.dy||0;
+    if(Math.hypot(dx,dy)<1e-12) return null;
+    let far=Math.hypot(clickWx-ent.x, clickWy-ent.y);
+    for(const p of prims){
+      if(p.type==='seg') far=Math.max(far, Math.hypot(p.x1-ent.x,p.y1-ent.y), Math.hypot(p.x2-ent.x,p.y2-ent.y));
+      else far=Math.max(far, Math.hypot((p.cx||0)-ent.x,(p.cy||0)-ent.y)+(p.r||0)+(p.rx||0)+(p.ry||0));
+    }
+    const ext=Math.max(far*3+1000, 1e4);
+    const back=ent.type==='xline'?ext:0;
+    const line={ type:'line', x1:ent.x-dx*back, y1:ent.y-dy*back, x2:ent.x+dx*ext, y2:ent.y+dy*ext };
+    return computeTrimRemovedPiece(line, prims, clickWx, clickWy);
+  }
+  if (ent.type === 'arc') {
+    const rawAngles=getTrimAnglesForArc(ent,prims);
+    if(!rawAngles.length) return null;
+    const sa=ent.startAngle;
+    let ea=ent.endAngle; while(ea<sa) ea+=Math.PI*2;
+    const norm=rawAngles.map(a=>{let b=a;while(b<sa)b+=Math.PI*2;return b;})
+                         .filter(a=>a>sa+1e-9&&a<ea-1e-9);
+    if(!norm.length) return null;
+    norm.sort((a,b)=>a-b);
+    let clickA=Math.atan2(clickWy-ent.cy,clickWx-ent.cx);
+    while(clickA<sa) clickA+=Math.PI*2;
+    const breaks=[sa,...norm,ea];
+    let remIdx=0;
+    for(let i=0;i<breaks.length-1;i++){ if(clickA>=breaks[i]-1e-9&&clickA<=breaks[i+1]+1e-9){remIdx=i;break;} }
+    return {type:'arc', cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:breaks[remIdx], endAngle:breaks[remIdx+1]};
+  }
+  if (ent.type === 'circle') {
+    const TAU=Math.PI*2;
+    const fakeArc={cx:ent.cx,cy:ent.cy,r:ent.r,startAngle:0,endAngle:TAU};
+    let rawAngles=getTrimAnglesForArc(fakeArc,prims).map(a=>((a%TAU)+TAU)%TAU);
+    rawAngles.sort((a,b)=>a-b);
+    rawAngles=rawAngles.filter((a,i)=> i===0 || a-rawAngles[i-1]>1e-6);
+    if(rawAngles.length<2) return null;
+    let clickA=Math.atan2(clickWy-ent.cy, clickWx-ent.cx); if(clickA<0) clickA+=TAU;
+    let remIdx=0;
+    for(let i=0;i<rawAngles.length;i++){
+      const a1=rawAngles[i], a2=rawAngles[(i+1)%rawAngles.length];
+      let ca=clickA; while(ca<a1-1e-9) ca+=TAU;
+      const a2w=a2>a1?a2:a2+TAU;
+      if(ca>=a1-1e-9&&ca<=a2w+1e-9){remIdx=i;break;}
+    }
+    const a1=rawAngles[remIdx];
+    const a2n=rawAngles[(remIdx+1)%rawAngles.length];
+    const a2w=a2n>a1?a2n:a2n+TAU;
+    return {type:'arc', cx:ent.cx, cy:ent.cy, r:ent.r, startAngle:a1, endAngle:a2w};
+  }
+  if (ent.type === 'ellipse') {
+    const el={cx:ent.cx,cy:ent.cy,rx:ent.rx,ry:ent.ry,ang:ent.angle||0,sa:ent.startAngle,ea:ent.endAngle};
+    const raw=getEllipseHitParams(el, prims);
+    if(!raw.length) return null;
+    const TAU=Math.PI*2, norm=a=>((a%TAU)+TAU)%TAU;
+    const sa0 = ent.startAngle ?? 0, ea0 = ent.endAngle ?? TAU;
+    const full = Math.abs((ea0-sa0) - TAU) < 1e-9;
+    const clickA=ellipseParam(el, clickWx, clickWy);
+    if(full){
+      let angs=raw.map(norm).sort((a,b)=>a-b).filter((a,i,arr)=> i===0 || a-arr[i-1]>1e-6);
+      if(angs.length<2) return null;
+      let ca=norm(clickA), remIdx=0;
+      for(let i=0;i<angs.length;i++){ const a1=angs[i], a2=(i+1<angs.length?angs[i+1]:angs[0]+TAU); let cc=ca; while(cc<a1-1e-9) cc+=TAU; if(cc>=a1-1e-9&&cc<=a2+1e-9){remIdx=i;break;} }
+      const a1=angs[remIdx], a2=(remIdx+1<angs.length?angs[remIdx+1]:angs[0]+TAU);
+      return {type:'ellipse', cx:ent.cx, cy:ent.cy, rx:ent.rx, ry:ent.ry, angle:ent.angle||0, startAngle:a1, endAngle:a2};
+    }
+    const sa=sa0; let ea=ea0; while(ea<sa) ea+=TAU;
+    const inside=raw.map(a=>{let b=a;while(b<sa)b+=TAU;return b;}).filter(a=>a>sa+1e-9&&a<ea-1e-9).sort((x,y)=>x-y);
+    if(!inside.length) return null;
+    let ca=clickA; while(ca<sa) ca+=TAU;
+    const breaks=[sa,...inside,ea]; let remIdx=0;
+    for(let i=0;i<breaks.length-1;i++){ if(ca>=breaks[i]-1e-9&&ca<=breaks[i+1]+1e-9){remIdx=i;break;} }
+    return {type:'ellipse', cx:ent.cx, cy:ent.cy, rx:ent.rx, ry:ent.ry, angle:ent.angle||0, startAngle:breaks[remIdx], endAngle:breaks[remIdx+1]};
+  }
+  if (ent.type === 'rect') {
+    const {x1,y1,x2,y2} = ent;
+    const poly = { type:'polyline', points:[[x1,y1],[x2,y1],[x2,y2],[x1,y2],[x1,y1]] };
+    return computeTrimRemovedPiece(poly, prims, clickWx, clickWy);
+  }
+  if (ent.type === 'polyline' || ent.type === 'cable') {
+    const pts=ent.points, nSegs=pts.length-1;
+    if(nSegs<1) return null;
+    const isClosed = ent.closed ||
+      (nSegs>=2 && Math.hypot(pts[0][0]-pts[nSegs][0], pts[0][1]-pts[nSegs][1])<1e-9);
+    const globalTs=[];
+    for(let i=0;i<nSegs;i++){
+      const p1=pts[i],p2=pts[i+1];
+      if(p1[2]||0) continue;
+      for(const p of prims){
+        if(p.type==='seg'){
+          const t=segSegIntersectT(p1[0],p1[1],p2[0],p2[1],p.x1,p.y1,p.x2,p.y2);
+          if(t!=null&&t>1e-9&&t<1-1e-9) globalTs.push(i+t);
+        } else if(p.type==='circle'){
+          lineCircleIntersect(p1[0],p1[1],p2[0],p2[1],p.cx,p.cy,p.r).forEach(h=>{
+            if(h.t>1e-9&&h.t<1-1e-9) globalTs.push(i+h.t);
+          });
+        } else if(p.type==='arc'){
+          lineCircleIntersect(p1[0],p1[1],p2[0],p2[1],p.cx,p.cy,p.r).forEach(h=>{
+            if(h.t>1e-9&&h.t<1-1e-9&&angleInArc(Math.atan2(h.y-p.cy,h.x-p.cx),p.sa,p.ea)) globalTs.push(i+h.t);
+          });
+        } else if(p.type==='ellipse'){
+          lineEllipseIntersect(p1[0],p1[1],p2[0],p2[1],p).forEach(h=>{
+            if(h.t>1e-9&&h.t<1-1e-9&&(p.sa===undefined||angleInArc(ellipseParam(p,h.x,h.y),p.sa,p.ea))) globalTs.push(i+h.t);
+          });
+        }
+      }
+    }
+    if(!globalTs.length) return null;
+    globalTs.sort((a,b)=>a-b);
+    let clickGlobalT=0,minDist=Infinity;
+    for(let i=0;i<nSegs;i++){
+      const p1=pts[i],p2=pts[i+1];
+      const dx=p2[0]-p1[0],dy=p2[1]-p1[1],len2=dx*dx+dy*dy;
+      if(len2<1e-12) continue;
+      const lt=Math.max(0,Math.min(1,((clickWx-p1[0])*dx+(clickWy-p1[1])*dy)/len2));
+      const d=Math.hypot(p1[0]+lt*dx-clickWx,p1[1]+lt*dy-clickWy);
+      if(d<minDist){minDist=d;clickGlobalT=i+lt;}
+    }
+    let t1,t2;
+    if(isClosed){
+      const M=globalTs.length;
+      let rem=-1;
+      for(let k=0;k<M;k++){
+        const a=globalTs[k], b=(k+1<M)?globalTs[k+1]:globalTs[0]+nSegs;
+        let c=clickGlobalT; if(k===M-1 && c<a) c+=nSegs;
+        if(c>=a-1e-9 && c<=b+1e-9){rem=k;break;}
+      }
+      if(rem<0) rem=0;
+      t1=globalTs[rem]; t2=(rem+1<M)?globalTs[rem+1]:globalTs[0]+nSegs;
+    } else {
+      const breaks=[0,...globalTs,nSegs];
+      let remIdx=0;
+      for(let i=0;i<breaks.length-1;i++){if(clickGlobalT>=breaks[i]-1e-9&&clickGlobalT<=breaks[i+1]+1e-9){remIdx=i;break;}}
+      t1=breaks[remIdx]; t2=breaks[remIdx+1];
+    }
+    let points;
+    if(t2<=nSegs){
+      points=extractSubPoly(pts,nSegs,t1,t2);
+    } else {
+      const part1=extractSubPoly(pts,nSegs,t1,nSegs);
+      const part2=extractSubPoly(pts,nSegs,0,t2-nSegs);
+      points=part1.slice(0,-1).concat(part2);
+    }
+    return {type:'polyline', points};
+  }
+  return null;
+}
+
+// TRIM : dessine, avant le clic, la portion de l'entité survolée qui serait supprimée —
+// même principe que drawExtendPreview() mais signale une SUPPRESSION (couleur rouge) plutôt
+// qu'un ajout, pour distinguer visuellement ce qui va disparaître.
+function drawTrimPreview() {
+  const ent = S.entities.find(e => e.id === S.hoverEntityId);
+  if (!ent || !TRIM_SUPPORTED_TYPES.includes(ent.type)) return;
+  const [mx, my] = S.mouseWorld;
+  let prims;
+  if (S.trimCuttingIds.length === 0) {
+    prims = S.entities.filter(e => e.id !== ent.id && S.layers[e.layer]?.visible).flatMap(e => getCutterPrimitives(e));
+  } else {
+    prims = S.trimCuttingIds.filter(id => id !== ent.id).flatMap(id => { const e = S.entities.find(en => en.id === id); return e ? getCutterPrimitives(e) : []; });
+  }
+  if (!prims.length) return;
+  const piece = computeTrimRemovedPiece(ent, prims, mx, my);
+  if (!piece) return;
+  ctx.save();
+  ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 2.5; ctx.globalAlpha = 0.85;
+  ctx.setLineDash([6,4]);
+  drawEntity(piece);
+  ctx.setLineDash([]);
+  ctx.restore();
 }
 
 function drawExtendPreview() {
