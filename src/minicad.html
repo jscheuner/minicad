@@ -3594,6 +3594,32 @@ function findOsnap(wx, wy) {
         if (p) check(p[0], p[1], 'nearest', null);
       }
     }
+    // INTERSECTION avec le segment en cours (base → curseur, prolongé) : le segment
+    // n'existe pas encore dans S.entities, donc la boucle INTERSECTION normale (sur
+    // les entités déjà créées) ne le voit pas. On matérialise ici le rayon base→curseur
+    // (même technique BIG que pour xline/ray) et on le croise avec les entités proches.
+    if (S.osnapModes.intersection) {
+      const base = pts[pts.length - 1];
+      const rdx = wx - base[0], rdy = wy - base[1];
+      const rlen = Math.hypot(rdx, rdy);
+      if (rlen > 1e-9) {
+        const ux = rdx / rlen, uy = rdy / rlen, BIG = 1e6;
+        const rx2 = base[0] + ux * BIG, ry2 = base[1] + uy * BIG;
+        for (const e2 of _nearby) {
+          if (e2.type === 'circle' || e2.type === 'arc') {
+            for (const [px, py] of segCircleIntersect(base[0], base[1], rx2, ry2, e2.cx, e2.cy, e2.r)) {
+              if (e2.type === 'arc' && !angleInArc(Math.atan2(py - e2.cy, px - e2.cx), e2.startAngle, e2.endAngle)) continue;
+              check(px, py, 'intersection', e2);
+            }
+          } else {
+            for (const seg of segsOf(e2)) {
+              const pt = segSegIntersect(base[0], base[1], rx2, ry2, seg[0], seg[1], seg[2], seg[3]);
+              if (pt && _ptOnEllipseArc(e2, pt[0], pt[1])) check(pt[0], pt[1], 'intersection', e2);
+            }
+          }
+        }
+      }
+    }
   }
 
   // EXTENSION + OTRACK — acquisition, prolongement, H/V, intersections
