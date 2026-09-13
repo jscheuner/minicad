@@ -10704,6 +10704,29 @@ canvas.addEventListener('mousedown', (ev) => {
     return;
   }
 
+  // EXTEND step 2 : clic sur entité → prolonge immédiatement (comportement existant) ; clic
+  // dans le vide → rubber band pour prolonger plusieurs entités en une fois. Même pattern
+  // que TRIM step 2 (entièrement autonome, ne retombe jamais dans le handleClick générique).
+  if (ev.button === 0 && S.tool === 'extend' && S.extendStep === 2) {
+    S._selectHitOnMousedown = false;
+    if (isRubberBand) {
+      // 2ème clic → finalise le rubber band : prolonge toutes les entités croisées par la fenêtre
+      isRubberBand = false;
+      const minX = Math.min(rbStart.wx, wx), maxX = Math.max(rbStart.wx, wx);
+      const minY = Math.min(rbStart.wy, wy), maxY = Math.max(rbStart.wy, wy);
+      rbStart = null; rbEnd = null;
+      applyExtendBox(minX, minY, maxX, maxY, S.extendBoundaryIds);
+      // Le mouseup qui suit ce même clic ne doit pas être interprété comme un clic dans
+      // le vide (sinon il redémarrerait aussitôt un nouveau rubber band à ce point).
+      S._selectHitOnMousedown = true;
+    } else {
+      S._selectHitOnMousedown = extendStep2Click(wx, wy);
+      // Pas de hit → rubber band démarré au mouseup
+    }
+    setTimeout(smartFocus, 0);
+    return;
+  }
+
   const rawWx = wx, rawWy = wy;
   [wx, wy] = resolvePoint(wx, wy);
   handleClick(wx, wy, ev, rawWx, rawWy);
@@ -10822,6 +10845,21 @@ canvas.addEventListener('mouseup', (ev) => {
 
   // TRIM step 2 mouseup : démarrer le rubber band si le mousedown a cliqué dans le vide
   if (ev.button === 0 && S.tool === 'trim' && S.trimStep === 2) {
+    if (!S._selectHitOnMousedown && !isRubberBand) {
+      const rect = canvas.getBoundingClientRect();
+      const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
+      const [wx, wy] = s2w(sx, sy);
+      isRubberBand = true;
+      rbStart = { sx, sy, wx, wy };
+      rbEnd   = { sx, sy, wx, wy };
+      render();
+    }
+    setTimeout(smartFocus, 0);
+    return;
+  }
+
+  // EXTEND step 2 mouseup : démarrer le rubber band si le mousedown a cliqué dans le vide
+  if (ev.button === 0 && S.tool === 'extend' && S.extendStep === 2) {
     if (!S._selectHitOnMousedown && !isRubberBand) {
       const rect = canvas.getBoundingClientRect();
       const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
@@ -11087,6 +11125,27 @@ function trimStep2Click(cx, cy) {
   }
   if (!allPrims.length) { termPrint('TRIM: aucune limite disponible pour cette entité', 'warning'); return true; }
   applyTrim(hit.id, allPrims, cx, cy);
+  return true;
+}
+
+// EXTEND étape 2 (prolonger) pour un point donné : source unique utilisée par le clic simple
+// (handleClick) et par le clic sur entité en mousedown (avant de démarrer un rubber band).
+// Même principe que trimStep2Click().
+function extendStep2Click(cx, cy) {
+  const hit = hitTest(cx, cy);
+  if (!hit) { termPrint('EXTEND: cliquer sur une entité à prolonger', 'warning'); return false; }
+  let allPrims;
+  if (S.extendBoundaryIds.length === 0) {
+    allPrims = S.entities
+      .filter(e => e.id !== hit.id && S.layers[e.layer]?.visible)
+      .flatMap(e => getCutterPrimitives(e));
+  } else {
+    allPrims = S.extendBoundaryIds
+      .filter(id => id !== hit.id)
+      .flatMap(id => { const e = S.entities.find(en => en.id === id); return e ? getCutterPrimitives(e) : []; });
+  }
+  if (!allPrims.length) { termPrint('EXTEND: aucune limite disponible pour cette entité', 'warning'); return true; }
+  applyExtend(hit.id, allPrims, cx, cy);
   return true;
 }
 
@@ -11781,8 +11840,8 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
   // Extend
   if (tool === 'extend') {
     const cx = rawWx!==undefined?rawWx:wx, cy = rawWy!==undefined?rawWy:wy;
-    const hit = hitTest(cx, cy);
     if (S.extendStep === 1) {
+      const hit = hitTest(cx, cy);
       if (!hit) { termPrint('EXTEND: cliquer sur une entité limite', 'warning'); return; }
       if (S.extendBoundaryIds.includes(hit.id)) {
         S.extendBoundaryIds = S.extendBoundaryIds.filter(id => id !== hit.id);
@@ -11793,18 +11852,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       }
       render(); return;
     }
-    if (S.extendStep === 2) {
-      if (!hit) { termPrint('EXTEND: cliquer sur une entité à prolonger', 'warning'); return; }
-      let allPrims;
-      if (S.extendBoundaryIds.length === 0) {
-        allPrims = S.entities.filter(e => e.id !== hit.id && S.layers[e.layer]?.visible).flatMap(e => getCutterPrimitives(e));
-      } else {
-        allPrims = S.extendBoundaryIds.filter(id => id !== hit.id).flatMap(id => { const e = S.entities.find(en => en.id === id); return e ? getCutterPrimitives(e) : []; });
-      }
-      if (!allPrims.length) { termPrint('EXTEND: aucune limite disponible pour cette entité', 'warning'); return; }
-      applyExtend(hit.id, allPrims, cx, cy);
-      return;
-    }
+    if (S.extendStep === 2) { extendStep2Click(cx, cy); return; }
   }
 
   // Mesurer — mesure visuelle persistante
@@ -13339,19 +13387,70 @@ function applyExtendEllipse(ent, prims, clickWx, clickWy) {
   return true;
 }
 
+const EXTEND_SUPPORTED_TYPES=['line','wall','polyline','cable','arc','ellipse'];
+
+function _dispatchExtend(ent, prims, clickWx, clickWy) {
+  if(ent.type==='line'||ent.type==='wall')            return applyExtendLine(ent,prims,clickWx,clickWy);
+  if(ent.type==='polyline'||ent.type==='cable')       return applyExtendPolyline(ent,prims,clickWx,clickWy);
+  if(ent.type==='arc')                                 return applyExtendArc(ent,prims,clickWx,clickWy);
+  if(ent.type==='ellipse')                             return applyExtendEllipse(ent,prims,clickWx,clickWy);
+  return false;
+}
+
 function applyExtend(extendedId, prims, clickWx, clickWy) {
   const ent=S.entities.find(e=>e.id===extendedId);
   if(!ent) return;
-  const supported=['line','wall','polyline','cable','arc','ellipse'];
-  if(!supported.includes(ent.type)){ termPrint('EXTEND: type non supporté ('+ent.type+')','warning'); return; }
+  if(!EXTEND_SUPPORTED_TYPES.includes(ent.type)){ termPrint('EXTEND: type non supporté ('+ent.type+')','warning'); return; }
   pushUndo();
-  let ok=false;
-  if(ent.type==='line'||ent.type==='wall')            ok=applyExtendLine(ent,prims,clickWx,clickWy);
-  else if(ent.type==='polyline'||ent.type==='cable')  ok=applyExtendPolyline(ent,prims,clickWx,clickWy);
-  else if(ent.type==='arc')                            ok=applyExtendArc(ent,prims,clickWx,clickWy);
-  else if(ent.type==='ellipse')                        ok=applyExtendEllipse(ent,prims,clickWx,clickWy);
+  const ok=_dispatchExtend(ent,prims,clickWx,clickWy);
   if(!ok){ S.history.pop(); termPrint('EXTEND: pas d\'intersection trouvée sur cette extension','warning'); return; }
   termPrint('EXTEND — entité prolongée','success');
+  updateSaveIndicator('modified'); autoSave(); render();
+}
+
+// Point représentatif d'une entité à l'intérieur d'un rectangle : sert de "clic" de substitution
+// pour prolonger via _dispatchExtend() plusieurs entités sélectionnées par une fenêtre
+// (EXTEND en rectangle). Même principe que trimBoxClickPoint().
+function extendBoxClickPoint(e, minX, minY, maxX, maxY) {
+  const cx=(minX+maxX)/2, cy=(minY+maxY)/2;
+  let best=null, bestD=Infinity;
+  for(const p of getCutterPrimitives(e)){
+    for(const seg of cutterSampleSegs(p)){
+      const clip=segClipToRect(seg[0],seg[1],seg[2],seg[3], minX,minY,maxX,maxY);
+      if(!clip) continue;
+      const tm=(clip[0]+clip[1])/2;
+      const px=seg[0]+(seg[2]-seg[0])*tm, py=seg[1]+(seg[3]-seg[1])*tm;
+      const d=(px-cx)*(px-cx)+(py-cy)*(py-cy);
+      if(d<bestD){ bestD=d; best=[px,py]; }
+    }
+  }
+  return best;
+}
+
+// EXTEND par rectangle : prolonge en une fois toutes les entités visibles qui croisent la fenêtre
+// (minX,minY,maxX,maxY), en gardant le fonctionnement clic-à-clic existant comme alternative.
+function applyExtendBox(minX, minY, maxX, maxY, boundaryIds) {
+  const candidates=S.entities.filter(e=>
+    S.layers[e.layer]?.visible && EXTEND_SUPPORTED_TYPES.includes(e.type) &&
+    entityInRect(e, minX, minY, maxX, maxY, false)
+  );
+  if(!candidates.length){ termPrint('EXTEND: aucune entité à prolonger dans la sélection','warning'); return; }
+  pushUndo();
+  let count=0;
+  for(const ent of candidates){
+    let allPrims;
+    if(boundaryIds.length===0){
+      allPrims=S.entities.filter(e2=>e2.id!==ent.id && S.layers[e2.layer]?.visible).flatMap(e2=>getCutterPrimitives(e2));
+    } else {
+      allPrims=boundaryIds.filter(id=>id!==ent.id).flatMap(id=>{ const e2=S.entities.find(en=>en.id===id); return e2?getCutterPrimitives(e2):[]; });
+    }
+    if(!allPrims.length) continue;
+    const pt=extendBoxClickPoint(ent, minX, minY, maxX, maxY);
+    if(!pt) continue;
+    if(_dispatchExtend(ent, allPrims, pt[0], pt[1])) count++;
+  }
+  if(!count){ S.history.pop(); termPrint('EXTEND: aucune intersection trouvée dans la sélection','warning'); return; }
+  termPrint('EXTEND — '+count+' entité(s) prolongée(s)','success');
   updateSaveIndicator('modified'); autoSave(); render();
 }
 
