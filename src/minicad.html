@@ -3215,9 +3215,23 @@ function findOsnap(wx, wy) {
   }
 
   // Optim 4 — cache des segments : getEntitySegments() appelé une seule fois par entité
+  // XLINE/RAY : getEntitySegments() les ignore volontairement (partagée avec drawingBBox()
+  // et l'impression, où un segment de 1e6 unités ferait exploser le cadrage). On les
+  // matérialise donc seulement ici, en local, comme le fait getCutterPrimitives() pour TRIM.
   const _segCache = new Map();
   const segsOf = e => {
-    if (!_segCache.has(e)) _segCache.set(e, getEntitySegments(e));
+    if (!_segCache.has(e)) {
+      let segs;
+      if (e.type === 'xline' || e.type === 'ray') {
+        const BIG = 1e6;
+        const bx = e.type === 'xline' ? e.x - e.dx * BIG : e.x;
+        const by = e.type === 'xline' ? e.y - e.dy * BIG : e.y;
+        segs = [[bx, by, e.x + e.dx * BIG, e.y + e.dy * BIG]];
+      } else {
+        segs = getEntitySegments(e);
+      }
+      _segCache.set(e, segs);
+    }
     return _segCache.get(e);
   };
 
@@ -3386,6 +3400,11 @@ function findOsnap(wx, wy) {
           if (pm) check(pm[0], pm[1], 'nearest', e);
         });
       }
+      if (e.type === 'xline' || e.type === 'ray') {
+        let t = (wx - e.x) * e.dx + (wy - e.y) * e.dy;
+        if (e.type === 'ray' && t < 0) t = 0;
+        check(e.x + t * e.dx, e.y + t * e.dy, 'nearest', e);
+      }
     }
 
     // QUADRANT (4 points cardinaux d'un cercle ou arc)
@@ -3520,6 +3539,10 @@ function findOsnap(wx, wy) {
           const pm = projectOnLine(base[0], base[1], wx1m, wy1m, wx2m, wy2m);
           if (pm) check(pm[0], pm[1], 'perpendicular', e);
         });
+      }
+      if (e.type === 'xline' || e.type === 'ray') {
+        const t = (base[0] - e.x) * e.dx + (base[1] - e.y) * e.dy;
+        if (!(e.type === 'ray' && t < 0)) check(e.x + t * e.dx, e.y + t * e.dy, 'perpendicular', e);
       }
     }
 
