@@ -18354,8 +18354,12 @@ function updateCmdComplete() {
   const v = cmdInput.value;
   // Aucune complétion tant qu'une commande / un outil est en cours : pendant
   // FILLET, TRIM, OFFSET… le terminal sert à ses propres options (R, D, EC…),
-  // pas à lancer une autre commande.
-  if (S.tool !== 'select' || S.drawing || S.awaitingInput || !/^[A-Za-z_]{1,}$/.test(v)) { hideCmdComplete(); return; }
+  // pas à lancer une autre commande. getCursorMode()==='pick' couvre aussi les
+  // commandes qui attendent une sélection tout en restant sur S.tool==='select'
+  // (COPIER, DEPLACER, ROTATE, SCALE…) — sinon Entrée validait la suggestion
+  // affichée (ex: PAN, alphabétiquement avant PREVIOUS) au lieu du mot-clé tapé
+  // comme "P" pour Previous.
+  if (S.tool !== 'select' || S.drawing || S.awaitingInput || getCursorMode()==='pick' || !/^[A-Za-z_]{1,}$/.test(v)) { hideCmdComplete(); return; }
   const q = v.toUpperCase();
   const matches = _ccAllCommands()
     .map(e => ({ e, s: _ccScore(e, q) }))
