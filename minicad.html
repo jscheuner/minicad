@@ -10680,6 +10680,30 @@ canvas.addEventListener('mousedown', (ev) => {
     return;
   }
 
+  // TRIM step 2 : clic sur entité → coupe immédiatement (comportement existant, via handleClick
+  // plus bas) ; clic dans le vide → rubber band pour couper plusieurs entités en une fois.
+  if (ev.button === 0 && S.tool === 'trim' && S.trimStep === 2) {
+    S._selectHitOnMousedown = false;
+    if (isRubberBand) {
+      // 2ème clic → finalise le rubber band : coupe toutes les entités croisées par la fenêtre
+      isRubberBand = false;
+      const minX = Math.min(rbStart.wx, wx), maxX = Math.max(rbStart.wx, wx);
+      const minY = Math.min(rbStart.wy, wy), maxY = Math.max(rbStart.wy, wy);
+      rbStart = null; rbEnd = null;
+      applyTrimBox(minX, minY, maxX, maxY, S.trimCuttingIds);
+      setTimeout(smartFocus, 0);
+      return;
+    }
+    if (hitTest(wx, wy)) {
+      S._selectHitOnMousedown = true;
+      // Entité touchée → laisse tomber vers handleClick plus bas (clic unique inchangé)
+    } else {
+      // Clic dans le vide → rubber band démarré au mouseup
+      setTimeout(smartFocus, 0);
+      return;
+    }
+  }
+
   const rawWx = wx, rawWy = wy;
   [wx, wy] = resolvePoint(wx, wy);
   handleClick(wx, wy, ev, rawWx, rawWy);
@@ -10783,6 +10807,21 @@ canvas.addEventListener('mouseup', (ev) => {
 
   // JOIN mouseup : démarrer rubber band si clic dans le vide
   if (ev.button === 0 && S.tool === 'join') {
+    if (!S._selectHitOnMousedown && !isRubberBand) {
+      const rect = canvas.getBoundingClientRect();
+      const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
+      const [wx, wy] = s2w(sx, sy);
+      isRubberBand = true;
+      rbStart = { sx, sy, wx, wy };
+      rbEnd   = { sx, sy, wx, wy };
+      render();
+    }
+    setTimeout(smartFocus, 0);
+    return;
+  }
+
+  // TRIM step 2 mouseup : démarrer le rubber band si le mousedown a cliqué dans le vide
+  if (ev.button === 0 && S.tool === 'trim' && S.trimStep === 2) {
     if (!S._selectHitOnMousedown && !isRubberBand) {
       const rect = canvas.getBoundingClientRect();
       const sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
@@ -12986,22 +13025,75 @@ function applyTrimXline(ent, prims, clickWx, clickWy) {
   return false;
 }
 
+const TRIM_SUPPORTED_TYPES=['line','wall','arc','circle','polyline','cable','rect','ellipse','xline','ray'];
+
+function _dispatchTrim(ent, prims, clickWx, clickWy) {
+  if(ent.type==='xline'||ent.type==='ray')           return applyTrimXline(ent,prims,clickWx,clickWy);
+  if(ent.type==='line'||ent.type==='wall')           return applyTrimLine(ent,prims,clickWx,clickWy);
+  if(ent.type==='arc')                                return applyTrimArc(ent,prims,clickWx,clickWy);
+  if(ent.type==='circle')                             return applyTrimCircle(ent,prims,clickWx,clickWy);
+  if(ent.type==='ellipse')                            return applyTrimEllipse(ent,prims,clickWx,clickWy);
+  if(ent.type==='rect')                               return applyTrimRect(ent,prims,clickWx,clickWy);
+  if(ent.type==='polyline'||ent.type==='cable')       return applyTrimPolyline(ent,prims,clickWx,clickWy);
+  return false;
+}
+
 function applyTrim(trimmedId, prims, clickWx, clickWy) {
   const ent=S.entities.find(e=>e.id===trimmedId);
   if(!ent) return;
-  const supported=['line','wall','arc','circle','polyline','cable','rect','ellipse','xline','ray'];
-  if(!supported.includes(ent.type)){ termPrint('TRIM: non supporté pour '+ent.type,'warning'); return; }
+  if(!TRIM_SUPPORTED_TYPES.includes(ent.type)){ termPrint('TRIM: non supporté pour '+ent.type,'warning'); return; }
   pushUndo();
-  let ok=false;
-  if(ent.type==='xline'||ent.type==='ray')           ok=applyTrimXline(ent,prims,clickWx,clickWy);
-  else if(ent.type==='line'||ent.type==='wall')      ok=applyTrimLine(ent,prims,clickWx,clickWy);
-  else if(ent.type==='arc')                           ok=applyTrimArc(ent,prims,clickWx,clickWy);
-  else if(ent.type==='circle')                        ok=applyTrimCircle(ent,prims,clickWx,clickWy);
-  else if(ent.type==='ellipse')                       ok=applyTrimEllipse(ent,prims,clickWx,clickWy);
-  else if(ent.type==='rect')                          ok=applyTrimRect(ent,prims,clickWx,clickWy);
-  else if(ent.type==='polyline'||ent.type==='cable')  ok=applyTrimPolyline(ent,prims,clickWx,clickWy);
+  const ok=_dispatchTrim(ent,prims,clickWx,clickWy);
   if(!ok){ S.history.pop(); termPrint('TRIM: aucune intersection trouvée','warning'); return; }
   termPrint('TRIM — segment supprimé','success');
+  updateSaveIndicator('modified'); autoSave(); render();
+}
+
+// Point représentatif d'une entité à l'intérieur d'un rectangle : sert de "clic" de substitution
+// pour couper via _dispatchTrim() plusieurs entités sélectionnées par une fenêtre (TRIM en rectangle).
+// Réutilise getCutterPrimitives() (déjà utilisé pour représenter les limites de coupe) et
+// cutterSampleSegs() (déjà utilisé pour approximer cercles/arcs/ellipses en segments) afin de
+// traiter tous les types supportés de façon uniforme, sans dupliquer la géométrie par type.
+function trimBoxClickPoint(e, minX, minY, maxX, maxY) {
+  const cx=(minX+maxX)/2, cy=(minY+maxY)/2;
+  let best=null, bestD=Infinity;
+  for(const p of getCutterPrimitives(e)){
+    for(const seg of cutterSampleSegs(p)){
+      const clip=segClipToRect(seg[0],seg[1],seg[2],seg[3], minX,minY,maxX,maxY);
+      if(!clip) continue;
+      const tm=(clip[0]+clip[1])/2;
+      const px=seg[0]+(seg[2]-seg[0])*tm, py=seg[1]+(seg[3]-seg[1])*tm;
+      const d=(px-cx)*(px-cx)+(py-cy)*(py-cy);
+      if(d<bestD){ bestD=d; best=[px,py]; }
+    }
+  }
+  return best;
+}
+
+// TRIM par rectangle : coupe en une fois toutes les entités visibles qui croisent la fenêtre
+// (minX,minY,maxX,maxY), en gardant le fonctionnement clic-à-clic existant comme alternative.
+function applyTrimBox(minX, minY, maxX, maxY, cuttingIds) {
+  const candidates=S.entities.filter(e=>
+    S.layers[e.layer]?.visible && TRIM_SUPPORTED_TYPES.includes(e.type) &&
+    entityInRect(e, minX, minY, maxX, maxY, false)
+  );
+  if(!candidates.length){ termPrint('TRIM: aucune entité à couper dans la sélection','warning'); return; }
+  pushUndo();
+  let count=0;
+  for(const ent of candidates){
+    let allPrims;
+    if(cuttingIds.length===0){
+      allPrims=S.entities.filter(e2=>e2.id!==ent.id && S.layers[e2.layer]?.visible).flatMap(e2=>getCutterPrimitives(e2));
+    } else {
+      allPrims=cuttingIds.filter(id=>id!==ent.id).flatMap(id=>{ const e2=S.entities.find(en=>en.id===id); return e2?getCutterPrimitives(e2):[]; });
+    }
+    if(!allPrims.length) continue;
+    const pt=trimBoxClickPoint(ent, minX, minY, maxX, maxY);
+    if(!pt) continue;
+    if(_dispatchTrim(ent, allPrims, pt[0], pt[1])) count++;
+  }
+  if(!count){ S.history.pop(); termPrint('TRIM: aucune intersection trouvée dans la sélection','warning'); return; }
+  termPrint('TRIM — '+count+' entité(s) coupée(s)','success');
   updateSaveIndicator('modified'); autoSave(); render();
 }
 
@@ -14194,6 +14286,21 @@ function segIntersectsRect(x1,y1,x2,y2, rx1,ry1,rx2,ry2){
     if(tMin>tMax+1e-10)return false;
   }
   return true;
+}
+
+// Même clipping de Liang-Barsky que segIntersectsRect, mais renvoie l'intervalle [tMin,tMax]
+// de la portion du segment contenue dans le rectangle (ou null) — utilisé pour trouver un
+// point représentatif à l'intérieur d'une fenêtre de sélection (TRIM par rectangle).
+function segClipToRect(x1,y1,x2,y2, rx1,ry1,rx2,ry2){
+  const dx=x2-x1,dy=y2-y1;
+  let tMin=0,tMax=1;
+  for(const[p,q] of[[-dx,x1-rx1],[dx,rx2-x1],[-dy,y1-ry1],[dy,ry2-y1]]){
+    if(Math.abs(p)<1e-10){if(q<0)return null;continue;}
+    const t=q/p;
+    if(p<0){if(t>tMin)tMin=t;}else{if(t<tMax)tMax=t;}
+    if(tMin>tMax+1e-10)return null;
+  }
+  return [tMin,tMax];
 }
 
 function entityInRect(e, minX, minY, maxX, maxY, windowMode) {
