@@ -412,6 +412,95 @@
   .tool-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; }
   .tool-btn.text-btn { width: auto; padding: 0 6px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
 
+  /* === RUBAN (façon AutoCAD) — alternative aux barres d'outils Standard === */
+  .ribbon-bar {
+    display: none;
+    flex-direction: column;
+    background: var(--bg-panel);
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
+    flex-shrink: 0;
+  }
+  body.ribbon-mode .dock-area { display: none; }
+  body.ribbon-mode .ribbon-bar { display: flex; }
+
+  .ribbon-tabs {
+    display: flex; gap: 2px;
+    padding: 0 8px;
+  }
+  .ribbon-tab {
+    font-size: 11px;
+    padding: 6px 14px;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+  .ribbon-tab:hover { color: var(--text-bright); }
+  .ribbon-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .ribbon-panels { position: relative; }
+  .ribbon-tabpage {
+    display: none;
+    align-items: stretch;
+    gap: 4px;
+    padding: 4px 8px 2px;
+    overflow-x: auto;
+  }
+  .ribbon-tabpage.active { display: flex; }
+
+  .ribbon-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 3px 5px 2px;
+  }
+  .ribbon-panel-buttons {
+    display: flex; align-items: flex-start; gap: 2px;
+    height: 76px;
+  }
+  .rb-col { display: flex; flex-direction: column; gap: 2px; }
+  .ribbon-panel-title {
+    font-size: 9px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-top: 4px;
+    white-space: nowrap;
+  }
+  .ribbon-sep {
+    width: 1px; align-self: stretch; margin: 2px 3px;
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
+    flex-shrink: 0;
+  }
+
+  .tool-btn.rb-btn .rb-label {
+    font-family: 'IBM Plex Sans', sans-serif;
+    line-height: 1.1;
+  }
+  /* Grand bouton : icône 26px + libellé dessous, occupe les 3 rangées */
+  .tool-btn.rb-big {
+    width: 62px; height: 76px;
+    flex-direction: column; justify-content: center; gap: 4px;
+    padding: 2px;
+  }
+  .tool-btn.rb-big svg { width: 26px; height: 26px; }
+  .tool-btn.rb-big .rb-label {
+    font-size: 9px; text-align: center; white-space: normal; max-width: 58px;
+  }
+  /* Bouton moyen : icône + libellé à droite, 1 rangée sur 3 */
+  .tool-btn.rb-med {
+    width: auto; height: 24px;
+    justify-content: flex-start; gap: 5px;
+    padding: 0 8px 0 4px;
+  }
+  .tool-btn.rb-med svg { flex-shrink: 0; }
+  .tool-btn.rb-med .rb-label { font-size: 10px; white-space: nowrap; }
+  /* Petit bouton : icône seule (info-bulle), 1 rangée sur 3 */
+  .tool-btn.rb-small { width: 26px; height: 24px; }
+
   .main-area { flex: 1; display: flex; overflow: hidden; }
 
   .side-panel {
@@ -1545,6 +1634,13 @@
       <div class="menu-dropdown-list" id="menu-lib-list"></div>
     </div>
     <div class="menu-item" onclick="showHelp()" data-i18n="menu.help">{{menu.help}}</div>
+    <div class="tb-sep"></div>
+    <button class="tool-btn" title="Annuler (Ctrl+Z)" onclick="CMD.UNDO.exec()">
+      <svg viewBox="0 0 24 24"><path d="M4 10h11a5 5 0 010 10H9M4 10l4-4M4 10l4 4"/></svg>
+    </button>
+    <button class="tool-btn" title="Refaire (Ctrl+Y)" onclick="CMD.REDO.exec()">
+      <svg viewBox="0 0 24 24"><path d="M20 10H9a5 5 0 000 10h6M20 10l-4-4M20 10l-4 4"/></svg>
+    </button>
   </div>
   <div class="topbar-right">
     <span id="save-indicator" style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.5px;cursor:default;opacity:0.5;" title="{{tool.save_state}}" data-i18n-title="tool.save_state">● NOUVEAU</span>
@@ -2069,6 +2165,418 @@
   </div>
   -->
 
+</div>
+
+<!-- RUBAN (façon AutoCAD) — alternative aux barres Standard, activée via Préférences -->
+<div class="ribbon-bar" id="ribbon-bar">
+  <div class="ribbon-tabs">
+    <div class="ribbon-tab active" data-rbtab="home" onclick="showRibbonTab('home')" data-i18n="ribbon.tab.home">{{ribbon.tab.home}}</div>
+    <div class="ribbon-tab" data-rbtab="annotate" onclick="showRibbonTab('annotate')" data-i18n="ribbon.tab.annotate">{{ribbon.tab.annotate}}</div>
+    <div class="ribbon-tab" data-rbtab="view" onclick="showRibbonTab('view')" data-i18n="ribbon.tab.view">{{ribbon.tab.view}}</div>
+  </div>
+  <div class="ribbon-panels">
+
+    <!-- Onglet Accueil -->
+    <div class="ribbon-tabpage active" data-rbpage="home">
+
+      <div class="ribbon-panel">
+        <div class="ribbon-panel-buttons">
+          <button class="tool-btn rb-btn rb-big" data-tool="line" title="{{tool.line}}" data-i18n-title="tool.line" onclick="setTool('line')">
+            <svg viewBox="0 0 24 24"><line x1="5" y1="19" x2="19" y2="5"/></svg>
+            <span class="rb-label" data-i18n="ribbon.btn.line">{{ribbon.btn.line}}</span>
+          </button>
+          <button class="tool-btn rb-btn rb-big" data-tool="polyline" title="{{tool.polyline}}" data-i18n-title="tool.polyline" onclick="setTool('polyline')">
+            <svg viewBox="0 0 24 24"><polyline points="4,18 8,8 14,14 20,4"/></svg>
+            <span class="rb-label" data-i18n="ribbon.btn.polyline">{{ribbon.btn.polyline}}</span>
+          </button>
+          <button class="tool-btn rb-btn rb-big" data-tool="circle" title="{{tool.circle}}" data-i18n-title="tool.circle" onclick="setTool('circle')">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg>
+            <span class="rb-label" data-i18n="ribbon.btn.circle">{{ribbon.btn.circle}}</span>
+          </button>
+          <button class="tool-btn rb-btn rb-big" data-tool="rect" title="{{tool.rect}}" data-i18n-title="tool.rect" onclick="setTool('rect')">
+            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/></svg>
+            <span class="rb-label" data-i18n="ribbon.btn.rect">{{ribbon.btn.rect}}</span>
+          </button>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-small" data-tool="arc" title="{{tool.arc}}" data-i18n-title="tool.arc" onclick="setTool('arc')">
+              <svg viewBox="0 0 24 24"><path d="M5 19 A 10 10 0 0 1 19 5"/></svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" data-tool="rectcenter" title="{{tool.rectcenter}}" data-i18n-title="tool.rectcenter" onclick="setTool('rectcenter')">
+              <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/><line x1="12" y1="9" x2="12" y2="15"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" data-tool="polygon" title="{{tool.polygon}}" data-i18n-title="tool.polygon" onclick="executeCommand('POLYGON')">
+              <svg viewBox="0 0 24 24"><polygon points="12,3 20.5,8.5 20.5,15.5 12,21 3.5,15.5 3.5,8.5"/></svg>
+            </button>
+          </div>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-small" data-tool="ellipse" title="{{tool.ellipse}}" data-i18n-title="tool.ellipse" onclick="executeCommand('ELLIPSE')">
+              <svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="6"/></svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" data-tool="spline" title="Spline (SPL)" onclick="setTool('spline');termPrint('SPLINE: Cliquez les points de passage — C=Clore  Echap=Finir','info')">
+              <svg viewBox="0 0 24 24"><path d="M4,18 C6,18 7,8 10,8 S16,14 20,4" fill="none"/></svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" data-tool="hatch" title="{{tool.hatch}}" data-i18n-title="tool.hatch" onclick="executeCommand('HATCH')">
+              <svg viewBox="0 0 24 24">
+                <rect x="3" y="3" width="18" height="18" rx="1"/>
+                <line x1="3" y1="9"  x2="9"  y2="3"/>
+                <line x1="3" y1="15" x2="15" y2="3"/>
+                <line x1="3" y1="21" x2="21" y2="3"/>
+                <line x1="9" y1="21" x2="21" y2="9"/>
+                <line x1="15" y1="21" x2="21" y2="15"/>
+              </svg>
+            </button>
+          </div>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-small" data-tool="xline" title="{{tool.xline}}" data-i18n-title="tool.xline" onclick="executeCommand('XLINE')">
+              <svg viewBox="0 0 24 24" fill="none">
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <polyline points="5,9 2,12 5,15"/>
+                <polyline points="19,9 22,12 19,15"/>
+                <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+              </svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" data-tool="ray" title="Demi-droite (RAY)" onclick="executeCommand('RAY')">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="4" cy="12" r="2" fill="currentColor"/>
+                <line x1="4" y1="12" x2="22" y2="12"/>
+                <polyline points="19,9 22,12 19,15"/>
+              </svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" data-tool="point" title="Point (PT)" onclick="executeCommand('POINT')">
+              <svg viewBox="0 0 24 24">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="ribbon-panel-title" data-i18n="ribbon.panel.draw">{{ribbon.panel.draw}}</div>
+      </div>
+      <div class="ribbon-sep"></div>
+
+      <div class="ribbon-panel">
+        <div class="ribbon-panel-buttons">
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-med" data-tool="move_obj" title="{{tool.move}}" data-i18n-title="tool.move" onclick="executeCommand('MOVE')">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 4v16M4 12h16"/>
+                <path d="M12 4l-2 3M12 4l2 3M12 20l-2-3M12 20l2-3M4 12l3-2M4 12l3 2M20 12l-3-2M20 12l-3 2"/>
+              </svg>
+              <span class="rb-label" data-i18n="ribbon.btn.move">{{ribbon.btn.move}}</span>
+            </button>
+            <button class="tool-btn rb-btn rb-med" title="{{tool.copy}}" data-i18n-title="tool.copy" onclick="executeCommand('COPY')">
+              <svg viewBox="0 0 24 24">
+                <rect x="9" y="9" width="11" height="11" rx="1"/>
+                <path d="M15 9V6a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/>
+              </svg>
+              <span class="rb-label" data-i18n="ribbon.btn.copy">{{ribbon.btn.copy}}</span>
+            </button>
+            <button class="tool-btn rb-btn rb-med" data-tool="rotate" title="{{tool.rotate}}" data-i18n-title="tool.rotate" onclick="executeCommand('ROTATE')">
+              <svg viewBox="0 0 24 24">
+                <path d="M20 8A9 9 0 1 0 21 13" fill="none"/>
+                <path d="M20 3v5h-5" fill="none"/>
+              </svg>
+              <span class="rb-label" data-i18n="ribbon.btn.rotate">{{ribbon.btn.rotate}}</span>
+            </button>
+          </div>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-med" data-tool="mirror" title="{{tool.mirror}}" data-i18n-title="tool.mirror" onclick="executeCommand('MIRROR')">
+              <svg viewBox="0 0 24 24">
+                <line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="3,2"/>
+                <path d="M2 8l7 4-7 4z" fill="currentColor" fill-opacity="0.3"/>
+                <path d="M2 8l7 4-7 4z"/>
+                <path d="M22 8l-7 4 7 4z" fill="currentColor" fill-opacity="0.15"/>
+                <path d="M22 8l-7 4 7 4z"/>
+              </svg>
+              <span class="rb-label" data-i18n="ribbon.btn.mirror">{{ribbon.btn.mirror}}</span>
+            </button>
+            <button class="tool-btn rb-btn rb-med" data-tool="scale" title="{{tool.scale}}" data-i18n-title="tool.scale" onclick="executeCommand('SCALE')">
+              <svg viewBox="0 0 24 24">
+                <path d="M3 21l6-6M21 3l-6 6" fill="none"/>
+                <path d="M21 3h-5M21 3v5" fill="none"/>
+                <path d="M3 21h5M3 21v-5" fill="none"/>
+              </svg>
+              <span class="rb-label" data-i18n="ribbon.btn.scale">{{ribbon.btn.scale}}</span>
+            </button>
+            <button class="tool-btn rb-btn rb-med" data-tool="trim" title="{{tool.trim}}" data-i18n-title="tool.trim" onclick="executeCommand('TRIM')">
+              <svg viewBox="0 0 24 24">
+                <line x1="2" y1="12" x2="11" y2="12"/>
+                <line x1="13" y1="12" x2="22" y2="12" stroke-dasharray="2,2" opacity="0.35"/>
+                <line x1="12" y1="2" x2="12" y2="22"/>
+                <line x1="9" y1="9" x2="12" y2="12"/>
+                <line x1="9" y1="15" x2="12" y2="12"/>
+              </svg>
+              <span class="rb-label" data-i18n="ribbon.btn.trim">{{ribbon.btn.trim}}</span>
+            </button>
+          </div>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-small" data-tool="select" title="{{tool.select}}" data-i18n-title="tool.select" onclick="setTool('select')">
+              <svg viewBox="0 0 24 24"><path d="M5 3l14 9-7 1-4 7z" fill="currentColor" fill-opacity="0.25"/><path d="M5 3l14 9-7 1-4 7z"/></svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" data-tool="offset" title="{{tool.offset}}" data-i18n-title="tool.offset" onclick="executeCommand('OFFSET')">
+              <svg viewBox="0 0 24 24">
+                <path d="M3 7 Q12 3 21 7"/>
+                <path d="M3 13 Q12 9 21 13"/>
+                <path d="M3 19 Q12 15 21 19"/>
+                <line x1="12" y1="7" x2="12" y2="13" stroke-dasharray="2,2"/>
+              </svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" data-tool="extend" title="{{tool.extend}}" data-i18n-title="tool.extend" onclick="executeCommand('EXTEND')">
+              <svg viewBox="0 0 24 24">
+                <line x1="2" y1="12" x2="9" y2="12" stroke-dasharray="2,2" opacity="0.45"/>
+                <line x1="9" y1="12" x2="20" y2="12"/>
+                <line x1="17" y1="9" x2="20" y2="12"/>
+                <line x1="17" y1="15" x2="20" y2="12"/>
+                <line x1="20" y1="2" x2="20" y2="22"/>
+              </svg>
+            </button>
+          </div>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-small" data-tool="fillet" title="{{tool.fillet}}" data-i18n-title="tool.fillet" onclick="executeCommand('FILLET')">
+              <svg viewBox="0 0 24 24">
+                <line x1="4" y1="3" x2="4" y2="15"/>
+                <path d="M4,15 A9,9 0 0,0 13,22" fill="none"/>
+                <line x1="13" y1="22" x2="22" y2="22"/>
+                <line x1="4" y1="22" x2="4" y2="15" stroke-dasharray="2,2" opacity="0.35"/>
+                <line x1="4" y1="22" x2="13" y2="22" stroke-dasharray="2,2" opacity="0.35"/>
+              </svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" data-tool="chamfer" title="{{tool.chamfer}}" data-i18n-title="tool.chamfer" onclick="executeCommand('CHAMFER')">
+              <svg viewBox="0 0 24 24">
+                <line x1="4" y1="3" x2="4" y2="14"/>
+                <line x1="4" y1="14" x2="15" y2="22" stroke-width="1.8"/>
+                <line x1="15" y1="22" x2="22" y2="22"/>
+                <line x1="4" y1="22" x2="4" y2="14" stroke-dasharray="2,2" opacity="0.35"/>
+                <line x1="4" y1="22" x2="15" y2="22" stroke-dasharray="2,2" opacity="0.35"/>
+              </svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" data-tool="stretch" title="{{tool.stretch}}" data-i18n-title="tool.stretch" onclick="executeCommand('STRETCH')">
+              <svg viewBox="0 0 24 24">
+                <path d="M3 12h18" fill="none"/>
+                <path d="M17 8l4 4-4 4" fill="none"/>
+                <path d="M7 8L3 12l4 4" fill="none"/>
+                <path d="M12 5v4M12 15v4" fill="none" stroke-width="1.2"/>
+              </svg>
+            </button>
+          </div>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-small" data-tool="join" title="{{tool.join}}" data-i18n-title="tool.join" onclick="executeCommand('JOIN')">
+              <svg viewBox="0 0 24 24">
+                <line x1="2" y1="18" x2="9" y2="12"/>
+                <line x1="9" y1="12" x2="16" y2="6"/>
+                <line x1="15" y1="18" x2="22" y2="12"/>
+                <circle cx="9" cy="12" r="2" fill="currentColor" fill-opacity="0.4"/>
+                <path d="M14,9 Q16,6 15,18" fill="none" stroke-dasharray="2,2"/>
+              </svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" title="{{tool.array}}" data-i18n-title="tool.array" onclick="executeCommand('ARRAY')">
+              <svg viewBox="0 0 24 24">
+                <rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9.5" y="2" width="5" height="5" rx="1"/><rect x="17" y="2" width="5" height="5" rx="1"/>
+                <rect x="2" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><rect x="17" y="9.5" width="5" height="5" rx="1"/>
+                <rect x="2" y="17" width="5" height="5" rx="1"/><rect x="9.5" y="17" width="5" height="5" rx="1"/><rect x="17" y="17" width="5" height="5" rx="1"/>
+              </svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" title="{{tool.array_polar}}" data-i18n-title="tool.array_polar" onclick="executeCommand('ARRAY_POLAR')">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="7" fill="none" stroke-dasharray="2,2" opacity="0.45"/>
+                <circle cx="12" cy="5" r="1.8"/><circle cx="18.1" cy="8.5" r="1.8"/><circle cx="18.1" cy="15.5" r="1.8"/>
+                <circle cx="12" cy="19" r="1.8"/><circle cx="5.9" cy="15.5" r="1.8"/><circle cx="5.9" cy="8.5" r="1.8"/>
+                <circle cx="12" cy="12" r="1.2" opacity="0.5"/>
+              </svg>
+            </button>
+          </div>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-small" title="{{tool.explode_btn}}" data-i18n-title="tool.explode_btn" onclick="executeCommand('EXPLODE')">
+              <svg viewBox="0 0 24 24">
+                <rect x="8" y="8" width="8" height="8" rx="1"/>
+                <line x1="12" y1="8" x2="12" y2="2"/><polygon points="10,4 14,4 12,1" fill="currentColor"/>
+                <line x1="16" y1="12" x2="22" y2="12"/><polygon points="20,10 20,14 23,12" fill="currentColor"/>
+                <line x1="12" y1="16" x2="12" y2="22"/><polygon points="10,20 14,20 12,23" fill="currentColor"/>
+                <line x1="8" y1="12" x2="2" y2="12"/><polygon points="4,10 4,14 1,12" fill="currentColor"/>
+              </svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" title="Supprimer (Del)" onclick="CMD.ERASE.exec()">
+              <svg viewBox="0 0 24 24">
+                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                <path d="M10 11v5M14 11v5"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="ribbon-panel-title" data-i18n="ribbon.panel.modify">{{ribbon.panel.modify}}</div>
+      </div>
+      <div class="ribbon-sep"></div>
+
+      <div class="ribbon-panel">
+        <div class="ribbon-panel-buttons">
+          <button class="tool-btn rb-btn rb-big" title="{{tool.insert_block}}" data-i18n-title="tool.insert_block" onclick="executeCommand('INSERT')">
+            <svg viewBox="0 0 24 24">
+              <rect x="9" y="9" width="10" height="10" rx="1" fill="none" stroke-dasharray="3,2" opacity="0.55"/>
+              <rect x="11" y="11" width="6" height="6" rx="1"/>
+              <line x1="1" y1="12" x2="7" y2="12"/><polygon points="5,10 5,14 8,12" fill="currentColor"/>
+            </svg>
+            <span class="rb-label" data-i18n="ribbon.btn.insert_block">{{ribbon.btn.insert_block}}</span>
+          </button>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-med" title="{{tool.block}}" data-i18n-title="tool.block" onclick="executeCommand('BLOCK')">
+              <svg viewBox="0 0 24 24">
+                <rect x="3.5" y="3.5" width="17" height="17" rx="2" fill="none" stroke-dasharray="3,2" opacity="0.55"/>
+                <rect x="7" y="7" width="10" height="10" rx="1"/>
+                <circle cx="7" cy="17" r="1.6" fill="currentColor" stroke="none"/>
+              </svg>
+              <span class="rb-label" data-i18n="ribbon.btn.block">{{ribbon.btn.block}}</span>
+            </button>
+            <button class="tool-btn rb-btn rb-med" title="{{tool.group}}" data-i18n-title="tool.group" onclick="executeCommand('GROUP')">
+              <svg viewBox="0 0 24 24">
+                <rect x="3.5" y="3.5" width="17" height="17" rx="2" fill="none" stroke-dasharray="3,2" opacity="0.55"/>
+                <rect x="6.5" y="6.5" width="6" height="6" rx="1"/>
+                <rect x="12.5" y="12" width="5" height="5" rx="1"/>
+              </svg>
+              <span class="rb-label" data-i18n="ribbon.btn.group">{{ribbon.btn.group}}</span>
+            </button>
+            <button class="tool-btn rb-btn rb-med" title="{{tool.ungroup}}" data-i18n-title="tool.ungroup" onclick="executeCommand('UNGROUP')">
+              <svg viewBox="0 0 24 24">
+                <rect x="1.5" y="4.5" width="9.5" height="9.5" rx="1.5" fill="none" stroke-dasharray="3,2" opacity="0.55"/>
+                <rect x="13" y="10" width="9.5" height="9.5" rx="1.5" fill="none" stroke-dasharray="3,2" opacity="0.55"/>
+                <rect x="3.8" y="6.8" width="4.8" height="4.8" rx="1"/>
+                <rect x="15.3" y="12.3" width="4.8" height="4.8" rx="1"/>
+              </svg>
+              <span class="rb-label" data-i18n="ribbon.btn.ungroup">{{ribbon.btn.ungroup}}</span>
+            </button>
+          </div>
+        </div>
+        <div class="ribbon-panel-title" data-i18n="ribbon.panel.blocks">{{ribbon.panel.blocks}}</div>
+      </div>
+      <div class="ribbon-sep"></div>
+
+      <div class="ribbon-panel">
+        <div class="ribbon-panel-buttons">
+          <button class="tool-btn rb-btn rb-big" data-tool="measure" title="{{tool.measure}}" data-i18n-title="tool.measure" onclick="setTool('measure')">
+            <svg viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="9" width="20" height="6" rx="1"/>
+              <line x1="6"  y1="9" x2="6"  y2="14"/>
+              <line x1="10" y1="9" x2="10" y2="12"/>
+              <line x1="14" y1="9" x2="14" y2="14"/>
+              <line x1="18" y1="9" x2="18" y2="12"/>
+            </svg>
+            <span class="rb-label" data-i18n="ribbon.btn.measure">{{ribbon.btn.measure}}</span>
+          </button>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-small" title="{{tool.calc}}" data-i18n-title="tool.calc" onclick="toggleCalc()">
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="4" y="2" width="16" height="20" rx="2"/>
+                <rect x="7" y="5" width="10" height="4" rx="1"/>
+                <circle cx="8"  cy="14" r="1.2"/><circle cx="12" cy="14" r="1.2"/><circle cx="16" cy="14" r="1.2"/>
+                <circle cx="8"  cy="18" r="1.2"/><circle cx="12" cy="18" r="1.2"/><circle cx="16" cy="18" r="1.2"/>
+              </svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" title="Copier les propriétés (MA)" onclick="executeCommand('MATCHPROP')">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M16 3l5 5-8.5 8.5-5-5L16 3z"/>
+                <line x1="9" y1="8.5" x2="15.5" y2="15"/>
+                <path d="M6.5 15.5c-1.7 0-2.8 1.3-2.8 3.1 0 .6-.5 1.1-1.7 1.3.9.9 2.3 1.4 3.6 1.4 2 0 3.4-1.4 3.4-3.3 0-1.6-1.1-2.5-2.5-3.5z" fill="currentColor" stroke="none"/>
+              </svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" title="Axes de cercle (DIMCENTER)" onclick="executeCommand('DIMCENTER')">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="6" fill="none"/>
+                <line x1="2" y1="12" x2="22" y2="12" stroke-dasharray="4,2"/>
+                <line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="4,2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="ribbon-panel-title" data-i18n="ribbon.panel.utilities">{{ribbon.panel.utilities}}</div>
+      </div>
+    </div>
+
+    <!-- Onglet Annotation -->
+    <div class="ribbon-tabpage" data-rbpage="annotate">
+
+      <div class="ribbon-panel">
+        <div class="ribbon-panel-buttons">
+          <button class="tool-btn rb-btn rb-big" title="{{tool.dim_linear}}" data-i18n-title="tool.dim_linear" onclick="executeCommand('LOAD dim');executeCommand('DIMLINEAR')">
+            <svg viewBox="0 0 24 24"><line x1="4" y1="18" x2="20" y2="18"/><line x1="4" y1="12" x2="4" y2="20"/><line x1="20" y1="12" x2="20" y2="20"/><path d="M6 18l-2-2M6 18l-2 2M18 18l2-2M18 18l2 2"/></svg>
+            <span class="rb-label" data-i18n="ribbon.btn.dim_linear">{{ribbon.btn.dim_linear}}</span>
+          </button>
+          <button class="tool-btn rb-btn rb-big" title="{{tool.dim_aligned}}" data-i18n-title="tool.dim_aligned" onclick="executeCommand('LOAD dim');executeCommand('DIMALIGNED')">
+            <svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="18" y2="6"/><line x1="2" y1="14" x2="8" y2="20"/><line x1="14" y1="2" x2="20" y2="8"/></svg>
+            <span class="rb-label" data-i18n="ribbon.btn.dim_aligned">{{ribbon.btn.dim_aligned}}</span>
+          </button>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-small" title="{{tool.dim_continue}}" data-i18n-title="tool.dim_continue" onclick="executeCommand('LOAD dim');executeCommand('DIMCONTINUE')">
+              <svg viewBox="0 0 24 24"><line x1="3" y1="18" x2="9" y2="18"/><line x1="11" y1="18" x2="17" y2="18"/><line x1="19" y1="18" x2="21" y2="18"/><line x1="3" y1="12" x2="3" y2="20"/><line x1="9" y1="12" x2="9" y2="20"/><line x1="17" y1="12" x2="17" y2="20"/></svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" title="{{tool.dim_baseline}}" data-i18n-title="tool.dim_baseline" onclick="executeCommand('LOAD dim');executeCommand('DIMBASELINE')">
+              <svg viewBox="0 0 24 24"><line x1="4" y1="4" x2="4" y2="20"/><line x1="4" y1="8" x2="10" y2="8"/><line x1="4" y1="13" x2="15" y2="13"/><line x1="4" y1="18" x2="20" y2="18"/><line x1="10" y1="6" x2="10" y2="10"/><line x1="15" y1="11" x2="15" y2="15"/><line x1="20" y1="16" x2="20" y2="20"/></svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" title="{{tool.dim_angular}}" data-i18n-title="tool.dim_angular" onclick="executeCommand('LOAD dim');executeCommand('DIMANGULAR')">
+              <svg viewBox="0 0 24 24"><path d="M4 20l16-4M4 20l4-16"/><path d="M10 11 A7 7 0 0 0 14 15"/></svg>
+            </button>
+          </div>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-small" title="{{tool.dim_radius}}" data-i18n-title="tool.dim_radius" onclick="executeCommand('LOAD dim');executeCommand('DIMRADIUS')">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><line x1="12" y1="12" x2="18" y2="8"/><text x="13" y="10" font-size="7" fill="currentColor" stroke="none">R</text></svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" title="{{tool.dim_diameter}}" data-i18n-title="tool.dim_diameter" onclick="executeCommand('LOAD dim');executeCommand('DIMDIAMETER')">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><line x1="5" y1="16" x2="19" y2="8"/><text x="10" y="11" font-size="7" fill="currentColor" stroke="none">Ø</text></svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" title="{{tool.dim_arc}}" data-i18n-title="tool.dim_arc" onclick="executeCommand('LOAD dim');executeCommand('DIMARC')">
+              <svg viewBox="0 0 24 24"><path d="M4 17 A 10 10 0 0 1 20 17"/><path d="M4 17l3.2 0.6M4 17l1.2-3M20 17l-3.2 0.6M20 17l-1.2-3"/><path d="M9 8 A 5 5 0 0 1 15 8" stroke-width="1.2"/></svg>
+            </button>
+          </div>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-small" title="{{tool.dimstyle}}" data-i18n-title="tool.dimstyle" onclick="executeCommand('DIMSTYLE')">
+              <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1" fill="none"/><line x1="6" y1="9" x2="18" y2="9"/><line x1="6" y1="14" x2="14" y2="14"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="ribbon-panel-title" data-i18n="ribbon.panel.dim">{{ribbon.panel.dim}}</div>
+      </div>
+      <div class="ribbon-sep"></div>
+
+      <div class="ribbon-panel">
+        <div class="ribbon-panel-buttons">
+          <button class="tool-btn rb-btn rb-big" data-tool="text_place" title="Texte (T)" onclick="executeCommand('TEXT')">
+            <svg viewBox="0 0 24 24" stroke="none"><text x="3" y="19" font-size="17" fill="currentColor" font-family="serif" font-style="italic">T</text></svg>
+            <span class="rb-label" data-i18n="ribbon.btn.text">{{ribbon.btn.text}}</span>
+          </button>
+          <button class="tool-btn rb-btn rb-big" data-tool="leader" title="{{tool.leader}}" data-i18n-title="tool.leader" onclick="executeCommand('LEADER')">
+            <svg viewBox="0 0 24 24">
+              <line x1="5" y1="19" x2="15" y2="9"/>
+              <polygon points="5,19 9,16 7,14" fill="currentColor"/>
+              <line x1="15" y1="9" x2="21" y2="9"/>
+              <line x1="15" y1="9" x2="21" y2="6"/>
+            </svg>
+            <span class="rb-label" data-i18n="ribbon.btn.leader">{{ribbon.btn.leader}}</span>
+          </button>
+        </div>
+        <div class="ribbon-panel-title" data-i18n="ribbon.panel.text">{{ribbon.panel.text}}</div>
+      </div>
+    </div>
+
+    <!-- Onglet Affichage -->
+    <div class="ribbon-tabpage" data-rbpage="view">
+      <div class="ribbon-panel">
+        <div class="ribbon-panel-buttons">
+          <button class="tool-btn rb-btn rb-big" title="{{tool.zoom_extents}}" data-i18n-title="tool.zoom_extents" onclick="zoomExtents()">
+            <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 4 L4 4 L4 10 M4 4 L10 10 M14 4 L20 4 L20 10 M20 4 L14 10 M4 14 L4 20 L10 20 M4 20 L10 14 M20 14 L20 20 L14 20 M20 20 L14 14"/></svg>
+            <span class="rb-label" data-i18n="ribbon.btn.zoom_extents">{{ribbon.btn.zoom_extents}}</span>
+          </button>
+          <button class="tool-btn rb-btn rb-big" data-tool="pan" title="Panoramique" onclick="setTool('pan')">
+            <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="3" fill="none"/></svg>
+            <span class="rb-label" data-i18n="ribbon.btn.pan">{{ribbon.btn.pan}}</span>
+          </button>
+          <button class="tool-btn rb-btn rb-big" title="{{tool.theme}}" data-i18n-title="tool.theme" onclick="executeCommand('THEME')">
+            <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.5-.05-1-.13-1.45A7 7 0 0 1 11.45 3.13C11 3.05 12.5 3 12 3z"/><circle cx="12" cy="12" r="9" fill="none"/></svg>
+            <span class="rb-label" data-i18n="ribbon.btn.theme">{{ribbon.btn.theme}}</span>
+          </button>
+        </div>
+        <div class="ribbon-panel-title" data-i18n="ribbon.panel.view">{{ribbon.panel.view}}</div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <!-- CONTEXT MENU for toolbars -->
@@ -2755,12 +3263,14 @@ const USER_PREFS = {
   sidePanelVisible: true,
   propsPanelWidth: 200,
   propsPanelVisible: true,
+  toolbarStyle: 'standard',
 };
 // ===USER_PREFS_END===
 
 // ===== STATE =====
 const S = {
   theme: 'light',
+  toolbarStyle: 'standard',
   pickboxPx: 6,    // demi-côté du carré de sélection (px écran)
   osnapTolPx: 15,  // portée d'accrochage OSNAP (px écran)
   entities: [],
@@ -19591,6 +20101,7 @@ function captureUserPrefs() {
     sidePanelVisible: !document.getElementById('side-panel')?.classList.contains('hidden'),
     propsPanelWidth: parseInt(document.getElementById('props-panel')?.style.width) || 200,
     propsPanelVisible: !document.getElementById('props-panel')?.classList.contains('hidden'),
+    toolbarStyle: S.toolbarStyle,
   };
 }
 
@@ -19626,6 +20137,7 @@ function applyUserPrefs(prefs) {
   if (prefs.currentDimStyle)            S.currentDimStyle = _migrateDimStyle(prefs.currentDimStyle);
   if (prefs.toolbarLayout !== undefined) S.toolbarLayout = prefs.toolbarLayout;
   if (prefs.loadedPlugins !== undefined) S.loadedPlugins = prefs.loadedPlugins;
+  if (prefs.toolbarStyle !== undefined) setToolbarStyle(prefs.toolbarStyle);
   if (prefs.terminalHeight) {
     const h = Math.max(58, Math.min(prefs.terminalHeight, 600));
     const el = document.getElementById('terminal');
@@ -19744,6 +20256,7 @@ function openPrefsDialog() {
     <div class="pf-body">
       ${sec(`{{prefs.appearance}}`)}
       ${row(`{{prefs.theme}}`, sel('theme', [{v:'dark',l:`{{prefs.theme_dark}}`},{v:'light',l:`{{prefs.theme_light}}`}], p.theme||'dark'))}
+      ${row(`{{prefs.toolbar_style}}`, sel('toolbarStyle', [{v:'standard',l:`{{prefs.toolbar_standard}}`},{v:'ribbon',l:`{{prefs.toolbar_ribbon}}`}], p.toolbarStyle||'standard'))}
 
       ${sec(`{{prefs.grid}}`)}
       ${row(`{{prefs.grid_visible}}`, chk('gridVis', p.gridVis))}
@@ -19801,6 +20314,7 @@ function openPrefsDialog() {
     const g = id => document.getElementById('pd-' + id);
     const prefs = {
       theme: g('theme').value,
+      toolbarStyle: g('toolbarStyle').value,
       snap: g('snap').checked,
       gridSize: parseFloat(g('gridSize').value) || 20,
       gridSizeY: parseFloat(g('gridSizeY').value) || parseFloat(g('gridSize').value) || 20,
@@ -20563,6 +21077,18 @@ function aciToHex(aci) {
 }
 
 // ===== TOOLBAR SYSTEM =====
+
+// --- Ruban (AutoCAD-style) ---
+function showRibbonTab(name) {
+  document.querySelectorAll('.ribbon-tab').forEach(t => t.classList.toggle('active', t.dataset.rbtab === name));
+  document.querySelectorAll('.ribbon-tabpage').forEach(p => p.classList.toggle('active', p.dataset.rbpage === name));
+}
+
+function setToolbarStyle(style) {
+  S.toolbarStyle = style === 'ribbon' ? 'ribbon' : 'standard';
+  document.body.classList.toggle('ribbon-mode', S.toolbarStyle === 'ribbon');
+}
+
 let _tbDrag = null; // { id, offsetX, offsetY, el }
 
 function startTBDrag(ev, id) {

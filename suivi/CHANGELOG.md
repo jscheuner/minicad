@@ -7,6 +7,24 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.1] — 2026-06-16 — Version courante
 
 ### Ajouté
+- **Barre d'outils Ruban façon AutoCAD (option Standard / Ruban)** — nouveau mode
+  d'interface au choix dans **Préférences → Apparence → Barre d'outils** : *Standard*
+  (barres classiques dockables, comportement inchangé, par défaut) ou *Ruban* (bandeau
+  à onglets **Accueil / Annotation / Affichage**, sans barre d'accès rapide séparée —
+  Ouvrir/Enregistrer/Imprimer restent dans le menu Fichier, Annuler/Refaire ont rejoint
+  la barre de menus juste après *Aide*, commune aux deux modes). Mise en page calquée sur AutoCAD :
+  panneaux séparés par des filets verticaux, titre centré en bas, et **trois tailles de
+  boutons** — *grand* (icône 26px + libellé, sur toute la hauteur) pour les outils
+  principaux, *moyen* (icône + libellé à droite) et *petit* (icône seule + info-bulle)
+  **groupés en colonnes de 3 rangées**, ce qui rend le ruban compact en largeur
+  (~870px pour l'onglet Accueil, sans défilement horizontal) et haut de 162px.
+  Le ruban réutilise exactement les mêmes commandes, `onclick` et icônes SVG que les
+  barres Standard (aucune duplication de logique métier) ; il n'est pas personnalisable
+  (pas de drag&drop). Les toggles SNAP/OSNAP/ORTHO/POLAR/Grille restent hors ruban (déjà
+  accessibles via la barre de statut et F3/F4/F8/F10). Nouvelles clés i18n `ribbon.*`
+  (onglets, panneaux et libellés courts des boutons, les `tool.*` complets — avec alias
+  entre parenthèses — restant utilisés en info-bulle). Le choix persiste
+  (`localStorage`) et le canvas se redimensionne automatiquement au changement de mode.
 - **Nouveau plugin `nesting` — optimisation de découpe de tôle (imbrication)** — à partir de
   formes dessinées, imbrique des pièces dans des formats de tôle prédéfinis et **dessine le
   résultat** (vraies entités sur calques `NEST-TÔLE` / `NEST-PIÈCES` / `NEST-COUPE` / `NEST-TEXTE`,
