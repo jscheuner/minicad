@@ -426,7 +426,7 @@ minicad/
 
 ## Version
 
-**v0.1** — Voir [suivi/CHANGELOG.md](suivi/CHANGELOG.md) pour l'historique complet.
+**v0.2** — Voir [suivi/CHANGELOG.md](suivi/CHANGELOG.md) pour l'historique complet.
 
 ---
 

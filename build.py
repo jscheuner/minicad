@@ -458,7 +458,7 @@ def build_seo_block(default_lang='fr'):
         "applicationCategory": "DesignApplication",
         "operatingSystem": "Web",
         "browserRequirements": "Requires JavaScript and HTML5 Canvas",
-        "softwareVersion": "0.1",
+        "softwareVersion": "0.2",
         "inLanguage": list(langs.keys()),
         "image": og_image,
         "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"},
@@ -600,10 +600,10 @@ def sync_plugins():
     # Créer plugins/ s'il n'existe pas
     if not os.path.isdir(PLUGINS_DIR):
         os.makedirs(PLUGINS_DIR, exist_ok=True)
-    # Copier tous les .js depuis src/plugins/
+    # Copier tous les .js et .conf/.json depuis src/plugins/
     count = 0
     for fname in os.listdir(src_plugins):
-        if fname.endswith('.js'):
+        if fname.endswith('.js') or fname.endswith('.conf') or fname.endswith('.json'):
             src = os.path.join(src_plugins, fname)
             dst = os.path.join(PLUGINS_DIR, fname)
             import shutil

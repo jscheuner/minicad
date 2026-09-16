@@ -4,13 +4,932 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [0.1] — 2026-06-16 — Version courante
+## [0.2] — 2026-09-16 — Version courante
 
 ### Ajouté
-- **Fichier ▸ Fermer** (`FERMER`, alias `CLOSE`) — ferme le dessin courant, avec
-  confirmation si des modifications ne sont pas sauvegardées.
+- **Glisser-déposer d'un fichier .dxf / .mcad pour l'ouvrir** — déposer un fichier
+  (`.dxf`, `.mcad`, `.json`, `.dwg`) depuis l'explorateur n'importe où sur la page ouvre
+  directement le dessin, comme le fait déjà le bouton Ouvrir (fermeture du dessin
+  courant avec confirmation si non sauvegardé, `.dwg` redirigé vers le convertisseur
+  DWG → DXF local). Un bandeau semi-transparent avec zone en pointillés apparaît pendant
+  le survol pour indiquer la zone de dépôt, et un format non reconnu affiche un message
+  d'erreur dans le terminal sans rien modifier au dessin.
+- **Barre d'outils Ruban façon AutoCAD (option Standard / Ruban)** — nouveau mode
+  d'interface au choix dans **Préférences → Apparence → Barre d'outils** : *Standard*
+  (barres classiques dockables, comportement inchangé, par défaut) ou *Ruban* (bandeau
+  à onglets **Accueil / Annotation / Affichage**, sans barre d'accès rapide séparée —
+  Ouvrir/Enregistrer/Imprimer restent dans le menu Fichier, Annuler/Refaire ont rejoint
+  la barre de menus juste après *Aide*, commune aux deux modes). Mise en page calquée sur AutoCAD :
+  panneaux séparés par des filets verticaux, titre centré en bas, et **trois tailles de
+  boutons** — *grand* (icône 26px + libellé, sur toute la hauteur) pour les outils
+  principaux, *moyen* (icône + libellé à droite) et *petit* (icône seule + info-bulle)
+  **groupés en colonnes de 3 rangées**, ce qui rend le ruban compact en largeur
+  (~870px pour l'onglet Accueil, sans défilement horizontal) et haut de 162px.
+  Le ruban réutilise exactement les mêmes commandes, `onclick` et icônes SVG que les
+  barres Standard (aucune duplication de logique métier) ; il n'est pas personnalisable
+  (pas de drag&drop). Les toggles SNAP/OSNAP/ORTHO/POLAR/Grille restent hors ruban (déjà
+  accessibles via la barre de statut et F3/F4/F8/F10). Nouvelles clés i18n `ribbon.*`
+  (onglets, panneaux et libellés courts des boutons, les `tool.*` complets — avec alias
+  entre parenthèses — restant utilisés en info-bulle). Le choix persiste
+  (`localStorage`) et le canvas se redimensionne automatiquement au changement de mode.
+- **Zoom Fenêtre (zoom par sélection d'une zone)** — nouvel outil `ZOOM W` (alias
+  complet `ZOOM E=étendue, ZOOM W=fenêtre, ZOOM [n]`), accessible aussi via un bouton
+  dédié dans la barre d'outils *Vue* (Standard) et le panneau *Affichage* du ruban,
+  juste après *Zoom Étendue*. On clique-glisse un rectangle sur le dessin (aperçu en
+  pointillés, même style que la fenêtre de sélection) : au relâchement, la vue se
+  recadre exactement sur la zone choisie et l'outil revient automatiquement en
+  sélection.
+- **Nouveau plugin `nesting` — optimisation de découpe de tôle (imbrication)** — à partir de
+  formes dessinées, imbrique des pièces dans des formats de tôle prédéfinis et **dessine le
+  résultat** (vraies entités sur calques `NEST-TÔLE` / `NEST-PIÈCES` / `NEST-COUPE` / `NEST-TEXTE`,
+  un seul `pushUndo`). Deux stratégies : **cisaille** (rectangles, bin-packing guillotine,
+  refentes bord à bord) et **laser** (formes quelconques, imbrication vraie **No-Fit-Polygon** =
+  somme de Minkowski de morceaux convexes + placement Bottom-Left-Fill, multi-départs bornés en
+  temps ; une pièce en L rentre dans le creux d'une autre). Rotation à **pas réglable 0–360°**.
+  Deux listes de tôles : **formats standards** dans un fichier livré `plugins/nesting_formats.conf`
+  (+ copie de travail `localStorage`, bouton *Exporter .conf*) et **chutes** (quantité finie,
+  consommées d'abord) persistées dans le `.mcad`. Liste des pièces + paramètres + mode également
+  dans le `.mcad` via un **nouveau sac générique `S.pluginData`** (sérialisé par `buildSaveData`,
+  restauré par `openJSON`/`loadFromLocalStorage`, remis à zéro par `closeDrawing` ; rétro-compatible :
+  `.mcad` sans la clé → `{}`, tout plugin peut y écrire `S.pluginData[<nom>]`). `build.py`
+  `sync_plugins()` copie désormais aussi les `.conf`/`.json` de `src/plugins/`. Commandes
+  `NESTING` / `NESTADD` / `NESTRUN` / `NESTFMT` / `NESTCLR`, barre d'outils *Imbrication*.
+  Tests : 26 assertions `node` sur les primitives géométriques (aire signée, Minkowski, NFP,
+  overlap avec contact bord à bord toléré, décomposition convexe d'un L, solveurs sans
+  chevauchement) + e2e headless CDP (chargement plugin, UI injectée, round-trip `.mcad`,
+  optimisation cisaille & laser de bout en bout, `NESTCLR`). Doc : `src/plugins/nesting.md`.
+- **Plugin `nesting` — finitions d'interface + coupes cisaille numérotées** (retours utilisateur) :
+  les trois popups (`nest-panel`, `nest-fmt`, `nest-run`) sont **déplaçables** par leur barre de
+  titre (`_nestMakeDraggable`) ; en mode **cisaille**, *Saignée* et *Espace pièces* sont **forcés
+  à 0, désactivés et grisés** (coupe guillotine bord à bord — `_nestEffectiveParams` force aussi
+  `kerf=0`/`partGap=0` au solveur, les valeurs laser saisies restent mémorisées) ; le panneau
+  principal s'ouvre en haut, décalé vers le centre (`top:104px; right:210px`) ; dans *Lancer
+  l'optimisation…* les **formats standards ne sont plus cochés par défaut** — l'utilisateur
+  choisit ceux qu'il veut (avertissement si aucun) ; les **traits de coupe cisaille sont
+  numérotés dans l'ordre de la mise en tôle**, le numéro reporté **à chaque extrémité** du trait
+  (calque `NEST-COUPE`, effacés par `NESTCLR` ; chiffres taille 36). Nouvelle option cisaille **« Grouper
+  par pièce »** (`params.groupByPart`, case cochable propre au mode cisaille) : chaque type de
+  pièce est coupé en **un seul bloc contigu** (toutes les P1, puis toutes les P2…), l'**ordre des
+  types** étant choisi pour minimiser la chute — permutations exhaustives jusqu'à 6 types, sinon
+  80 brassages aléatoires + tris par aire (`_solveShear` refactoré en `packOrder(ordered)`
+  réévaluable, score = surface de tôle engagée + pénalité pièces non placées ; 6 types × 30
+  exemplaires = 38 ms). Cœur : `loadPlugin()` charge les `.js` de plugin
+  en `cache:'no-cache'` (revalidation systématique — un serveur avec `Cache-Control` ne sert plus
+  une version périmée après mise à jour).
+- **Plugin `nesting` — cisaille : choix du format de tôle optimisé** (retour utilisateur : *« si
+  je sélectionne plusieurs formats… il me prend toujours le plus petit, il faut 3 feuilles alors
+  qu'une 3000×1500 suffit »*). `_solveShear` ne prenait plus que le **plus petit format qui
+  contient la pièce courante** à chaque nouvelle tôle → ouvrait plusieurs petites tôles là où une
+  grande aurait suffi. Désormais `packOrder(ordered, fcost)` prend une **stratégie de choix de
+  format** ; `solveOrdered()` rejoue chaque ordre avec plusieurs stratégies (plus petit d'abord,
+  plus grand d'abord, puis « privilégier CE format » pour chacun des standards cochés, ≤ 6) et
+  **garde la surface de tôle totale la plus faible**. Les chutes gardent la priorité absolue. Le
+  mode standard (non groupé) essaie en plus un ordre **regroupé par type** (`groupOrder`). Sur
+  l'exemple (P2 270×350 ×30 + P2 500×750 + P4 200×200 ×10 + P4 100×1480 ×3, formats
+  2000×1000 / 2500×1250 / 3000×1500) : **une seule 3000×1500** au lieu de 3× 2000×1000 (grouper
+  par pièce, 6 ms ; 6 types × 30 ≈ 0,7 s).
+- **Plugin `nesting` — cisaille : option « numéroter seulement les coupes de bord »**
+  (`params.edgeCutsOnly`, case cochable propre au mode cisaille). Par défaut toutes les coupes
+  guillotine sont numérotées ; cochée, seules celles dont une extrémité atteint le pourtour du
+  format complet (coupes traversantes de l'opérateur) reçoivent un numéro — les recoupes internes
+  n'en ont plus. Les traits de coupe restent tous tracés ; renumérotation 1..K contigüe.
+  Détection : extrémité à moins de `1,5 × marge rive` d'un bord de la tôle (`_nestDrawResult`).
+- **Plugin `nesting` — formats de tôle en convention tôlerie « largeur × longueur »** (retour
+  utilisateur : *« on parle toujours largeur de la feuille × la longueur de la feuille, 1000×2000 »*).
+  Formats standards livrés inversés — `1000 x 2000`, `1250 x 2500`, `1500 x 3000`, `2000 x 4000`…
+  (petit côté d'abord) dans `nesting_formats.conf` et le repli `_nestFallbackFormats()` ; ligne
+  « ＋ Ligne » par défaut `1000 × 2000` ; colonne « Hauteur » renommée **« Longueur »** dans le
+  gestionnaire de formats (standards + chutes). Les tôles se dessinent donc en portrait. Solveur
+  inchangé (rotation des pièces). ⚠ une copie de travail `localStorage` antérieure masque le
+  `.conf` — faire **« Réinitialiser »** dans le gestionnaire pour récupérer la nouvelle liste.
+- **Plugin `nesting` — sélection des formats de tôle pris en compte** (retour utilisateur : *« dans
+  les formats de tôle ajoute une colonne avec une case à cocher pour sélectionner les formats à
+  prendre en compte dans l'optimisation »*). Le gestionnaire de formats gagne une colonne **✓** en
+  tête du tableau des standards : chaque format porte un booléen `enabled` (défaut `true`, donc
+  rétro-compatible — un `.conf` ou un `localStorage` sans le champ = tous cochés). Cocher/décocher
+  écrit **aussitôt et en silence** la copie de travail `localStorage` (pas besoin de « Enregistrer »)
+  et met à jour le compteur du panneau (`N/M standard(s)`). Une ligne ajoutée est cochée par défaut.
+  Le dialogue **« Lancer l'optimisation »** pré-coche ses cases standards selon `enabled` (on peut
+  toujours ajuster ponctuellement avant de lancer). **« Exporter .conf »** conserve le champ.
+  Vérifié headless : colonne présente, persistance silencieuse, nouvelle ligne cochée, dialogue de
+  lancement aligné, rétro-compat (ancien `localStorage` sans `enabled` → tout coché).
+- **Plugin `nesting` — renommer les pièces** (retour utilisateur : *« j'aimerais pouvoir renommer
+  les pièces »*). La colonne « nom » du tableau des pièces devient un champ éditable (pré-rempli
+  avec le libellé courant) ; à la validation, `d.parts[i].label` est mis à jour et persisté. Un
+  nom vide est refusé (on garde l'ancien). Si un résultat est déjà dessiné, il est **redessiné**
+  pour refléter le nouveau nom sur les étiquettes des pièces.
+- **Plugin `nesting` — bascule d'affichage portrait / paysage du résultat** (retour utilisateur :
+  *« ajoute un bouton pour afficher le résultat de l'optimisation en portrait ou paysage »*).
+  Bouton **« ⟳ Portrait / Paysage »** dans le panneau (section « Affichage du résultat ») :
+  mémorise la préférence `params.resultLandscape` (dans le `.mcad`) et, si un résultat est déjà
+  dessiné, le **redessine sans recalcul** (`_nestLastResult` conservé après chaque optimisation).
+  Le lot entier (tôles + pièces + coupes + libellés) est pivoté de −90° autour de l'origine puis
+  recadré sur son ancrage ; les entités texte n'ont pas d'angle → seul leur point d'ancrage
+  tourne, les glyphes restent horizontaux et lisibles. Le récapitulatif est tracé **après**
+  rotation, à droite du lot. Fonctionne dans les deux modes (cisaille et laser).
+- **Plugin `nesting` — cisaille : sens des coupes traversantes** (retour utilisateur : *« une
+  option pour privilégier les coupes traversantes de la tôle complète sur la longueur ou sur la
+  largeur »*). Nouveau sélecteur **« Coupes traversantes »** (`params.cutThrough`, propre au mode
+  cisaille) : `auto` (comportement historique — coupe primaire selon le plus grand reste, règle
+  SAS), `sur la longueur` (coupe primaire **verticale pleine hauteur**), `sur la largeur` (coupe
+  primaire **horizontale pleine largeur**). Dans `_solveShear.tryPlace`, `vertPrimary` pilote à la
+  fois l'étendue des deux traits guillotine (primaire = pleine étendue du reste, secondaire =
+  bande de la pièce) et le découpage des rectangles libres. Chute minimale toujours recherchée
+  **sous** cette contrainte : forcer un sens peut coûter une tôle de plus (le solveur choisit
+  alors la combinaison de plus faible surface totale). Vérifié node + headless : `length` → coupes
+  verticales pleine hauteur, `width` → horizontales pleine largeur, aucun chevauchement ;
+  bascule portrait↔paysage idempotente (retour au pixel près).
+- **Amorce : point de départ automatique des contours EXTÉRIEURS, haut-gauche / bas-gauche** —
+  demande utilisateur : *« pour les amorces extérieur j'aimerai qu'elle soit mise plutôt en haut
+  à gauche pour le sens anti-horaire et en bas à gauche pour le sens horaire »*. Nouveau
+  `_chfDefaultStartPoint(e, contour)`, règle unique : point du contour le plus proche du coin
+  **haut-gauche** (parcours CCW) ou **bas-gauche** (parcours CW) de sa bbox — coin exact sur un
+  rect, diagonale 135°/225° sur un cercle, **sommet** le plus proche sur un polygone quelconque
+  (jamais un point inséré au milieu d'une arête : un sommet donne la bissectrice diagonale que
+  `_chfIdealLeadAngle` sait dégager, une arête donnerait une perpendiculaire). Le sens effectif
+  vient de `_chfTravelCCW` = orientation intrinsèque du contour (`_chfSignedArea`, aire signée)
+  combinée à `_chfReverse` : la règle suit le parcours réel, qu'il vienne du dessin ou du bouton
+  **Sens**. Deux exclusions volontaires : un `_chfStartPoint` posé à la main reste **prioritaire**
+  (régression déjà vécue en retour terrain — un point cliqué ne doit jamais être recalculé), et
+  les **trous** gardent leur comportement d'origine, la demande ne visant que l'extérieur. Aucune
+  modification de la conversion d'angle à l'export (`_chfExportLeadAngle` intact, comme demandé) :
+  seul le point d'entrée bouge, l'angle écrit suit mécaniquement. Cohérent avec le fichier natif
+  SC2000 `laser_6mm.chf`, dont les contours à amorce activée démarrent tous au coin haut-gauche.
+  Headless 168/168 (9 attentes mises à jour + 9 nouvelles, dont les 4 combinaisons
+  orientation-dessinée × `_chfReverse`, la priorité du point manuel et la non-régression des trous).
+
+### Modifié
+- **ZOOM FENÊTRE en 2 clics au lieu du cliqué-glissé** — l'outil `zoomwin` (bouton, ruban,
+  commande `Z W`) attendait un cliqué-glissé pour tracer la fenêtre à agrandir, geste peu naturel
+  au trackpad. Il fonctionne maintenant comme les autres outils à 2 clics de MiniCAD (DÉCALER,
+  ARRAY…) : premier clic pour le premier coin, aperçu en pointillés qui suit la souris, second
+  clic pour le coin opposé qui valide le zoom. Échap annule avant le second clic.
 
 ### Corrigé
+- **Export `.chf` : le SENS de la compensation tient à deux drapeaux entiers, pas à la bbox** —
+  retour terrain *« le sens du décalage change lors de l'export »*, consigne : *ne travailler que
+  sur l'export, ne rien changer côté MiniCAD*. L'utilisateur a fourni **notre export et le même
+  fichier corrigé pour couper dans le bon sens** : le diff fait **4 lignes**, deux champs sur les
+  deux **polygones-trous**. Ni la géométrie, ni la bbox, ni la valeur `<Crafts>`, ni l'amorce ne
+  bougent. Ces deux entiers — celui qui suit `<End Glyphs>` (**rôle** : 1 = extérieur, 2 = trou)
+  et le premier de `<Crafts>` (**côté de compensation**) — valent sur les **48 graphes** de tous
+  les fichiers de référence : polygone extérieur (CW *et* CCW) → 1/1 (12 éch.) ; cercle-trou →
+  2/1 (34 éch.) ; **polygone-trou → 2/2** (2 éch., les deux corrigés). Le rôle était écrit
+  `native === 'circle' ? 2 : 1`, rétro-ingénierie faite sur `laser_6mm.chf` où les 30 trous sont
+  **tous** des cercles et les 8 extérieurs **tous** des polygones : les prédicats « cercle » et
+  « trou » y sont indiscernables — **troisième occurrence du même piège de corrélation sur ce
+  format**, après l'angle relatif invisible sur un cercle. Le côté, lui, n'avait jamais été écrit
+  autrement que 1 ; il suit le rôle sur un polygone mais reste 1 sur un cercle même trou (34/34,
+  dont les 4 trous du fichier redécoupé et validé machine) — et ce n'est pas une corrélation
+  cette fois, le fichier corrigé contient côte à côte un cercle-trou à 1 et un polygone-trou à 2.
+  Le côté ne peut pas non plus être « gauche/droite du parcours » : les 8 extérieurs de
+  `laser_6mm.chf` sont 4 paires de pièces identiques en miroir (4 CW + 4 CCW) et portent tous 1.
+  **Vérifié** : en recalculant les deux drapeaux depuis notre export avec la règle implémentée,
+  on retrouve le fichier corrigé **ligne à ligne, à l'identique**. Aperçu MiniCAD, conversion
+  d'angle et valeur `<Crafts>` (uniforme) strictement intacts. Headless 182/182.
+- **Annulé : le padding de bbox conditionné au rôle** — correctif de la veille sur le même
+  symptôme, fondé sur la mesure « trous jamais padés » des 43 graphes alors disponibles. Le
+  fichier corrigé reçu ensuite l'invalide : ses **deux polygones-trous gardent leur padding de
+  +0.2** vers l'extérieur tout en coupant dans le bon sens. Le padding ne dépend que de la forme
+  (cercle → 0, sinon `+comp`) et ne porte aucune information de sens — comportement d'origine
+  rétabli, et épinglé par un test pour qu'il le reste.
+- **Amorce : l'angle exporté dans le `.chf` est RELATIF au sens de parcours, pas absolu** —
+  retour terrain (2026-08-27, captures MiniCAD + SC2000) : *« ok côté minicad c'est bon, si
+  possible on n'y touche plus. par contre si j'exporte le chf et que je l'importe les amorces
+  changent d'angle »*. L'aperçu était donc juste, seul le fichier était mal interprété par la
+  machine. **Preuve croisée sur trois fichiers réels** : `laser_6mm.chf`, produit **par le
+  SC2000 lui-même**, écrit `90.000000` sur ses **38** graphes de formes toutes différentes —
+  aucune convention d'angle *absolu* ne peut produire une valeur unique pour 38 contours
+  différents, alors que « amorce perpendiculaire au sens de coupe » (défaut standard des
+  logiciels de découpe), si ; `export_corrigé.chf`, corrigé main, redécoupé et **confirmé bon
+  sur machine**, écrit lui aussi `90.000000` sur ses 4 trous ; notre ancien `export.chf`,
+  mauvais à la coupe, écrivait `180.000000` — c'est-à-dire l'angle absolu tel quel, réinterprété
+  comme relatif par la machine.
+
+  **Formule exacte, établie par élimination croisée** (une première correction,
+  `absolu − parcours`, calée sur un seul échantillon à 90°, était encore fausse : retour terrain
+  *« ce n'est toujours pas bon »*, cercle correct mais **les deux rectangles faux** dans le
+  SC2000). Les 8 conventions candidates (`±parcours ±absolu`, `+0/180`) ont été confrontées à
+  4 contraintes physiques indépendantes tirées des fichiers réels :
+  **(A)** `laser_6mm.chf` g13/18/28/33, départ coin haut-gauche, parcours 0°, angle 90, amorce
+  **activée** → doit sortir vers le haut sans longer d'arête ;
+  **(B)** même fichier g5/9/23/38, départ coin haut-**droit**, parcours 180°, angle 90, amorce
+  **désactivée** (flag 0) → la direction auto doit y être *mauvaise*, sinon l'opérateur n'avait
+  aucune raison de la couper — **c'est cette contrainte qui élimine l'hypothèse « angle absolu »** ;
+  **(C)** `export_corrigé.chf` g1, **seul échantillon non-90° de tous les fichiers** (20.074123°),
+  donc le seul qui sépare les conventions que 90° rend indistinguables → point d'amorçage hors
+  matière ; **(D)** les 4 cercles du même fichier (validés machine) → amorce vers le centre.
+  Une seule convention passe les quatre :
+
+  > **angle écrit = parcours − absolu + 180**  (donc `absolu = parcours − angle + 180`)
+
+  Sens physique enfin limpide : `angle` est l'angle **entre le trait d'amorce et le contour** au
+  point d'entrée (90° = amorce perpendiculaire) — d'où `90` comme défaut universel, et d'où le
+  point d'amorçage à **gauche du sens de parcours** à 90°. Ça explique aussi (B) : les 8 contours
+  de `laser_6mm.chf` forment **4 paires de pièces identiques, une CW une CCW** (copies miroir) ;
+  sur la copie au parcours inversé, « à gauche » bascule dans la matière et l'amorce a dû être
+  désactivée. ⚠ **Sur un CERCLE l'ancienne formule et la nouvelle donnent toujours le même
+  résultat** (`parcours − absolu` y vaut toujours ±90°) : c'est exactement pourquoi le retour
+  terrain montrait le cercle juste et les deux rectangles faux.
+
+  Corrigé dans **`_chfExportLeadAngle`** (normalisé dans `[0,360[`), seule valeur écrite par
+  `_chfBuildGuideCurve`. `_chfTravelTangent` honore `_chfReverse` **y compris sur un cercle**
+  (via `_chfCircleStart().dir`), contrairement au `_chfEntryTangent` de l'aperçu qui n'en a pas
+  besoin. **L'aperçu MiniCAD est strictement inchangé** (`_chfAutoLeadAngle` et `_chfLeadInGeom`
+  non touchés), comme demandé. Referme la réserve #4 du plugin (mapping du bloc
+  `<GuideCurve Para>`). Vérifié en headless : 159/159, dont l'invariant aller-retour
+  « parcours − angle écrit + 180 == direction absolue prévisualisée » sur cercle, cercle inversé
+  et coin de polygone. ⚠ Reste une hypothèse : le **signe** de la convention (CCW positif —
+  lecture qui colle aux données validées machine) ; un résultat en miroir se corrigerait par un
+  seul signe. À valider sur chute.
+- **Amorce : le choix de l'angle est supprimé, la direction est entièrement calculée par le
+  plugin** — retour terrain (2 captures d'écran successives, 2026-08-27) : *« les amorces
+  intérieur (trous) doivent aller en direction du centre. et dans tout les cas l'amorce ne
+  doit pas être par dessus un trait de la pièce. enlève le choix de l'angle. c'est au plugin
+  de trouver la meilleure solution »*. Une première tentative gardait l'angle saisi et ne
+  corrigeait que l'aperçu via un flag `_chfLeadManual` : insuffisante, car le défaut était
+  géométrique. **Cause racine** : sur un COIN de polygone, la perpendiculaire à une arête est
+  exactement colinéaire avec l'arête voisine — l'amorce se posait donc dans le prolongement
+  d'un trait de la pièce. Corrigé en distinguant sommet (→ **bissectrice extérieure** des 2
+  arêtes, jamais alignée avec aucune des deux) et milieu d'arête (→ perpendiculaire), plus un
+  **contrôle anti-collision** qui échantillonne le segment d'amorce contre tous les contours
+  du dessin et pivote par pas de 10° (±80°) jusqu'à trouver une direction dégagée.
+  **Suppressions** : champ Angle de la barre d'outils (`chf-start-angle`), champ Angle du
+  panneau propriétés (simple et multi), `_chfPropLeadAngleMulti`, flag `_chfLeadManual`. Le
+  picking 2-clics `CHFSTART` ne fixe plus que la longueur ; `CHFSTARTAUTO` n'applique plus que
+  la longueur. Le panneau propriétés affiche la direction calculée en lecture seule.
+  **`_chfAutoLeadAngle` est désormais la seule source de vérité**, consommée à la fois par
+  l'aperçu (`_chfLeadInGeom`) et par l'export (`_chfBuildGuideCurve`) : l'aperçu ne peut plus
+  diverger du fichier, et un objet déplacé après coup exporte une amorce cohérente avec sa
+  position réelle. Contours ouverts (ligne, mur) : perpendiculaire à l'extrémité, côté
+  départagé par le contrôle anti-collision. Perf : liste des contours résolue une seule fois
+  par frame (cache microtask + garde d'identité du tableau `S.entities`). Vérifié en
+  headless : 153/153. ⚠ **Change l'angle réellement exporté** (le champ saisi n'existe plus) :
+  à re-tester sur chute avant une pièce définitive.
+- **CHFCOMP/CHFSTARTAUTO : détection auto extérieur/trou par imbrication abandonnée — valeur et
+  angle toolbar désormais appliqués uniformément à toute la sélection** — retour terrain réel
+  sur SC2000 (2026-08-27) : l'utilisateur a exporté `export.chf`, découpé sur la machine, et
+  signalé deux écarts : *« le décalage contre l'intérieur des trous n'était pas sur l'export »*
+  et *« le sens des amorces ne correspond pas au dessin, l'angle a l'air de changer »*. Un
+  premier correctif avait élargi le calcul de profondeur d'imbrication (`_chfNestDepth`) de la
+  sélection seule à tout le dessin (`S.entities`) — insuffisant : il supposait la détection auto
+  extérieur/trou globalement correcte, seulement mal comparée.
+
+  Comparaison fine du fichier que l'utilisateur a corrigé à la main, **redécoupé sur le SC2000
+  et confirmé bon** (`export_corrigé.chf`), contre `export.chf` : le fichier validé utilise la
+  MÊME compensation signée (0.2) et le MÊME angle d'amorce brut (90°, jamais recalculé) pour le
+  carré extérieur ET ses 4 trous — la détection auto elle-même (pas seulement sa portée) était
+  fausse. `CHFCOMP` et `CHFSTARTAUTO` ont donc été simplifiées : chacune applique désormais la
+  valeur/l'angle tel que tapé dans la barre d'outils, **de façon uniforme, à tous les objets de
+  la sélection**, sans aucune tentative de détection extérieur/trou — c'est à l'utilisateur de
+  choisir le signe/l'angle. Suppression complète du code devenu mort : `_chfNestDepth`,
+  `_chfRepPoint`, `_chfPointInContour`, `_chfHoleCenter`, et le sélecteur toolbar Alterné/
+  Binaire (`chf-comp-mode`, plus aucun signe à choisir automatiquement).
+
+  Vérifié par la réécriture des tests headless qui validaient l'ancienne détection auto
+  (désormais : même valeur/angle appliqué quel que soit le niveau d'imbrication, y compris une
+  valeur négative, y compris à 3 niveaux) — 123/123 au total. **Non revérifié sur machine pour
+  ce changement précis** au-delà d'`export_corrigé.chf`, déjà redécoupé et validé par
+  l'utilisateur avant même le correctif (c'est cette validation qui l'a motivé) ; la réserve sur
+  le mapping exact du bloc `<GuideCurve Para>` reste ouverte (voir `src/plugins/chf_export.md`,
+  réserve #4) — le retour terrain confirme la valeur d'angle appliquée mais pas la sémantique
+  complète du bloc côté SC2000. Détail complet dans `src/plugins/chf_export.md` (réserve #3).
+
+- **CHFCOMP : sens de l'aperçu pointillé de nouveau sensible à l'imbrication (extérieur/trou) —
+  la valeur écrite dans le fichier exporté reste, elle, strictement uniforme** — même jour
+  (2026-08-27), suite immédiate du correctif ci-dessus : l'utilisateur a signalé que « la
+  compensation se fait toujours vers l'extérieur » même sur les trous. Question posée avant
+  d'agir vu l'enjeu matière/machine : s'agit-il de l'aperçu MiniCAD ou d'un nouveau test machine
+  contredisant `export_corrigé.chf` ? Réponse : **l'aperçu MiniCAD uniquement** — le fichier
+  exporté n'a pas été remis en cause.
+
+  `_chfNestDepth`/`_chfRepPoint`/`_chfPointInContour`/`_chfIsHole` et le sélecteur toolbar
+  Alterné/Binaire (`chf-comp-mode`) sont donc réintroduits, mais **cloisonnés au rendu** :
+  `decorateEntity` choisit désormais un point de référence différent pour `computeOffsetGeom`
+  selon la profondeur d'imbrication détectée (loin à l'extérieur de la bbox pour un contour
+  extérieur → le fantôme grossit ; centre de la forme pour un trou détecté → le fantôme rétrécit
+  avec la **même** valeur stockée). `_chfApplyCompensationToSelection` (celle qui écrit
+  `_chfCompensation`, appelée par `CHFCOMP`) n'appelle jamais ces helpers — le fichier exporté
+  continue d'utiliser la même valeur uniforme qu'`export_corrigé.chf`, validée sur machine.
+  `_chfNestDepth` reste calculée sur tout `S.entities` (pas seulement la sélection), comme le
+  premier correctif l'avait déjà corrigé.
+
+  Vérifié headless : 136/136 (13 nouveaux tests, dont un scénario carré + 4 trous répliquant
+  exactement le cas terrain — même valeur exportée sur les 5 objets, fantôme carré qui grossit,
+  fantôme de trou qui rétrécit). Réserve #3 de `src/plugins/chf_export.md` mise à jour avec une
+  hypothèse de travail non confirmée pour réconcilier « valeur uniforme dans le fichier » et
+  « bon sens physique des deux côtés » (compensation résolue par le SC2000 relativement au sens
+  de parcours du contour, pas au signe absolu).
+
+- **Amorce : direction de l'aperçu calculée automatiquement sur contour fermé — `_chfLeadAngle`
+  et l'export restent inchangés** — même jour (2026-08-27), troisième retour (capture d'écran) :
+  le repère de percée d'un trou pointait hors de ce trou au lieu de vers son centre, et au coin
+  d'une plaque le segment d'amorce suivait exactement un bord au lieu de s'en écarter. L'angle
+  brut du champ « Angle amorce » (`_chfLeadAngle`), jusque-là utilisé tel quel par la
+  prévisualisation quelle que soit la géométrie réelle, pouvait par coïncidence numérique tomber
+  aligné sur un bord ou pointer vers l'extérieur d'un trou.
+
+  `_chfLeadInGeom` calcule désormais la direction du point extérieur automatiquement sur tout
+  contour **fermé** (cercle ou polygone/polyligne/spline/ellipse fermé), via une nouvelle
+  fonction `_chfEntryOutwardAngle` : tangente au contour au point d'entrée (`_chfEntryTangent`),
+  les deux perpendiculaires à cette tangente départagées par une sonde locale à 0,01 mm
+  (`_chfPointInContour`) plutôt que par une convention de signe — extérieur détecté → sonde côté
+  hors-contour ; trou détecté → sonde côté dans-le-contour, direction plonge vers son propre
+  centre. Même classification `_chfNestDepth`/`_chfIsHole` que le fantôme de compensation
+  ci-dessus, donc même sélecteur toolbar Alterné/Binaire. Sur un contour **ouvert** (ligne,
+  mur...), sans notion dedans/dehors, `_chfLeadAngle` continue de piloter la direction affichée,
+  inchangé.
+
+  Consigne explicite de l'utilisateur : ne toucher que le plugin/aperçu pour l'instant, l'export
+  sera repris séparément une fois l'interface aboutie. En conséquence, `_chfLeadAngle` lui-même
+  (stockage, panneau propriétés, champs toolbar `CHFSTARTAUTO`), `_chfStartAutoApply` et
+  `_chfBuildGuideCurve` (export du bloc `<GuideCurve Para>`) restent strictement inchangés — un
+  objet à contour fermé peut donc temporairement afficher un aperçu dont la direction diverge de
+  l'angle réellement exporté ; attendu tant que le volet export n'a pas été revu à son tour.
+  L'utilisateur a évoqué, en le nuançant, l'idée de retirer à terme le champ Angle amorce —
+  non tranché, champ/UI laissés intacts.
+
+  Vérifié headless : 144/144 (8 nouveaux tests couvrant cercle/rectangle × extérieur/trou ×
+  indépendance à la valeur stockée, plus un test de non-régression sur contour ouvert). Détail
+  complet dans `src/plugins/chf_export.md` (section « Amorce : direction automatique » + réserve
+  #3, précision « Troisième retour »).
+
+- **Amorce : le picking manuel `CHFSTART` (2ᵉ clic) était écrasé par le calcul automatique
+  ci-dessus** — même jour (2026-08-27), quatrième retour : le 2ᵉ clic du picking manuel
+  (point sur le contour, puis vecteur longueur/angle) semblait n'avoir aucun effet sur un
+  contour fermé. Cause : le correctif précédent faisait ignorer `_chfLeadAngle` sur **tout**
+  contour fermé sans exception, y compris quand l'utilisateur venait justement de le fixer à la
+  main via ce clic (`chf_leadvector`, `src/minicad.html` ~L11240, qui pose l'angle réel depuis
+  le vecteur cliqué).
+
+  `_chfLeadInGeom` n'invoque désormais `_chfEntryOutwardAngle` que si `_chfLeadAngle` n'a
+  **jamais** été fixé sur l'objet (`e._chfLeadAngle == null`) — le calcul automatique redevient
+  une valeur par défaut, jamais une correction silencieuse d'une valeur déjà posée. Dès qu'une
+  valeur — même 0 — a été écrite par un clic (`CHFSTART`), une saisie (panneau propriétés) ou
+  `CHFSTARTAUTO`, elle est désormais toujours respectée telle quelle par l'aperçu, sur un
+  contour fermé comme ouvert. `_chfLeadAngle`, `_chfStartAutoApply` et `_chfBuildGuideCurve`
+  (export) restent inchangés — un seul changement d'une ligne dans `_chfLeadInGeom`.
+
+  Vérifié headless : 145/145 (Test 44 étendu avec 3 nouveaux cas de non-régression prouvant
+  qu'une valeur explicitement posée — clic simulé à 60°, 0°, 200° — est honorée telle quelle sur
+  cercle extérieur, trou et coin de rectangle, plutôt que redirigée vers le résultat auto).
+
+### Ajouté
+- **`CHFSTART` interactif + `CHFSTARTAUTO`** — `CHFSTART` sait désormais s'adapter à l'état
+  de la sélection au lieu d'exiger un objet déjà sélectionné : rien sélectionné → arme la
+  boîte de sélection (même patron `S._chfStartPending`/`Entrée`/`Échap` que `CHFCOMP`) ; un
+  objet valide sélectionné → le picking du point de départ (1 clic) enchaîne désormais
+  automatiquement sur un 2ᵉ clic qui trace longueur et angle de l'amorce directement à la
+  souris (nouvel outil `chf_leadvector`), sans repasser par le panneau propriétés.
+
+  Nouvelle commande **`CHFSTARTAUTO`** (+ bouton toolbar dédié) : applique en lot la
+  longueur/l'angle d'amorce à toute la sélection sans aucun clic sur le dessin, à partir de
+  deux nouveaux champs numériques dans la barre Export laser (`chf-start-length` /
+  `chf-start-angle`, **défauts 5 mm / 90°** comme demandé). Ne pose pas de point de départ
+  explicite sur les objets : seuls `_chfLeadLength`/`_chfLeadAngle` sont réglés, le point
+  d'entrée réel sur le contour reste calculé automatiquement à l'export (`_chfEntryPoint`) —
+  cohérent avec le mode "Auto (défaut)" déjà affiché dans le panneau propriétés quand aucun
+  point n'est fixé manuellement.
+
+  **Bug découvert et corrigé en cours de session, indépendant de la fonctionnalité mais
+  révélé par elle** : `cmdInput` a son propre gestionnaire `keydown` local (Entrée = exécute
+  la commande tapée, Échap = annule l'état en cours), qui s'exécute **avant** le gestionnaire
+  global `document` puisque `cmdInput` a le focus la plupart du temps (`smartFocus()` le
+  refocalise après quasi chaque clic). Les nouveaux états (`chf_leadvector`, `chf_startpoint`,
+  `_chfStartPending`, `_chfStartAutoPending`) n'étant listés que côté gestionnaire global,
+  Échap tombait dans le bloc générique du gestionnaire local (`setTool('select')` sans purger
+  les variables de picking) avant même d'atteindre le bon handler — un premier correctif
+  ajouté uniquement côté global semblait fonctionner (28/28 sur une suite de tests basée sur
+  des appels directs) mais échouait silencieusement avec de vrais événements clavier. Corrigé
+  en ajoutant aussi les 4 cas dans la chaîne du gestionnaire local de `cmdInput`, même patron
+  que les états préexistants (`copyPending`, `offsetAwaitDist`, `fillet`...) à cet endroit.
+
+  Vérifié par 28 assertions d'état (appels directs) **plus 4 scénarios rejoués avec de vrais
+  événements souris/clavier simulés via CDP** (clic réel aux coordonnées écran calculées,
+  vrais `keyDown`/`keyUp`) — ce second passage, plus coûteux mais plus fidèle à un usage réel,
+  est ce qui a révélé le bug ci-dessus après que la suite basée sur des appels directs soit
+  passée au vert. Vérification visuelle par capture d'écran (toolbar : champs et bouton
+  rendus correctement, valeurs par défaut et tooltips corrects). Non testé sur machine SC2000
+  réelle (réserve déjà connue sur le bloc `<GuideCurve Para>`, voir l'entrée `CHFSTART`
+  ci-dessous, inchangée).
+
+- **Amorce : repère visuel + détection auto trou/extérieur pour `CHFSTARTAUTO`** —
+  la prévisualisation en pointillé de l'amorce (`_chfDrawLeadInPreview`) affiche désormais
+  un repère carré+croix au point de percée hors-pièce (l'extrémité du segment opposée à la
+  flèche, qui elle pointe vers l'entrée dans le contour), en trait plein pour rester lisible
+  même superposé à la ligne pointillée.
+
+  `CHFSTARTAUTO` détecte maintenant si chaque objet rond ou rectangulaire de la sélection est
+  un **trou** (contour imbriqué) ou le **bord extérieur**, en réutilisant tel quel le mécanisme
+  de profondeur d'imbrication déjà écrit pour `CHFCOMP` (`_chfNestDepth`/`_chfRepPoint`/
+  `_chfPointInContour`) — et le même sélecteur toolbar Alterné/Binaire (`chf-comp-mode`,
+  désormais partagé entre les deux fonctions, tooltip mis à jour en conséquence). Un objet
+  détecté trou ignore l'angle réglé dans le champ toolbar et pointe automatiquement son amorce
+  vers son propre centre (perce dans la zone rebut plutôt que dans la matière conservée) ; un
+  objet extérieur, ou d'un type autre que cercle/rect (pas de notion de centre non ambiguë),
+  garde l'angle toolbar comme avant. Le message de confirmation dans le terminal distingue les
+  deux cas (nombre de trous détectés vs angle uniforme appliqué).
+
+  Vérifié par un test headless dédié (5 objets : rect extérieur, trou rond, îlot rond imbriqué
+  deux fois — pair en Alterné donc traité comme extérieur, impair en Binaire donc traité comme
+  trou —, trou rectangulaire, et une ligne en contour ouvert qui doit rester insensible à toute
+  cette logique) : angles obtenus conformes au calcul manuel dans les deux modes, plus
+  vérification visuelle par capture d'écran (recadrée) confirmant le rendu net du repère
+  carré+croix et le sens correct des flèches vers le centre des deux trous.
+
+- **`CHFSTART` — Amorce de départ (départ hors-pièce) dans la barre Export laser** —
+  nouveaux champs par objet `_chfLeadLength` (mm, défaut 0 = désactivé) et
+  `_chfLeadAngle` (°, monde absolu, 0°=+X, CCW+), réglables via deux nouvelles lignes
+  numériques du panneau Propriétés (mono-sélection : `inp('_chfLeadLength', …)` /
+  `inp('_chfLeadAngle', …)`, zéro câblage cœur nouveau — le mécanisme générique
+  `_propChange` gère déjà n'importe quel nom de champ ; multi-sélection : nouvelles
+  fonctions `window._chfPropLeadLengthMulti`/`_chfPropLeadAngleMulti`, même patron que
+  `_chfPropCompensationMulti`). Nouveau bouton toolbar (`data-tbid="chf-start-pick"`,
+  commande `CHFSTART`) qui raccourcit vers le mécanisme de picking manuel du point de
+  départ déjà existant (`window._chfPickStartPoint`, jusque-là accessible seulement
+  via le bouton ⌖ du panneau propriétés d'un objet déjà sélectionné) — exige
+  exactement un objet sélectionné, à contour fermé supporté (`_chfSupportsStartPoint`).
+
+  Prévisualisation en pointillé (`_chfDrawLeadInPreview`, branchée dans
+  `decorateEntity`) : segment du point d'entrée réel du contour (calculé par
+  `_chfEntryPoint`, qui réutilise tel quel `_chfCircleStart`/`_chfOrderContourPoints`
+  — déjà la source de vérité utilisée par l'export, donc la prévisualisation ne peut
+  pas diverger de ce qui sera effectivement exporté) vers un point extérieur décalé de
+  `_chfLeadLength` à `_chfLeadAngle`, avec flèche pointant vers l'entrée (sens réel de
+  coupe : extérieur → entrée → contour). `decorateEntity` restructuré : le fantôme de
+  compensation et l'amorce sont maintenant deux blocs indépendants (chacun gated sur
+  son propre champ) plutôt qu'un seul early-return sur `_chfCompensation`, pour
+  qu'ils puissent coexister sur le même objet.
+
+  Câblage export : le bloc `<GuideCurve Para>` du fichier `.chf` (jusqu'ici recopié
+  verbatim et constant pour tous les graphes, jamais exploré — hors-périmètre de la
+  session de rétro-ingénierie initiale) est désormais construit dynamiquement par
+  `_chfBuildGuideCurve(e)` à partir de `_chfLeadLength`/`_chfLeadAngle` (longueur 0 →
+  reproduit exactement l'ancien bloc constant, comportement par défaut inchangé).
+  **RÉSERVE FORTE, plus incertaine que les 3 autres réserves déjà connues du plugin**
+  (celles-ci recoupées sur les 38 graphes de l'exemple fourni) : le mapping des 5
+  champs du bloc (ligne 2 = angle°, ligne 3 = longueur mm, ligne 5 = flag actif 0/1)
+  repose sur un **seul point de donnée** (`1 / 90.000000 / 4.000000 / 1.000000 / 0`,
+  un seul graphe de l'exemple d'origine, fichier `laser_6mm.chf` non ré-examinable
+  cette session) — jamais recoupé contre plusieurs graphes ni contre une machine
+  réelle. **À tester en priorité sur une chute avant toute pièce définitive**, plus
+  encore que les autres réserves du plugin.
+
+  Vérifié par harness Node headless (34 nouveaux cas, **118/118** au total) :
+  géométrie de l'amorce (point d'entrée = source de vérité de l'export, décalage par
+  longueur/angle, y compris rotation de direction avec l'angle), non-tracé quand
+  `_chfLeadLength` est nul, coexistence indépendante fantôme-compensation/amorce
+  (0/1/1/2 flèches selon les combinaisons), garde-fous `CHFSTART` (0, 2+ sélectionnés,
+  type non supporté → avertissement sans effet ; 1 objet valide → picking armé),
+  multi-sélection (`_chfPropLeadLengthMulti`/`_chfPropLeadAngleMulti`, y compris NaN
+  ignoré), et bout-en-bout sur `chfBuildFileContent` (bloc `<GuideCurve Para>`
+  correctement encadré par `<PWM Control>`/`<coolPos Para>` dans le fichier final, cas
+  désactivé et activé). `node --check` OK sur les deux copies du plugin. **Non
+  vérifié en navigateur réel** (blocage `file://` MCP inchangé) : seuls le calcul
+  géométrique et la grammaire de sortie sont couverts, ni le rendu visuel ni le
+  comportement réel de la machine SC2000 face au bloc `<GuideCurve Para>`.
+- **`CHFCOMP` — Compensation auto (extérieur/intérieur) dans la barre Export laser** —
+  applique en un clic un décalage signé (`_chfCompensation`) à toute une sélection
+  d'objets : on règle une magnitude (mm) dans un nouveau champ toolbar puis on
+  applique — le sens (agrandir vers l'extérieur / rétrécir vers l'intérieur) est
+  déterminé automatiquement par la profondeur d'imbrication au sein de la sélection
+  (nombre d'autres contours sélectionnés qui contiennent le point représentatif de
+  l'objet — cercle : test de distance ; sinon `pointInPolygon`). Deux règles au choix
+  via un nouveau sélecteur toolbar (`data-tbid="chf-comp-mode"`, "Alterné" par défaut)
+  — proposées toutes les deux plutôt qu'une seule tranchée d'office, à la demande de
+  l'utilisateur : **Alterné** (parité pair/impair, correct dès 3 niveaux d'imbrication,
+  ex. anneau + moyeu plein) vs **Binaire** (extérieur seulement si non imbriqué du
+  tout — diverge de Alterné dès le 3ᵉ niveau). Contours ouverts (ligne, mur, polyligne
+  non fermée...) ignorés, comptés dans le message terminal. Ré-exécuter la commande
+  **remplace** la compensation existante, jamais de cumul. `_chfCompensation` devient
+  une valeur signée (positif = extérieur, négatif = intérieur) — réinterprétation
+  non-cassante, l'export (`_chfBuildGraph`) traitait déjà ce champ comme signé, aucun
+  changement requis côté grammaire `.chf`.
+
+  Prévisualisation en pointillé du contour compensé (nouveau handler
+  `decorateEntity`), recalculée à chaque rendu depuis la géométrie courante — jamais
+  stockée, reste donc automatiquement synchrone après un déplacement/rotation/échelle
+  — en réutilisant `computeOffsetGeom` déjà existant : point de référence fixé loin à
+  l'extérieur de la bbox de l'objet, ce qui fait toujours résoudre le signe interne de
+  `computeOffsetGeom` à +1, donc le signe de `_chfCompensation` seul pilote
+  agrandir/rétrécir sans écrire de nouvelle géométrie d'offset.
+
+  Nouveau hook cœur additif **`pluginDecorateEntity(e, ctx)`**, branché aux deux
+  points d'appel `drawEntity()` existants (couche statique `_drawStaticLayer` et
+  couche dynamique `_drawDynamicLayer`, car les entités sélectionnées sont exclues de
+  la couche statique). Contrairement à `pluginExtraPropsHandler` (un seul gagnant par
+  type), appelle TOUS les plugins ayant un handler `decorateEntity` — chacun décide en
+  interne s'il a quelque chose à dessiner pour l'entité. `ctx` passé en paramètre
+  explicite (jamais lu comme variable globale : `ctx`/`TC` sont des `let` de portée
+  module, invisibles depuis un plugin chargé via `new Function()`). Réutilisable par
+  tout futur plugin voulant superposer un rendu additif sur les entités existantes.
+
+  Vérifié par harness Node headless (prolongement de celui de `chf_export`, 66/66
+  checks dont 19 nouveaux, code réel du plugin + fonctions géométriques réelles du
+  cœur) : divergence Alterné/Binaire reproduite sur un cas à 3 niveaux d'imbrication
+  (anneau + moyeu), contour ouvert ignoré avec décompte correct dans le message,
+  remplacement idempotent (ré-exécution avec une nouvelle magnitude, pas de cumul),
+  signe du fantôme de prévisualisation (rayon +mag/-mag), et imbrication via
+  `pointInPolygon` vérifiée sur des rectangles (pas seulement le raccourci cercle
+  natif). **Réserve inchangée** (déjà signalée pour `chf_export`) : le sens réel
+  attendu par SC2000 pour le champ de compensation (intérieur vs extérieur) n'est
+  confirmé par aucun exemple disponible — recommandé de tester sur une chute avant
+  toute pièce définitive.
+
+  Lancer `CHFCOMP` sans sélection active **arme désormais la boîte de sélection**
+  (fenêtre/croisement/clic) au lieu de simplement avertir sans rien faire — nouveau
+  flag `S._chfCompPending` calqué sur le patron déjà utilisé par `EXPLODE`/`GROUP`/
+  `UNGROUP`/`WBLOCK` (`S.xPending` + `setTool('select')`, curseur en mode `'pick'`
+  tant que la sélection est en cours, **Entrée** ré-exécute `CHFCOMP` avec la
+  sélection faite, **Échap** annule) : 4 points d'ancrage dans `src/minicad.html`
+  (curseur `~L9900`, purge à changement d'outil `~L14104`, gestionnaires Entrée/Échap
+  `~L17597` et `~L17701`) plus le nouveau garde en tête de
+  `_chfApplyCompensationToSelection()` côté plugin. Vérifié par harness (2 nouveaux
+  cas, 72/72 au total) : le flag s'arme et se désarme correctement, `setTool`/le
+  message d'avertissement sont bien déclenchés, et la compensation s'applique
+  normalement une fois la sélection faite. Le câblage cœur (curseur/Entrée/Échap/
+  purge) suit à l'identique un mécanisme déjà éprouvé ailleurs dans le fichier —
+  non retesté séparément en harness, seule la logique côté plugin (nouvelle) l'est.
+
+  Fantôme de compensation : **flèches de sens de coupe** le long du pointillé
+  (nouvelles fonctions `_chfArrowSamples`/`_chfDrawDirArrow`/`_chfDrawDirectionArrows`,
+  appelées depuis `decorateEntity` juste après `drawEntity(ghost)`) — 3 flèches
+  réparties sur un contour fermé (cercle : 3 angles à 120° ; polygone/polyligne :
+  3 points échantillonnés par index, tangente = segment vers le point suivant),
+  jusqu'à 2 sur un contour ouvert. Sens piloté par `e._chfReverse` (case "Inverse"
+  du panneau propriétés) : la tangente est basculée de π avant tracé. Réutilise
+  `drawArrowHead` et `w2s` du cœur, accessibles depuis un plugin car `function`-
+  déclarées (contrairement à `ctx`/`canvasW`/`canvasH`, des `let` de portée module
+  — mais résolubles quand même à l'appel, ces fonctions cœur s'exécutant dans leur
+  propre closure, celle où ces variables sont visibles). Aucune conversion
+  monde→écran ambiante sur le canvas (confirmé via `drawGrips`, qui appelle
+  explicitement `w2s()` avant tout `ctx.fillRect` en pixels) : chaque point
+  d'ancrage de flèche passe donc lui aussi par `w2s()` avant tracé.
+
+  Vérifié par harness Node headless (2 nouveaux cas, 78/78 au total) : sur cercle
+  et sur rectangle (deux chemins de code distincts dans `_chfArrowSamples`), le
+  nombre de flèches tracées et surtout — la propriété qui compte vraiment pour la
+  fonctionnalité demandée — l'inversion exacte de π de l'angle de chaque flèche
+  quand `_chfReverse` bascule. Un angle absolu de référence (échantillon 0 du
+  cercle) vérifié à la main en plus. **Non vérifié en navigateur réel** (blocage
+  `file://` du connecteur MCP inchangé cette session) : seul le calcul angle/
+  position est couvert, pas le rendu visuel (lisibilité, taille, chevauchement sur
+  petits contours) — à contrôler visuellement dès que possible.
+
+  **`CHFREV` — icône toolbar pour inverser le sens de coupe** — nouveau bouton dans
+  la barre Export laser (`data-tbid="chf-rev-toggle"`, icône double-flèche) qui
+  bascule `_chfReverse` de chaque objet supporté de la sélection **individuellement**
+  (chacun inverse son propre état courant — comme `MIRROR` bascule chaque objet
+  indépendamment — contrairement au select "Sens" du panneau propriétés en mode
+  multi-sélection, qui force tous les objets à une même valeur choisie). Types non
+  supportés dans la sélection ignorés silencieusement (comptés hors du message).
+  Aucune sélection : avertit sans rien faire (pas d'armement de boîte de sélection
+  comme `CHFCOMP` — non demandé pour cet outil, comportement par défaut le plus
+  courant du cœur). Vérifié par harness Node headless (6 nouveaux cas, **84/84** au
+  total) : bascule individuelle vraie/faux sur deux objets aux états initiaux
+  opposés, type non supporté laissé intact, décompte correct dans le message,
+  sélection vide → avertissement sans effet. `node --check` OK sur les deux copies
+  du plugin. **Non vérifié en navigateur réel** (blocage `file://` MCP inchangé).
+- **Nouveau plugin `chf_export` — export `.chf` pour découpe laser SC2000** —
+  nouvelle commande `EXPORTCHF` (alias `ECHF`) qui exporte tout ou partie du
+  dessin (sélection ou dessin entier, blocs `insert` aplatis récursivement,
+  profondeur max 5) vers le format `.chf` lu par le logiciel de pilotage
+  laser SC2000 (Au3Tech). Format rétro-ingénierié à partir d'un fichier
+  d'exemple fourni par l'utilisateur (aucune documentation publique
+  disponible) : grammaire de graphes/Gly, règle de chaînage (`dir` de
+  parcours), élargissement de bbox par la compensation — tout validé à la
+  main contre l'exemple avant implémentation. Trois réglages par objet dans
+  le panneau Propriétés (types supportés : ligne, mur, rectangle, cercle,
+  arc, polyligne, câble, spline, ellipse) :
+  - **Sens** — normal/inversé, select dédié (mono et multi-sélection).
+  - **Compensation (mm)** — jeu de coupe/largeur de trait, appliqué à la
+    bbox déclarée du graphe (pas aux points stockés) pour les contours
+    non-cercle, fidèle au comportement observé sur l'exemple.
+  - **Point de départ** — bouton "cliquer sur le contour" (nouvel outil
+    `chf_startpoint`, branché dans `handleClick`/Échap comme le point de
+    base de `WBLOCK`), proposé uniquement sur les contours fermés (rect,
+    cercle, arc/ellipse pleins, polyligne/câble/spline fermé(e)s), avec
+    réinitialisation possible vers le défaut auto. Le point est toujours
+    re-projeté sur la géométrie courante à l'export (résiste à un
+    déplacement/redimensionnement ultérieur de l'objet) et reste fixe sous
+    inversion du Sens — seule la direction de parcours change.
+
+  Résolution de contour unifiée (`_chfResolveContour`), partagée par le
+  picking et l'algorithme d'export pour garantir leur cohérence géométrique
+  — comble au passage un manque de `getEntitySegments` (aucun cas
+  cercle/arc, pas de tessellation des bulges polyligne/câble).
+
+  Nouveau hook cœur additif **`pluginExtraPropsHandler(type)` /
+  `pluginExtraPropsHandlerMulti(type)`** (à côté de `pluginPropsHandler`,
+  inchangé) : contrairement à ce dernier qui *remplace* tout le rendu
+  Propriétés d'un type, celui-ci *ajoute* du HTML après le rendu natif ou
+  remplacé — nécessaire pour qu'un plugin ajoute quelques lignes (Sens/
+  Compensation/Point de départ) sur des types déjà gérés nativement (ligne,
+  rect, cercle...) sans avoir à réimplémenter tout leur rendu. Réutilisable
+  par tout futur plugin.
+
+  **Réserves non vérifiées sur machine réelle** (absentes de l'unique
+  exemple disponible) : le sens `dir=-1` sur un cercle, un point de départ
+  non-défaut sur un cercle, et le sens intérieur/extérieur de la
+  compensation — premier essai recommandé sur une chute, avec un objet
+  simple (sans inversion ni compensation) avant toute pièce définitive.
+- **Copier/coller entre onglets MiniCAD** — `Ctrl+C`/`Ctrl+X` déposent
+  désormais aussi un export JSON des objets sélectionnés dans le presse-
+  papiers du système d'exploitation (`navigator.clipboard.writeText()`), en
+  plus du presse-papiers interne (`S.clipboard`, inchangé). Repli silencieux
+  si l'API Clipboard est indisponible — le presse-papiers interne suffit
+  toujours pour coller dans le même onglet.
+  Côté collage, `Ctrl+V` s'appuie sur l'évènement natif `paste` du navigateur
+  (accès synchrone à `ev.clipboardData`) plutôt que sur
+  `navigator.clipboard.readText()` : cette dernière exige une permission
+  dédiée et échouait silencieusement dans plusieurs contextes — notamment le
+  fichier local `file://` utilisé pour ouvrir MiniCAD (repli sur le presse-
+  papiers interne vide → "Presse-papiers vide" à tort, signalé sur Opera).
+  Le nouveau listener `document.addEventListener('paste', ...)` lit
+  `ev.clipboardData`, remplace `S.clipboard` si le texte est un export
+  MiniCAD reconnu (`__minicad_clipboard`) — permettant de copier dans un
+  onglet/fenêtre MiniCAD et coller dans un autre — sinon conserve le presse-
+  papiers interne existant. Même garde que pour Ctrl+C/X/V au clavier : un
+  champ de dialogue ouvert (renommer un bloc, TEXTE...) autre que `cmdInput`
+  garde son collage de texte natif, non intercepté. L'ancien
+  `ev.preventDefault()` sur le `keydown` Ctrl+V a été retiré (il supprimait
+  l'évènement `paste` avant qu'il ne se déclenche) ; `clipboardPaste()` est
+  redevenue synchrone. L'entrée "Coller" du menu Ctrl+clic-droit reste
+  toujours active (même presse-papiers interne vide) : un clic sur cette
+  entrée ne peut de toute façon jamais déclencher l'évènement `paste` natif
+  (seul un vrai Ctrl+V clavier le peut), donc griser l'entrée selon l'état
+  du presse-papiers interne serait trompeur et empêcherait de découvrir la
+  fonctionnalité dans un onglet neuf. `clipboardPaste()` reste le filet de
+  sécurité et avertit ("Presse-papiers vide") si rien n'est réellement
+  disponible — le collage cross-onglet nécessite un vrai Ctrl+V, pas un
+  clic sur "Coller".
+- **Cause réelle du bug Opera identifiée et corrigée** — le diagnostic ajouté
+  a montré que `navigator.clipboard` est carrément absent sur cet Opera (pas
+  une permission refusée : la branche "API indisponible" s'affichait), donc
+  `clipboardCopy()` n'écrivait jamais rien dans le presse-papiers système —
+  ce que l'onglet 2 confirmait en lisant un presse-papiers vide via
+  Ctrl+V. Cause probable : `navigator.clipboard` exige un contexte
+  "sécurisé", et `file://` (utilisé pour ouvrir MiniCAD) n'est pas
+  systématiquement traité comme tel selon le navigateur.
+  Nouvelle fonction `writeSystemClipboard(text)` : écrit désormais via
+  `document.execCommand('copy')` (textarea temporaire hors écran,
+  sélectionné puis copié) — API dépréciée mais synchrone et indépendante du
+  statut "contexte sécurisé", donc disponible y compris sur ce cas Opera.
+  `navigator.clipboard.writeText()` reste tenté en secours si disponible.
+  Le côté lecture (`paste` natif) n'a pas besoin de ce changement : il n'a
+  jamais été concerné par cette restriction.
+- **Menu Ctrl+clic-droit : historique des 5 dernières commandes** — la liste
+  "Répéter X" n'affichait que la toute dernière commande ; elle montre
+  désormais jusqu'à 5 entrées (la plus récente en gras avec le raccourci
+  Entrée), chacune cliquable pour la relancer directement. Nouvel état
+  `S.cmdRepeatHistory` (5 entrées max, la plus récente en tête, dédoublonnée
+  sur l'entrée immédiatement précédente) alimenté par la nouvelle fonction
+  `_pushCmdRepeat(raw)`, appelée aux trois points où `S.lastCmdRaw` était
+  auparavant assigné directement (commande `CMD{}` exécutée, commande de
+  module, sélection d'un outil via la barre d'outils/`_toolCmdName`) —
+  `S.lastCmdRaw` reste alimenté en parallèle pour le clic droit simple.
+- **`DEPUIS` (FROM, façon AutoCAD)** — nouvelle entrée "Depuis..." dans le menu
+  contextuel Ctrl+clic-droit (`showCanvasContext()`), activée dès qu'un point
+  est attendu (`getCursorMode()==='draw'` — dessin en cours, point de base
+  MOVE/COPY/ROTATE/SCALE...). Auparavant Ctrl+clic-droit n'ouvrait ce menu
+  qu'à l'arrêt (outil `select` idle) ; le raccourci fonctionne désormais aussi
+  en pleine saisie de point (`_rightClickAction()` teste `ev.ctrlKey` avant la
+  confirmation "Entrée" du clic droit simple). "Depuis" arme la capture d'un
+  point de référence (`S._fromArmed`) : le clic suivant le mémorise
+  (`S._fromBase`) sans faire avancer la commande — Échap annule cette seule
+  sous-étape. Le point réel se donne ensuite au clavier par une coordonnée
+  relative/polaire (`@dx,dy`, `dist<angle`, `#x,y`) résolue depuis ce point de
+  référence via `parseDistanceInput()` (déjà utilisé pour les points 2+ d'une
+  entité) — comblant un manque réel : jusqu'ici, le tout premier point d'une
+  entité ne pouvait être saisi qu'en absolu, aucun point de référence
+  n'existant encore pour un décalage relatif. Un clic normal (sans taper de
+  décalage) ignore la référence, exactement comme AutoCAD. Référence
+  consommée une seule fois (remise à `null` à chaque clic normal et à chaque
+  changement d'outil via `setTool()`), pour ne jamais fausser une commande
+  ultérieure sans rapport. La bulle de saisie dynamique (D/A) reflète elle
+  aussi la référence : `getDIMode()` bascule en mode Distance/Angle (au lieu
+  de X,Y brut) dès que `S._fromBase` est armé, `updateDynamicInput()` calcule
+  ces valeurs par rapport au point de référence, et `confirmDynamicInput()`
+  résout le point réel (référence + distance/angle) à la confirmation —
+  la mesure affichée part donc bien du point "Depuis", plus de l'origine.
+  Un aperçu en pointillés avec la distance live (même style que les repères
+  OFFSET/AXIS) est aussi tracé entre la référence et le curseur — quel que
+  soit le point concerné (1er point d'une entité, ou un point suivant : ex.
+  2ème point d'une LIGNE déjà commencée). Correction d'un deuxième manque :
+  la référence n'était utilisée que pour le tout premier point d'une entité —
+  armer "Depuis" pour un point suivant (déjà en train de dessiner) retombait
+  sur le dernier point réel de l'entité, ignorant la référence choisie
+  (`updateDynamicInput()`/`confirmDynamicInput()`/le bloc terminal « SECOND+
+  POINT INPUT » ne consultaient pas `S._fromBase`). Les trois font désormais
+  systématiquement primer `S._fromBase` sur `S.drawPoints[...]` tant qu'il est
+  armé, et Échap peut aussi annuler une référence déjà acquise mais pas
+  encore utilisée, sans toucher à la commande en cours.
+- **Nom de bloc demandé + renommage propagé** — `BLOCK` sans nom fourni en
+  argument ouvre désormais une invite (`prompt()`) au lieu d'auto-nommer
+  silencieusement en `Bloc1`/`Bloc2`... (Échap/annuler abandonne la création).
+  Collision de nom (bloc déjà existant) auto-suffixée (`_2`, `_3`...) avec
+  avertissement, même logique que l'import de bloc depuis un fichier externe.
+  Nouvelle fonction `renameBlock(oldName)` : renomme la définition dans
+  `S.blocks` et met à jour `blockName` sur toutes les entités `insert` qui la
+  référencent (comptage affiché). Accessible via un bouton ✎ à côté de la
+  liste déroulante dans la popup `INSERT`, ou directement en éditant le champ
+  "Bloc" (désormais un texte modifiable, plus un simple libellé) du panneau
+  Propriétés pour une entité `insert` sélectionnée — logique de renommage
+  factorisée dans `_renameBlockTo(oldName,newName)`, réutilisée par les deux
+  entrées (popup et Propriétés). Collision de nom : refusée avec avertissement,
+  le champ Propriétés reprend l'ancien nom. Popup `INSERT` : le champ "Bloc"
+  (liste déroulante) et le bouton renommer se grisent automatiquement dès
+  qu'un bloc est importé depuis un fichier (`_ibImportedBlocks` non vide) —
+  le nom vient du fichier importé, pas d'un choix parmi les blocs du dessin.
+- **`WBLOCK`** (alias `WB`/`WBLOC`) — équivalent AutoCAD : écrit une définition
+  de bloc dans un fichier `.mcad` externe autonome, réutilisable dans un autre
+  dessin via `INSERT` ▸ "Importer depuis un fichier" (même format
+  `{app:'MiniCAD', blocks:{...}}` que cet import). `WBLOCK <nom>` écrit
+  directement un bloc déjà défini dans le dessin ; `WBLOCK` sans nom et sans
+  sélection liste les blocs disponibles et invite à sélectionner des objets ;
+  avec une sélection, réutilise le flux `BLOCK` (nom + point de base) puis
+  exporte automatiquement le bloc nouvellement créé. Nouvelle fonction
+  `wblockSaveToFile(name, def)`, réutilise `saveWithPicker()` (déjà utilisé par
+  `SAVE`). Entrée ajoutée au menu Modifier, juste après "Créer un bloc".
+- **`WBLOCK` — popup de sélection de la source (façon AutoCAD "Write Block")** —
+  `WBLOCK` sans nom d'argument (menu ou terminal vide) ouvre désormais une
+  boîte de dialogue (`#wblock-dialog`, `openWblockDialog()`) au lieu d'un flux
+  au clavier/`prompt()` : choix de la **source** (liste déroulante) parmi
+  "Bloc existant du dessin" (sélectionné dans une liste, écrit directement via
+  `wblockSaveToFile`), "Objets sélectionnés" ou "Dessin entier" (nouvelle
+  fonction `wblockSaveDrawingToFile(name)`, réutilise `buildSaveData()` —
+  export non destructif, ne modifie pas le fichier/handle du dessin ouvert).
+  Chaque source est grisée automatiquement si non applicable (aucun bloc /
+  dessin vide). Pour "Objets sélectionnés" : deux boutons dédiés dans le
+  dialogue, façon boîte AutoCAD "Écrire le bloc" — **Sélectionner des objets**
+  (cache le dialogue, bascule sur l'outil sélection standard fenêtre/
+  croisement/clic, Entrée valide/Échap annule, même mécanisme que ARRAY) et
+  **Point de base** (cache le dialogue, un clic canvas via l'outil dédié
+  `wb_basepoint` mémorise le point sans créer le bloc), tous deux réaffichant
+  le dialogue avec le compte d'objets et les coordonnées choisies. L'appui sur
+  OK crée alors le bloc et lance l'export en un seul geste — plus besoin de
+  cliquer un point sur le canvas après avoir fermé le dialogue. Logique de
+  création factorisée dans `_createBlockFromEntities(ents, name, bx, by)`,
+  réutilisée par le clic canvas classique de `BLOCK` (outil `block_base`) et
+  par cette nouvelle confirmation directe. `WBLOCK <nom>` reste un raccourci
+  direct sans popup (comme avant).
+- **`WBLOCK` — champ "Chemin" avec bouton parcourir** — nouveau champ dans le
+  dialogue (bouton 📁, `wbPickPath()`) qui ouvre immédiatement le sélecteur
+  natif `showSaveFilePicker` pour choisir la destination **avant** de cliquer
+  OK, comme le champ "File name and path" d'AutoCAD ; le handle de fichier
+  choisi est conservé (`S._wbFileHandle`) et réutilisé directement par OK, sans
+  repasser par un second sélecteur — `saveWithPicker()` accepte désormais un
+  handle existant en dernier paramètre et écrit dessus au lieu de rouvrir une
+  boîte "Enregistrer sous". Si l'API n'est pas disponible dans le navigateur,
+  message d'avertissement expliquant que le fichier sera téléchargé dans le
+  dossier de téléchargements par défaut (limite de la sandbox navigateur :
+  JavaScript n'a jamais accès au chemin absolu réel, seulement au nom du
+  fichier choisi). Champ facultatif : si non renseigné, OK déclenche comme
+  avant le sélecteur natif au moment de l'export.
+
+### Corrigé
+- **WBLOCK réaffichait le sélecteur de fichier malgré un chemin déjà choisi** —
+  `saveWithPicker()` réutilisait le handle de `S._wbFileHandle` mais avalait
+  silencieusement toute erreur de `createWritable()` (permission repassée à
+  `'prompt'` entre le clic sur « Chemin » et le clic sur OK, notamment après un
+  aller-retour par « Sélectionner des objets »/« Point de base ») et retombait
+  sans explication sur un nouveau `showSaveFilePicker()` — d'où l'impression
+  qu'OK redemandait le chemin. Revalidation explicite de la permission
+  (`queryPermission`/`requestPermission`) avant l'écriture, et l'échec éventuel
+  est maintenant affiché dans le terminal au lieu d'être masqué.
+- **Blocs qui survivaient à "Nouveau dessin"** — `closeDrawing()` (commandes
+  `NOUVEAU`/`CLS`/`FERMER`, menu Fichier ▸ Nouveau) remettait à zéro
+  `S.entities`/`S.selected`/`S.layers` mais oubliait `S.blocks` : les
+  définitions de blocs d'un dessin précédent restaient donc proposées dans la
+  popup `INSERT` d'un dessin flambant neuf. Ajout de `S.blocks = {}` au reset.
+- **Modules Architecture / Électricité de nouveau visibles** — le panneau
+  latéral "Modules" et le compteur de la barre de statut filtraient
+  volontairement `architecture` et `electrical` (masqués du frontend, code
+  conservé) ; retrait des deux filtres dans `updateUI()`/`updateStatusBar()`
+  pour réafficher les quatre modules (Architecture, Électricité, Cotation,
+  Annotation).
+
+### Ajouté
+- **BLOCK / INSERT** — blocs nommés réutilisables. `BLOCK [nom]` sur une sélection
+  crée une définition (`S.blocks[nom]`, géométrie recentrée sur le point de base
+  choisi au clic) et la remplace par une première instance (`type:'insert'`).
+  `INSERT nom` pose ensuite autant d'instances indépendantes qu'on veut, chacune
+  avec sa propre position/angle/échelle. Les instances se déplacent, copient,
+  tournent, mettent à l'échelle, s'effacent et s'éclatent (`EXPLODE`) comme
+  n'importe quelle entité — réutilisation des chemins génériques existants
+  (mêmes branches que `TEXT` pour move/rotate ; une ligne ajoutée dans
+  `scaleEntityInPlace`) plutôt que du code dédié partout. `MIRROR` reflète
+  aussi bien la position que l'orientation du contenu du bloc (voir entrée
+  dédiée ci-dessous). Persistant dans les fichiers `.mcad`
+  (`S.blocks`, rétrocompatible). Export DXF : pas de vrais enregistrements
+  `BLOCK`/`INSERT` — chaque instance est aplatie en géométrie transformée au
+  moment de l'export (`insertWorldEntities()`), ce qui est déjà mieux que
+  `GROUP` dont les entités groupées n'étaient jusqu'ici jamais exportées en DXF.
+  Accessible aussi via le menu (Modifier ▸ Créer un bloc, Insérer ▸ Insérer un
+  bloc) et deux boutons de barre d'outils dédiés, à côté de Grouper/Dégrouper.
+- **OSNAP Insertion** — mode d'accrochage dédié au point d'insertion d'un bloc
+  (`type:'insert'`), sur le même principe que le mode "Insertion" d'AutoCAD :
+  jusqu'ici `findOsnap()` n'avait aucun cas pour `insert`, donc impossible
+  d'accrocher précisément une instance de bloc pendant un déplacement par
+  poignée. Marqueur dédié (carré + croix diagonale), activé par défaut,
+  bascule dans le panneau ACCROCHAGE et dans les Préférences.
+- **OSNAP sur le contenu des blocs** — au-delà du point d'insertion, tous les
+  modes OSNAP standards (extrémité, milieu, centre, plus proche, intersection,
+  perpendiculaire, tangente, quadrant) fonctionnent maintenant aussi sur la
+  géométrie *à l'intérieur* d'une instance de bloc, comme dans AutoCAD.
+  `findOsnap()` aplatit chaque instance proche du curseur en ses entités
+  enfant transformées (`insertWorldEntities()`) et les injecte dans le
+  pré-filtre `_nearby`, avec un id synthétique `<idInstance>:<idEnfant>` pour
+  ne pas confondre deux instances du même bloc (pertinent pour la logique
+  tangente-tangente). Support récursif pour les blocs imbriqués (profondeur
+  max 5). Limite connue : une cote associative (DIMASSOC) accrochée sur un
+  enfant de bloc ne peut pas se recaler (l'entité hôte n'existe pas dans
+  `S.entities`) — se comporte comme un accroché "figé", pas de crash.
+  OSNAP Extension/OTRACK reste hors scope (déjà documenté comme défectueux
+  au TODO, mécanisme séparé non branché sur `_nearby`).
+- **Panneau Propriétés pour BLOCK/INSERT** — sélectionner une instance affiche
+  maintenant son nom de bloc, son angle (°, éditable), son échelle (éditable)
+  et l'état Miroir (case Oui/Non, éditable), en plus de X/Y déjà couverts par
+  le fallback générique.
+- **MIRROR sur les blocs** — jusqu'ici `MIRROR` reflétait la position du point
+  d'insertion d'une instance mais laissait son contenu inchangé (pas de vraie
+  symétrie visuelle). Ajout d'un drapeau `mirror` sur l'entité `insert` :
+  `insertWorldEntities()` applique désormais un flip local (`mirrorEntity`
+  autour de l'axe Y local) avant échelle/rotation, et `mirrorEntity()` sait
+  recalculer l'angle d'une instance (`angle' = 2·angleDroite − angle + π`) et
+  inverser son drapeau `mirror` pour tout miroir arbitraire. Formule dérivée
+  par composition matricielle (monde = R(angle)·F(mirror)·local + translation)
+  et vérifiée numériquement (7 cas variés + double-miroir = identité) avec les
+  fonctions réelles du fichier source avant intégration.
+- **Fichier ▸ Fermer** (`FERMER`, alias `CLOSE`) — ferme le dessin courant, avec
+  confirmation si des modifications ne sont pas sauvegardées.
+- **Dialogue INSÉRER UN BLOC** — cliquer Insérer ▸ Insérer un bloc (ou taper
+  `INSERT` sans argument) ouvrait un simple message dans le terminal listant
+  les blocs disponibles, sans action possible. Ouvre maintenant une popup avec
+  une liste déroulante des blocs du dessin courant, plus un champ chemin +
+  bouton "…" pour parcourir le disque et importer les blocs d'un autre fichier
+  `.mcad`/`.json` (lu côté client via `FileReader`, aucune dépendance réseau).
+  Un bloc importé est copié dans `S.blocks` au moment de la validation
+  (renommé automatiquement en cas de collision de nom), puis l'insertion se
+  déroule normalement (clic pour poser). Le raccourci terminal `INSERT <nom>`
+  reste inchangé (toujours direct, sans popup).
+- **Preview de bloc pendant INSERT** — après avoir choisi un bloc (dialogue ou
+  `INSERT <nom>`), le contenu du bloc s'affiche désormais en pointillé sous le
+  curseur pendant qu'on cherche le point d'insertion (respecte l'accroche
+  OSNAP/grille active), au lieu de devoir cliquer à l'aveugle. Même principe
+  que la preview des bibliothèques (`drawLibPreview`) : entités fantômes
+  générées via `insertWorldEntities()` et dessinées à 55% d'opacité, trait
+  pointillé.
+- **OSNAP Extension : expiration automatique des points acquis** — les points
+  de repère acquis par survol (OTRACK, `S.osnapAcquired`) restaient actifs
+  indéfiniment tant qu'on ne changeait pas d'outil, ce qui les faisait
+  s'accumuler et perturber le tracking pendant une séquence de plusieurs
+  clics (ex. plusieurs `LINE` à la suite). Deux correctifs : (1) reset
+  systématique de `S.osnapAcquired` à chaque clic (`handleClick`) et à chaque
+  validation de saisie dynamique (`confirmDynamicInput`) ; (2) expiration par
+  minuteur individuel (3 s par défaut) sur chaque point acquis, via un
+  `setTimeout` déclenché à l'acquisition. Durée réglable dans Préférences ▸
+  Object snap (`prefs.osnap_ext_timeout`, nouveau champ `S.osnapExtTimeout`,
+  0 = jamais expirer, plage 0–30 s).
+- **`DIMCONTINUE`** (alias `DCO`/`DIMCONT`) — équivalent AutoCAD : enchaîne des
+  cotes depuis le 2e point d'extension d'une cote linéaire/alignée existante,
+  en réutilisant automatiquement la même ligne de cote (un seul clic par
+  point suivant, Échap pour terminer). Sélection de la cote de départ à trois
+  niveaux comme AutoCAD : cote explicitement sélectionnée, sinon dernière cote
+  créée (`S._lastDimId`, maintenant renseigné par le flux `DIMLINEAR`/
+  `DIMALIGNED`), sinon invite à cliquer une cote existante. Alignement exact
+  de la ligne de cote calculé par `_dimContOffsetFor(base, p1, p2)` à partir
+  de la ligne de cote réelle de la cote de base (`getDimLinePoints`), et non
+  en recopiant naïvement son `offset` (qui ne coïnciderait que par coïncidence
+  géométrique). `drawDimPreview()` accepte désormais un offset/orientation
+  forcés pour la prévisualisation en direct. Accessible via le menu Cotation,
+  un bouton de barre d'outils dédié, ou en tapant `DIMCONTINUE`/`DCO`.
+- **`DIMBASELINE`** (alias `DBA`/`DIMBASE`) — équivalent AutoCAD : empile des
+  cotes depuis la même origine (1er point d'extension) qu'une cote linéaire/
+  alignée existante, chaque nouvelle cote étant décalée d'un cran
+  supplémentaire vers l'extérieur pour ne pas chevaucher les précédentes (un
+  seul clic par point suivant, Échap pour terminer). Même sélection de la
+  cote de départ à trois niveaux que `DIMCONTINUE` (sélection explicite,
+  sinon `S._lastDimId`, sinon invite à cliquer). Écart entre cotes empilées
+  réglable par style de cotation — nouveau champ `baselineSpacing` (colonne
+  "Écart cotes" dans Cotation ▸ Gérer les styles…, par défaut ≈ 2.8×
+  `textHeight` selon l'échelle du style, rétrocompatible avec les styles
+  sauvegardés avant cette version via `_dimBaselineSpacing()`). Alignement
+  calculé par `_dimBaselineOffsetFor(base, p1,
+  p2, n)`, qui réutilise `_dimContOffsetFor` sur un clone de la cote de base
+  dont l'offset est déjà poussé de `n` crans — même principe de calcul exact
+  que `DIMCONTINUE`, pas de décalage recopié à l'aveugle. Accessible via le
+  menu Cotation, un bouton de barre d'outils dédié, ou en tapant
+  `DIMBASELINE`/`DBA`.
+
+### Corrigé
+- **BLOCK/INSERT perdu après F5** — `loadFromLocalStorage()` (restauration
+  auto-save au chargement de page) ne restaurait pas `data.blocks`, contrairement
+  à `openJSON()` (Ouvrir un fichier) qui le faisait déjà. Après un F5, l'entité
+  `insert` survivait mais pointait vers un bloc introuvable → marqueur `?` en
+  pointillé (garde-fou prévu pour ce cas) au lieu de la géométrie du bloc.
+  Corrigé par l'ajout de `if (data.blocks) S.blocks = data.blocks;` au même
+  endroit que dans `openJSON()`.
 - **Export DXF : arcs de polyligne (bulge) inversés dès qu'ils dépassent le demi-cercle.**
   Le standard DXF définit `bulge = tan(θ/4)` avec θ l'angle inclus signé, ce qui place le
   centre en `milieu + perp_ccw·((1−b²)/(2b))` : pour un **arc majeur** (`|b| > 1`) ce
