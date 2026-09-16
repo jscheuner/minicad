@@ -802,5 +802,15 @@ window.GRADRULE_PLUGIN = {
         }
       }
     }
+
+    // Ruban (mode AutoCAD) : mêmes commandes que la barre d'outils ci-dessus,
+    // présentées comme les boutons natifs (voir rbPluginPanel()/rbPluginBtn()).
+    if (typeof rbPluginPanel === 'function') {
+      const rbCont = rbPluginPanel('gradrule', 'Graduations');
+      const rbCol = rbPluginCol(rbCont, 1);
+      rbPluginBtn(rbCol, 'gradisc', 'Disque gradué (GRADISC)', 'GRADISC', GRADRULE_ICONS.gradisc, 'Disque');
+      rbPluginBtn(rbCol, 'gradrule', 'Règle graduée (GRADRULE)', 'GRADRULE', GRADRULE_ICONS.gradrule, 'Règle');
+      rbPluginBtn(rbCol, 'gradarc', 'Arc gradué (GRADARC)', 'GRADARC', GRADRULE_ICONS.gradarc, 'Arc');
+    }
   }
 };

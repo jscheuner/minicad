@@ -1339,5 +1339,21 @@ window.CHF_EXPORT_PLUGIN = {
         }
       }
     }
+
+    // Ruban (mode AutoCAD) : mêmes commandes que la barre d'outils ci-dessus,
+    // présentées comme les boutons natifs (voir rbPluginPanel()/rbPluginBtn()).
+    // Les champs Compensation/Longueur d'amorce restent dans la barre d'outils
+    // classique (data-tbid) : CHFCOMP/CHFSTARTAUTO les lisent tels quels — la
+    // barre reste dans le DOM (masquée) en mode ruban, valeurs conservées.
+    if (typeof rbPluginPanel === 'function') {
+      const rbCont = rbPluginPanel('chf_export', 'Export laser');
+      const rbCol1 = rbPluginCol(rbCont, 1);
+      rbPluginBtn(rbCol1, 'chf-export', 'Export CHF (EXPORTCHF)', 'EXPORTCHF', CHF_ICON, 'Export CHF');
+      rbPluginBtn(rbCol1, 'chf-rev-toggle', 'Inverser le sens de coupe (CHFREV)', 'CHFREV', CHF_REV_ICON, 'Inverser sens');
+      rbPluginBtn(rbCol1, 'chf-start-pick', 'Point de départ manuel (CHFSTART)', 'CHFSTART', CHF_START_ICON, 'Point départ');
+      const rbCol2 = rbPluginCol(rbCont, 2);
+      rbPluginBtn(rbCol2, 'chf-start-auto', 'Amorce auto sur la sélection (CHFSTARTAUTO)', 'CHFSTARTAUTO', CHF_START_AUTO_ICON, 'Amorce auto');
+      rbPluginBtn(rbCol2, 'chf-comp-apply', 'Appliquer compensation (CHFCOMP)', 'CHFCOMP', CHF_COMP_ICON, 'Compensation');
+    }
   }
 };

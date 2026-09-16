@@ -1677,6 +1677,20 @@ function _nestBuildToolbar() {
   }
 }
 
+// Ruban (mode AutoCAD) : mêmes commandes que la barre d'outils ci-dessus,
+// présentées comme les boutons natifs (voir rbPluginPanel()/rbPluginBtn()).
+function _nestBuildRibbon() {
+  if (typeof rbPluginPanel !== 'function') return;
+  const rbCont = rbPluginPanel('nesting', 'Imbrication');
+  const rbCol1 = rbPluginCol(rbCont, 1);
+  rbPluginBtn(rbCol1, 'nest-panel', 'Panneau imbrication (NESTING)', 'NESTING', NEST_ICONS.panel, 'Panneau');
+  rbPluginBtn(rbCol1, 'nest-add', 'Ajouter la sélection (NESTADD)', 'NESTADD', NEST_ICONS.add, 'Ajouter');
+  rbPluginBtn(rbCol1, 'nest-fmt', 'Formats de tôle (NESTFMT)', 'NESTFMT', NEST_ICONS.fmt, 'Formats');
+  const rbCol2 = rbPluginCol(rbCont, 2);
+  rbPluginBtn(rbCol2, 'nest-run', 'Lancer l\'optimisation (NESTRUN)', 'NESTRUN', NEST_ICONS.run, 'Lancer');
+  rbPluginBtn(rbCol2, 'nest-clr', 'Effacer le résultat (NESTCLR)', 'NESTCLR', NEST_ICONS.clr, 'Effacer');
+}
+
 // ======== EXPORTS WINDOW (appelés depuis le HTML injecté) ========
 window._nestOpenPanel = _nestOpenPanel;
 window._nestClose = _nestClose;
@@ -1712,6 +1726,7 @@ window.NESTING_PLUGIN = {
     _nestInjectUI();
     Object.assign(CMD, this.commands);
     _nestBuildToolbar();
+    _nestBuildRibbon();
     _nestLoadStd().then(() => { if (_nestEl('nest-panel')) _nestRenderPanel(); });
     // bind live des champs paramètres
     ['nest-p-kerf', 'nest-p-margin', 'nest-p-gap', 'nest-p-step'].forEach(id => {

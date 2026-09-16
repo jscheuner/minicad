@@ -225,6 +225,7 @@
   "ribbon.tab.home": "Accueil",
   "ribbon.tab.annotate": "Annotation",
   "ribbon.tab.view": "Affichage",
+  "ribbon.tab.plugins": "Plugins",
   "ribbon.panel.draw": "Dessin",
   "ribbon.panel.modify": "Modification",
   "ribbon.panel.blocks": "Blocs et groupes",
