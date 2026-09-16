@@ -2333,13 +2333,14 @@
               </svg>
               <span class="rb-label">Miroir</span>
             </button>
-            <button class="tool-btn rb-btn rb-med" data-tool="scale" title="Mise à l'échelle (SC)" onclick="executeCommand('SCALE')">
+            <button class="tool-btn rb-btn rb-med" data-tool="offset" title="Décaler (O)" onclick="executeCommand('OFFSET')">
               <svg viewBox="0 0 24 24">
-                <path d="M3 21l6-6M21 3l-6 6" fill="none"/>
-                <path d="M21 3h-5M21 3v5" fill="none"/>
-                <path d="M3 21h5M3 21v-5" fill="none"/>
+                <path d="M3 7 Q12 3 21 7"/>
+                <path d="M3 13 Q12 9 21 13"/>
+                <path d="M3 19 Q12 15 21 19"/>
+                <line x1="12" y1="7" x2="12" y2="13" stroke-dasharray="2,2"/>
               </svg>
-              <span class="rb-label">Échelle</span>
+              <span class="rb-label">Décaler</span>
             </button>
             <button class="tool-btn rb-btn rb-med" data-tool="trim" title="Couper (TR)" onclick="executeCommand('TRIM')">
               <svg viewBox="0 0 24 24">
@@ -2356,12 +2357,11 @@
             <button class="tool-btn rb-btn rb-small" data-tool="select" title="Sélection (V)" onclick="setTool('select')">
               <svg viewBox="0 0 24 24"><path d="M5 3l14 9-7 1-4 7z" fill="currentColor" fill-opacity="0.25"/><path d="M5 3l14 9-7 1-4 7z"/></svg>
             </button>
-            <button class="tool-btn rb-btn rb-small" data-tool="offset" title="Décaler (O)" onclick="executeCommand('OFFSET')">
+            <button class="tool-btn rb-btn rb-small" data-tool="scale" title="Mise à l'échelle (SC)" onclick="executeCommand('SCALE')">
               <svg viewBox="0 0 24 24">
-                <path d="M3 7 Q12 3 21 7"/>
-                <path d="M3 13 Q12 9 21 13"/>
-                <path d="M3 19 Q12 15 21 19"/>
-                <line x1="12" y1="7" x2="12" y2="13" stroke-dasharray="2,2"/>
+                <path d="M3 21l6-6M21 3l-6 6" fill="none"/>
+                <path d="M21 3h-5M21 3v5" fill="none"/>
+                <path d="M3 21h5M3 21v-5" fill="none"/>
               </svg>
             </button>
             <button class="tool-btn rb-btn rb-small" data-tool="extend" title="Prolonger (EX)" onclick="executeCommand('EXTEND')">
@@ -3315,14 +3315,14 @@ const USER_PREFS = {
   sidePanelVisible: true,
   propsPanelWidth: 200,
   propsPanelVisible: true,
-  toolbarStyle: 'standard',
+  toolbarStyle: 'ribbon',
 };
 // ===USER_PREFS_END===
 
 // ===== STATE =====
 const S = {
   theme: 'light',
-  toolbarStyle: 'standard',
+  toolbarStyle: 'ribbon',
   pickboxPx: 6,    // demi-côté du carré de sélection (px écran)
   osnapTolPx: 15,  // portée d'accrochage OSNAP (px écran)
   entities: [],
@@ -4583,7 +4583,9 @@ const modules = {
   architecture: { name: 'Architecture', color: 'var(--module-arch)', loaded: false, commands: {}, desc: 'Murs, portes, fenêtres' },
   electrical: { name: 'Électricité', color: 'var(--module-elec)', loaded: false, commands: {}, desc: 'Prises, interrupteurs, câbles' },
   dimensioning: { name: 'Cotation', color: 'var(--module-dim)', loaded: false, commands: {}, desc: 'Cotes linéaire, parallèle, angulaire, rayon, diamètre' },
-  annotation: { name: 'Annotation', color: 'var(--module-text)', loaded: false, commands: {}, desc: 'Texte, repères, tableaux' },
+  // Annotation est chargé d'office : texte et repères servent sur presque tous les
+  // dessins. Un dessin rouvert impose son propre état (voir data.modules).
+  annotation: { name: 'Annotation', color: 'var(--module-text)', loaded: true, commands: {}, desc: 'Texte, repères, tableaux' },
 };
 
 modules.architecture.commands = {
@@ -20809,7 +20811,9 @@ function applyUserPrefs(prefs) {
   if (prefs.currentDimStyle)            S.currentDimStyle = _migrateDimStyle(prefs.currentDimStyle);
   if (prefs.toolbarLayout !== undefined) S.toolbarLayout = prefs.toolbarLayout;
   if (prefs.loadedPlugins !== undefined) S.loadedPlugins = prefs.loadedPlugins;
-  if (prefs.toolbarStyle !== undefined) setToolbarStyle(prefs.toolbarStyle);
+  // Toujours appliquer : des préférences enregistrées avant l'ajout du réglage n'ont
+  // pas la clé, et sans appel body.ribbon-mode resterait désynchronisé de S.toolbarStyle.
+  setToolbarStyle(prefs.toolbarStyle !== undefined ? prefs.toolbarStyle : USER_PREFS.toolbarStyle);
   if (prefs.terminalHeight) {
     const h = Math.max(58, Math.min(prefs.terminalHeight, 600));
     const el = document.getElementById('terminal');
@@ -20928,7 +20932,7 @@ function openPrefsDialog() {
     <div class="pf-body">
       ${sec(`Apparence`)}
       ${row(`Thème`, sel('theme', [{v:'dark',l:`Sombre`},{v:'light',l:`Clair`}], p.theme||'dark'))}
-      ${row(`Barre d'outils`, sel('toolbarStyle', [{v:'standard',l:`Standard`},{v:'ribbon',l:`Ruban`}], p.toolbarStyle||'standard'))}
+      ${row(`Barre d'outils`, sel('toolbarStyle', [{v:'standard',l:`Standard`},{v:'ribbon',l:`Ruban`}], p.toolbarStyle||USER_PREFS.toolbarStyle))}
 
       ${sec(`Grille`)}
       ${row(`Afficher la grille`, chk('gridVis', p.gridVis))}

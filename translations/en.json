@@ -242,6 +242,7 @@
   "ribbon.btn.rotate": "Rotate",
   "ribbon.btn.mirror": "Mirror",
   "ribbon.btn.scale": "Scale",
+  "ribbon.btn.offset": "Offset",
   "ribbon.btn.trim": "Trim",
   "ribbon.btn.insert_block": "Insert",
   "ribbon.btn.block": "Create block",

@@ -242,6 +242,7 @@
   "ribbon.btn.rotate": "Rotation",
   "ribbon.btn.mirror": "Miroir",
   "ribbon.btn.scale": "Échelle",
+  "ribbon.btn.offset": "Décaler",
   "ribbon.btn.trim": "Couper",
   "ribbon.btn.insert_block": "Insérer",
   "ribbon.btn.block": "Créer bloc",
