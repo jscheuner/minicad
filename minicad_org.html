@@ -1572,7 +1572,7 @@
 <meta name="twitter:description" content="Logiciel de dessin technique 2D (CAO) gratuit, directement dans le navigateur, sans installation : lignes, cotation, calques, export DXF et SVG.">
 <meta name="twitter:image" content="https://minicad.org/og-image.png">
 <!-- google-site-verification : renseigner GSC_VERIFICATION dans .env puis rebuild -->
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"MiniCAD","url":"https://minicad.org/","description":"Logiciel de dessin technique 2D (CAO) gratuit, directement dans le navigateur, sans installation : lignes, cotation, calques, export DXF et SVG.","applicationCategory":"DesignApplication","operatingSystem":"Web","browserRequirements":"Requires JavaScript and HTML5 Canvas","softwareVersion":"0.1","inLanguage":["en","fr"],"image":"https://minicad.org/og-image.png","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"featureList":["Dessin 2D : lignes, cercles, arcs, polylignes, splines","Cotation (linéaire, alignée, angulaire, rayon, diamètre)","Calques, OSNAP / accrochage aux objets","Import / export DXF, SVG et fichiers .mcad"]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"MiniCAD","url":"https://minicad.org/","description":"Logiciel de dessin technique 2D (CAO) gratuit, directement dans le navigateur, sans installation : lignes, cotation, calques, export DXF et SVG.","applicationCategory":"DesignApplication","operatingSystem":"Web","browserRequirements":"Requires JavaScript and HTML5 Canvas","softwareVersion":"0.2","inLanguage":["en","fr"],"image":"https://minicad.org/og-image.png","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"featureList":["Dessin 2D : lignes, cercles, arcs, polylignes, splines","Cotation (linéaire, alignée, angulaire, rayon, diamètre)","Calques, OSNAP / accrochage aux objets","Import / export DXF, SVG et fichiers .mcad"]}</script>
 <!-- Cookie Consent + Google Tag Manager (chargé après consentement) -->
 <style>
   #cookie-banner {
@@ -1679,7 +1679,7 @@
 
 <!-- MENU BAR -->
 <div class="menubar">
-  <div class="topbar-logo"><svg width="176" height="44" style="vertical-align:middle" viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" aria-label="MiniCAD" style="display:block"><g transform="translate(6,10) scale(0.8)"><rect x="0" y="0" width="100" height="100" rx="20" fill="#16222E"/><path d="M24,70 L24,40 Q24,24 37,24 Q50,24 50,40 L50,70 M50,40 Q50,24 63,24 Q76,24 76,40 L76,70" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="butt" stroke-linejoin="round"/><rect x="16" y="62" width="16" height="16" fill="none" stroke="#FF5436" stroke-width="3"/></g><text x="104" y="63" style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',monospace;font-size:44px;font-weight:500;letter-spacing:0.5px"><tspan fill="#c8d6e5">mini</tspan><tspan fill="#FF5436">cad</tspan></text></svg><span style="font-size:10px;font-weight:300;color:var(--text-dim);vertical-align:middle;margin-left:6px;letter-spacing:0">v0.1</span></div>
+  <div class="topbar-logo"><svg width="176" height="44" style="vertical-align:middle" viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" aria-label="MiniCAD" style="display:block"><g transform="translate(6,10) scale(0.8)"><rect x="0" y="0" width="100" height="100" rx="20" fill="#16222E"/><path d="M24,70 L24,40 Q24,24 37,24 Q50,24 50,40 L50,70 M50,40 Q50,24 63,24 Q76,24 76,40 L76,70" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="butt" stroke-linejoin="round"/><rect x="16" y="62" width="16" height="16" fill="none" stroke="#FF5436" stroke-width="3"/></g><text x="104" y="63" style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',monospace;font-size:44px;font-weight:500;letter-spacing:0.5px"><tspan fill="#c8d6e5">mini</tspan><tspan fill="#FF5436">cad</tspan></text></svg><span style="font-size:10px;font-weight:300;color:var(--text-dim);vertical-align:middle;margin-left:6px;letter-spacing:0">v0.2</span></div>
   <div class="menu-items">
     <div class="menu-dropdown" id="menu-fichier">
       <div class="menu-item" id="menu-fichier-btn" onclick="toggleMenuDropdown('menu-fichier',event)" data-i18n="menu.file">Fichier</div>
@@ -22026,11 +22026,20 @@ function rbPluginBtn(col, id, title, cmd, icon, label, size) {
     `<button class="tool-btn rb-btn rb-${size || 'med'}" data-rbid="${id}" title="${title}" onclick="executeCommand('${cmd}')">${icon}${lbl}</button>`);
 }
 
+// Champs du ruban à réaligner sur leur source quand on (r)entre en mode ruban : la
+// saisie a pu se faire entre-temps dans la barre classique ou dans un panneau de plugin.
+const RB_FIELD_SYNCERS = [];
+function rbSyncFields() { RB_FIELD_SYNCERS.forEach(fn => fn()); }
+
 // Champ de saisie d'un panneau de ruban. cfg : { label, unit, placeholder, title,
-// options:[{value,label}] pour un select, mirror:<data-tbid>, cmd:<commande sur Entrée> }.
-// La valeur est recopiée dans le champ data-tbid correspondant de la barre d'outils
-// classique, qui reste la source lue par les commandes du plugin : la barre reste dans
-// le DOM (masquée) en mode ruban, on ne duplique donc pas le data-tbid.
+// options:[{value,label}] pour un select, cmd:<commande sur Entrée> } plus une liaison
+// à la valeur, au choix :
+//   mirror:<data-tbid> — recopie dans le champ correspondant de la barre d'outils
+//     classique, qui reste la source lue par les commandes du plugin : la barre reste
+//     dans le DOM (masquée) en mode ruban, on ne duplique donc pas le data-tbid ;
+//   get()/set(v) — pour un plugin dont les réglages vivent dans son état (S.pluginData)
+//     et non dans une barre d'outils. set() est appelé sur 'change' (validation ou
+//     perte de focus), pas à chaque frappe.
 function rbPluginField(col, id, cfg) {
   if (!col || col.querySelector(`[data-rbid="${id}"]`)) return null;
   const c = cfg || {};
@@ -22044,14 +22053,18 @@ function rbPluginField(col, id, cfg) {
       c.unit ? `<span class="rb-funit">${c.unit}</span>` : ''}</div>`);
   const el = col.querySelector(`[data-rbfield="${id}"]`);
   if (c.mirror) {
-    el.dataset.rbmirror = c.mirror;
-    const src = document.querySelector(`[data-tbid="${c.mirror}"]`);
-    if (src) {
-      el.value = src.value;
-      const sync = () => { const t = document.querySelector(`[data-tbid="${c.mirror}"]`); if (t) t.value = el.value; };
-      el.addEventListener('input', sync);
-      el.addEventListener('change', sync);
-    }
+    const tb = () => document.querySelector(`[data-tbid="${c.mirror}"]`);
+    const pull = () => { const t = tb(); if (t) el.value = t.value; };
+    const push = () => { const t = tb(); if (t) t.value = el.value; };
+    pull();
+    el.addEventListener('input', push);
+    el.addEventListener('change', push);
+    RB_FIELD_SYNCERS.push(pull);
+  } else if (c.get) {
+    const pull = () => { el.value = c.get(); };
+    pull();
+    if (c.set) el.addEventListener('change', () => c.set(el.value));
+    RB_FIELD_SYNCERS.push(pull);
   }
   if (c.cmd) el.addEventListener('keydown', ev => {
     if (ev.key === 'Enter') { ev.preventDefault(); executeCommand(c.cmd); }
@@ -22062,13 +22075,8 @@ function rbPluginField(col, id, cfg) {
 function setToolbarStyle(style) {
   S.toolbarStyle = style === 'ribbon' ? 'ribbon' : 'standard';
   document.body.classList.toggle('ribbon-mode', S.toolbarStyle === 'ribbon');
-  // Reprendre dans les champs du ruban ce qui a été saisi dans les barres classiques
-  if (S.toolbarStyle === 'ribbon') {
-    document.querySelectorAll('[data-rbfield][data-rbmirror]').forEach(el => {
-      const src = document.querySelector(`[data-tbid="${el.dataset.rbmirror}"]`);
-      if (src) el.value = src.value;
-    });
-  }
+  // Reprendre dans les champs du ruban ce qui a été saisi ailleurs entre-temps
+  if (S.toolbarStyle === 'ribbon') rbSyncFields();
 }
 
 let _tbDrag = null; // { id, offsetX, offsetY, el }

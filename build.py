@@ -458,7 +458,7 @@ def build_seo_block(default_lang='fr'):
         "applicationCategory": "DesignApplication",
         "operatingSystem": "Web",
         "browserRequirements": "Requires JavaScript and HTML5 Canvas",
-        "softwareVersion": "0.1",
+        "softwareVersion": "0.2",
         "inLanguage": list(langs.keys()),
         "image": og_image,
         "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"},

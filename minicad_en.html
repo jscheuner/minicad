@@ -500,6 +500,24 @@
   .tool-btn.rb-med .rb-label { font-size: 10px; white-space: nowrap; }
   /* Petit bouton : icône seule (info-bulle), 1 rangée sur 3 */
   .tool-btn.rb-small { width: 26px; height: 24px; }
+  /* Champ de saisie d'un panneau (plugins) : même rangée de 24px qu'un rb-med */
+  .rb-field {
+    display: flex; align-items: center; gap: 5px;
+    height: 24px; padding: 0 4px;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 10px;
+    color: var(--text-dim);
+  }
+  .rb-field .rb-funit { opacity: 0.7; }
+  .rb-field span { white-space: nowrap; }
+  .rb-field-input {
+    height: 19px; padding: 0 4px; border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    background: var(--bg-elev); color: var(--ink);
+    border: 1px solid color-mix(in srgb, var(--ink) 20%, transparent);
+  }
+  input.rb-field-input { width: 46px; text-align: center; }
+  select.rb-field-input { height: 21px; }
+  .rb-field-input:focus { outline: none; border-color: var(--accent); }
 
   .main-area { flex: 1; display: flex; overflow: hidden; }
 
@@ -1495,7 +1513,7 @@
 
 <!-- MENU BAR -->
 <div class="menubar">
-  <div class="topbar-logo"><svg width="176" height="44" style="vertical-align:middle" viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" aria-label="MiniCAD" style="display:block"><g transform="translate(6,10) scale(0.8)"><rect x="0" y="0" width="100" height="100" rx="20" fill="#16222E"/><path d="M24,70 L24,40 Q24,24 37,24 Q50,24 50,40 L50,70 M50,40 Q50,24 63,24 Q76,24 76,40 L76,70" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="butt" stroke-linejoin="round"/><rect x="16" y="62" width="16" height="16" fill="none" stroke="#FF5436" stroke-width="3"/></g><text x="104" y="63" style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',monospace;font-size:44px;font-weight:500;letter-spacing:0.5px"><tspan fill="#c8d6e5">mini</tspan><tspan fill="#FF5436">cad</tspan></text></svg><span style="font-size:10px;font-weight:300;color:var(--text-dim);vertical-align:middle;margin-left:6px;letter-spacing:0">v0.1</span></div>
+  <div class="topbar-logo"><svg width="176" height="44" style="vertical-align:middle" viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" aria-label="MiniCAD" style="display:block"><g transform="translate(6,10) scale(0.8)"><rect x="0" y="0" width="100" height="100" rx="20" fill="#16222E"/><path d="M24,70 L24,40 Q24,24 37,24 Q50,24 50,40 L50,70 M50,40 Q50,24 63,24 Q76,24 76,40 L76,70" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="butt" stroke-linejoin="round"/><rect x="16" y="62" width="16" height="16" fill="none" stroke="#FF5436" stroke-width="3"/></g><text x="104" y="63" style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',monospace;font-size:44px;font-weight:500;letter-spacing:0.5px"><tspan fill="#c8d6e5">mini</tspan><tspan fill="#FF5436">cad</tspan></text></svg><span style="font-size:10px;font-weight:300;color:var(--text-dim);vertical-align:middle;margin-left:6px;letter-spacing:0">v0.2</span></div>
   <div class="menu-items">
     <div class="menu-dropdown" id="menu-fichier">
       <div class="menu-item" id="menu-fichier-btn" onclick="toggleMenuDropdown('menu-fichier',event)">File</div>
@@ -2197,6 +2215,7 @@
     <div class="ribbon-tab active" data-rbtab="home" onclick="showRibbonTab('home')">Home</div>
     <div class="ribbon-tab" data-rbtab="annotate" onclick="showRibbonTab('annotate')">Annotate</div>
     <div class="ribbon-tab" data-rbtab="view" onclick="showRibbonTab('view')">View</div>
+    <!-- Onglets plugins ajoutés dynamiquement ici par rbPluginPanel(), voir plus bas -->
   </div>
   <div class="ribbon-panels">
 
@@ -2603,6 +2622,11 @@
         <div class="ribbon-panel-title">View</div>
       </div>
     </div>
+
+    <!-- Onglets plugins — ajoutés dynamiquement au chargement de chaque plugin, un onglet
+         par plugin, voir rbPluginPanel()/rbPluginCol()/rbPluginBtn() ci-dessous et
+         PLUGIN.init() dans src/plugins/*.js (même patron que la barre d'outils docked
+         classique que chaque plugin construit). -->
 
   </div>
 </div>
@@ -21775,9 +21799,118 @@ function showRibbonTab(name) {
   document.querySelectorAll('.ribbon-tabpage').forEach(p => p.classList.toggle('active', p.dataset.rbpage === name));
 }
 
+// --- Ruban : un onglet dédié par plugin chargé, rempli dynamiquement ---
+// Même rôle que la coquille de barre d'outils docked (dockArea/tb-buttons) que chaque
+// plugin construit dans son init(), mais pour la présentation en ruban. Un plugin
+// s'enregistre en appelant rbPluginPanel(name, titre) pour obtenir son panneau (crée au
+// besoin son propre onglet de ruban), puis rbPluginCol()/rbPluginBtn() pour y ajouter ses
+// boutons (voir src/plugins/*.js).
+// Un plugin peut découper son onglet en plusieurs panneaux en passant un titre de
+// panneau distinct (panelTitle) ; sans lui, l'onglet ne contient qu'un panneau qui
+// porte son propre titre.
+function rbPluginPanel(id, title, panelTitle) {
+  const tabs = document.querySelector('.ribbon-tabs');
+  const panels = document.querySelector('.ribbon-panels');
+  if (!tabs || !panels) return null;
+  const rbtab = 'plugin-' + id;
+  let tab = document.getElementById('rb-tab-' + id);
+  if (!tab) {
+    tabs.insertAdjacentHTML('beforeend',
+      `<div class="ribbon-tab" data-rbtab="${rbtab}" id="rb-tab-${id}" onclick="showRibbonTab('${rbtab}')"></div>`);
+    tab = document.getElementById('rb-tab-' + id);
+  }
+  tab.style.display = '';
+  tab.textContent = title;
+  let page = document.getElementById('rb-page-' + id);
+  if (!page) {
+    panels.insertAdjacentHTML('beforeend',
+      `<div class="ribbon-tabpage" data-rbpage="${rbtab}" id="rb-page-${id}"></div>`);
+    page = document.getElementById('rb-page-' + id);
+  }
+  const ptitle = panelTitle || title;
+  const pkey = ptitle.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  let panel = page.querySelector(`.ribbon-panel[data-rbpanel="${pkey}"]`);
+  if (!panel) {
+    if (page.children.length) page.insertAdjacentHTML('beforeend', '<div class="ribbon-sep"></div>');
+    page.insertAdjacentHTML('beforeend',
+      `<div class="ribbon-panel" data-rbpanel="${pkey}"><div class="ribbon-panel-buttons"></div><div class="ribbon-panel-title"></div></div>`);
+    panel = page.querySelector(`.ribbon-panel[data-rbpanel="${pkey}"]`);
+  }
+  panel.querySelector('.ribbon-panel-title').textContent = ptitle;
+  return panel.querySelector('.ribbon-panel-buttons');
+}
+
+function rbPluginCol(cont, colId) {
+  if (!cont) return null;
+  let col = cont.querySelector(`.rb-col[data-rbcol="${colId}"]`);
+  if (!col) {
+    cont.insertAdjacentHTML('beforeend', `<div class="rb-col" data-rbcol="${colId}"></div>`);
+    col = cont.querySelector(`.rb-col[data-rbcol="${colId}"]`);
+  }
+  return col;
+}
+
+// size : 'med' (icône + libellé, 1 rangée sur 3, défaut), 'big' (icône 26px + libellé
+// dessous, toute la hauteur du panneau) ou 'small' (icône seule). Un bouton 'big' se
+// place directement dans le conteneur du panneau, pas dans une rb-col.
+function rbPluginBtn(col, id, title, cmd, icon, label, size) {
+  if (!col || col.querySelector(`[data-rbid="${id}"]`)) return;
+  const lbl = label ? `<span class="rb-label">${label}</span>` : '';
+  col.insertAdjacentHTML('beforeend',
+    `<button class="tool-btn rb-btn rb-${size || 'med'}" data-rbid="${id}" title="${title}" onclick="executeCommand('${cmd}')">${icon}${lbl}</button>`);
+}
+
+// Champs du ruban à réaligner sur leur source quand on (r)entre en mode ruban : la
+// saisie a pu se faire entre-temps dans la barre classique ou dans un panneau de plugin.
+const RB_FIELD_SYNCERS = [];
+function rbSyncFields() { RB_FIELD_SYNCERS.forEach(fn => fn()); }
+
+// Champ de saisie d'un panneau de ruban. cfg : { label, unit, placeholder, title,
+// options:[{value,label}] pour un select, cmd:<commande sur Entrée> } plus une liaison
+// à la valeur, au choix :
+//   mirror:<data-tbid> — recopie dans le champ correspondant de la barre d'outils
+//     classique, qui reste la source lue par les commandes du plugin : la barre reste
+//     dans le DOM (masquée) en mode ruban, on ne duplique donc pas le data-tbid ;
+//   get()/set(v) — pour un plugin dont les réglages vivent dans son état (S.pluginData)
+//     et non dans une barre d'outils. set() est appelé sur 'change' (validation ou
+//     perte de focus), pas à chaque frappe.
+function rbPluginField(col, id, cfg) {
+  if (!col || col.querySelector(`[data-rbid="${id}"]`)) return null;
+  const c = cfg || {};
+  const ctl = c.options
+    ? `<select class="rb-field-input" data-rbfield="${id}">${
+        c.options.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}</select>`
+    : `<input type="text" class="rb-field-input" data-rbfield="${id}" placeholder="${c.placeholder || ''}">`;
+  col.insertAdjacentHTML('beforeend',
+    `<div class="rb-field" data-rbid="${id}" title="${c.title || ''}">${
+      c.label ? `<span>${c.label}</span>` : ''}${ctl}${
+      c.unit ? `<span class="rb-funit">${c.unit}</span>` : ''}</div>`);
+  const el = col.querySelector(`[data-rbfield="${id}"]`);
+  if (c.mirror) {
+    const tb = () => document.querySelector(`[data-tbid="${c.mirror}"]`);
+    const pull = () => { const t = tb(); if (t) el.value = t.value; };
+    const push = () => { const t = tb(); if (t) t.value = el.value; };
+    pull();
+    el.addEventListener('input', push);
+    el.addEventListener('change', push);
+    RB_FIELD_SYNCERS.push(pull);
+  } else if (c.get) {
+    const pull = () => { el.value = c.get(); };
+    pull();
+    if (c.set) el.addEventListener('change', () => c.set(el.value));
+    RB_FIELD_SYNCERS.push(pull);
+  }
+  if (c.cmd) el.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter') { ev.preventDefault(); executeCommand(c.cmd); }
+  });
+  return el;
+}
+
 function setToolbarStyle(style) {
   S.toolbarStyle = style === 'ribbon' ? 'ribbon' : 'standard';
   document.body.classList.toggle('ribbon-mode', S.toolbarStyle === 'ribbon');
+  // Reprendre dans les champs du ruban ce qui a été saisi ailleurs entre-temps
+  if (S.toolbarStyle === 'ribbon') rbSyncFields();
 }
 
 let _tbDrag = null; // { id, offsetX, offsetY, el }
@@ -22272,6 +22405,13 @@ function unloadPlugin(name) {
     // Masquer la barre d'outils du plugin si elle existe
     const tb = document.getElementById('tb-' + name);
     if (tb) hideToolbar('tb-' + name);
+    // Masquer aussi son onglet de ruban (voir rbPluginPanel()) ; s'il était actif, revenir à Accueil
+    const rbTab = document.getElementById('rb-tab-' + name);
+    if (rbTab) {
+      const wasActive = rbTab.classList.contains('active');
+      rbTab.style.display = 'none';
+      if (wasActive) showRibbonTab('home');
+    }
     autoSavePrefs();
     termPrint(`Plugin « ${name} » déchargé`, 'info');
   }

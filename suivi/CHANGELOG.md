@@ -4,7 +4,7 @@ Format : `[version] — YYYY-MM-DD — Description`
 
 ---
 
-## [0.1] — 2026-06-16 — Version courante
+## [0.2] — 2026-09-16 — Version courante
 
 ### Ajouté
 - **Glisser-déposer d'un fichier .dxf / .mcad pour l'ouvrir** — déposer un fichier

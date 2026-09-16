@@ -1357,6 +1357,7 @@ function _nestSetMode(m) {
   d.mode = (m === 'laser') ? 'laser' : 'shear';
   _nestPersist();
   _nestRenderPanel();
+  _nestSyncRibbon();
 }
 function _nestSetStep(v) {
   const el = _nestEl('nest-p-step'); if (el) el.value = v;
@@ -1378,6 +1379,7 @@ function _nestReadParams() {
     d.params.partGap = Math.max(0, _nestNum('nest-p-gap', d.params.partGap));
   }
   _nestPersist();
+  _nestSyncRibbon();   // le panneau peut être ouvert par-dessus le ruban
 }
 // Paramètres effectifs passés au solveur : en cisaille, saignée et espace
 // pièces sont forcés à 0 (coupe guillotine bord à bord, sans jeu).
@@ -1677,18 +1679,90 @@ function _nestBuildToolbar() {
   }
 }
 
-// Ruban (mode AutoCAD) : mêmes commandes que la barre d'outils ci-dessus,
-// présentées comme les boutons natifs (voir rbPluginPanel()/rbPluginBtn()).
+// ======== RUBAN (mode AutoCAD) ========
+
+// Écrit un paramètre saisi depuis le ruban. Si le panneau est ouvert, son champ est
+// réaligné : sinon le prochain _nestReadParams() relirait l'ancienne valeur affichée
+// et écraserait la saisie du ruban.
+function _nestSetParam(key, elId, value) {
+  const d = _nestData();
+  d.params[key] = Math.max(0, parseFloat(value) || 0);
+  const el = _nestEl(elId); if (el) el.value = d.params[key];
+  _nestPersist();
+}
+// Pas de rotation et case « Rotation » vont de pair : un pas de 0 revient à interdire
+// la rotation (même règle que _nestSetStep() côté panneau).
+function _nestSetRotationStep(value) {
+  const d = _nestData();
+  const step = Math.max(0, Math.min(360, parseFloat(value) || 0));
+  d.params.rotationStep = step;
+  d.params.allowRotation = step > 0;
+  const el = _nestEl('nest-p-step'); if (el) el.value = step;
+  const rot = _nestEl('nest-p-rot'); if (rot) rot.checked = step > 0;
+  _nestPersist();
+}
+// Saignée et espace pièces n'ont pas de sens en cisaille (forcés à 0 par
+// _nestEffectiveParams) : les griser dans le ruban comme le fait le panneau.
+function _nestSyncRibbon() {
+  if (typeof rbSyncFields === 'function') rbSyncFields();
+  const shear = _nestData().mode === 'shear';
+  ['rb-nest-kerf', 'rb-nest-gap'].forEach(id => {
+    const el = document.querySelector(`[data-rbfield="${id}"]`);
+    if (!el) return;
+    el.disabled = shear;
+    el.parentElement.style.opacity = shear ? '0.45' : '';
+  });
+}
+
+// Mêmes commandes que la barre d'outils ci-dessus, plus les réglages du panneau les
+// plus souvent ajustés, répartis en panneaux nommés comme les onglets natifs. Les
+// champs écrivent directement dans S.pluginData.nesting : contrairement à la barre
+// d'outils de chf_export, celle d'Imbrication n'a pas de champ de saisie à refléter.
 function _nestBuildRibbon() {
   if (typeof rbPluginPanel !== 'function') return;
-  const rbCont = rbPluginPanel('nesting', 'Imbrication');
-  const rbCol1 = rbPluginCol(rbCont, 1);
-  rbPluginBtn(rbCol1, 'nest-panel', 'Panneau imbrication (NESTING)', 'NESTING', NEST_ICONS.panel, 'Panneau');
-  rbPluginBtn(rbCol1, 'nest-add', 'Ajouter la sélection (NESTADD)', 'NESTADD', NEST_ICONS.add, 'Ajouter');
-  rbPluginBtn(rbCol1, 'nest-fmt', 'Formats de tôle (NESTFMT)', 'NESTFMT', NEST_ICONS.fmt, 'Formats');
-  const rbCol2 = rbPluginCol(rbCont, 2);
-  rbPluginBtn(rbCol2, 'nest-run', 'Lancer l\'optimisation (NESTRUN)', 'NESTRUN', NEST_ICONS.run, 'Lancer');
-  rbPluginBtn(rbCol2, 'nest-clr', 'Effacer le résultat (NESTCLR)', 'NESTCLR', NEST_ICONS.clr, 'Effacer');
+
+  const rbMain = rbPluginPanel('nesting', 'Imbrication', 'Imbrication');
+  rbPluginBtn(rbMain, 'nest-panel', 'Panneau imbrication (NESTING)', 'NESTING', NEST_ICONS.panel, 'Panneau', 'big');
+
+  const rbParts = rbPluginCol(rbPluginPanel('nesting', 'Imbrication', 'Pièces'), 1);
+  rbPluginBtn(rbParts, 'nest-add', 'Ajouter la sélection (NESTADD)', 'NESTADD', NEST_ICONS.add, 'Ajouter');
+  rbPluginBtn(rbParts, 'nest-fmt', 'Formats de tôle (NESTFMT)', 'NESTFMT', NEST_ICONS.fmt, 'Formats');
+
+  const rbSet = rbPluginPanel('nesting', 'Imbrication', 'Paramètres');
+  const rbSet1 = rbPluginCol(rbSet, 1);
+  rbPluginField(rbSet1, 'rb-nest-mode', {
+    label: 'Coupe',
+    title: 'Type de coupe : cisaille (guillotine, bord à bord) ou laser (imbrication vraie)',
+    options: [{ value: 'shear', label: 'Cisaille' }, { value: 'laser', label: 'Laser' }],
+    get: () => _nestData().mode,
+    set: v => { _nestSetMode(v); _nestSyncRibbon(); } });
+  rbPluginField(rbSet1, 'rb-nest-margin', {
+    label: 'Marge rive', unit: 'mm',
+    title: 'Marge conservée sur le pourtour de la tôle (mm)',
+    get: () => _nestData().params.sheetMargin,
+    set: v => _nestSetParam('sheetMargin', 'nest-p-margin', v) });
+  rbPluginField(rbSet1, 'rb-nest-step', {
+    label: 'Rotation', unit: '°',
+    title: 'Pas de rotation autorisé pour les pièces (0 à 360°, 0 = rotation interdite)',
+    get: () => _nestData().params.rotationStep,
+    set: v => _nestSetRotationStep(v) });
+  const rbSet2 = rbPluginCol(rbSet, 2);
+  rbPluginField(rbSet2, 'rb-nest-kerf', {
+    label: 'Saignée', unit: 'mm',
+    title: 'Largeur du trait de coupe laser (mm) — sans effet en cisaille',
+    get: () => _nestData().params.kerf,
+    set: v => _nestSetParam('kerf', 'nest-p-kerf', v) });
+  rbPluginField(rbSet2, 'rb-nest-gap', {
+    label: 'Espace', unit: 'mm',
+    title: 'Espace minimal entre deux pièces (mm) — sans effet en cisaille',
+    get: () => _nestData().params.partGap,
+    set: v => _nestSetParam('partGap', 'nest-p-gap', v) });
+
+  const rbRun = rbPluginPanel('nesting', 'Imbrication', 'Optimisation');
+  rbPluginBtn(rbRun, 'nest-run', 'Lancer l\'optimisation (NESTRUN)', 'NESTRUN', NEST_ICONS.run, 'Lancer', 'big');
+  rbPluginBtn(rbPluginCol(rbRun, 1), 'nest-clr', 'Effacer le résultat (NESTCLR)', 'NESTCLR', NEST_ICONS.clr, 'Effacer');
+
+  _nestSyncRibbon();
 }
 
 // ======== EXPORTS WINDOW (appelés depuis le HTML injecté) ========
