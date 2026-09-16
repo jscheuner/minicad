@@ -25,6 +25,13 @@ Format : `[version] — YYYY-MM-DD — Description`
   (onglets, panneaux et libellés courts des boutons, les `tool.*` complets — avec alias
   entre parenthèses — restant utilisés en info-bulle). Le choix persiste
   (`localStorage`) et le canvas se redimensionne automatiquement au changement de mode.
+- **Zoom Fenêtre (zoom par sélection d'une zone)** — nouvel outil `ZOOM W` (alias
+  complet `ZOOM E=étendue, ZOOM W=fenêtre, ZOOM [n]`), accessible aussi via un bouton
+  dédié dans la barre d'outils *Vue* (Standard) et le panneau *Affichage* du ruban,
+  juste après *Zoom Étendue*. On clique-glisse un rectangle sur le dessin (aperçu en
+  pointillés, même style que la fenêtre de sélection) : au relâchement, la vue se
+  recadre exactement sur la zone choisie et l'outil revient automatiquement en
+  sélection.
 - **Nouveau plugin `nesting` — optimisation de découpe de tôle (imbrication)** — à partir de
   formes dessinées, imbrique des pièces dans des formats de tôle prédéfinis et **dessine le
   résultat** (vraies entités sur calques `NEST-TÔLE` / `NEST-PIÈCES` / `NEST-COUPE` / `NEST-TEXTE`,
@@ -143,6 +150,13 @@ Format : `[version] — YYYY-MM-DD — Description`
   SC2000 `laser_6mm.chf`, dont les contours à amorce activée démarrent tous au coin haut-gauche.
   Headless 168/168 (9 attentes mises à jour + 9 nouvelles, dont les 4 combinaisons
   orientation-dessinée × `_chfReverse`, la priorité du point manuel et la non-régression des trous).
+
+### Modifié
+- **ZOOM FENÊTRE en 2 clics au lieu du cliqué-glissé** — l'outil `zoomwin` (bouton, ruban,
+  commande `Z W`) attendait un cliqué-glissé pour tracer la fenêtre à agrandir, geste peu naturel
+  au trackpad. Il fonctionne maintenant comme les autres outils à 2 clics de MiniCAD (DÉCALER,
+  ARRAY…) : premier clic pour le premier coin, aperçu en pointillés qui suit la souris, second
+  clic pour le coin opposé qui valide le zoom. Échap annule avant le second clic.
 
 ### Corrigé
 - **Export `.chf` : le SENS de la compensation tient à deux drapeaux entiers, pas à la bbox** —

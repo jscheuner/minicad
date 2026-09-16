@@ -423,12 +423,6 @@
   body.ribbon-mode .dock-area { display: none; }
   body.ribbon-mode .ribbon-bar { display: flex; }
 
-  .ribbon-qat {
-    display: flex; align-items: center; gap: 1px;
-    padding: 3px 6px;
-    border-bottom: 1px solid color-mix(in srgb, var(--ink) 5%, transparent);
-  }
-
   .ribbon-tabs {
     display: flex; gap: 2px;
     padding: 0 8px;
@@ -455,8 +449,6 @@
     overflow-x: auto;
   }
   .ribbon-tabpage.active { display: flex; }
-
-  .ribbon-qat .tool-btn { height: 24px; }
 
   .ribbon-panel {
     display: flex;
@@ -1642,6 +1634,13 @@
       <div class="menu-dropdown-list" id="menu-lib-list"></div>
     </div>
     <div class="menu-item" onclick="showHelp()">Aide</div>
+    <div class="tb-sep"></div>
+    <button class="tool-btn" title="Annuler (Ctrl+Z)" onclick="CMD.UNDO.exec()">
+      <svg viewBox="0 0 24 24"><path d="M4 10h11a5 5 0 010 10H9M4 10l4-4M4 10l4 4"/></svg>
+    </button>
+    <button class="tool-btn" title="Refaire (Ctrl+Y)" onclick="CMD.REDO.exec()">
+      <svg viewBox="0 0 24 24"><path d="M20 10H9a5 5 0 000 10h6M20 10l-4-4M20 10l-4 4"/></svg>
+    </button>
   </div>
   <div class="topbar-right">
     <span id="save-indicator" style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.5px;cursor:default;opacity:0.5;" title="État de sauvegarde">● NOUVEAU</span>
@@ -2092,6 +2091,9 @@
       <button class="tool-btn" title="Zoom Étendue" onclick="zoomExtents()">
         <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 4 L4 4 L4 10 M4 4 L10 10 M14 4 L20 4 L20 10 M20 4 L14 10 M4 14 L4 20 L10 20 M4 20 L10 14 M20 14 L20 20 L14 20 M20 20 L14 14"/></svg>
       </button>
+      <button class="tool-btn" data-tool="zoomwin" title="Zoom Fenêtre" onclick="setTool('zoomwin');termPrint('ZOOM FENÊTRE : cliquez le 1er coin','info')">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="12" height="12" stroke-dasharray="2.5" fill="none"/><path d="M14 14L20 20"/></svg>
+      </button>
       <button class="tool-btn" data-tool="pan" title="Panoramique" onclick="setTool('pan')">
         <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="3" fill="none"/></svg>
       </button>
@@ -2170,20 +2172,6 @@
 
 <!-- RUBAN (façon AutoCAD) — alternative aux barres Standard, activée via Préférences -->
 <div class="ribbon-bar" id="ribbon-bar">
-  <div class="ribbon-qat">
-    <button class="tool-btn text-btn" title="Ouvrir (Ctrl+O)" onclick="cmdOpen()">📂</button>
-    <button class="tool-btn text-btn" title="Sauvegarder (Ctrl+S)" onclick="cmdSave()">💾</button>
-    <button class="tool-btn text-btn" title="Exporter PDF (Ctrl+P)" onclick="openPrintDialog()" style="color:#ff9800">🖨</button>
-    <div class="tb-sep"></div>
-    <button class="tool-btn" title="Annuler (Ctrl+Z)" onclick="CMD.UNDO.exec()">
-      <svg viewBox="0 0 24 24"><path d="M4 10h11a5 5 0 010 10H9M4 10l4-4M4 10l4 4"/></svg>
-    </button>
-    <button class="tool-btn" title="Refaire (Ctrl+Y)" onclick="CMD.REDO.exec()">
-      <svg viewBox="0 0 24 24"><path d="M20 10H9a5 5 0 000 10h6M20 10l-4-4M20 10l-4 4"/></svg>
-    </button>
-    <div class="tb-sep"></div>
-    <button class="tool-btn text-btn" title="Assistant IA Ollama" onclick="toggleAiPanel()" style="color:var(--accent)">🤖</button>
-  </div>
   <div class="ribbon-tabs">
     <div class="ribbon-tab active" data-rbtab="home" onclick="showRibbonTab('home')">Accueil</div>
     <div class="ribbon-tab" data-rbtab="annotate" onclick="showRibbonTab('annotate')">Annotation</div>
@@ -2208,13 +2196,13 @@
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg>
             <span class="rb-label">Cercle</span>
           </button>
-          <button class="tool-btn rb-btn rb-big" data-tool="arc" title="Arc (A)" onclick="setTool('arc')">
-            <svg viewBox="0 0 24 24"><path d="M5 19 A 10 10 0 0 1 19 5"/></svg>
-            <span class="rb-label">Arc</span>
+          <button class="tool-btn rb-btn rb-big" data-tool="rect" title="Rectangle (R)" onclick="setTool('rect')">
+            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/></svg>
+            <span class="rb-label">Rectangle</span>
           </button>
           <div class="rb-col">
-            <button class="tool-btn rb-btn rb-small" data-tool="rect" title="Rectangle (R)" onclick="setTool('rect')">
-              <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/></svg>
+            <button class="tool-btn rb-btn rb-small" data-tool="arc" title="Arc (A)" onclick="setTool('arc')">
+              <svg viewBox="0 0 24 24"><path d="M5 19 A 10 10 0 0 1 19 5"/></svg>
             </button>
             <button class="tool-btn rb-btn rb-small" data-tool="rectcenter" title="Rectangle par le centre (RC)" onclick="setTool('rectcenter')">
               <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/><line x1="12" y1="9" x2="12" y2="15"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
@@ -2510,26 +2498,6 @@
 
       <div class="ribbon-panel">
         <div class="ribbon-panel-buttons">
-          <button class="tool-btn rb-btn rb-big" data-tool="text_place" title="Texte (T)" onclick="executeCommand('TEXT')">
-            <svg viewBox="0 0 24 24" stroke="none"><text x="3" y="19" font-size="17" fill="currentColor" font-family="serif" font-style="italic">T</text></svg>
-            <span class="rb-label">Texte</span>
-          </button>
-          <button class="tool-btn rb-btn rb-big" data-tool="leader" title="Repère (LEADER)" onclick="executeCommand('LEADER')">
-            <svg viewBox="0 0 24 24">
-              <line x1="5" y1="19" x2="15" y2="9"/>
-              <polygon points="5,19 9,16 7,14" fill="currentColor"/>
-              <line x1="15" y1="9" x2="21" y2="9"/>
-              <line x1="15" y1="9" x2="21" y2="6"/>
-            </svg>
-            <span class="rb-label">Repère</span>
-          </button>
-        </div>
-        <div class="ribbon-panel-title">Texte</div>
-      </div>
-      <div class="ribbon-sep"></div>
-
-      <div class="ribbon-panel">
-        <div class="ribbon-panel-buttons">
           <button class="tool-btn rb-btn rb-big" title="Cote linéaire" onclick="executeCommand('LOAD dim');executeCommand('DIMLINEAR')">
             <svg viewBox="0 0 24 24"><line x1="4" y1="18" x2="20" y2="18"/><line x1="4" y1="12" x2="4" y2="20"/><line x1="20" y1="12" x2="20" y2="20"/><path d="M6 18l-2-2M6 18l-2 2M18 18l2-2M18 18l2 2"/></svg>
             <span class="rb-label">Linéaire</span>
@@ -2568,6 +2536,26 @@
         </div>
         <div class="ribbon-panel-title">Cotation</div>
       </div>
+      <div class="ribbon-sep"></div>
+
+      <div class="ribbon-panel">
+        <div class="ribbon-panel-buttons">
+          <button class="tool-btn rb-btn rb-big" data-tool="text_place" title="Texte (T)" onclick="executeCommand('TEXT')">
+            <svg viewBox="0 0 24 24" stroke="none"><text x="3" y="19" font-size="17" fill="currentColor" font-family="serif" font-style="italic">T</text></svg>
+            <span class="rb-label">Texte</span>
+          </button>
+          <button class="tool-btn rb-btn rb-big" data-tool="leader" title="Repère (LEADER)" onclick="executeCommand('LEADER')">
+            <svg viewBox="0 0 24 24">
+              <line x1="5" y1="19" x2="15" y2="9"/>
+              <polygon points="5,19 9,16 7,14" fill="currentColor"/>
+              <line x1="15" y1="9" x2="21" y2="9"/>
+              <line x1="15" y1="9" x2="21" y2="6"/>
+            </svg>
+            <span class="rb-label">Repère</span>
+          </button>
+        </div>
+        <div class="ribbon-panel-title">Texte</div>
+      </div>
     </div>
 
     <!-- Onglet Affichage -->
@@ -2577,6 +2565,10 @@
           <button class="tool-btn rb-btn rb-big" title="Zoom Étendue" onclick="zoomExtents()">
             <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 4 L4 4 L4 10 M4 4 L10 10 M14 4 L20 4 L20 10 M20 4 L14 10 M4 14 L4 20 L10 20 M4 20 L10 14 M20 14 L20 20 L14 20 M20 20 L14 14"/></svg>
             <span class="rb-label">Zoom étendu</span>
+          </button>
+          <button class="tool-btn rb-btn rb-big" data-tool="zoomwin" title="Zoom Fenêtre" onclick="setTool('zoomwin');termPrint('ZOOM FENÊTRE : cliquez le 1er coin','info')">
+            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="12" height="12" stroke-dasharray="2.5" fill="none"/><path d="M14 14L20 20"/></svg>
+            <span class="rb-label">Zoom fenêtre</span>
           </button>
           <button class="tool-btn rb-btn rb-big" data-tool="pan" title="Panoramique" onclick="setTool('pan')">
             <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="3" fill="none"/></svg>
@@ -4819,10 +4811,11 @@ const CMD = {
     S.history.push(JSON.stringify(S.entities)); S.entities = JSON.parse(S.redoStack.pop()); S.selected = [];
     termPrint('Refait', 'info'); render();
   }},
-  ZOOM: { alias: ['Z'], desc: 'ZOOM E=étendue, ZOOM [n]', exec: (args) => {
+  ZOOM: { alias: ['Z'], desc: 'ZOOM E=étendue, ZOOM W=fenêtre, ZOOM [n]', exec: (args) => {
     if (args[0]?.toUpperCase() === 'E') { zoomExtents(); termPrint('Zoom étendue', 'info'); }
+    else if (args[0]?.toUpperCase() === 'W') { setTool('zoomwin'); termPrint('ZOOM FENÊTRE : cliquez le 1er coin', 'info'); return; }
     else if (args[0]) { S.zoom = parseFloat(args[0]) || 1; termPrint('Zoom: ' + S.zoom.toFixed(2), 'info'); }
-    else termPrint('Usage: ZOOM E | ZOOM [facteur]', 'info');
+    else termPrint('Usage: ZOOM E | ZOOM W | ZOOM [facteur]', 'info');
     render();
   }},
   PAN: { alias: [], desc: 'Panoramique', exec: () => { setTool('pan'); termPrint('PAN: Cliquez-glissez', 'info'); }},
@@ -5865,6 +5858,18 @@ function _drawDynamicLayer() {
       const rx=Math.min(ssx,sex), ry=Math.min(ssy,sey), rw=Math.abs(sex-ssx), rh=Math.abs(sey-ssy);
       ctx.save();
       ctx.strokeStyle='#ff9800cc'; ctx.fillStyle='#ff98000d';
+      ctx.lineWidth=1.5; ctx.setLineDash([6,3]);
+      ctx.beginPath(); ctx.rect(rx,ry,rw,rh); ctx.fill(); ctx.stroke();
+      ctx.setLineDash([]); ctx.restore();
+    }
+  }
+  if (isZoomRb && zoomRbStart && zoomRbEnd) {
+    const [ssx,ssy] = w2s(zoomRbStart.wx, zoomRbStart.wy);
+    const [sex,sey] = w2s(zoomRbEnd.wx,   zoomRbEnd.wy);
+    if (Math.hypot(sex-ssx, sey-ssy) > 4) {
+      const rx=Math.min(ssx,sex), ry=Math.min(ssy,sey), rw=Math.abs(sex-ssx), rh=Math.abs(sey-ssy);
+      ctx.save();
+      ctx.strokeStyle=TC.rbWin+'aa'; ctx.fillStyle=TC.rbWin+'0d';
       ctx.lineWidth=1.5; ctx.setLineDash([6,3]);
       ctx.beginPath(); ctx.rect(rx,ry,rw,rh); ctx.fill(); ctx.stroke();
       ctx.setLineDash([]); ctx.restore();
@@ -10844,6 +10849,7 @@ let _rightPanArm = null, _rightPanned = false;
 const _RIGHT_PAN_THRESH = 4; // px écran avant de considérer que c'est un pan (et non un clic)
 let isRubberBand = false, rbStart = null, rbEnd = null, rbShiftKey = false;
 let isPrintRb = false, printRbStart = null, printRbEnd = null;
+let isZoomRb = false, zoomRbStart = null, zoomRbEnd = null;
 
 canvas.addEventListener('mousemove', (ev) => {
   const rect = canvas.getBoundingClientRect();
@@ -10926,6 +10932,7 @@ canvas.addEventListener('mousemove', (ev) => {
   }
   if (isRubberBand) { rbEnd = { sx, sy, wx, wy }; scheduleRender(); return; }
   if (isPrintRb) { printRbEnd = { sx, sy, wx, wy }; scheduleRender(); return; }
+  if (isZoomRb) { zoomRbEnd = { sx, sy, wx, wy }; scheduleRender(); return; }
   scheduleRender(); // cursor / preview only — reuse cached static layer
 });
 
@@ -11033,6 +11040,32 @@ canvas.addEventListener('mousedown', (ev) => {
     isPrintRb = true;
     printRbStart = { sx, sy, wx, wy };
     printRbEnd   = { sx, sy, wx, wy };
+    return;
+  }
+
+  // Outil zoom fenêtre : 2 clics — 1er coin puis 2e coin
+  if (ev.button === 0 && S.tool === 'zoomwin') {
+    if (!zoomRbStart) {
+      isZoomRb = true;
+      zoomRbStart = { sx, sy, wx, wy };
+      zoomRbEnd   = { sx, sy, wx, wy };
+      termPrint('ZOOM FENÊTRE : cliquez le 2e coin', 'info');
+      render();
+      return;
+    }
+    const x1 = Math.min(zoomRbStart.wx, wx), y1 = Math.min(zoomRbStart.wy, wy);
+    const x2 = Math.max(zoomRbStart.wx, wx), y2 = Math.max(zoomRbStart.wy, wy);
+    const w = x2 - x1, h = y2 - y1;
+    if (w > 0 && h > 0) {
+      S.zoom = Math.min(canvasW / w, canvasH / h);
+      S.panX = -(x1 + x2) / 2 * S.zoom; S.panY = (y1 + y2) / 2 * S.zoom;
+      document.getElementById('zoom-badge').textContent = S.zoom.toFixed(2) + ':1';
+      termPrint('Zoom fenêtre', 'info');
+    }
+    isZoomRb = false; zoomRbStart = null; zoomRbEnd = null;
+    S._zoomWinJustApplied = true;
+    setTool('select');
+    render();
     return;
   }
 
@@ -11315,6 +11348,10 @@ canvas.addEventListener('mouseup', (ev) => {
     scheduleRender();
     return;
   }
+
+  // Zoom fenêtre : le clic (mousedown) gère le 1er et le 2e coin ; le mouseup est ignoré
+  if (ev.button === 0 && S.tool === 'zoomwin') { return; }
+  if (ev.button === 0 && S._zoomWinJustApplied) { S._zoomWinJustApplied = false; return; }
 
   // Ignore mouseup that follows a grip confirmation (mousedown handled it already)
   if (ev.button === 0 && S._gripJustConfirmed) { S._gripJustConfirmed = false; setTimeout(smartFocus, 0); return; }
@@ -15497,6 +15534,7 @@ function setTool(t) {
   if(t !== 'offset' && t !== 'select') { S.offsetTargetId=null; S.offsetAwaitDist=false; S.offsetPending=false; }
   if(t !== 'select') { S.axisOverPending=false; S.axisAwaitDist=false; S.axisDistPt1=null; }
   if(t !== 'stretch') { S.stretchRect=null; S.stretchStep=0; }
+  if(t !== 'zoomwin') { isZoomRb=false; zoomRbStart=null; zoomRbEnd=null; }
   if(t !== 'divide_pick') { S.divideStep=0; S.divideEntId=null; }
   if(t !== 'join') S._joinGaps=null;
   if(_toolCmdName[t]) _pushCmdRepeat(_toolCmdName[t]);
@@ -18987,6 +19025,7 @@ cmdInput.addEventListener('keydown',(ev)=>{
     if(S.tool==='offset'){ S.offsetTargetId=null; S.drawing=false; termPrint('Décalage terminé','info'); setTool('select'); render(); return; }
     if(S.tool==='fillet'||S.tool==='chamfer'){ S.filletFirstId=null; S.filletFirstSeg=null; S.filletClickPos1=null; S.filletAwaitRadius=false; S._chamferAwaitD=0; S.selected=[]; setTool('select'); render(); return; }
     if(S.tool==='matchprop'){ S.matchSource=null; setTool('select'); termPrint('Copier propriétés terminé','info'); render(); return; }
+    if(S.tool==='zoomwin' && zoomRbStart){ isZoomRb=false; zoomRbStart=null; zoomRbEnd=null; termPrint('Zoom fenêtre annulé','warning'); setTool('select'); render(); return; }
     if(S.tool==='text_place'||S.tool==='text_edit'){ S._textLivePreview=null; S._textEditId=null; document.getElementById('text-dialog').style.display='none'; setTool('select'); render(); return; }
     // CHF export : idem — sans ces cas explicites, l'Echap tomberait dans le bloc générique
     // ci-dessous (setTool('select') sans effacer les variables de picking CHF), car ce
