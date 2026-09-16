@@ -1340,20 +1340,33 @@ window.CHF_EXPORT_PLUGIN = {
       }
     }
 
-    // Ruban (mode AutoCAD) : mêmes commandes que la barre d'outils ci-dessus,
-    // présentées comme les boutons natifs (voir rbPluginPanel()/rbPluginBtn()).
-    // Les champs Compensation/Longueur d'amorce restent dans la barre d'outils
-    // classique (data-tbid) : CHFCOMP/CHFSTARTAUTO les lisent tels quels — la
-    // barre reste dans le DOM (masquée) en mode ruban, valeurs conservées.
+    // Ruban (mode AutoCAD) : mêmes commandes et mêmes réglages que la barre d'outils
+    // ci-dessus, répartis en panneaux comme les onglets natifs. Les champs recopient
+    // leur valeur dans le champ data-tbid correspondant de la barre classique, qui
+    // reste la source lue par CHFCOMP/CHFSTARTAUTO (voir rbPluginField()).
     if (typeof rbPluginPanel === 'function') {
-      const rbCont = rbPluginPanel('chf_export', 'Export laser');
-      const rbCol1 = rbPluginCol(rbCont, 1);
-      rbPluginBtn(rbCol1, 'chf-export', 'Export CHF (EXPORTCHF)', 'EXPORTCHF', CHF_ICON, 'Export CHF');
-      rbPluginBtn(rbCol1, 'chf-rev-toggle', 'Inverser le sens de coupe (CHFREV)', 'CHFREV', CHF_REV_ICON, 'Inverser sens');
-      rbPluginBtn(rbCol1, 'chf-start-pick', 'Point de départ manuel (CHFSTART)', 'CHFSTART', CHF_START_ICON, 'Point départ');
-      const rbCol2 = rbPluginCol(rbCont, 2);
-      rbPluginBtn(rbCol2, 'chf-start-auto', 'Amorce auto sur la sélection (CHFSTARTAUTO)', 'CHFSTARTAUTO', CHF_START_AUTO_ICON, 'Amorce auto');
-      rbPluginBtn(rbCol2, 'chf-comp-apply', 'Appliquer compensation (CHFCOMP)', 'CHFCOMP', CHF_COMP_ICON, 'Compensation');
+      const rbExport = rbPluginPanel('chf_export', 'Export laser', 'Export');
+      rbPluginBtn(rbExport, 'chf-export', 'Export CHF (EXPORTCHF)', 'EXPORTCHF', CHF_ICON, 'Export CHF', 'big');
+
+      const rbComp = rbPluginCol(rbPluginPanel('chf_export', 'Export laser', 'Compensation'), 1);
+      rbPluginField(rbComp, 'rb-chf-comp-mode', {
+        label: 'Mode', mirror: 'chf-comp-mode',
+        title: "Règle d'imbrication pour l'aperçu pointillé (extérieur/trou) — n'affecte pas la valeur exportée",
+        options: [{ value: 'alt', label: 'Alterné' }, { value: 'binary', label: 'Binaire' }] });
+      rbPluginField(rbComp, 'rb-chf-comp-value', {
+        label: 'Décalage', unit: 'mm', mirror: 'chf-comp-value', cmd: 'CHFCOMP',
+        title: 'Décalage compensation (mm, signé — même valeur appliquée à toute la sélection)' });
+      rbPluginBtn(rbComp, 'chf-comp-apply', 'Appliquer compensation (CHFCOMP)', 'CHFCOMP', CHF_COMP_ICON, 'Appliquer');
+
+      const rbStart = rbPluginCol(rbPluginPanel('chf_export', 'Export laser', 'Amorce'), 1);
+      rbPluginField(rbStart, 'rb-chf-start-length', {
+        label: 'Longueur', unit: 'mm', mirror: 'chf-start-length', cmd: 'CHFSTARTAUTO',
+        title: "Longueur d'amorce auto (mm)" });
+      rbPluginBtn(rbStart, 'chf-start-auto', 'Amorce auto sur la sélection (CHFSTARTAUTO)', 'CHFSTARTAUTO', CHF_START_AUTO_ICON, 'Amorce auto');
+      rbPluginBtn(rbStart, 'chf-start-pick', 'Point de départ manuel (CHFSTART)', 'CHFSTART', CHF_START_ICON, 'Point départ');
+
+      const rbSens = rbPluginPanel('chf_export', 'Export laser', 'Sens de coupe');
+      rbPluginBtn(rbSens, 'chf-rev-toggle', 'Inverser le sens de coupe (CHFREV)', 'CHFREV', CHF_REV_ICON, 'Inverser le sens', 'big');
     }
   }
 };

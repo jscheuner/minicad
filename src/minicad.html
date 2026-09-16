@@ -500,6 +500,24 @@
   .tool-btn.rb-med .rb-label { font-size: 10px; white-space: nowrap; }
   /* Petit bouton : icône seule (info-bulle), 1 rangée sur 3 */
   .tool-btn.rb-small { width: 26px; height: 24px; }
+  /* Champ de saisie d'un panneau (plugins) : même rangée de 24px qu'un rb-med */
+  .rb-field {
+    display: flex; align-items: center; gap: 5px;
+    height: 24px; padding: 0 4px;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 10px;
+    color: var(--text-dim);
+  }
+  .rb-field .rb-funit { opacity: 0.7; }
+  .rb-field span { white-space: nowrap; }
+  .rb-field-input {
+    height: 19px; padding: 0 4px; border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    background: var(--bg-elev); color: var(--ink);
+    border: 1px solid color-mix(in srgb, var(--ink) 20%, transparent);
+  }
+  input.rb-field-input { width: 46px; text-align: center; }
+  select.rb-field-input { height: 21px; }
+  .rb-field-input:focus { outline: none; border-color: var(--accent); }
 
   .main-area { flex: 1; display: flex; overflow: hidden; }
 
@@ -21214,7 +21232,10 @@ function showRibbonTab(name) {
 // s'enregistre en appelant rbPluginPanel(name, titre) pour obtenir son panneau (crée au
 // besoin son propre onglet de ruban), puis rbPluginCol()/rbPluginBtn() pour y ajouter ses
 // boutons (voir src/plugins/*.js).
-function rbPluginPanel(id, title) {
+// Un plugin peut découper son onglet en plusieurs panneaux en passant un titre de
+// panneau distinct (panelTitle) ; sans lui, l'onglet ne contient qu'un panneau qui
+// porte son propre titre.
+function rbPluginPanel(id, title, panelTitle) {
   const tabs = document.querySelector('.ribbon-tabs');
   const panels = document.querySelector('.ribbon-panels');
   if (!tabs || !panels) return null;
@@ -21230,11 +21251,20 @@ function rbPluginPanel(id, title) {
   let page = document.getElementById('rb-page-' + id);
   if (!page) {
     panels.insertAdjacentHTML('beforeend',
-      `<div class="ribbon-tabpage" data-rbpage="${rbtab}" id="rb-page-${id}"><div class="ribbon-panel"><div class="ribbon-panel-buttons"></div><div class="ribbon-panel-title"></div></div></div>`);
+      `<div class="ribbon-tabpage" data-rbpage="${rbtab}" id="rb-page-${id}"></div>`);
     page = document.getElementById('rb-page-' + id);
   }
-  page.querySelector('.ribbon-panel-title').textContent = title;
-  return page.querySelector('.ribbon-panel-buttons');
+  const ptitle = panelTitle || title;
+  const pkey = ptitle.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  let panel = page.querySelector(`.ribbon-panel[data-rbpanel="${pkey}"]`);
+  if (!panel) {
+    if (page.children.length) page.insertAdjacentHTML('beforeend', '<div class="ribbon-sep"></div>');
+    page.insertAdjacentHTML('beforeend',
+      `<div class="ribbon-panel" data-rbpanel="${pkey}"><div class="ribbon-panel-buttons"></div><div class="ribbon-panel-title"></div></div>`);
+    panel = page.querySelector(`.ribbon-panel[data-rbpanel="${pkey}"]`);
+  }
+  panel.querySelector('.ribbon-panel-title').textContent = ptitle;
+  return panel.querySelector('.ribbon-panel-buttons');
 }
 
 function rbPluginCol(cont, colId) {
@@ -21247,16 +21277,59 @@ function rbPluginCol(cont, colId) {
   return col;
 }
 
-function rbPluginBtn(col, id, title, cmd, icon, label) {
+// size : 'med' (icône + libellé, 1 rangée sur 3, défaut), 'big' (icône 26px + libellé
+// dessous, toute la hauteur du panneau) ou 'small' (icône seule). Un bouton 'big' se
+// place directement dans le conteneur du panneau, pas dans une rb-col.
+function rbPluginBtn(col, id, title, cmd, icon, label, size) {
   if (!col || col.querySelector(`[data-rbid="${id}"]`)) return;
   const lbl = label ? `<span class="rb-label">${label}</span>` : '';
   col.insertAdjacentHTML('beforeend',
-    `<button class="tool-btn rb-btn rb-med" data-rbid="${id}" title="${title}" onclick="executeCommand('${cmd}')">${icon}${lbl}</button>`);
+    `<button class="tool-btn rb-btn rb-${size || 'med'}" data-rbid="${id}" title="${title}" onclick="executeCommand('${cmd}')">${icon}${lbl}</button>`);
+}
+
+// Champ de saisie d'un panneau de ruban. cfg : { label, unit, placeholder, title,
+// options:[{value,label}] pour un select, mirror:<data-tbid>, cmd:<commande sur Entrée> }.
+// La valeur est recopiée dans le champ data-tbid correspondant de la barre d'outils
+// classique, qui reste la source lue par les commandes du plugin : la barre reste dans
+// le DOM (masquée) en mode ruban, on ne duplique donc pas le data-tbid.
+function rbPluginField(col, id, cfg) {
+  if (!col || col.querySelector(`[data-rbid="${id}"]`)) return null;
+  const c = cfg || {};
+  const ctl = c.options
+    ? `<select class="rb-field-input" data-rbfield="${id}">${
+        c.options.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}</select>`
+    : `<input type="text" class="rb-field-input" data-rbfield="${id}" placeholder="${c.placeholder || ''}">`;
+  col.insertAdjacentHTML('beforeend',
+    `<div class="rb-field" data-rbid="${id}" title="${c.title || ''}">${
+      c.label ? `<span>${c.label}</span>` : ''}${ctl}${
+      c.unit ? `<span class="rb-funit">${c.unit}</span>` : ''}</div>`);
+  const el = col.querySelector(`[data-rbfield="${id}"]`);
+  if (c.mirror) {
+    el.dataset.rbmirror = c.mirror;
+    const src = document.querySelector(`[data-tbid="${c.mirror}"]`);
+    if (src) {
+      el.value = src.value;
+      const sync = () => { const t = document.querySelector(`[data-tbid="${c.mirror}"]`); if (t) t.value = el.value; };
+      el.addEventListener('input', sync);
+      el.addEventListener('change', sync);
+    }
+  }
+  if (c.cmd) el.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter') { ev.preventDefault(); executeCommand(c.cmd); }
+  });
+  return el;
 }
 
 function setToolbarStyle(style) {
   S.toolbarStyle = style === 'ribbon' ? 'ribbon' : 'standard';
   document.body.classList.toggle('ribbon-mode', S.toolbarStyle === 'ribbon');
+  // Reprendre dans les champs du ruban ce qui a été saisi dans les barres classiques
+  if (S.toolbarStyle === 'ribbon') {
+    document.querySelectorAll('[data-rbfield][data-rbmirror]').forEach(el => {
+      const src = document.querySelector(`[data-tbid="${el.dataset.rbmirror}"]`);
+      if (src) el.value = src.value;
+    });
+  }
 }
 
 let _tbDrag = null; // { id, offsetX, offsetY, el }
