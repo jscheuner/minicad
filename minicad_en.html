@@ -9736,13 +9736,15 @@ function applyJoin(ellipseSegs) {
     if (e.type==='line'||e.type==='wall') return [[e.x1,e.y1],[e.x2,e.y2]];
     if (e.type==='arc') {
       // Les arcs MiniCAD sont parcourus startAngle→endAngle dans le sens trigo
-      // (CCW, monde Y haut) : le bulge du segment startPt→endPt est donc toujours
-      // +tan(dth/4), avec dth la portée CCW normalisée dans (0, 2π). L'ancien
-      // calcul de signe via la position du centre inversait les arcs majeurs.
+      // (CCW, monde Y haut) : la portée CCW normalisée dth ∈ (0, 2π) donne le bulge
+      // DXF standard tan(dth/4). Il faut le convertir dans la convention interne des
+      // polylignes via dxfBulge() — sans quoi un arc majeur (dth > π, donc |b| > 1)
+      // est reconstruit en miroir de sa corde, centre du mauvais côté (voir le
+      // commentaire de dxfBulge()).
       const dth = ((e.endAngle - e.startAngle) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
       const sx = e.cx + e.r*Math.cos(e.startAngle), sy = e.cy + e.r*Math.sin(e.startAngle);
       const ex = e.cx + e.r*Math.cos(e.endAngle),   ey = e.cy + e.r*Math.sin(e.endAngle);
-      return [[sx, sy, Math.tan(dth / 4)], [ex, ey]];
+      return [[sx, sy, dxfBulge(Math.tan(dth / 4))], [ex, ey]];
     }
     if (e.type==='ellipse') {
       // Arc d'ellipse → segments de droite (lissage ~5°/segment), comme au rendu.
