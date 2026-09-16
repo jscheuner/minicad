@@ -7,6 +7,13 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.1] — 2026-06-16 — Version courante
 
 ### Ajouté
+- **Glisser-déposer d'un fichier .dxf / .mcad pour l'ouvrir** — déposer un fichier
+  (`.dxf`, `.mcad`, `.json`, `.dwg`) depuis l'explorateur n'importe où sur la page ouvre
+  directement le dessin, comme le fait déjà le bouton Ouvrir (fermeture du dessin
+  courant avec confirmation si non sauvegardé, `.dwg` redirigé vers le convertisseur
+  DWG → DXF local). Un bandeau semi-transparent avec zone en pointillés apparaît pendant
+  le survol pour indiquer la zone de dépôt, et un format non reconnu affiche un message
+  d'erreur dans le terminal sans rien modifier au dessin.
 - **Barre d'outils Ruban façon AutoCAD (option Standard / Ruban)** — nouveau mode
   d'interface au choix dans **Préférences → Apparence → Barre d'outils** : *Standard*
   (barres classiques dockables, comportement inchangé, par défaut) ou *Ruban* (bandeau

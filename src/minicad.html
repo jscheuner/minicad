@@ -1467,10 +1467,31 @@
   }
   .td-footer button:hover { color: var(--text); border-color: color-mix(in srgb, var(--ink) 27%, transparent); }
   .td-ok { background: var(--accent-dim) !important; color: var(--accent) !important; border-color: var(--accent) !important; }
+
+  #dnd-overlay {
+    display: none; position: fixed; inset: 0; z-index: 5000;
+    background: color-mix(in srgb, var(--bg-dark) 80%, transparent);
+    align-items: center; justify-content: center; pointer-events: none;
+  }
+  #dnd-overlay.show { display: flex; }
+  #dnd-overlay-box {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    padding: 36px 48px; border-radius: 10px; border: 2px dashed var(--accent);
+    background: var(--bg-panel); color: var(--text); font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px; font-weight: 600;
+  }
+  #dnd-overlay-box svg { fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 </style>
 <script>(function(){try{var p=JSON.parse(localStorage.getItem('minicad_user_prefs')||'{}');var t=p.theme||(p.theme===undefined?'light':p.theme);if(t==='light'||t===undefined)document.documentElement.classList.add('theme-light');}catch(e){document.documentElement.classList.add('theme-light');}})();</script>
 </head>
 <body>
+
+<div id="dnd-overlay">
+  <div id="dnd-overlay-box">
+    <svg viewBox="0 0 24 24" width="40" height="40"><path d="M12 3v12M12 15l-4-4M12 15l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+    <div data-i18n="dnd.drop_hint">{{dnd.drop_hint}}</div>
+  </div>
+</div>
 
 <!-- MENU BAR -->
 <div class="menubar">
@@ -20745,7 +20766,10 @@ function handleFileOpen(event) {
   const file = event.target.files[0];
   if (!file) return;
   event.target.value = ''; // reset so same file can be re-opened
+  openFileFromOS(file);
+}
 
+function openFileFromOS(file) {
   const ext = file.name.split('.').pop().toLowerCase();
   if (ext === 'dwg') { warnDwgNotSupported(file); return; }
 
@@ -20773,6 +20797,46 @@ function handleFileOpen(event) {
   reader.onerror = () => termPrint('Erreur de lecture du fichier', 'error');
   reader.readAsText(file);
 }
+
+// ===== GLISSER-DÉPOSER un fichier .dxf/.mcad depuis l'explorateur =====
+let _dndDepth = 0;
+function _dndHasFiles(e) { return e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files'); }
+function _dndOverlay() { return document.getElementById('dnd-overlay'); }
+function _dndEnter(e) {
+  if (!_dndHasFiles(e)) return;
+  e.preventDefault();
+  _dndDepth++;
+  _dndOverlay().classList.add('show');
+}
+function _dndOver(e) {
+  if (!_dndHasFiles(e)) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+}
+function _dndLeave(e) {
+  if (!_dndHasFiles(e)) return;
+  _dndDepth = Math.max(0, _dndDepth - 1);
+  if (_dndDepth === 0) _dndOverlay().classList.remove('show');
+}
+function _dndDrop(e) {
+  if (!_dndHasFiles(e)) return;
+  e.preventDefault();
+  _dndDepth = 0;
+  _dndOverlay().classList.remove('show');
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['dxf','dwg','json','mcad'].includes(ext)) {
+    termPrint('Format non supporté par glisser-déposer: .' + ext, 'error');
+    termPrint('Formats acceptés: .dxf, .dwg, .json, .mcad', 'warning');
+    return;
+  }
+  openFileFromOS(file);
+}
+window.addEventListener('dragenter', _dndEnter);
+window.addEventListener('dragover', _dndOver);
+window.addEventListener('dragleave', _dndLeave);
+window.addEventListener('drop', _dndDrop);
 
 // Le DWG est un format binaire propriétaire (Autodesk) : le lire demanderait un SDK
 // (ODA / LibreDWG), donc une dépendance externe — exclu par la contrainte du fichier

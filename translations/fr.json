@@ -186,6 +186,7 @@
   "cmd.placeholder": "Commande ou mesure (100<45, @50,30, 200)...",
   "cmd.first_point": "Premier point: X,Y (ex: 100,200) ou cliquez…",
   "cmd.wh": "Largeur,Hauteur (ex: 100,100) ou cliquez…",
+  "dnd.drop_hint": "Déposez le fichier .dxf ou .mcad pour l'ouvrir",
   "tool.open": "Ouvrir (Ctrl+O)",
   "tool.save": "Sauvegarder (Ctrl+S)",
   "help.commands": "═══ COMMANDES ═══",
