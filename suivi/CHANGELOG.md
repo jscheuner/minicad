@@ -158,9 +158,10 @@ Format : `[version] — YYYY-MM-DD — Description`
   Headless 168/168 (9 attentes mises à jour + 9 nouvelles, dont les 4 combinaisons
   orientation-dessinée × `_chfReverse`, la priorité du point manuel et la non-régression des trous).
 - **Ruban centré dans la fenêtre (option)** — nouveau réglage dans **Préférences → Apparence** :
-  centre horizontalement les panneaux du ruban dans la largeur disponible au lieu de les coller
-  à gauche, utile sur un écran large où l'onglet actif (surtout *Accueil*) n'occupe pas toute la
-  largeur. Décoché par défaut (comportement inchangé) ; persiste comme les autres préférences.
+  centre horizontalement le ruban dans la largeur disponible — titres d'onglets et panneaux —
+  au lieu de les coller à gauche, utile sur un écran large où l'onglet actif (surtout *Accueil*)
+  n'occupe pas toute la largeur. Décoché par défaut (comportement inchangé) ; persiste comme
+  les autres préférences.
 
 ### Modifié
 - **ZOOM FENÊTRE en 2 clics au lieu du cliqué-glissé** — l'outil `zoomwin` (bouton, ruban,
