@@ -2197,7 +2197,7 @@
     <div class="ribbon-tab active" data-rbtab="home" onclick="showRibbonTab('home')" data-i18n="ribbon.tab.home">{{ribbon.tab.home}}</div>
     <div class="ribbon-tab" data-rbtab="annotate" onclick="showRibbonTab('annotate')" data-i18n="ribbon.tab.annotate">{{ribbon.tab.annotate}}</div>
     <div class="ribbon-tab" data-rbtab="view" onclick="showRibbonTab('view')" data-i18n="ribbon.tab.view">{{ribbon.tab.view}}</div>
-    <div class="ribbon-tab" data-rbtab="plugins" onclick="showRibbonTab('plugins')" data-i18n="ribbon.tab.plugins">{{ribbon.tab.plugins}}</div>
+    <!-- Onglets plugins ajoutés dynamiquement ici par rbPluginPanel(), voir plus bas -->
   </div>
   <div class="ribbon-panels">
 
@@ -2605,10 +2605,10 @@
       </div>
     </div>
 
-    <!-- Onglet Plugins — panneaux ajoutés dynamiquement au chargement de chaque plugin,
-         voir rbPluginPanel()/rbPluginCol()/rbPluginBtn() ci-dessous et PLUGIN.init() dans
-         src/plugins/*.js (même patron que la barre d'outils docked de chaque plugin). -->
-    <div class="ribbon-tabpage" data-rbpage="plugins" id="rb-page-plugins"></div>
+    <!-- Onglets plugins — ajoutés dynamiquement au chargement de chaque plugin, un onglet
+         par plugin, voir rbPluginPanel()/rbPluginCol()/rbPluginBtn() ci-dessous et
+         PLUGIN.init() dans src/plugins/*.js (même patron que la barre d'outils docked
+         classique que chaque plugin construit). -->
 
   </div>
 </div>
@@ -21208,24 +21208,33 @@ function showRibbonTab(name) {
   document.querySelectorAll('.ribbon-tabpage').forEach(p => p.classList.toggle('active', p.dataset.rbpage === name));
 }
 
-// --- Ruban : onglet Plugins, rempli dynamiquement par chaque plugin chargé ---
+// --- Ruban : un onglet dédié par plugin chargé, rempli dynamiquement ---
 // Même rôle que la coquille de barre d'outils docked (dockArea/tb-buttons) que chaque
 // plugin construit dans son init(), mais pour la présentation en ruban. Un plugin
-// s'enregistre en appelant rbPluginPanel(name, titre) pour obtenir son panneau, puis
-// rbPluginCol()/rbPluginBtn() pour y ajouter ses boutons (voir src/plugins/*.js).
+// s'enregistre en appelant rbPluginPanel(name, titre) pour obtenir son panneau (crée au
+// besoin son propre onglet de ruban), puis rbPluginCol()/rbPluginBtn() pour y ajouter ses
+// boutons (voir src/plugins/*.js).
 function rbPluginPanel(id, title) {
-  const page = document.getElementById('rb-page-plugins');
-  if (!page) return null;
-  let panel = document.getElementById('rb-pg-' + id);
-  if (!panel) {
-    if (page.children.length) page.insertAdjacentHTML('beforeend', '<div class="ribbon-sep"></div>');
-    page.insertAdjacentHTML('beforeend',
-      `<div class="ribbon-panel" id="rb-pg-${id}"><div class="ribbon-panel-buttons"></div><div class="ribbon-panel-title"></div></div>`);
-    panel = document.getElementById('rb-pg-' + id);
+  const tabs = document.querySelector('.ribbon-tabs');
+  const panels = document.querySelector('.ribbon-panels');
+  if (!tabs || !panels) return null;
+  const rbtab = 'plugin-' + id;
+  let tab = document.getElementById('rb-tab-' + id);
+  if (!tab) {
+    tabs.insertAdjacentHTML('beforeend',
+      `<div class="ribbon-tab" data-rbtab="${rbtab}" id="rb-tab-${id}" onclick="showRibbonTab('${rbtab}')"></div>`);
+    tab = document.getElementById('rb-tab-' + id);
   }
-  panel.style.display = '';
-  panel.querySelector('.ribbon-panel-title').textContent = title;
-  return panel.querySelector('.ribbon-panel-buttons');
+  tab.style.display = '';
+  tab.textContent = title;
+  let page = document.getElementById('rb-page-' + id);
+  if (!page) {
+    panels.insertAdjacentHTML('beforeend',
+      `<div class="ribbon-tabpage" data-rbpage="${rbtab}" id="rb-page-${id}"><div class="ribbon-panel"><div class="ribbon-panel-buttons"></div><div class="ribbon-panel-title"></div></div></div>`);
+    page = document.getElementById('rb-page-' + id);
+  }
+  page.querySelector('.ribbon-panel-title').textContent = title;
+  return page.querySelector('.ribbon-panel-buttons');
 }
 
 function rbPluginCol(cont, colId) {
@@ -21742,9 +21751,13 @@ function unloadPlugin(name) {
     // Masquer la barre d'outils du plugin si elle existe
     const tb = document.getElementById('tb-' + name);
     if (tb) hideToolbar('tb-' + name);
-    // Masquer aussi son panneau de ruban (voir rbPluginPanel())
-    const rbp = document.getElementById('rb-pg-' + name);
-    if (rbp) rbp.style.display = 'none';
+    // Masquer aussi son onglet de ruban (voir rbPluginPanel()) ; s'il était actif, revenir à Accueil
+    const rbTab = document.getElementById('rb-tab-' + name);
+    if (rbTab) {
+      const wasActive = rbTab.classList.contains('active');
+      rbTab.style.display = 'none';
+      if (wasActive) showRibbonTab('home');
+    }
     autoSavePrefs();
     termPrint(`Plugin « ${name} » déchargé`, 'info');
   }
