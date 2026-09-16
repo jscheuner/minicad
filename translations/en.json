@@ -222,6 +222,7 @@
   "prefs.toolbar_style": "Toolbar",
   "prefs.toolbar_standard": "Standard",
   "prefs.toolbar_ribbon": "Ribbon",
+  "prefs.ribbon_centered": "Center ribbon in window",
   "ribbon.tab.home": "Home",
   "ribbon.tab.annotate": "Annotate",
   "ribbon.tab.view": "View",

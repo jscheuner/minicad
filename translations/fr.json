@@ -222,6 +222,7 @@
   "prefs.toolbar_style": "Barre d'outils",
   "prefs.toolbar_standard": "Standard",
   "prefs.toolbar_ribbon": "Ruban",
+  "prefs.ribbon_centered": "Centrer le ruban dans la fenêtre",
   "ribbon.tab.home": "Accueil",
   "ribbon.tab.annotate": "Annotation",
   "ribbon.tab.view": "Affichage",

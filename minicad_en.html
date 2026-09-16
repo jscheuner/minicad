@@ -449,6 +449,10 @@
     overflow-x: auto;
   }
   .ribbon-tabpage.active { display: flex; }
+  body.ribbon-centered .ribbon-tabpage {
+    justify-content: center;
+    justify-content: safe center;
+  }
 
   .ribbon-panel {
     display: flex;
@@ -3316,6 +3320,7 @@ const USER_PREFS = {
   propsPanelWidth: 200,
   propsPanelVisible: true,
   toolbarStyle: 'ribbon',
+  ribbonCentered: false,
 };
 // ===USER_PREFS_END===
 
@@ -3323,6 +3328,7 @@ const USER_PREFS = {
 const S = {
   theme: 'light',
   toolbarStyle: 'ribbon',
+  ribbonCentered: false,
   pickboxPx: 6,    // demi-côté du carré de sélection (px écran)
   osnapTolPx: 15,  // portée d'accrochage OSNAP (px écran)
   entities: [],
@@ -20778,6 +20784,7 @@ function captureUserPrefs() {
     propsPanelWidth: parseInt(document.getElementById('props-panel')?.style.width) || 200,
     propsPanelVisible: !document.getElementById('props-panel')?.classList.contains('hidden'),
     toolbarStyle: S.toolbarStyle,
+    ribbonCentered: S.ribbonCentered,
   };
 }
 
@@ -20816,6 +20823,7 @@ function applyUserPrefs(prefs) {
   // Toujours appliquer : des préférences enregistrées avant l'ajout du réglage n'ont
   // pas la clé, et sans appel body.ribbon-mode resterait désynchronisé de S.toolbarStyle.
   setToolbarStyle(prefs.toolbarStyle !== undefined ? prefs.toolbarStyle : USER_PREFS.toolbarStyle);
+  setRibbonCentered(prefs.ribbonCentered !== undefined ? prefs.ribbonCentered : USER_PREFS.ribbonCentered);
   if (prefs.terminalHeight) {
     const h = Math.max(58, Math.min(prefs.terminalHeight, 600));
     const el = document.getElementById('terminal');
@@ -20935,6 +20943,7 @@ function openPrefsDialog() {
       ${sec(`Appearance`)}
       ${row(`Theme`, sel('theme', [{v:'dark',l:`Dark`},{v:'light',l:`Light`}], p.theme||'dark'))}
       ${row(`Toolbar`, sel('toolbarStyle', [{v:'standard',l:`Standard`},{v:'ribbon',l:`Ribbon`}], p.toolbarStyle||USER_PREFS.toolbarStyle))}
+      ${row(`Center ribbon in window`, chk('ribbonCentered', p.ribbonCentered))}
 
       ${sec(`Grid`)}
       ${row(`Show grid`, chk('gridVis', p.gridVis))}
@@ -20993,6 +21002,7 @@ function openPrefsDialog() {
     const prefs = {
       theme: g('theme').value,
       toolbarStyle: g('toolbarStyle').value,
+      ribbonCentered: g('ribbonCentered').checked,
       snap: g('snap').checked,
       gridSize: parseFloat(g('gridSize').value) || 20,
       gridSizeY: parseFloat(g('gridSizeY').value) || parseFloat(g('gridSize').value) || 20,
@@ -21917,6 +21927,11 @@ function setToolbarStyle(style) {
   document.body.classList.toggle('ribbon-mode', S.toolbarStyle === 'ribbon');
   // Reprendre dans les champs du ruban ce qui a été saisi ailleurs entre-temps
   if (S.toolbarStyle === 'ribbon') rbSyncFields();
+}
+
+function setRibbonCentered(centered) {
+  S.ribbonCentered = !!centered;
+  document.body.classList.toggle('ribbon-centered', S.ribbonCentered);
 }
 
 let _tbDrag = null; // { id, offsetX, offsetY, el }
