@@ -7,6 +7,19 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.2] — 2026-09-16 — Version courante
 
 ### Ajouté
+- **XLINE : verrouillage Vertical/Horizontal (V/H)** — dans la commande XLINE, taper
+  `V` (ou `H`) puis Entrée verrouille la direction de la ligne infinie ; chaque clic
+  suivant sur le dessin pose alors directement une nouvelle XLINE verticale (ou
+  horizontale) sous le curseur, sans second point à cliquer — pratique pour poser en
+  série des lignes de construction verticales/horizontales façon grille. Un aperçu en
+  pointillés suit la souris avant chaque clic, on peut re-taper `V`/`H` à tout moment
+  pour changer de direction, et Echap quitte la commande.
+- **Barre de commande : le clic droit valide aussi le texte tapé mais pas encore
+  envoyé** — par exemple taper `V` (XLINE) sans appuyer sur Entrée puis faire un clic
+  droit sur le dessin valide la saisie exactement comme le ferait Entrée (au lieu du
+  comportement générique du clic droit — répéter/menu/annuler l'outil). Généralise à
+  toute commande le raccourci clavier+souris déjà utilisé pour valider la saisie d'un
+  point en cours de dessin.
 - **Glisser-déposer d'un fichier .dxf / .mcad pour l'ouvrir** — déposer un fichier
   (`.dxf`, `.mcad`, `.json`, `.dwg`) depuis l'explorateur n'importe où sur la page ouvre
   directement le dessin, comme le fait déjà le bouton Ouvrir (fermeture du dessin
