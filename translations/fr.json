@@ -272,6 +272,8 @@
   "prefs.input_ortho": "Mode ortho",
   "prefs.input_polar": "Accrochage polaire",
   "prefs.input_polar_inc": "Incrément polaire",
+  "prefs.input_coord_absolute": "Coordonnées absolues (bulle de saisie)",
+  "di.abs_badge_title": "Coordonnées absolues actives (X,Y depuis l'origine, pas relatif au dernier point)",
   "prefs.input_pickbox": "Taille du pickbox",
   "prefs.input_pan": "Déplacement de la vue",
   "prefs.pan_wheel": "Molette seule",

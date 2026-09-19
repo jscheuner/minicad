@@ -443,6 +443,10 @@
   }
   .ribbon-tab:hover { color: var(--text-bright); }
   .ribbon-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  /* Réorganisation des onglets par glisser-déposer (ordre mémorisé dans les préférences) */
+  .ribbon-tab.rb-tab-dragging { opacity: 0.35; }
+  .ribbon-tab.rb-tab-before { box-shadow: inset 2px 0 0 var(--accent); }
+  .ribbon-tab.rb-tab-after  { box-shadow: inset -2px 0 0 var(--accent); }
 
   .ribbon-panels { position: relative; }
   .ribbon-tabpage {
@@ -1065,6 +1069,17 @@
     gap: 4px;
   }
   #dynamic-input.visible { display: flex; }
+  .di-abs-badge {
+    display: none;
+    align-items: center;
+    color: var(--warning);
+    font-weight: 700;
+    font-size: 12px;
+    pointer-events: none;
+  }
+  .di-abs-badge.visible { display: flex; }
+  #dynamic-input.abs-mode .di-field { border-color: var(--warning); }
+  #dynamic-input.abs-mode .di-label { color: var(--warning); }
   .di-field {
     display: flex; align-items: center; gap: 3px;
     background: var(--menu-bg);
@@ -2220,9 +2235,9 @@
 <!-- RUBAN (façon AutoCAD) — alternative aux barres Standard, activée via Préférences -->
 <div class="ribbon-bar" id="ribbon-bar">
   <div class="ribbon-tabs">
-    <div class="ribbon-tab active" data-rbtab="home" onclick="showRibbonTab('home')">Home</div>
-    <div class="ribbon-tab" data-rbtab="annotate" onclick="showRibbonTab('annotate')">Annotate</div>
-    <div class="ribbon-tab" data-rbtab="view" onclick="showRibbonTab('view')">View</div>
+    <div class="ribbon-tab active" draggable="true" data-rbtab="home" onclick="showRibbonTab('home')">Home</div>
+    <div class="ribbon-tab" draggable="true" data-rbtab="annotate" onclick="showRibbonTab('annotate')">Annotate</div>
+    <div class="ribbon-tab" draggable="true" data-rbtab="view" onclick="showRibbonTab('view')">View</div>
     <!-- Onglets plugins ajoutés dynamiquement ici par rbPluginPanel(), voir plus bas -->
   </div>
   <div class="ribbon-panels">
@@ -2692,6 +2707,7 @@
       <div class="overlay-badge" id="zoom-badge">1:1</div>
     </div>
     <div id="dynamic-input">
+      <span class="di-abs-badge" id="di-abs-badge" title="Absolute coordinates active (X,Y from origin, not relative to last point)">A</span>
       <div class="di-field active" id="di-dist-field">
         <span class="di-label" id="di-label1">D</span>
         <input class="di-input" id="di-dist" placeholder="0.0" tabindex="1">
@@ -3310,6 +3326,7 @@ const USER_PREFS = {
   ortho: false,
   polar: true,
   polarAngle: 15,
+  coordAbsolute: false,
   rightDragPan: false,
   tubeDiameter: 40,
   tubeBendRadius: 67,
@@ -3325,6 +3342,7 @@ const USER_PREFS = {
   propsPanelVisible: true,
   toolbarStyle: 'ribbon',
   ribbonCentered: false,
+  ribbonTabOrder: null,
 };
 // ===USER_PREFS_END===
 
@@ -3333,6 +3351,7 @@ const S = {
   theme: 'light',
   toolbarStyle: 'ribbon',
   ribbonCentered: false,
+  ribbonTabOrder: null,  // ordre des onglets du ruban choisi par glisser-déposer
   pickboxPx: 6,    // demi-côté du carré de sélection (px écran)
   osnapTolPx: 15,  // portée d'accrochage OSNAP (px écran)
   entities: [],
@@ -3359,6 +3378,7 @@ const S = {
   snap: true,
   ortho: false,
   polar: true,
+  coordAbsolute: false, // bulle dynamique en X/Y absolu pour tous les points (pas seulement le premier)
   rightDragPan: false, // glisser bouton droit pour déplacer la vue (clic droit reste Entrée)
   polarAngle: 15, // degrees increment for polar tracking
   gridVis: true,
@@ -3509,6 +3529,8 @@ const S = {
   libDef: null,   // { family, size, params, view, drawFn }
   // CIRCLE
   circleDiamMode: false,
+  // XLINE (V/H verrouille la direction, un clic = une ligne)
+  _xlineDir: null,
   // FILLET / CHAMFER
   filletRadius: 5,
   filletAwaitRadius: false,
@@ -4570,11 +4592,15 @@ function parseDistanceInput(raw, basePoint, mouseWorld) {
   }
 
   // Relatif: @50,30 ou 50,30 ou 100+5,200/2
-  const rel = raw.match(/^@?\s*(.+),\s*(.+)$/);
+  // Option "coordonnées absolues" : sans @, x,y est lu en absolu (convention AutoCAD)
+  const rel = raw.match(/^(@?)\s*(.+),\s*(.+)$/);
   if (rel) {
-    const ex = safeEvalMath(rel[1]) ?? parseFloat(rel[1]);
-    const ey = safeEvalMath(rel[2]) ?? parseFloat(rel[2]);
-    if (isFinite(ex) && isFinite(ey)) return [basePoint[0] + ex, basePoint[1] + ey];
+    const ex = safeEvalMath(rel[2]) ?? parseFloat(rel[2]);
+    const ey = safeEvalMath(rel[3]) ?? parseFloat(rel[3]);
+    if (isFinite(ex) && isFinite(ey)) {
+      if (!rel[1] && S.coordAbsolute) return [ex, ey];
+      return [basePoint[0] + ex, basePoint[1] + ey];
+    }
   }
 
   // Distance seule ou expression: 200, 105.3+35, 2250/2
@@ -4650,7 +4676,7 @@ const CMD = {
   ARC: { alias: ['A'], desc: 'Arc', exec: () => { S._arcMode='3p'; setTool('arc'); termPrint('ARC — P1 départ  |  C=Centre-Début-Fin  |  E=Début-Fin-Rayon', 'info'); }},
   POLYLINE: { alias: ['PL','POLYLIGNE'], desc: 'Polyligne', exec: () => { setTool('polyline'); termPrint('POLYLIGNE: Cliquez ou tapez X,Y, Echap pour finir', 'info'); }},
   SPLINE:   { alias: ['SPL'], desc: 'Spline (Catmull-Rom)', exec: () => { setTool('spline'); termPrint('SPLINE: Cliquez les points de passage — C=Clore  Echap=Finir', 'info'); }},
-  XLINE:    { alias: ['XL','LIGNEINFINIE'], desc: 'Ligne infinie (2 directions)', exec: () => { setTool('xline'); termPrint('XLINE: Cliquez le point de base puis un point de passage', 'info'); }},
+  XLINE:    { alias: ['XL','LIGNEINFINIE'], desc: 'Ligne infinie (2 directions)', exec: () => { setTool('xline'); termPrint('XLINE: Cliquez le point de base puis un point de passage, ou V/H pour verrouiller verticale/horizontale', 'info'); }},
   RAY:      { alias: ['DEMIDROITE'], desc: 'Demi-droite (depuis un point)', exec: () => { setTool('ray'); termPrint('DEMI-DROITE: Cliquez le point de départ puis la direction', 'info'); }},
   RAY_REV:  { alias: ['RAYREV'], desc: 'Demi-droite inverse', exec: () => { setTool('ray_rev'); termPrint('DEMI-DROITE INVERSE: Cliquez le point de départ puis la direction opposée', 'info'); }},
   ERASE: { alias: ['E','EFFACER','DEL'], desc: 'Supprimer sélection', exec: () => {
@@ -5732,7 +5758,7 @@ function _drawDynamicLayer() {
   });
 
   // Overlays dynamiques
-  if ((S.drawing && S.drawPoints.length>0 && !S.gripEdit) || (S.tool==='tube' && S.drawing && S.tubePoints.length>=1)) drawPreview();
+  if ((S.drawing && S.drawPoints.length>0 && !S.gripEdit) || (S.tool==='tube' && S.drawing && S.tubePoints.length>=1) || (S.tool==='xline' && S._xlineDir && !S.gripEdit)) drawPreview();
   if (S._textLivePreview) drawTextLivePreview();
   if (S.tool==='offset' && S.selected.length && mouseOnCanvas) drawOffsetGhost();
   if (S.tool==='trim' && S.trimStep===2 && S.hoverEntityId && mouseOnCanvas) drawTrimPreview();
@@ -9073,6 +9099,18 @@ function drawPreview() {
       else { ctx.moveTo(bsx+tMin*sdx,bsy+tMin*sdy); ctx.lineTo(bsx+tMax*sdx,bsy+tMax*sdy); }
       ctx.stroke();
     }
+  } else if (tool === 'xline' && S._xlineDir && pts.length===0) {
+    // Preview: direction verrouillée (V/H) — la ligne infinie suit la souris, prête à poser au clic
+    const [bsx,bsy] = w2s(mx,my);
+    const sdx = S._xlineDir === 'v' ? 0 : 1, sdy = S._xlineDir === 'v' ? 1 : 0;
+    const W=canvas.width, H=canvas.height;
+    let tMin=-1e9, tMax=1e9;
+    if(Math.abs(sdx)>1e-10){const t1=-bsx/sdx,t2=(W-bsx)/sdx;tMin=Math.max(tMin,Math.min(t1,t2));tMax=Math.min(tMax,Math.max(t1,t2));}
+    if(Math.abs(sdy)>1e-10){const t1=-bsy/sdy,t2=(H-bsy)/sdy;tMin=Math.max(tMin,Math.min(t1,t2));tMax=Math.min(tMax,Math.max(t1,t2));}
+    ctx.strokeStyle=TC.ink+'66'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    ctx.moveTo(bsx+tMin*sdx,bsy+tMin*sdy); ctx.lineTo(bsx+tMax*sdx,bsy+tMax*sdy);
+    ctx.stroke();
   } else if (tool === 'spline' && pts.length>0) {
     let tx=mx,ty=my;
     const last=pts[pts.length-1];
@@ -10347,14 +10385,26 @@ const diLabel1 = document.getElementById('di-label1');
 const diLabel2 = document.getElementById('di-label2');
 const diUnit1 = document.getElementById('di-unit1');
 const diUnit2 = document.getElementById('di-unit2');
+const diAbsBadge = document.getElementById('di-abs-badge');
+
+// Outils "placement en un clic" : un seul point, pas de second point à saisir
+// (POINT, portes/prises/interrupteurs/fenêtres, texte, insertion de bloc).
+// Partagé par getDIMode(), confirmDynamicInput() et le parsing terminal.
+const PLACEMENT_TOOLS = ['point','door','outlet','switch_place','window_place','text_place','insert_place'];
 
 // Returns the input mode for the current tool and drawing state
 function getDIMode() {
-  const drawingTools = ['line','xline','ray','ray_rev','rect','rectcenter','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube','ellipse','polygon'];
+  const drawingTools = ['line','xline','ray','ray_rev','rect','rectcenter','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube','ellipse','polygon', ...PLACEMENT_TOOLS];
   // First point: show X,Y — sauf DEPUIS actif, où D/A (relatif au point de référence)
   if (!S.drawing && drawingTools.includes(S.tool)) return S._fromBase ? 'polar' : 'xy';
+  // Option "coordonnées absolues" : X/Y pour tous les points. Pour RECT/RECTCENTER
+  // le 2e point devient le coin opposé en absolu au lieu de Largeur×Hauteur.
+  // DEPUIS garde la priorité, et CIRCLE reste en rayon (comme AutoCAD).
+  const absTools = ['line','wall','leader','polyline','cable','spline','tube','arc','rect','rectcenter'];
+  if (S.coordAbsolute && !S._fromBase && absTools.includes(S.tool)) return 'xy';
   if (S.tool === 'rect' || S.tool === 'rectcenter') return 'wh'; // Width × Height
   if (S.tool === 'circle') return 'radius'; // Radius only
+  if (S._fromBase) return 'polar'; // DEPUIS prime toujours sur le mode absolu
   return 'polar'; // Distance + Angle (line, polyline, wall, etc.)
 }
 
@@ -10375,18 +10425,31 @@ function updateDynamicInput() {
 
   const mode = getDIMode();
 
-  // === FIRST POINT MODE (X,Y) ===
+  // Indicateur "coordonnées absolues" — visible dès que l'option est active et
+  // que la bulle affiche X,Y (sinon rien à signaler : D/A n'est jamais "absolu").
+  const absActive = S.coordAbsolute && mode === 'xy';
+  diContainer.classList.toggle('abs-mode', absActive);
+  diAbsBadge.classList.toggle('visible', absActive);
+
+  // === X,Y MODE (premier point, ou tout point si "coordonnées absolues" actif) ===
   if (mode === 'xy') {
+    const hasLast = S.drawing && S.drawPoints.length > 0;
     diLabel1.textContent = 'X'; diUnit1.textContent = '';
     diLabel2.textContent = 'Y'; diUnit2.textContent = '';
     diAngleField.style.display = '';
-    cmdInput.placeholder = '⟶ Premier point: X,Y (ex: 100,200) ou cliquez...';
+    cmdInput.placeholder = hasLast
+      ? '⟶ Point suivant: X,Y absolu (ex: 100,200) ou cliquez...'
+      : '⟶ Premier point: X,Y (ex: 100,200) ou cliquez...';
 
     // Update with snapped/osnap coords under cursor
     if (!S.diLocked) {
       let [mx, my] = S.mouseWorld;
       if (S.currentOsnap) { mx = S.currentOsnap.x; my = S.currentOsnap.y; }
       else { [mx, my] = snapToGrid(mx, my); }
+      if (hasLast) {
+        const last = S.drawPoints[S.drawPoints.length - 1];
+        [mx, my] = applyConstraint(last[0], last[1], mx, my);
+      }
       diDist.value = mx.toFixed(1);
       diAngle.value = my.toFixed(1);
       if (document.activeElement === diDist) diDist.select();
@@ -10547,23 +10610,45 @@ diAngle.addEventListener('keydown', (ev) => {
   }
 });
 
+// Dans un champ X/Y, la virgule sépare X de Y (convention CAO) : taper « 100,200 »
+// d'un seul coup remplit les deux valeurs, sans passer par Tab. Les préfixes du
+// terminal sont acceptés : #absolu, @relatif à basePoint, et d<a polaire.
+// Retourne null si le champ ne contient qu'une valeur X (saisie X puis Tab puis Y).
+function readXYPair(basePoint) {
+  const raw = diDist.value.trim();
+  if (!/[,<]/.test(raw)) return null;
+  if (raw.includes('<') || raw.startsWith('@')) return parseDistanceInput(raw, basePoint, S.mouseWorld);
+  const m = raw.replace(/^#/, '').match(/^([^,]+),(.+)$/);
+  if (!m) return null;
+  const x = safeEvalMath(m[1]) ?? parseFloat(m[1]);
+  const y = safeEvalMath(m[2]) ?? parseFloat(m[2]);
+  return (isFinite(x) && isFinite(y)) ? [x, y] : null;
+}
+
 function confirmDynamicInput() {
   S.osnapAcquired = []; // saisie de coordonnées = équivalent d'un clic : reset OTRACK
   const mode = getDIMode();
 
   // === FIRST POINT (X,Y) ===
-  if (mode === 'xy') {
-    const x = parseFloat(diDist.value);
-    const y = parseFloat(diAngle.value);
+  if (mode === 'xy' && !S.drawing) {
+    const pair = readXYPair([0, 0]);
+    const x = pair ? pair[0] : parseFloat(diDist.value);
+    const y = pair ? pair[1] : parseFloat(diAngle.value);
     if (isNaN(x) || isNaN(y)) { termPrint('Coordonnées invalides', 'error'); return; }
     S.diLocked = false; diDist.blur(); diAngle.blur();
+    if (PLACEMENT_TOOLS.includes(S.tool)) {
+      // Un seul point à placer (POINT, porte/prise/interrupteur/fenêtre, texte,
+      // insertion) : pas de second point à attendre, on place directement.
+      handleClick(x, y, {shiftKey:false}, x, y);
+      render(); setTimeout(smartFocus, 0); return;
+    }
     // Start drawing with this point
     S.drawing = true;
     S.drawPoints = [[x, y]];
     S.awaitingInput = true;
     if (S.tool === 'tube') S.tubePoints = [[x, y]];
     termPrint('Point 1: (' + x.toFixed(1) + ', ' + y.toFixed(1) + ')', 'info');
-    if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
+    if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint(S.coordAbsolute ? 'Coin opposé X,Y absolu (ex: 100,100) ou cliquez' : 'Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
     else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
     else if (S.tool === 'dim_angular') termPrint('DIMANGULAR: cliquez la 1ère ligne', 'info');
     else if (S.tool === 'tube') termPrint('Longueur (ex: 500) ou 500<45 — Entrée pour terminer', 'warning');
@@ -10581,12 +10666,16 @@ function confirmDynamicInput() {
     const y = S._fromBase[1] + d * Math.sin(aRad);
     S._fromBase = null;
     S.diLocked = false; diDist.blur(); diAngle.blur();
+    if (PLACEMENT_TOOLS.includes(S.tool)) {
+      handleClick(x, y, {shiftKey:false}, x, y);
+      render(); setTimeout(smartFocus, 0); return;
+    }
     S.drawing = true;
     S.drawPoints = [[x, y]];
     S.awaitingInput = true;
     if (S.tool === 'tube') S.tubePoints = [[x, y]];
     termPrint('Point 1 (DEPUIS): (' + x.toFixed(1) + ', ' + y.toFixed(1) + ')', 'info');
-    if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
+    if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint(S.coordAbsolute ? 'Coin opposé X,Y absolu (ex: 100,100) ou cliquez' : 'Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
     else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
     else if (S.tool === 'dim_angular') termPrint('DIMANGULAR: cliquez la 1ère ligne', 'info');
     else if (S.tool === 'tube') termPrint('Longueur (ex: 500) ou 500<45 — Entrée pour terminer', 'warning');
@@ -10718,6 +10807,15 @@ function confirmDynamicInput() {
     ny = base[1] + r * Math.sin(angle);
     if (S.circleDiamMode) { termPrint('→ Diamètre=' + rv.toFixed(1) + '  Rayon=' + r.toFixed(1), 'info'); S.circleDiamMode = false; }
     else termPrint('→ Rayon=' + r.toFixed(1), 'info');
+
+  } else if (mode === 'xy') {
+    // Point suivant en coordonnées absolues (option "coordonnées absolues")
+    const pair = readXYPair(base);
+    const xv = pair ? pair[0] : readNum(diDist.value);
+    const yv = pair ? pair[1] : readNum(diAngle.value);
+    if (isNaN(xv) || isNaN(yv)) { termPrint('Coordonnées invalides', 'error'); return; }
+    nx = xv; ny = yv;
+    termPrint('→ X=' + nx.toFixed(1) + '  Y=' + ny.toFixed(1), 'info');
 
   } else {
     // POLAR: field1 = distance, field2 = angle
@@ -11890,6 +11988,13 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
   // Drawing tools (2-point) — WITHOUT dimensions
   if (['line','rect','rectcenter','circle','wall','leader','xline','ray','ray_rev'].includes(tool)) {
     if (!S.drawing) {
+      // XLINE avec direction verrouillée (V/H) : un seul clic pose la ligne, pas de 2e point
+      if (tool === 'xline' && S._xlineDir) {
+        const p1 = [wx, wy];
+        const p2 = S._xlineDir === 'v' ? [wx, wy + 1] : [wx + 1, wy];
+        finishEntity('xline', [p1, p2]);
+        render(); return;
+      }
       // Tangente différée : 1er clic sur un cercle avec snap TAN
       if (tool === 'line' && S.currentOsnap?.type === 'tangent' && S.currentOsnap.entity) {
         const e = S.currentOsnap.entity;
@@ -11903,7 +12008,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       S.drawing = true; S.drawPoints = [[wx, wy]]; S.awaitingInput = true;
       if (tool === 'rectcenter') termPrint('Centre: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ') — Largeur,Hauteur ou cliquez un coin', 'warning');
       else termPrint('Point 1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ')', 'info');
-      if (tool === 'rect' || tool === 'rectcenter') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
+      if (tool === 'rect' || tool === 'rectcenter') termPrint(S.coordAbsolute ? 'Coin opposé X,Y absolu (ex: 100,100) ou cliquez' : 'Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
       else if (tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
       else termPrint('Longueur (ex: 150) ou 100<45 ou cliquez le 2ème point', 'warning');
     } else {
@@ -15598,6 +15703,7 @@ function setTool(t) {
   if(t !== 'join') S._joinGaps=null;
   if(_toolCmdName[t]) _pushCmdRepeat(_toolCmdName[t]);
   if(t !== 'circle') S.circleDiamMode=false;
+  if(t !== 'xline') S._xlineDir=null;
   S.tool=t; S.drawing=false; S.drawPoints=[]; S.awaitingInput=false;
   if(t !== 'tube') S.tubePoints=[];
   if(t !== 'dim_angular') { S._dimAngLine1=null; S._dimAngLine2=null; S._dimAngVtx=null; S._dimAngClick1=null; S._dimAngLA1=null; S._dimAngLA2=null; S._dimAngArc=false; }
@@ -18524,6 +18630,33 @@ function executeCommand(input) {
     return;
   }
 
+  // ---- XLINE : V (verticale) / H (horizontale) — verrouille la direction ;
+  // chaque clic pose alors une XLINE directement (sans 2e point). Echap ou
+  // changement d'outil réinitialise (voir setTool()).
+  if (S.tool === 'xline') {
+    const up = raw.toUpperCase();
+    if (up === 'V' || up === 'VERTICAL' || up === 'VERTICALE') {
+      S._xlineDir = 'v';
+      if (S.drawing && S.drawPoints.length === 1) {
+        const p1 = S.drawPoints[0];
+        finishEntity('xline', [p1, [p1[0], p1[1] + 1]]);
+        S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
+      }
+      termPrint('XLINE verticale verrouillée — cliquez pour placer (H pour horizontale, Echap pour quitter)', 'warning');
+      render(); return;
+    }
+    if (up === 'H' || up === 'HORIZONTAL' || up === 'HORIZONTALE') {
+      S._xlineDir = 'h';
+      if (S.drawing && S.drawPoints.length === 1) {
+        const p1 = S.drawPoints[0];
+        finishEntity('xline', [p1, [p1[0] + 1, p1[1]]]);
+        S.drawing = false; S.drawPoints = []; S.awaitingInput = false;
+      }
+      termPrint('XLINE horizontale verrouillée — cliquez pour placer (V pour verticale, Echap pour quitter)', 'warning');
+      render(); return;
+    }
+  }
+
   // ---- ELLIPSE : mots-clés A, saisie demi-axes et angles ----
   if (S.tool === 'ellipse') {
     const up = raw.toUpperCase();
@@ -18772,7 +18905,7 @@ function executeCommand(input) {
   }
 
   // ---- FIRST POINT INPUT: tool active but no drawing started yet ----
-  const drawingTools = ['line','xline','ray','ray_rev','rect','rectcenter','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube','ellipse','polygon'];
+  const drawingTools = ['line','xline','ray','ray_rev','rect','rectcenter','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube','ellipse','polygon', ...PLACEMENT_TOOLS];
   if (!S.drawing && drawingTools.includes(S.tool)) {
     // DEPUIS (FROM) actif : le point de référence choisi via le menu contextuel
     // Ctrl+clic-droit sert de base à une coordonnée relative/polaire — seul moyen
@@ -18784,11 +18917,16 @@ function executeCommand(input) {
         const [fx, fy] = fromResolved;
         S._fromBase = null;
         termPrint('❯ ' + raw, '');
+        if (PLACEMENT_TOOLS.includes(S.tool)) {
+          termPrint('Point (DEPUIS): (' + fx.toFixed(1) + ', ' + fy.toFixed(1) + ')', 'info');
+          handleClick(fx, fy, {shiftKey:false}, fx, fy);
+          render(); return;
+        }
         termPrint('Point 1 (DEPUIS): (' + fx.toFixed(1) + ', ' + fy.toFixed(1) + ')', 'info');
         S.drawing = true;
         S.drawPoints = [[fx, fy]];
         S.awaitingInput = true;
-        if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
+        if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint(S.coordAbsolute ? 'Coin opposé X,Y absolu (ex: 100,100) ou cliquez' : 'Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
         else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
         else if (S.tool === 'dim_angular') termPrint('DIMANGULAR: cliquez la 1ère ligne', 'info');
         else termPrint('2ème point ou longueur (ex: 150, 100<45, 100,50)', 'warning');
@@ -18800,13 +18938,18 @@ function executeCommand(input) {
     if (fpMatch) {
       const fx = parseFloat(fpMatch[1]), fy = parseFloat(fpMatch[2]);
       termPrint('❯ ' + raw, '');
+      if (PLACEMENT_TOOLS.includes(S.tool)) {
+        termPrint('Point: (' + fx.toFixed(1) + ', ' + fy.toFixed(1) + ')', 'info');
+        handleClick(fx, fy, {shiftKey:false}, fx, fy);
+        render(); return;
+      }
       termPrint('Point 1: (' + fx.toFixed(1) + ', ' + fy.toFixed(1) + ')', 'info');
       // Start drawing with this point
       S.drawing = true;
       S.drawPoints = [[fx, fy]];
       S.awaitingInput = true;
       // Show next step prompt
-      if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
+      if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint(S.coordAbsolute ? 'Coin opposé X,Y absolu (ex: 100,100) ou cliquez' : 'Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
       else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
       else if (S.tool === 'dim_angular') termPrint('DIMANGULAR: cliquez la 1ère ligne', 'info');
       else termPrint('2ème point ou longueur (ex: 150, 100<45, 100,50)', 'warning');
@@ -19029,6 +19172,20 @@ function updateCmdComplete() {
 cmdInput.addEventListener('input', updateCmdComplete);
 cmdInput.addEventListener('blur', () => setTimeout(hideCmdComplete, 120));
 
+// Valide le contenu de la barre de commande, comme la touche Entrée — factorisé
+// pour être aussi déclenché par un clic droit sur le canevas (voir _rightClickAction).
+function submitCmdInput() {
+  hideCmdComplete();
+  const cmd = cmdInput.value.trim();
+  if(cmd){
+    if(S.cmdHistory[0] !== cmd) S.cmdHistory.unshift(cmd);
+    if(S.cmdHistory.length > 50) S.cmdHistory.length = 50;
+  }
+  S.cmdHistoryIdx = -1;
+  executeCommand(cmdInput.value);
+  cmdInput.value='';
+}
+
 cmdInput.addEventListener('keydown',(ev)=>{
   // Autocomplétion ouverte : Tab / ↑ / ↓ / Échap / Entrée(sélection) prioritaires
   if(!cmdComplete.hidden){
@@ -19047,15 +19204,7 @@ cmdInput.addEventListener('keydown',(ev)=>{
     gripToMove(); return;
   }
   if(ev.key==='Enter'){
-    hideCmdComplete();
-    const cmd = cmdInput.value.trim();
-    if(cmd){
-      if(S.cmdHistory[0] !== cmd) S.cmdHistory.unshift(cmd);
-      if(S.cmdHistory.length > 50) S.cmdHistory.length = 50;
-    }
-    S.cmdHistoryIdx = -1;
-    executeCommand(cmdInput.value);
-    cmdInput.value='';
+    submitCmdInput();
   } else if(ev.key==='ArrowUp'){
     ev.preventDefault();
     if(S.cmdHistory.length===0) return;
@@ -19484,7 +19633,7 @@ document.addEventListener('keydown',(ev)=>{
   }
 
   // Auto-focus distance field when typing numbers while drawing or waiting for first point (comportement CAO standard)
-  const drawingTools2 = ['line','rect','circle','arc','wall','leader','polyline','cable','dim_linear','dim_aligned','dim_angular','tube'];
+  const drawingTools2 = ['line','rect','circle','arc','wall','leader','polyline','cable','dim_linear','dim_aligned','dim_angular','tube', ...PLACEMENT_TOOLS];
   const wantInput = (S.drawing && S.drawPoints.length > 0) || (S.tool==='tube' && S.drawing && S.tubePoints.length>0) || (!S.drawing && drawingTools2.includes(S.tool));
   if (wantInput && /^[0-9.\-@#]$/.test(ev.key)) {
     ev.preventDefault();
@@ -19497,7 +19646,7 @@ document.addEventListener('keydown',(ev)=>{
   }
 
   // Tab while drawing or waiting for first point = focus dynamic input
-  const tabDrawTools = ['line','rect','circle','arc','wall','leader','polyline','cable','dim_linear','dim_aligned','dim_angular','tube'];
+  const tabDrawTools = ['line','rect','circle','arc','wall','leader','polyline','cable','dim_linear','dim_aligned','dim_angular','tube', ...PLACEMENT_TOOLS];
   if (ev.key==='Tab' && (S.drawing && S.drawPoints.length > 0 || !S.drawing && tabDrawTools.includes(S.tool))) {
     ev.preventDefault();
     diDist.focus(); diDist.select();
@@ -20774,6 +20923,7 @@ function captureUserPrefs() {
     ortho: S.ortho,
     polar: S.polar,
     polarAngle: S.polarAngle,
+    coordAbsolute: S.coordAbsolute,
     rightDragPan: S.rightDragPan,
     tubeDiameter: S.tubeDiameter,
     tubeBendRadius: S.tubeBendRadius,
@@ -20789,6 +20939,7 @@ function captureUserPrefs() {
     propsPanelVisible: !document.getElementById('props-panel')?.classList.contains('hidden'),
     toolbarStyle: S.toolbarStyle,
     ribbonCentered: S.ribbonCentered,
+    ribbonTabOrder: S.ribbonTabOrder ? S.ribbonTabOrder.slice() : null,
   };
 }
 
@@ -20817,6 +20968,7 @@ function applyUserPrefs(prefs) {
   if (prefs.ortho !== undefined)        S.ortho = prefs.ortho;
   if (prefs.polar !== undefined)        S.polar = prefs.polar;
   if (prefs.polarAngle !== undefined)   S.polarAngle = prefs.polarAngle;
+  if (prefs.coordAbsolute !== undefined) S.coordAbsolute = prefs.coordAbsolute;
   if (prefs.rightDragPan !== undefined) S.rightDragPan = prefs.rightDragPan;
   if (prefs.tubeDiameter !== undefined) S.tubeDiameter = prefs.tubeDiameter;
   if (prefs.tubeBendRadius !== undefined) S.tubeBendRadius = prefs.tubeBendRadius;
@@ -20828,6 +20980,10 @@ function applyUserPrefs(prefs) {
   // pas la clé, et sans appel body.ribbon-mode resterait désynchronisé de S.toolbarStyle.
   setToolbarStyle(prefs.toolbarStyle !== undefined ? prefs.toolbarStyle : USER_PREFS.toolbarStyle);
   setRibbonCentered(prefs.ribbonCentered !== undefined ? prefs.ribbonCentered : USER_PREFS.ribbonCentered);
+  if (prefs.ribbonTabOrder !== undefined) {
+    S.ribbonTabOrder = Array.isArray(prefs.ribbonTabOrder) ? prefs.ribbonTabOrder.slice() : null;
+    rbApplyTabOrder();
+  }
   if (prefs.terminalHeight) {
     const h = Math.max(58, Math.min(prefs.terminalHeight, 600));
     const el = document.getElementById('terminal');
@@ -20969,6 +21125,7 @@ function openPrefsDialog() {
       ${row(`Ortho mode <span class="pf-unit">F8</span>`, chk('ortho', p.ortho))}
       ${row(`Polar tracking <span class="pf-unit">F10</span>`, chk('polar', p.polar))}
       ${row(`Polar increment`, num('polarAngle', p.polarAngle, 5, 1, 90), '°')}
+      ${row(`Absolute coordinates (input tooltip)`, chk('coordAbsolute', p.coordAbsolute))}
       ${row(`Pickbox size`, num('pickboxPx', p.pickboxPx ?? 6, 1, 3, 20), 'px')}
       ${row(`Pan view`, sel('rightDragPan', [
         {v:'0', l:`Wheel only`},
@@ -21018,6 +21175,7 @@ function openPrefsDialog() {
       ortho: g('ortho').checked,
       polar: g('polar').checked,
       polarAngle: parseFloat(g('polarAngle').value) || 15,
+      coordAbsolute: g('coordAbsolute').checked,
       rightDragPan: g('rightDragPan').value === '1',
       pickboxPx: parseFloat(g('pickboxPx').value) || 6,
       tubeDiameter: parseFloat(g('tubeDiameter').value) || 40,
@@ -21819,6 +21977,80 @@ function showRibbonTab(name) {
   document.querySelectorAll('.ribbon-tabpage').forEach(p => p.classList.toggle('active', p.dataset.rbpage === name));
 }
 
+// --- Ruban : réorganisation des onglets par glisser-déposer ---
+let _rbDragTab = null;
+
+// Ordre d'origine du HTML, mémorisé avant toute réorganisation pour pouvoir y revenir
+// après une réinitialisation des préférences (S.ribbonTabOrder repasse à null).
+let _rbDefaultTabOrder = null;
+
+function rbApplyTabOrder() {
+  const tabs = document.querySelector('.ribbon-tabs');
+  const order = S.ribbonTabOrder || _rbDefaultTabOrder;
+  if (!tabs || !order) return;
+  const all = [...tabs.querySelectorAll('.ribbon-tab')];
+  const known = order.map(n => all.find(t => t.dataset.rbtab === n)).filter(Boolean);
+  // Les onglets absents de l'ordre enregistré (plugin chargé depuis, nouvelle version) passent à la fin
+  const rest = all.filter(t => !order.includes(t.dataset.rbtab));
+  [...known, ...rest].forEach(t => tabs.appendChild(t));
+}
+
+function rbSaveTabOrder() {
+  const tabs = document.querySelector('.ribbon-tabs');
+  if (!tabs) return;
+  S.ribbonTabOrder = [...tabs.querySelectorAll('.ribbon-tab')].map(t => t.dataset.rbtab);
+  autoSavePrefs();
+}
+
+function _rbClearDropMarks() {
+  document.querySelectorAll('.ribbon-tab.rb-tab-before, .ribbon-tab.rb-tab-after')
+    .forEach(t => t.classList.remove('rb-tab-before', 'rb-tab-after'));
+}
+
+function _rbEndTabDrag() {
+  if (_rbDragTab) _rbDragTab.classList.remove('rb-tab-dragging');
+  _rbDragTab = null;
+  _rbClearDropMarks();
+}
+
+// Délégation sur le conteneur : couvre aussi les onglets plugins créés après coup
+function rbInitTabDrag() {
+  const tabs = document.querySelector('.ribbon-tabs');
+  if (!tabs) return;
+  _rbDefaultTabOrder = [...tabs.querySelectorAll('.ribbon-tab')].map(t => t.dataset.rbtab);
+  tabs.addEventListener('dragstart', e => {
+    const tab = e.target.closest('.ribbon-tab');
+    if (!tab) return;
+    _rbDragTab = tab;
+    tab.classList.add('rb-tab-dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', tab.dataset.rbtab || '');
+  });
+  tabs.addEventListener('dragover', e => {
+    if (!_rbDragTab) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    _rbClearDropMarks();
+    const tab = e.target.closest('.ribbon-tab');
+    if (!tab || tab === _rbDragTab) return;
+    const r = tab.getBoundingClientRect();
+    tab.classList.add(e.clientX < r.left + r.width / 2 ? 'rb-tab-before' : 'rb-tab-after');
+  });
+  tabs.addEventListener('drop', e => {
+    if (!_rbDragTab) return;
+    e.preventDefault();
+    const tab = e.target.closest('.ribbon-tab');
+    if (tab && tab !== _rbDragTab) {
+      const r = tab.getBoundingClientRect();
+      tab.insertAdjacentElement(e.clientX < r.left + r.width / 2 ? 'beforebegin' : 'afterend', _rbDragTab);
+      rbSaveTabOrder();
+    }
+    _rbEndTabDrag();
+  });
+  tabs.addEventListener('dragend', _rbEndTabDrag);
+  tabs.addEventListener('dragleave', e => { if (!tabs.contains(e.relatedTarget)) _rbClearDropMarks(); });
+}
+
 // --- Ruban : un onglet dédié par plugin chargé, rempli dynamiquement ---
 // Même rôle que la coquille de barre d'outils docked (dockArea/tb-buttons) que chaque
 // plugin construit dans son init(), mais pour la présentation en ruban. Un plugin
@@ -21836,8 +22068,9 @@ function rbPluginPanel(id, title, panelTitle) {
   let tab = document.getElementById('rb-tab-' + id);
   if (!tab) {
     tabs.insertAdjacentHTML('beforeend',
-      `<div class="ribbon-tab" data-rbtab="${rbtab}" id="rb-tab-${id}" onclick="showRibbonTab('${rbtab}')"></div>`);
+      `<div class="ribbon-tab" draggable="true" data-rbtab="${rbtab}" id="rb-tab-${id}" onclick="showRibbonTab('${rbtab}')"></div>`);
     tab = document.getElementById('rb-tab-' + id);
+    rbApplyTabOrder();   // replacer l'onglet à la position choisie par l'utilisateur
   }
   tab.style.display = '';
   tab.textContent = title;
@@ -22731,6 +22964,12 @@ function _rightClickAction(ev) {
   // ci-dessous, qui ne doit s'appliquer qu'au clic droit simple.
   if (ev.ctrlKey) { showCanvasContext(ev); return; }
 
+  // Texte tapé mais pas encore validé dans la barre de commande (ex: "V" pour
+  // XLINE verticale avant d'appuyer sur Entrée) → le clic droit valide, exactement
+  // comme la touche Entrée le ferait. Passe devant tout le reste ci-dessous, qui ne
+  // concerne que le clic droit « à vide ».
+  if (cmdInput.value.trim() !== '') { submitCmdInput(); return; }
+
   // Pendant une saisie active → confirme comme Entrée
   if (S.drawing || S.gripEdit) {
     if (['polyline','cable'].includes(S.tool)) {
@@ -23149,6 +23388,7 @@ setTool('select');
 updateUI();
 loadCartoucheLibrary();
 renderSpaceTabs();
+rbInitTabDrag();   // avant loadUserPrefs() : mémorise l'ordre d'origine des onglets du ruban
 loadUserPrefs();
 syncUIState();
 loadSavedPlugins();

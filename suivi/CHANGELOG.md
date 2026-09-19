@@ -7,6 +7,34 @@ Format : `[version] — YYYY-MM-DD — Description`
 ## [0.2] — 2026-09-16 — Version courante
 
 ### Ajouté
+- **Coordonnées absolues façon AutoCAD** — nouvelle case **Préférences → Saisie →
+  Coordonnées absolues (bulle de saisie)**. Une fois activée, la bulle près du
+  curseur affiche des champs **X / Y absolus** (repère 0,0, X positif vers la
+  droite, Y positif vers le haut et négatif vers le bas) pour **tous** les points
+  d'une entité en cours de tracé — LINE, POLYLINE, WALL, CABLE, SPLINE, TUBE,
+  LEADER, ARC — et plus seulement pour le premier point. **RECT et RECTCENTER**
+  passent aussi en absolu : le 2ème point est le **coin opposé** (ou un coin,
+  pour RECTCENTER) au lieu de Largeur×Hauteur — un rectangle de `-20,0` à
+  `100,100` mesure bien 120 × 100. Au terminal, `x,y` sans préfixe est alors lu
+  en absolu, `@x,y` restant le relatif explicite (comme AutoCAD) ; `#x,y` reste
+  absolu dans les deux cas. Ortho (F8) et Polaire (F10) restent utilisables
+  comme aide visuelle. CIRCLE garde sa saisie de rayon (comme AutoCAD), POLYGON
+  et ELLIPSE gardent leur mode rayon, et DEPUIS reste en D/A relatif au point de
+  référence. Réglage persistant (`coordAbsolute`), désactivé par défaut.
+- **Bulle de saisie : la virgule sépare X et Y** — dans un champ de coordonnées,
+  taper la paire complète d'un seul coup (`100,200`) remplit X *et* Y, sans
+  passer par Tab. Avant, la virgule était interprétée comme séparateur décimal
+  (`100,200` donnait X=100.2). Les préfixes du terminal y sont acceptés :
+  `#100,200` (absolu), `@50,30` (relatif au dernier point) et `100<45`
+  (polaire), ainsi que les expressions (`50+50,100*2`). Les champs Distance,
+  Largeur/Hauteur et Rayon continuent d'accepter la virgule décimale.
+- **Bulle X/Y pour les outils de placement en un clic** — POINT (le point
+  manquait complètement la bulle de saisie), ainsi que DOOR, OUTLET, SWITCH,
+  WINDOW, TEXT et l'insertion de bloc, affichent désormais X/Y et acceptent
+  une coordonnée tapée (au terminal avant le premier clic, comme toute autre
+  commande, ou directement dans la bulle) au lieu d'exiger un clic sur le
+  canevas. Le point est placé immédiatement — pas de second point attendu.
+  DEPUIS (point de référence relatif) fonctionne aussi avec ces outils.
 - **XLINE : verrouillage Vertical/Horizontal (V/H)** — dans la commande XLINE, taper
   `V` (ou `H`) puis Entrée verrouille la direction de la ligne infinie ; chaque clic
   suivant sur le dessin pose alors directement une nouvelle XLINE verticale (ou
@@ -20,6 +48,21 @@ Format : `[version] — YYYY-MM-DD — Description`
   comportement générique du clic droit — répéter/menu/annuler l'outil). Généralise à
   toute commande le raccourci clavier+souris déjà utilisé pour valider la saisie d'un
   point en cours de dessin.
+- **Ruban : ordre des onglets réorganisable par glisser-déposer** — on saisit un onglet
+  par son libellé en haut du ruban et on le dépose à la position voulue ; un liseré
+  couleur accent indique de quel côté de l'onglet survolé l'insertion aura lieu, et
+  l'onglet déplacé s'estompe pendant le glissement. L'ordre choisi est **mémorisé dans
+  les préférences** (`ribbonTabOrder`, `localStorage` + export/import de préférences) et
+  restauré au démarrage. Les onglets de plugins sont réordonnables comme les autres et
+  retrouvent leur place dès que le plugin se recharge ; un onglet absent de l'ordre
+  enregistré (plugin chargé depuis, onglet ajouté par une nouvelle version) se place à la
+  fin, et *Réinitialiser les préférences* rend l'ordre d'origine.
+- **Ruban : option de centrage dans la fenêtre** — nouvelle case **Préférences →
+  Apparence → Centrer le ruban dans la fenêtre** : la rangée d'onglets et les panneaux
+  sont centrés horizontalement au lieu d'être alignés à gauche, plus pratique sur les
+  grands écrans où le ruban laissait une large zone vide à droite. Le centrage utilise
+  `justify-content: safe center` pour ne jamais rogner le début du ruban quand la fenêtre
+  est trop étroite. Le réglage persiste avec les autres préférences.
 - **Glisser-déposer d'un fichier .dxf / .mcad pour l'ouvrir** — déposer un fichier
   (`.dxf`, `.mcad`, `.json`, `.dwg`) depuis l'explorateur n'importe où sur la page ouvre
   directement le dessin, comme le fait déjà le bouton Ouvrir (fermeture du dessin
@@ -39,8 +82,8 @@ Format : `[version] — YYYY-MM-DD — Description`
   **groupés en colonnes de 3 rangées**, ce qui rend le ruban compact en largeur
   (~870px pour l'onglet Accueil, sans défilement horizontal) et haut de 162px.
   Le ruban réutilise exactement les mêmes commandes, `onclick` et icônes SVG que les
-  barres Standard (aucune duplication de logique métier) ; il n'est pas personnalisable
-  (pas de drag&drop). Les toggles SNAP/OSNAP/ORTHO/POLAR/Grille restent hors ruban (déjà
+  barres Standard (aucune duplication de logique métier) ; le contenu des panneaux n'est
+  pas personnalisable (seul l'ordre des onglets est réorganisable, voir plus haut). Les toggles SNAP/OSNAP/ORTHO/POLAR/Grille restent hors ruban (déjà
   accessibles via la barre de statut et F3/F4/F8/F10). Nouvelles clés i18n `ribbon.*`
   (onglets, panneaux et libellés courts des boutons, les `tool.*` complets — avec alias
   entre parenthèses — restant utilisés en info-bulle). Le choix persiste
@@ -177,6 +220,11 @@ Format : `[version] — YYYY-MM-DD — Description`
   les autres préférences.
 
 ### Modifié
+- **Ruban, onglet Graduations : trois grands boutons côte à côte** — *Disque*, *Règle* et
+  *Arc* étaient empilés en trois petites rangées dans une colonne ; ce sont maintenant
+  trois boutons *grands* (icône 26px + libellé dessous) alignés horizontalement, comme
+  les outils principaux de l'onglet Accueil. Ils sont ajoutés directement au conteneur du
+  panneau (flex en ligne) au lieu d'une `.rb-col`, qui les empilait verticalement.
 - **ZOOM FENÊTRE en 2 clics au lieu du cliqué-glissé** — l'outil `zoomwin` (bouton, ruban,
   commande `Z W`) attendait un cliqué-glissé pour tracer la fenêtre à agrandir, geste peu naturel
   au trackpad. Il fonctionne maintenant comme les autres outils à 2 clics de MiniCAD (DÉCALER,

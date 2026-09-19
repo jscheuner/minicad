@@ -272,6 +272,8 @@
   "prefs.input_ortho": "Ortho mode",
   "prefs.input_polar": "Polar tracking",
   "prefs.input_polar_inc": "Polar increment",
+  "prefs.input_coord_absolute": "Absolute coordinates (input tooltip)",
+  "di.abs_badge_title": "Absolute coordinates active (X,Y from origin, not relative to last point)",
   "prefs.input_pickbox": "Pickbox size",
   "prefs.input_pan": "Pan view",
   "prefs.pan_wheel": "Wheel only",
