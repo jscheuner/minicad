@@ -48,6 +48,19 @@ Format : `[version] — YYYY-MM-DD — Description`
   comportement générique du clic droit — répéter/menu/annuler l'outil). Généralise à
   toute commande le raccourci clavier+souris déjà utilisé pour valider la saisie d'un
   point en cours de dessin.
+- **Ruban : tous les outils des barres d'outils sont maintenant présents** — 18 boutons
+  qui n'existaient que dans les barres d'outils classiques ont été ajoutés au ruban, qui
+  couvre désormais exactement le même jeu d'icônes. Nouveau panneau **Fichier** dans
+  l'onglet Accueil (Ouvrir, Enregistrer, Export PDF, Assistant IA) ; le panneau
+  **Dessin** reçoit la demi-droite inverse ; le panneau **Modification** reçoit
+  **Diviser** ; un nouveau panneau **Tube** en fin d'onglet Accueil regroupe **TUBE**, le
+  bouton Ø/RM et les trois références de tracé **AXE / EXT / INT** ; l'onglet Affichage
+  reçoit un panneau **Accrochage** (Magnétisme, Objets, Grille, Ortho, Polaire). Les
+  boutons à deux états (accrochages, références de tube) sont synchronisés entre la
+  barre d'outils et le ruban : basculer l'un met l'autre à jour, quel que soit le mode
+  d'interface actif. Les info-bulles restées codées en dur en français (Diviser,
+  Annuler/Rétablir, Point, Spline, Texte, Panoramique, copie de propriétés, axes de
+  cercle, tube) sont passées en i18n et sont donc traduites dans la version anglaise.
 - **Ruban : ordre des onglets réorganisable par glisser-déposer** — on saisit un onglet
   par son libellé en haut du ruban et on le dépose à la position voulue ; un liseré
   couleur accent indique de quel côté de l'onglet survolé l'insertion aura lieu, et
@@ -232,6 +245,33 @@ Format : `[version] — YYYY-MM-DD — Description`
   clic pour le coin opposé qui valide le zoom. Échap annule avant le second clic.
 
 ### Corrigé
+- **Impossible de saisir une valeur dans la bulle DI au 1er point (RECTCENTER, POLYGONE…)** —
+  retour terrain *« je n'arrive pas à mettre de valeur dans les bulles de saisie sur la fonction
+  rectangle par le centre et polygon »*. Trois causes cumulées :
+  1. **Liste d'outils recopiée et désynchronisée (cause principale)** — le handler `keydown`
+     global routait la frappe (chiffre tapé, `Tab`) vers `diDist` d'après ses propres listes
+     `drawingTools2`/`tabDrawTools`, copies incomplètes de celle de `getDIMode()` : il y manquait
+     `rectcenter`, `polygon`, `ellipse`, `spline`, `xline`, `ray`. Ces outils affichaient donc une
+     bulle X,Y… dans laquelle aucune frappe n'arrivait jamais. Les trois listes sont remplacées
+     par une constante unique `DI_POINT_TOOLS`.
+  2. **Bulle jamais affichée après un clic sur un bouton d'outil** — `setTool()` masquait la bulle
+     sans redessiner : elle restait cachée jusqu'au premier `mousemove` sur le canevas. `setTool()`
+     force maintenant un `render()`.
+  3. **Bulle positionnée hors du canevas** — la position vaut `S.mouseScreen + décalage`, or
+     `S.mouseScreen` reste `[0,0]` tant que la souris n'a pas survolé le canevas : la bulle
+     passait sous le ruban, invisible et non cliquable. `_diContainerPos()` la borne désormais aux
+     limites du canevas.
+- **Le focus va sur la bulle DI dès qu'un outil attend son 1er point** — il restait sur la barre de
+  commande : il fallait taper un chiffre « à l'aveugle » pour que le focus bascule. `smartFocus()`
+  place maintenant le curseur dans la bulle dès le lancement de la fonction. La saisie de commandes
+  n'est pas perdue pour autant : une lettre tapée dans la bulle au stade du 1er point (jamais une
+  coordonnée) rend la main au terminal avec la frappe (`_diLetterToTerminal()`). POLYGONE garde le
+  focus terminal pour le nombre de côtés, puis le passe à la bulle pour le centre.
+- **POLYGON : impossible de saisir le rayon si le centre était tapé dans la bulle** — taper le
+  centre au clavier (X,Y dans la bulle de saisie ou via DEPUIS) au lieu de cliquer laissait
+  `S._polyStep`/`S._polyCenter` non initialisés (seul le clic sur le canevas les positionnait).
+  Résultat : l'étape suivante (rayon) restait bloquée, la valeur tapée n'avait aucun effet.
+  Les deux chemins (clic et bulle) initialisent maintenant l'étape 2 de la même façon.
 - **Export `.chf` : le SENS de la compensation tient à deux drapeaux entiers, pas à la bbox** —
   retour terrain *« le sens du décalage change lors de l'export »*, consigne : *ne travailler que
   sur l'export, ne rien changer côté MiniCAD*. L'utilisateur a fourni **notre export et le même

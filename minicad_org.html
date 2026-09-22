@@ -512,6 +512,12 @@
   .tool-btn.rb-med .rb-label { font-size: 10px; white-space: nowrap; }
   /* Petit bouton : icône seule (info-bulle), 1 rangée sur 3 */
   .tool-btn.rb-small { width: 26px; height: 24px; }
+  /* Référence de tracé du tube (AXE/EXT/INT) : mini-boutons texte empilés */
+  .tool-btn.rb-tubref {
+    width: 30px; height: 24px;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 9px; letter-spacing: 0.3px;
+    padding: 0;
+  }
   /* Champ de saisie d'un panneau (plugins) : même rangée de 24px qu'un rb-med */
   .rb-field {
     display: flex; align-items: center; gap: 5px;
@@ -1069,6 +1075,17 @@
     gap: 4px;
   }
   #dynamic-input.visible { display: flex; }
+  .di-abs-badge {
+    display: none;
+    align-items: center;
+    color: var(--warning);
+    font-weight: 700;
+    font-size: 12px;
+    pointer-events: none;
+  }
+  .di-abs-badge.visible { display: flex; }
+  #dynamic-input.abs-mode .di-field { border-color: var(--warning); }
+  #dynamic-input.abs-mode .di-label { color: var(--warning); }
   .di-field {
     display: flex; align-items: center; gap: 3px;
     background: var(--menu-bg);
@@ -1522,7 +1539,7 @@
 .lang-btn.active{border-color:var(--accent,#00d4ff);color:var(--accent,#00d4ff)}
 </style><script id="i18n-runtime">
 (function(){
-  var T = {"en":{"app.title":"MiniCAD","seo.title":"MiniCAD — Free online 2D technical drawing & CAD, no installation","seo.description":"Free 2D technical drawing (CAD) software running directly in your browser, no installation: lines, dimensioning, layers, DXF and SVG export.","menu.file":"File","menu.library":"Library","menu.draw":"Draw","menu.modify":"Modify","menu.insert":"Insert","menu.dimension":"Dimension","menu.help":"Help","menu.file.new":"New","menu.file.open":"Open…","menu.file.close":"Close","menu.file.save":"Save","menu.file.save_as":"Save as…","menu.file.export_dxf":"Export DXF","menu.file.import_dxf":"Import DXF…","menu.file.print":"Print / Export PDF","menu.file.prefs":"Preferences…","menu.file.theme":"Light / dark theme","tb.file":"File","tb.draw":"Draw","tb.modify":"Modify","tb.dim":"Dimension","tb.snap":"Snap","tb.view":"View","tb.arch":"Architecture","tb.elec":"Electrical","tool.select":"Select (V)","tool.pan":"Pan (P)","tool.move":"Move (M)","tool.copy":"Copy (CO)","tool.rotate":"Rotate (RO)","tool.scale":"Scale (SC)","tool.mirror":"Mirror (MI)","tool.offset":"Offset (O)","tool.trim":"Trim (TR)","tool.extend":"Extend (EX)","tool.fillet":"Fillet (F)","tool.chamfer":"Chamfer (CHA)","tool.stretch":"Stretch (ET)","tool.explode":"Explode (X)","tool.join":"Join as Polyline (J)","tool.line":"Line (L)","tool.xline":"Construction Line (XL)","tool.ray":"Ray","tool.rect":"Rectangle (R)","tool.rectcenter":"Rectangle by Center (RC)","tool.circle":"Circle (C)","tool.arc":"Arc (A)","tool.polyline":"Polyline (PL)","tool.polygon":"Regular Polygon (POL)","tool.ellipse":"Ellipse (EL)","tool.spline":"Spline (SPL)","tool.wall":"Wall (W)","tool.cable":"Cable (CAB)","tool.ray_rev":"Reverse ray (RAY_REV)","tool.erase":"Erase (Del)","tool.door":"Door (DOOR)","tool.window":"Window (WINDOW)","tool.outlet":"Outlet (OUTLET)","tool.switch":"Switch (SWITCH)","tool.dimstyle":"Dimension styles (DIMSTYLE)","tool.tube":"Tube 2-line (TUBE)","tool.leader":"Leader (LEADER)","tool.text":"Text (TX)","tool.hatch":"Hatch (H)","tool.point":"Point (PT)","tool.dim_linear":"Linear Dimension","tool.dim_aligned":"Aligned Dimension","tool.dim_continue":"Continue Dimension","tool.dim_baseline":"Baseline Dimension","tool.dim_angular":"Angular Dimension","tool.dim_radius":"Radius Dimension","tool.dim_diameter":"Diameter Dimension","tool.dim_arc":"Arc Length Dimension","tool.array":"Rectangular Array (AR)","tool.array_polar":"Polar Array (APO)","tool.measure":"Measure (ME)","tool.calc":"Calculator (CALC)","tool.dist":"Distance (DI)","tool.area":"Area (AREA)","tool.divide":"Divide (DIV)","tool.zoom_extents":"Zoom Extents","tool.zoom_window":"Zoom Window","tool.theme":"Toggle theme (THEME)","tool.zoom_in":"Zoom In","tool.zoom_out":"Zoom Out","tool.grid":"Grid","tool.snap":"Grid Snap (F9)","tool.osnap":"Object Snap (F3)","tool.ortho":"Ortho (F8)","tool.polar":"Polar (F10)","tool.explode_btn":"Explode (X)","tool.group":"Group (GROUP)","tool.ungroup":"Ungroup (UNGROUP)","tool.block":"Create block (BLOCK)","tool.wblock":"Write block to file (WBLOCK)","tool.insert_block":"Insert a block (INSERT)","tool.ai":"AI Assistant Ollama","tool.print":"Export PDF (Ctrl+P)","tool.save_state":"Save State","panel.layers":"LAYERS","panel.properties":"PROPERTIES","panel.osnap":"SNAP","panel.modules":"MODULES","panel.terminal":"HISTORY","layer.new":"New Layer","layer.name":"Name","layer.color":"Color","layer.visible":"Visible","layer.lock":"Locked","layer.print":"Print","layer.linetype":"Line Type","layer.linewidth":"Line Width","osnap.endpoint":"Endpoint","osnap.midpoint":"Midpoint","osnap.center":"Center","osnap.nearest":"Nearest","osnap.intersection":"Intersection","osnap.perpendicular":"Perpendicular","osnap.tangent":"Tangent","osnap.quadrant":"Quadrant","osnap.extension":"Extension","osnap.insertion":"Insertion","status.ortho":"ORTHO","status.polar":"POLAR","status.snap":"SNAP","status.osnap":"OSNAP","btn.ok":"OK","btn.cancel":"Cancel","btn.apply":"Apply ↵","btn.close":"Close","btn.add":"+ Add Section","btn.delete":"Delete","btn.preview":"Preview","dialog.array.title":"RECTANGULAR ARRAY","dialog.array.cols":"Columns","dialog.array.rows":"Rows","dialog.array.dx":"X Spacing","dialog.array.dy":"Y Spacing","dialog.polar.title":"POLAR ARRAY","dialog.polar.count":"Item count","dialog.polar.angle":"Total angle (°)","dialog.polar.cx":"Center X","dialog.polar.cy":"Center Y","dialog.polar.rotate":"Rotate items","dialog.insert.title":"INSERT BLOCK","dialog.insert.block_label":"Block","dialog.insert.from_file":"Import from a file","dialog.insert.no_file":"No file selected","dialog.insert.browse":"Browse…","dialog.insert.rename":"Rename block…","dialog.wblock.title":"WRITE BLOCK (WBLOCK)","dialog.wblock.source":"Source","dialog.wblock.source_block":"Existing block in drawing","dialog.wblock.source_selection":"Selected objects","dialog.wblock.source_drawing":"Entire drawing","dialog.wblock.block_label":"Block","dialog.wblock.objects_label":"Objects","dialog.wblock.pick_objects":"Select objects","dialog.wblock.basepoint_label":"Base point","dialog.wblock.pick_basepoint":"Pick base point","dialog.wblock.name_label":"Name","dialog.wblock.path_label":"Path","dialog.wblock.pick_path":"Choose file location","dialog.wblock.path_placeholder":"Default downloads folder","dialog.calc.title":"CALCULATOR","dialog.tube.title":"Tube Parameters","dialog.tube.diameter":"Ø diameter","dialog.tube.radius":"MR mean radius","dialog.tube.edit_title":"EDIT TUBE","dialog.tube.add_section":"+ Add Section","dialog.tube.devlen":"Developed length AXIS","dialog.tube.col_len":"Entry length","dialog.tube.col_angle":"Angle (°)","dialog.tube.col_arc":"Bend length","dialog.layers.title":"LAYER MANAGER","dialog.layers.add":"New Layer","dialog.dimstyle.title":"DIMENSION STYLES","cmd.placeholder":"Command or measure (100<45, @50,30, 200)...","cmd.first_point":"First point: X,Y (e.g. 100,200) or click…","cmd.wh":"Width,Height (e.g. 100,100) or click…","dnd.drop_hint":"Drop the .dxf or .mcad file to open it","tool.open":"Open (Ctrl+O)","tool.save":"Save (Ctrl+S)","help.commands":"═══ COMMANDS ═══","help.measure":"═══ POINT INPUT (after 1st point) ═══","help.measure.polar":"  100<45   — Polar: distance 100, angle 45°","help.measure.rel":"  50,30    — Relative: +50 X, +30 Y (default)","help.measure.relx":"  @50,30   — Relative: same (explicit)","help.measure.abs":"  #200,300 — Absolute: X=200, Y=300","help.measure.dist":"  150      — Distance 150 in cursor direction","help.measure.ex":"  Example: RECT → click → 100,100 → 100×100 square ✓","help.files":"═══ FILES ═══","help.files.open":"  OPEN     — Open DXF / DWG / JSON (.mcad)","help.files.save":"  SAVE     — Save as native JSON (.mcad)","help.files.dxf":"  EXPORT DXF — Export DXF (R2000)","help.files.dwg":"  EXPORT DWG — Export DWG (via DXF)","help.files.svg":"  EXPORT SVG — Export SVG","help.files.shortcut":"  Ctrl+O / Ctrl+S — Open / Save","help.constraints":"═══ CONSTRAINTS ═══","help.ortho":"  F8 = ORTHO (0°/90°/180°/270° only)","help.polar":"  F10 = POLAR (configurable angle increments)","help.polar.cmd":"  POLAR [angle] — Change increment (e.g. POLAR 30)","help.polar.excl":"  Ortho and Polar are mutually exclusive","help.di":"═══ DYNAMIC INPUT ═══","help.di.tooltip":"  Distance/Angle tooltip editable near cursor","help.di.tab":"  Tab = toggle between D and A fields","help.di.confirm":"  Enter a value + Enter = confirm point","help.module":"═══ MODULE: {name} ═══","prefs.title":"User preferences","prefs.appearance":"Appearance","prefs.theme":"Theme","prefs.theme_dark":"Dark","prefs.theme_light":"Light","prefs.toolbar_style":"Toolbar","prefs.toolbar_standard":"Standard","prefs.toolbar_ribbon":"Ribbon","prefs.ribbon_centered":"Center ribbon in window","ribbon.tab.home":"Home","ribbon.tab.annotate":"Annotate","ribbon.tab.view":"View","ribbon.panel.draw":"Draw","ribbon.panel.modify":"Modify","ribbon.panel.blocks":"Blocks & Groups","ribbon.panel.utilities":"Utilities","ribbon.panel.text":"Text","ribbon.panel.dim":"Dimensions","ribbon.panel.view":"View","ribbon.btn.line":"Line","ribbon.btn.polyline":"Polyline","ribbon.btn.circle":"Circle","ribbon.btn.rect":"Rectangle","ribbon.btn.arc":"Arc","ribbon.btn.move":"Move","ribbon.btn.copy":"Copy","ribbon.btn.rotate":"Rotate","ribbon.btn.mirror":"Mirror","ribbon.btn.scale":"Scale","ribbon.btn.offset":"Offset","ribbon.btn.trim":"Trim","ribbon.btn.insert_block":"Insert","ribbon.btn.block":"Create block","ribbon.btn.group":"Group","ribbon.btn.ungroup":"Ungroup","ribbon.btn.measure":"Measure","ribbon.btn.text":"Text","ribbon.btn.leader":"Leader","ribbon.btn.dim_linear":"Linear","ribbon.btn.dim_aligned":"Aligned","ribbon.btn.zoom_extents":"Zoom extents","ribbon.btn.zoom_window":"Zoom window","ribbon.btn.pan":"Pan","ribbon.btn.theme":"Theme","prefs.grid":"Grid","prefs.grid_visible":"Show grid","prefs.grid_snap":"Snap to grid","prefs.grid_size":"Grid spacing (X)","prefs.grid_size_y":"Grid spacing (Y)","prefs.unit_drawing":"units","prefs.osnap":"Object snap (OSNAP)","prefs.osnap_enabled":"Snapping enabled","prefs.osnap_range":"Detection range","prefs.osnap_ext_timeout":"Extension points timeout (Otrack)","prefs.input":"Input & cursor","prefs.input_ortho":"Ortho mode","prefs.input_polar":"Polar tracking","prefs.input_polar_inc":"Polar increment","prefs.input_pickbox":"Pickbox size","prefs.input_pan":"Pan view","prefs.pan_wheel":"Wheel only","prefs.pan_wheel_right":"Wheel + right-drag","prefs.dim":"Dimensions","prefs.dim_style":"Active dimension style","prefs.tube":"Tube & piping","prefs.tube_diameter":"Outer diameter Ø","prefs.tube_bend":"Bend radius","prefs.tube_ref":"Reference line","prefs.tube_ref_axis":"Axis","prefs.tube_ref_outer":"Outside","prefs.tube_ref_inner":"Inside","prefs.reset":"Reset","prefs.import":"Import…","prefs.export":"Export…","prefs.cancel":"Cancel","prefs.apply":"Apply","prefs.reset_confirm":"Reset all preferences to default values?"},"fr":{"app.title":"MiniCAD","seo.title":"MiniCAD — Dessin technique 2D & CAO en ligne, gratuit et sans installation","seo.description":"Logiciel de dessin technique 2D (CAO) gratuit, directement dans le navigateur, sans installation : lignes, cotation, calques, export DXF et SVG.","menu.file":"Fichier","menu.library":"Bibliothèque","menu.draw":"Dessin","menu.modify":"Modifier","menu.insert":"Insérer","menu.dimension":"Cotation","menu.help":"Aide","menu.file.new":"Nouveau","menu.file.open":"Ouvrir…","menu.file.close":"Fermer","menu.file.save":"Sauvegarder","menu.file.save_as":"Sauvegarder sous…","menu.file.export_dxf":"Exporter DXF","menu.file.import_dxf":"Importer DXF…","menu.file.print":"Imprimer / Export PDF","menu.file.prefs":"Préférences…","menu.file.theme":"Thème clair / sombre","tb.file":"Fichier","tb.draw":"Dessin","tb.modify":"Modification","tb.dim":"Cotation","tb.snap":"Accrochage","tb.view":"Vue","tb.arch":"Architecture","tb.elec":"Électricité","tool.select":"Sélection (V)","tool.pan":"Panoramique (P)","tool.move":"Déplacer (M)","tool.copy":"Copier (CO)","tool.rotate":"Rotation (RO)","tool.scale":"Mise à l'échelle (SC)","tool.mirror":"Miroir (MI)","tool.offset":"Décaler (O)","tool.trim":"Couper (TR)","tool.extend":"Prolonger (EX)","tool.fillet":"Raccord (F)","tool.chamfer":"Chanfrein (CHA)","tool.stretch":"Étirer (ET)","tool.explode":"Éclater (X)","tool.join":"Joindre en polyligne (J)","tool.line":"Ligne (L)","tool.xline":"Ligne infinie (XL)","tool.ray":"Demi-droite","tool.rect":"Rectangle (R)","tool.rectcenter":"Rectangle par le centre (RC)","tool.circle":"Cercle (C)","tool.arc":"Arc (A)","tool.polyline":"Polyligne (PL)","tool.polygon":"Polygone régulier (POL)","tool.ellipse":"Ellipse (EL)","tool.spline":"Spline (SPL)","tool.wall":"Mur (W)","tool.cable":"Câble (CAB)","tool.ray_rev":"Demi-droite inverse (RAY_REV)","tool.erase":"Supprimer (Suppr)","tool.door":"Porte (DOOR)","tool.window":"Fenêtre (WINDOW)","tool.outlet":"Prise (OUTLET)","tool.switch":"Interrupteur (SWITCH)","tool.dimstyle":"Styles de cotes (DIMSTYLE)","tool.tube":"Tube 2 traits (TUBE)","tool.leader":"Repère (LEADER)","tool.text":"Texte (TX)","tool.hatch":"Hachures (H)","tool.point":"Point (PT)","tool.dim_linear":"Cote linéaire","tool.dim_aligned":"Cote parallèle","tool.dim_continue":"Cote continue","tool.dim_baseline":"Cote de base","tool.dim_angular":"Cote angulaire","tool.dim_radius":"Cote rayon","tool.dim_diameter":"Cote diamètre","tool.dim_arc":"Cote longueur d'arc","tool.array":"Réseau rectangulaire (AR)","tool.array_polar":"Réseau polaire (APO)","tool.measure":"Mesurer (ME)","tool.calc":"Calculatrice (CALC)","tool.dist":"Distance (DI)","tool.area":"Aire (AREA)","tool.divide":"Diviser (DIV)","tool.zoom_extents":"Zoom Étendue","tool.zoom_window":"Zoom Fenêtre","tool.theme":"Basculer le thème (THEME)","tool.zoom_in":"Zoom +","tool.zoom_out":"Zoom -","tool.grid":"Grille","tool.snap":"Accrochage grille (F9)","tool.osnap":"Accrochage objets (F3)","tool.ortho":"Ortho (F8)","tool.polar":"Polaire (F10)","tool.explode_btn":"Éclater (X)","tool.group":"Grouper (GROUPE)","tool.ungroup":"Dégrouper (DÉGROUPER)","tool.block":"Créer un bloc (BLOCK)","tool.wblock":"Écrire un bloc dans un fichier (WBLOCK)","tool.insert_block":"Insérer un bloc (INSERT)","tool.ai":"Assistant IA Ollama","tool.print":"Exporter PDF (Ctrl+P)","tool.save_state":"État de sauvegarde","panel.layers":"CALQUES","panel.properties":"PROPRIÉTÉS","panel.osnap":"ACCROCHAGE","panel.modules":"MODULES","panel.terminal":"HISTORIQUE","layer.new":"Nouveau calque","layer.name":"Nom","layer.color":"Couleur","layer.visible":"Visible","layer.lock":"Verrouillé","layer.print":"Impression","layer.linetype":"Type de ligne","layer.linewidth":"Épaisseur","osnap.endpoint":"Extrémité","osnap.midpoint":"Milieu","osnap.center":"Centre","osnap.nearest":"Le plus proche","osnap.intersection":"Intersection","osnap.perpendicular":"Perpendiculaire","osnap.tangent":"Tangente","osnap.quadrant":"Quadrant","osnap.extension":"Extension","osnap.insertion":"Insertion","status.ortho":"ORTHO","status.polar":"POLAIRE","status.snap":"SNAP","status.osnap":"OSNAP","btn.ok":"OK","btn.cancel":"Annuler","btn.apply":"Appliquer ↵","btn.close":"Fermer","btn.add":"+ Ajouter une section","btn.delete":"Supprimer","btn.preview":"Prévisualiser","dialog.array.title":"RÉSEAU RECTANGULAIRE","dialog.array.cols":"Colonnes","dialog.array.rows":"Lignes","dialog.array.dx":"Espacement X","dialog.array.dy":"Espacement Y","dialog.polar.title":"RÉSEAU POLAIRE","dialog.polar.count":"Nb d'éléments","dialog.polar.angle":"Angle total (°)","dialog.polar.cx":"Centre X","dialog.polar.cy":"Centre Y","dialog.polar.rotate":"Faire pivoter les éléments","dialog.insert.title":"INSÉRER UN BLOC","dialog.insert.block_label":"Bloc","dialog.insert.from_file":"Importer depuis un fichier","dialog.insert.no_file":"Aucun fichier sélectionné","dialog.insert.browse":"Parcourir…","dialog.insert.rename":"Renommer le bloc…","dialog.wblock.title":"ÉCRIRE UN BLOC (WBLOCK)","dialog.wblock.source":"Source","dialog.wblock.source_block":"Bloc existant du dessin","dialog.wblock.source_selection":"Objets sélectionnés","dialog.wblock.source_drawing":"Dessin entier","dialog.wblock.block_label":"Bloc","dialog.wblock.objects_label":"Objets","dialog.wblock.pick_objects":"Sélectionner des objets","dialog.wblock.basepoint_label":"Point de base","dialog.wblock.pick_basepoint":"Choisir le point de base","dialog.wblock.name_label":"Nom","dialog.wblock.path_label":"Chemin","dialog.wblock.pick_path":"Choisir l'emplacement du fichier","dialog.wblock.path_placeholder":"Dossier de téléchargements par défaut","dialog.calc.title":"CALCULATRICE","dialog.tube.title":"Paramètres du tube","dialog.tube.diameter":"Ø diamètre","dialog.tube.radius":"RM rayon moy.","dialog.tube.edit_title":"ÉDITER LE TUBE","dialog.tube.add_section":"+ Ajouter une section","dialog.tube.devlen":"Long. développée AXE","dialog.tube.col_len":"L. saisie","dialog.tube.col_angle":"Angle (°)","dialog.tube.col_arc":"L. coude","dialog.layers.title":"GESTIONNAIRE DE CALQUES","dialog.layers.add":"Nouveau calque","dialog.dimstyle.title":"STYLES DE COTES","cmd.placeholder":"Commande ou mesure (100<45, @50,30, 200)...","cmd.first_point":"Premier point: X,Y (ex: 100,200) ou cliquez…","cmd.wh":"Largeur,Hauteur (ex: 100,100) ou cliquez…","dnd.drop_hint":"Déposez le fichier .dxf ou .mcad pour l'ouvrir","tool.open":"Ouvrir (Ctrl+O)","tool.save":"Sauvegarder (Ctrl+S)","help.commands":"═══ COMMANDES ═══","help.measure":"═══ SAISIE DE MESURE (après 1er point) ═══","help.measure.polar":"  100<45   — Polaire: distance 100, angle 45°","help.measure.rel":"  50,30    — Relatif: +50 en X, +30 en Y (par défaut)","help.measure.relx":"  @50,30   — Relatif: idem (explicite)","help.measure.abs":"  #200,300 — Absolu: coordonnées X=200, Y=300","help.measure.dist":"  150      — Distance 150 dans la direction du curseur","help.measure.ex":"  Exemple: RECT → clic → 100,100 → carré 100×100 ✓","help.files":"═══ FICHIERS ═══","help.files.open":"  OPEN     — Ouvrir DXF / DWG / JSON (.mcad)","help.files.save":"  SAVE     — Sauvegarder en JSON natif (.mcad)","help.files.dxf":"  EXPORT DXF — Export DXF (R2000)","help.files.dwg":"  EXPORT DWG — Export DWG (via DXF)","help.files.svg":"  EXPORT SVG — Export SVG","help.files.shortcut":"  Ctrl+O / Ctrl+S — Ouvrir / Sauvegarder","help.constraints":"═══ CONTRAINTES ═══","help.ortho":"  F8 = ORTHO (0°/90°/180°/270° uniquement)","help.polar":"  F10 = POLAIRE (increments d'angle configurables)","help.polar.cmd":"  POLAR [angle] — Modifier increment (ex: POLAR 30)","help.polar.excl":"  Ortho et Polaire sont mutuellement exclusifs","help.di":"═══ SAISIE DYNAMIQUE ═══","help.di.tooltip":"  Infobulle Distance/Angle éditable près du curseur","help.di.tab":"  Tab = basculer entre champs D et A","help.di.confirm":"  Entrez une valeur + Entrée = confirmer le point","help.module":"═══ MODULE: {name} ═══","prefs.title":"Préférences utilisateur","prefs.appearance":"Apparence","prefs.theme":"Thème","prefs.theme_dark":"Sombre","prefs.theme_light":"Clair","prefs.toolbar_style":"Barre d'outils","prefs.toolbar_standard":"Standard","prefs.toolbar_ribbon":"Ruban","prefs.ribbon_centered":"Centrer le ruban dans la fenêtre","ribbon.tab.home":"Accueil","ribbon.tab.annotate":"Annotation","ribbon.tab.view":"Affichage","ribbon.panel.draw":"Dessin","ribbon.panel.modify":"Modification","ribbon.panel.blocks":"Blocs et groupes","ribbon.panel.utilities":"Utilitaires","ribbon.panel.text":"Texte","ribbon.panel.dim":"Cotation","ribbon.panel.view":"Vue","ribbon.btn.line":"Ligne","ribbon.btn.polyline":"Polyligne","ribbon.btn.circle":"Cercle","ribbon.btn.rect":"Rectangle","ribbon.btn.arc":"Arc","ribbon.btn.move":"Déplacer","ribbon.btn.copy":"Copier","ribbon.btn.rotate":"Rotation","ribbon.btn.mirror":"Miroir","ribbon.btn.scale":"Échelle","ribbon.btn.offset":"Décaler","ribbon.btn.trim":"Couper","ribbon.btn.insert_block":"Insérer","ribbon.btn.block":"Créer bloc","ribbon.btn.group":"Grouper","ribbon.btn.ungroup":"Dégrouper","ribbon.btn.measure":"Mesurer","ribbon.btn.text":"Texte","ribbon.btn.leader":"Repère","ribbon.btn.dim_linear":"Linéaire","ribbon.btn.dim_aligned":"Parallèle","ribbon.btn.zoom_extents":"Zoom étendu","ribbon.btn.zoom_window":"Zoom fenêtre","ribbon.btn.pan":"Panoramique","ribbon.btn.theme":"Thème","prefs.grid":"Grille","prefs.grid_visible":"Afficher la grille","prefs.grid_snap":"Accrochage à la grille (Snap)","prefs.grid_size":"Pas de la grille (X)","prefs.grid_size_y":"Pas de la grille (Y)","prefs.unit_drawing":"unités","prefs.osnap":"Accrochage aux objets (OSNAP)","prefs.osnap_enabled":"Accrochage actif","prefs.osnap_range":"Portée de détection","prefs.osnap_ext_timeout":"Expiration points d'extension (Otrack)","prefs.input":"Saisie & curseur","prefs.input_ortho":"Mode ortho","prefs.input_polar":"Accrochage polaire","prefs.input_polar_inc":"Incrément polaire","prefs.input_pickbox":"Taille du pickbox","prefs.input_pan":"Déplacement de la vue","prefs.pan_wheel":"Molette seule","prefs.pan_wheel_right":"Molette + glisser droit","prefs.dim":"Cotation","prefs.dim_style":"Style de cote actif","prefs.tube":"Tube & tuyauterie","prefs.tube_diameter":"Diamètre extérieur Ø","prefs.tube_bend":"Rayon de coude","prefs.tube_ref":"Ligne de référence","prefs.tube_ref_axis":"Axe","prefs.tube_ref_outer":"Extérieur","prefs.tube_ref_inner":"Intérieur","prefs.reset":"Réinitialiser","prefs.import":"Importer…","prefs.export":"Exporter…","prefs.cancel":"Annuler","prefs.apply":"Appliquer","prefs.reset_confirm":"Réinitialiser toutes les préférences aux valeurs par défaut ?"}};
+  var T = {"en":{"app.title":"MiniCAD","seo.title":"MiniCAD — Free online 2D technical drawing & CAD, no installation","seo.description":"Free 2D technical drawing (CAD) software running directly in your browser, no installation: lines, dimensioning, layers, DXF and SVG export.","menu.file":"File","menu.library":"Library","menu.draw":"Draw","menu.modify":"Modify","menu.insert":"Insert","menu.dimension":"Dimension","menu.help":"Help","menu.file.new":"New","menu.file.open":"Open…","menu.file.close":"Close","menu.file.save":"Save","menu.file.save_as":"Save as…","menu.file.export_dxf":"Export DXF","menu.file.import_dxf":"Import DXF…","menu.file.print":"Print / Export PDF","menu.file.prefs":"Preferences…","menu.file.theme":"Light / dark theme","tb.file":"File","tb.draw":"Draw","tb.modify":"Modify","tb.dim":"Dimension","tb.snap":"Snap","tb.view":"View","tb.arch":"Architecture","tb.elec":"Electrical","tool.select":"Select (V)","tool.pan":"Pan (P)","tool.move":"Move (M)","tool.copy":"Copy (CO)","tool.rotate":"Rotate (RO)","tool.scale":"Scale (SC)","tool.mirror":"Mirror (MI)","tool.offset":"Offset (O)","tool.trim":"Trim (TR)","tool.extend":"Extend (EX)","tool.fillet":"Fillet (F)","tool.chamfer":"Chamfer (CHA)","tool.stretch":"Stretch (ET)","tool.explode":"Explode (X)","tool.join":"Join as Polyline (J)","tool.line":"Line (L)","tool.xline":"Construction Line (XL)","tool.ray":"Ray","tool.rect":"Rectangle (R)","tool.rectcenter":"Rectangle by Center (RC)","tool.circle":"Circle (C)","tool.arc":"Arc (A)","tool.polyline":"Polyline (PL)","tool.polygon":"Regular Polygon (POL)","tool.ellipse":"Ellipse (EL)","tool.spline":"Spline (SPL)","tool.wall":"Wall (W)","tool.cable":"Cable (CAB)","tool.ray_rev":"Reverse ray (RAY_REV)","tool.erase":"Erase (Del)","tool.door":"Door (DOOR)","tool.window":"Window (WINDOW)","tool.outlet":"Outlet (OUTLET)","tool.switch":"Switch (SWITCH)","tool.dimstyle":"Dimension styles (DIMSTYLE)","tool.tube":"Tube 2-line (TUBE)","tool.leader":"Leader (LEADER)","tool.text":"Text (TX)","tool.hatch":"Hatch (H)","tool.point":"Point (PT)","tool.dim_linear":"Linear Dimension","tool.dim_aligned":"Aligned Dimension","tool.dim_continue":"Continue Dimension","tool.dim_baseline":"Baseline Dimension","tool.dim_angular":"Angular Dimension","tool.dim_radius":"Radius Dimension","tool.dim_diameter":"Diameter Dimension","tool.dim_arc":"Arc Length Dimension","tool.array":"Rectangular Array (AR)","tool.array_polar":"Polar Array (APO)","tool.measure":"Measure (ME)","tool.calc":"Calculator (CALC)","tool.dist":"Distance (DI)","tool.area":"Area (AREA)","tool.divide":"Divide (DIV)","tool.zoom_extents":"Zoom Extents","tool.zoom_window":"Zoom Window","tool.theme":"Toggle theme (THEME)","tool.zoom_in":"Zoom In","tool.zoom_out":"Zoom Out","tool.grid":"Grid","tool.snap":"Grid Snap (F9)","tool.osnap":"Object Snap (F3)","tool.ortho":"Ortho (F8)","tool.polar":"Polar (F10)","tool.explode_btn":"Explode (X)","tool.group":"Group (GROUP)","tool.ungroup":"Ungroup (UNGROUP)","tool.block":"Create block (BLOCK)","tool.wblock":"Write block to file (WBLOCK)","tool.insert_block":"Insert a block (INSERT)","tool.ai":"AI Assistant Ollama","tool.print":"Export PDF (Ctrl+P)","tool.save_state":"Save State","panel.layers":"LAYERS","panel.properties":"PROPERTIES","panel.osnap":"SNAP","panel.modules":"MODULES","panel.terminal":"HISTORY","layer.new":"New Layer","layer.name":"Name","layer.color":"Color","layer.visible":"Visible","layer.lock":"Locked","layer.print":"Print","layer.linetype":"Line Type","layer.linewidth":"Line Width","osnap.endpoint":"Endpoint","osnap.midpoint":"Midpoint","osnap.center":"Center","osnap.nearest":"Nearest","osnap.intersection":"Intersection","osnap.perpendicular":"Perpendicular","osnap.tangent":"Tangent","osnap.quadrant":"Quadrant","osnap.extension":"Extension","osnap.insertion":"Insertion","status.ortho":"ORTHO","status.polar":"POLAR","status.snap":"SNAP","status.osnap":"OSNAP","btn.ok":"OK","btn.cancel":"Cancel","btn.apply":"Apply ↵","btn.close":"Close","btn.add":"+ Add Section","btn.delete":"Delete","btn.preview":"Preview","dialog.array.title":"RECTANGULAR ARRAY","dialog.array.cols":"Columns","dialog.array.rows":"Rows","dialog.array.dx":"X Spacing","dialog.array.dy":"Y Spacing","dialog.polar.title":"POLAR ARRAY","dialog.polar.count":"Item count","dialog.polar.angle":"Total angle (°)","dialog.polar.cx":"Center X","dialog.polar.cy":"Center Y","dialog.polar.rotate":"Rotate items","dialog.insert.title":"INSERT BLOCK","dialog.insert.block_label":"Block","dialog.insert.from_file":"Import from a file","dialog.insert.no_file":"No file selected","dialog.insert.browse":"Browse…","dialog.insert.rename":"Rename block…","dialog.wblock.title":"WRITE BLOCK (WBLOCK)","dialog.wblock.source":"Source","dialog.wblock.source_block":"Existing block in drawing","dialog.wblock.source_selection":"Selected objects","dialog.wblock.source_drawing":"Entire drawing","dialog.wblock.block_label":"Block","dialog.wblock.objects_label":"Objects","dialog.wblock.pick_objects":"Select objects","dialog.wblock.basepoint_label":"Base point","dialog.wblock.pick_basepoint":"Pick base point","dialog.wblock.name_label":"Name","dialog.wblock.path_label":"Path","dialog.wblock.pick_path":"Choose file location","dialog.wblock.path_placeholder":"Default downloads folder","dialog.calc.title":"CALCULATOR","dialog.tube.title":"Tube Parameters","dialog.tube.diameter":"Ø diameter","dialog.tube.radius":"MR mean radius","dialog.tube.edit_title":"EDIT TUBE","dialog.tube.add_section":"+ Add Section","dialog.tube.devlen":"Developed length AXIS","dialog.tube.col_len":"Entry length","dialog.tube.col_angle":"Angle (°)","dialog.tube.col_arc":"Bend length","dialog.layers.title":"LAYER MANAGER","dialog.layers.add":"New Layer","dialog.dimstyle.title":"DIMENSION STYLES","cmd.placeholder":"Command or measure (100<45, @50,30, 200)...","cmd.first_point":"First point: X,Y (e.g. 100,200) or click…","cmd.wh":"Width,Height (e.g. 100,100) or click…","dnd.drop_hint":"Drop the .dxf or .mcad file to open it","tool.open":"Open (Ctrl+O)","tool.save":"Save (Ctrl+S)","tool.undo":"Undo (Ctrl+Z)","tool.redo":"Redo (Ctrl+Y)","tool.matchprop":"Match properties (MA)","tool.dimcenter":"Center marks (DIMCENTER)","tool.tube_def":"Set tube Ø and mean radius","tool.tubref_axe":"Draw on centreline (TUBREF AXE)","tool.tubref_ext":"Draw on outer wall (TUBREF EXT)","tool.tubref_int":"Draw on inner wall (TUBREF INT)","help.commands":"═══ COMMANDS ═══","help.measure":"═══ POINT INPUT (after 1st point) ═══","help.measure.polar":"  100<45   — Polar: distance 100, angle 45°","help.measure.rel":"  50,30    — Relative: +50 X, +30 Y (default)","help.measure.relx":"  @50,30   — Relative: same (explicit)","help.measure.abs":"  #200,300 — Absolute: X=200, Y=300","help.measure.dist":"  150      — Distance 150 in cursor direction","help.measure.ex":"  Example: RECT → click → 100,100 → 100×100 square ✓","help.files":"═══ FILES ═══","help.files.open":"  OPEN     — Open DXF / DWG / JSON (.mcad)","help.files.save":"  SAVE     — Save as native JSON (.mcad)","help.files.dxf":"  EXPORT DXF — Export DXF (R2000)","help.files.dwg":"  EXPORT DWG — Export DWG (via DXF)","help.files.svg":"  EXPORT SVG — Export SVG","help.files.shortcut":"  Ctrl+O / Ctrl+S — Open / Save","help.constraints":"═══ CONSTRAINTS ═══","help.ortho":"  F8 = ORTHO (0°/90°/180°/270° only)","help.polar":"  F10 = POLAR (configurable angle increments)","help.polar.cmd":"  POLAR [angle] — Change increment (e.g. POLAR 30)","help.polar.excl":"  Ortho and Polar are mutually exclusive","help.di":"═══ DYNAMIC INPUT ═══","help.di.tooltip":"  Distance/Angle tooltip editable near cursor","help.di.tab":"  Tab = toggle between D and A fields","help.di.confirm":"  Enter a value + Enter = confirm point","help.module":"═══ MODULE: {name} ═══","prefs.title":"User preferences","prefs.appearance":"Appearance","prefs.theme":"Theme","prefs.theme_dark":"Dark","prefs.theme_light":"Light","prefs.toolbar_style":"Toolbar","prefs.toolbar_standard":"Standard","prefs.toolbar_ribbon":"Ribbon","prefs.ribbon_centered":"Center ribbon in window","ribbon.tab.home":"Home","ribbon.tab.annotate":"Annotate","ribbon.tab.view":"View","ribbon.panel.draw":"Draw","ribbon.panel.modify":"Modify","ribbon.panel.blocks":"Blocks & Groups","ribbon.panel.utilities":"Utilities","ribbon.panel.text":"Text","ribbon.panel.dim":"Dimensions","ribbon.panel.view":"View","ribbon.btn.line":"Line","ribbon.btn.polyline":"Polyline","ribbon.btn.circle":"Circle","ribbon.btn.rect":"Rectangle","ribbon.btn.arc":"Arc","ribbon.btn.move":"Move","ribbon.btn.copy":"Copy","ribbon.btn.rotate":"Rotate","ribbon.btn.mirror":"Mirror","ribbon.btn.scale":"Scale","ribbon.btn.offset":"Offset","ribbon.btn.trim":"Trim","ribbon.btn.insert_block":"Insert","ribbon.btn.block":"Create block","ribbon.btn.group":"Group","ribbon.btn.ungroup":"Ungroup","ribbon.btn.measure":"Measure","ribbon.btn.text":"Text","ribbon.btn.leader":"Leader","ribbon.btn.dim_linear":"Linear","ribbon.btn.dim_aligned":"Aligned","ribbon.btn.zoom_extents":"Zoom extents","ribbon.btn.zoom_window":"Zoom window","ribbon.btn.pan":"Pan","ribbon.btn.theme":"Theme","ribbon.panel.file":"File","ribbon.panel.snap":"Snap","ribbon.panel.tube":"Tube","ribbon.btn.open":"Open","ribbon.btn.save":"Save","ribbon.btn.snap":"Snap","ribbon.btn.osnap":"Object","ribbon.btn.ortho":"Ortho","ribbon.btn.polar":"Polar","ribbon.btn.grid":"Grid","prefs.grid":"Grid","prefs.grid_visible":"Show grid","prefs.grid_snap":"Snap to grid","prefs.grid_size":"Grid spacing (X)","prefs.grid_size_y":"Grid spacing (Y)","prefs.unit_drawing":"units","prefs.osnap":"Object snap (OSNAP)","prefs.osnap_enabled":"Snapping enabled","prefs.osnap_range":"Detection range","prefs.osnap_ext_timeout":"Extension points timeout (Otrack)","prefs.input":"Input & cursor","prefs.input_ortho":"Ortho mode","prefs.input_polar":"Polar tracking","prefs.input_polar_inc":"Polar increment","prefs.input_coord_absolute":"Absolute coordinates (input tooltip)","di.abs_badge_title":"Absolute coordinates active (X,Y from origin, not relative to last point)","prefs.input_pickbox":"Pickbox size","prefs.input_pan":"Pan view","prefs.pan_wheel":"Wheel only","prefs.pan_wheel_right":"Wheel + right-drag","prefs.dim":"Dimensions","prefs.dim_style":"Active dimension style","prefs.tube":"Tube & piping","prefs.tube_diameter":"Outer diameter Ø","prefs.tube_bend":"Bend radius","prefs.tube_ref":"Reference line","prefs.tube_ref_axis":"Axis","prefs.tube_ref_outer":"Outside","prefs.tube_ref_inner":"Inside","prefs.reset":"Reset","prefs.import":"Import…","prefs.export":"Export…","prefs.cancel":"Cancel","prefs.apply":"Apply","prefs.reset_confirm":"Reset all preferences to default values?"},"fr":{"app.title":"MiniCAD","seo.title":"MiniCAD — Dessin technique 2D & CAO en ligne, gratuit et sans installation","seo.description":"Logiciel de dessin technique 2D (CAO) gratuit, directement dans le navigateur, sans installation : lignes, cotation, calques, export DXF et SVG.","menu.file":"Fichier","menu.library":"Bibliothèque","menu.draw":"Dessin","menu.modify":"Modifier","menu.insert":"Insérer","menu.dimension":"Cotation","menu.help":"Aide","menu.file.new":"Nouveau","menu.file.open":"Ouvrir…","menu.file.close":"Fermer","menu.file.save":"Sauvegarder","menu.file.save_as":"Sauvegarder sous…","menu.file.export_dxf":"Exporter DXF","menu.file.import_dxf":"Importer DXF…","menu.file.print":"Imprimer / Export PDF","menu.file.prefs":"Préférences…","menu.file.theme":"Thème clair / sombre","tb.file":"Fichier","tb.draw":"Dessin","tb.modify":"Modification","tb.dim":"Cotation","tb.snap":"Accrochage","tb.view":"Vue","tb.arch":"Architecture","tb.elec":"Électricité","tool.select":"Sélection (V)","tool.pan":"Panoramique (P)","tool.move":"Déplacer (M)","tool.copy":"Copier (CO)","tool.rotate":"Rotation (RO)","tool.scale":"Mise à l'échelle (SC)","tool.mirror":"Miroir (MI)","tool.offset":"Décaler (O)","tool.trim":"Couper (TR)","tool.extend":"Prolonger (EX)","tool.fillet":"Raccord (F)","tool.chamfer":"Chanfrein (CHA)","tool.stretch":"Étirer (ET)","tool.explode":"Éclater (X)","tool.join":"Joindre en polyligne (J)","tool.line":"Ligne (L)","tool.xline":"Ligne infinie (XL)","tool.ray":"Demi-droite","tool.rect":"Rectangle (R)","tool.rectcenter":"Rectangle par le centre (RC)","tool.circle":"Cercle (C)","tool.arc":"Arc (A)","tool.polyline":"Polyligne (PL)","tool.polygon":"Polygone régulier (POL)","tool.ellipse":"Ellipse (EL)","tool.spline":"Spline (SPL)","tool.wall":"Mur (W)","tool.cable":"Câble (CAB)","tool.ray_rev":"Demi-droite inverse (RAY_REV)","tool.erase":"Supprimer (Suppr)","tool.door":"Porte (DOOR)","tool.window":"Fenêtre (WINDOW)","tool.outlet":"Prise (OUTLET)","tool.switch":"Interrupteur (SWITCH)","tool.dimstyle":"Styles de cotes (DIMSTYLE)","tool.tube":"Tube 2 traits (TUBE)","tool.leader":"Repère (LEADER)","tool.text":"Texte (TX)","tool.hatch":"Hachures (H)","tool.point":"Point (PT)","tool.dim_linear":"Cote linéaire","tool.dim_aligned":"Cote parallèle","tool.dim_continue":"Cote continue","tool.dim_baseline":"Cote de base","tool.dim_angular":"Cote angulaire","tool.dim_radius":"Cote rayon","tool.dim_diameter":"Cote diamètre","tool.dim_arc":"Cote longueur d'arc","tool.array":"Réseau rectangulaire (AR)","tool.array_polar":"Réseau polaire (APO)","tool.measure":"Mesurer (ME)","tool.calc":"Calculatrice (CALC)","tool.dist":"Distance (DI)","tool.area":"Aire (AREA)","tool.divide":"Diviser (DIV)","tool.zoom_extents":"Zoom Étendue","tool.zoom_window":"Zoom Fenêtre","tool.theme":"Basculer le thème (THEME)","tool.zoom_in":"Zoom +","tool.zoom_out":"Zoom -","tool.grid":"Grille","tool.snap":"Accrochage grille (F9)","tool.osnap":"Accrochage objets (F3)","tool.ortho":"Ortho (F8)","tool.polar":"Polaire (F10)","tool.explode_btn":"Éclater (X)","tool.group":"Grouper (GROUPE)","tool.ungroup":"Dégrouper (DÉGROUPER)","tool.block":"Créer un bloc (BLOCK)","tool.wblock":"Écrire un bloc dans un fichier (WBLOCK)","tool.insert_block":"Insérer un bloc (INSERT)","tool.ai":"Assistant IA Ollama","tool.print":"Exporter PDF (Ctrl+P)","tool.save_state":"État de sauvegarde","panel.layers":"CALQUES","panel.properties":"PROPRIÉTÉS","panel.osnap":"ACCROCHAGE","panel.modules":"MODULES","panel.terminal":"HISTORIQUE","layer.new":"Nouveau calque","layer.name":"Nom","layer.color":"Couleur","layer.visible":"Visible","layer.lock":"Verrouillé","layer.print":"Impression","layer.linetype":"Type de ligne","layer.linewidth":"Épaisseur","osnap.endpoint":"Extrémité","osnap.midpoint":"Milieu","osnap.center":"Centre","osnap.nearest":"Le plus proche","osnap.intersection":"Intersection","osnap.perpendicular":"Perpendiculaire","osnap.tangent":"Tangente","osnap.quadrant":"Quadrant","osnap.extension":"Extension","osnap.insertion":"Insertion","status.ortho":"ORTHO","status.polar":"POLAIRE","status.snap":"SNAP","status.osnap":"OSNAP","btn.ok":"OK","btn.cancel":"Annuler","btn.apply":"Appliquer ↵","btn.close":"Fermer","btn.add":"+ Ajouter une section","btn.delete":"Supprimer","btn.preview":"Prévisualiser","dialog.array.title":"RÉSEAU RECTANGULAIRE","dialog.array.cols":"Colonnes","dialog.array.rows":"Lignes","dialog.array.dx":"Espacement X","dialog.array.dy":"Espacement Y","dialog.polar.title":"RÉSEAU POLAIRE","dialog.polar.count":"Nb d'éléments","dialog.polar.angle":"Angle total (°)","dialog.polar.cx":"Centre X","dialog.polar.cy":"Centre Y","dialog.polar.rotate":"Faire pivoter les éléments","dialog.insert.title":"INSÉRER UN BLOC","dialog.insert.block_label":"Bloc","dialog.insert.from_file":"Importer depuis un fichier","dialog.insert.no_file":"Aucun fichier sélectionné","dialog.insert.browse":"Parcourir…","dialog.insert.rename":"Renommer le bloc…","dialog.wblock.title":"ÉCRIRE UN BLOC (WBLOCK)","dialog.wblock.source":"Source","dialog.wblock.source_block":"Bloc existant du dessin","dialog.wblock.source_selection":"Objets sélectionnés","dialog.wblock.source_drawing":"Dessin entier","dialog.wblock.block_label":"Bloc","dialog.wblock.objects_label":"Objets","dialog.wblock.pick_objects":"Sélectionner des objets","dialog.wblock.basepoint_label":"Point de base","dialog.wblock.pick_basepoint":"Choisir le point de base","dialog.wblock.name_label":"Nom","dialog.wblock.path_label":"Chemin","dialog.wblock.pick_path":"Choisir l'emplacement du fichier","dialog.wblock.path_placeholder":"Dossier de téléchargements par défaut","dialog.calc.title":"CALCULATRICE","dialog.tube.title":"Paramètres du tube","dialog.tube.diameter":"Ø diamètre","dialog.tube.radius":"RM rayon moy.","dialog.tube.edit_title":"ÉDITER LE TUBE","dialog.tube.add_section":"+ Ajouter une section","dialog.tube.devlen":"Long. développée AXE","dialog.tube.col_len":"L. saisie","dialog.tube.col_angle":"Angle (°)","dialog.tube.col_arc":"L. coude","dialog.layers.title":"GESTIONNAIRE DE CALQUES","dialog.layers.add":"Nouveau calque","dialog.dimstyle.title":"STYLES DE COTES","cmd.placeholder":"Commande ou mesure (100<45, @50,30, 200)...","cmd.first_point":"Premier point: X,Y (ex: 100,200) ou cliquez…","cmd.wh":"Largeur,Hauteur (ex: 100,100) ou cliquez…","dnd.drop_hint":"Déposez le fichier .dxf ou .mcad pour l'ouvrir","tool.open":"Ouvrir (Ctrl+O)","tool.save":"Sauvegarder (Ctrl+S)","tool.undo":"Annuler (Ctrl+Z)","tool.redo":"Rétablir (Ctrl+Y)","tool.matchprop":"Copier les propriétés (MA)","tool.dimcenter":"Axes de cercle (DIMCENTER)","tool.tube_def":"Définir Ø et RM du tube","tool.tubref_axe":"Tracé sur axe (TUBREF AXE)","tool.tubref_ext":"Tracé paroi extérieure (TUBREF EXT)","tool.tubref_int":"Tracé paroi intérieure (TUBREF INT)","help.commands":"═══ COMMANDES ═══","help.measure":"═══ SAISIE DE MESURE (après 1er point) ═══","help.measure.polar":"  100<45   — Polaire: distance 100, angle 45°","help.measure.rel":"  50,30    — Relatif: +50 en X, +30 en Y (par défaut)","help.measure.relx":"  @50,30   — Relatif: idem (explicite)","help.measure.abs":"  #200,300 — Absolu: coordonnées X=200, Y=300","help.measure.dist":"  150      — Distance 150 dans la direction du curseur","help.measure.ex":"  Exemple: RECT → clic → 100,100 → carré 100×100 ✓","help.files":"═══ FICHIERS ═══","help.files.open":"  OPEN     — Ouvrir DXF / DWG / JSON (.mcad)","help.files.save":"  SAVE     — Sauvegarder en JSON natif (.mcad)","help.files.dxf":"  EXPORT DXF — Export DXF (R2000)","help.files.dwg":"  EXPORT DWG — Export DWG (via DXF)","help.files.svg":"  EXPORT SVG — Export SVG","help.files.shortcut":"  Ctrl+O / Ctrl+S — Ouvrir / Sauvegarder","help.constraints":"═══ CONTRAINTES ═══","help.ortho":"  F8 = ORTHO (0°/90°/180°/270° uniquement)","help.polar":"  F10 = POLAIRE (increments d'angle configurables)","help.polar.cmd":"  POLAR [angle] — Modifier increment (ex: POLAR 30)","help.polar.excl":"  Ortho et Polaire sont mutuellement exclusifs","help.di":"═══ SAISIE DYNAMIQUE ═══","help.di.tooltip":"  Infobulle Distance/Angle éditable près du curseur","help.di.tab":"  Tab = basculer entre champs D et A","help.di.confirm":"  Entrez une valeur + Entrée = confirmer le point","help.module":"═══ MODULE: {name} ═══","prefs.title":"Préférences utilisateur","prefs.appearance":"Apparence","prefs.theme":"Thème","prefs.theme_dark":"Sombre","prefs.theme_light":"Clair","prefs.toolbar_style":"Barre d'outils","prefs.toolbar_standard":"Standard","prefs.toolbar_ribbon":"Ruban","prefs.ribbon_centered":"Centrer le ruban dans la fenêtre","ribbon.tab.home":"Accueil","ribbon.tab.annotate":"Annotation","ribbon.tab.view":"Affichage","ribbon.panel.draw":"Dessin","ribbon.panel.modify":"Modification","ribbon.panel.blocks":"Blocs et groupes","ribbon.panel.utilities":"Utilitaires","ribbon.panel.text":"Texte","ribbon.panel.dim":"Cotation","ribbon.panel.view":"Vue","ribbon.btn.line":"Ligne","ribbon.btn.polyline":"Polyligne","ribbon.btn.circle":"Cercle","ribbon.btn.rect":"Rectangle","ribbon.btn.arc":"Arc","ribbon.btn.move":"Déplacer","ribbon.btn.copy":"Copier","ribbon.btn.rotate":"Rotation","ribbon.btn.mirror":"Miroir","ribbon.btn.scale":"Échelle","ribbon.btn.offset":"Décaler","ribbon.btn.trim":"Couper","ribbon.btn.insert_block":"Insérer","ribbon.btn.block":"Créer bloc","ribbon.btn.group":"Grouper","ribbon.btn.ungroup":"Dégrouper","ribbon.btn.measure":"Mesurer","ribbon.btn.text":"Texte","ribbon.btn.leader":"Repère","ribbon.btn.dim_linear":"Linéaire","ribbon.btn.dim_aligned":"Parallèle","ribbon.btn.zoom_extents":"Zoom étendu","ribbon.btn.zoom_window":"Zoom fenêtre","ribbon.btn.pan":"Panoramique","ribbon.btn.theme":"Thème","ribbon.panel.file":"Fichier","ribbon.panel.snap":"Accrochage","ribbon.panel.tube":"Tube","ribbon.btn.open":"Ouvrir","ribbon.btn.save":"Enregistrer","ribbon.btn.snap":"Magnétisme","ribbon.btn.osnap":"Objets","ribbon.btn.ortho":"Ortho","ribbon.btn.polar":"Polaire","ribbon.btn.grid":"Grille","prefs.grid":"Grille","prefs.grid_visible":"Afficher la grille","prefs.grid_snap":"Accrochage à la grille (Snap)","prefs.grid_size":"Pas de la grille (X)","prefs.grid_size_y":"Pas de la grille (Y)","prefs.unit_drawing":"unités","prefs.osnap":"Accrochage aux objets (OSNAP)","prefs.osnap_enabled":"Accrochage actif","prefs.osnap_range":"Portée de détection","prefs.osnap_ext_timeout":"Expiration points d'extension (Otrack)","prefs.input":"Saisie & curseur","prefs.input_ortho":"Mode ortho","prefs.input_polar":"Accrochage polaire","prefs.input_polar_inc":"Incrément polaire","prefs.input_coord_absolute":"Coordonnées absolues (bulle de saisie)","di.abs_badge_title":"Coordonnées absolues actives (X,Y depuis l'origine, pas relatif au dernier point)","prefs.input_pickbox":"Taille du pickbox","prefs.input_pan":"Déplacement de la vue","prefs.pan_wheel":"Molette seule","prefs.pan_wheel_right":"Molette + glisser droit","prefs.dim":"Cotation","prefs.dim_style":"Style de cote actif","prefs.tube":"Tube & tuyauterie","prefs.tube_diameter":"Diamètre extérieur Ø","prefs.tube_bend":"Rayon de coude","prefs.tube_ref":"Ligne de référence","prefs.tube_ref_axis":"Axe","prefs.tube_ref_outer":"Extérieur","prefs.tube_ref_inner":"Intérieur","prefs.reset":"Réinitialiser","prefs.import":"Importer…","prefs.export":"Exporter…","prefs.cancel":"Annuler","prefs.apply":"Appliquer","prefs.reset_confirm":"Réinitialiser toutes les préférences aux valeurs par défaut ?"}};
   // Priorité : ?lang=xx (SEO / lien direct) > dernier choix mémorisé > langue par défaut
   var _urlLang = null;
   try { _urlLang = new URLSearchParams(location.search).get('lang'); } catch(e) {}
@@ -1852,10 +1869,10 @@
     </div>
     <div class="menu-item" onclick="showHelp()" data-i18n="menu.help">Aide</div>
     <div class="tb-sep"></div>
-    <button class="tool-btn" title="Annuler (Ctrl+Z)" onclick="CMD.UNDO.exec()">
+    <button class="tool-btn" title="Annuler (Ctrl+Z)" data-i18n-title="tool.undo" onclick="CMD.UNDO.exec()">
       <svg viewBox="0 0 24 24"><path d="M4 10h11a5 5 0 010 10H9M4 10l4-4M4 10l4 4"/></svg>
     </button>
-    <button class="tool-btn" title="Refaire (Ctrl+Y)" onclick="CMD.REDO.exec()">
+    <button class="tool-btn" title="Rétablir (Ctrl+Y)" data-i18n-title="tool.redo" onclick="CMD.REDO.exec()">
       <svg viewBox="0 0 24 24"><path d="M20 10H9a5 5 0 000 10h6M20 10l-4-4M20 10l-4 4"/></svg>
     </button>
   </div>
@@ -2073,7 +2090,7 @@
         </svg>
       </button>
       <!-- Diviser  -->
-      <button class="tool-btn" data-tool="divide_pick" title="Diviser (DIV)" onclick="executeCommand('DIVIDE')">
+      <button class="tool-btn" data-tool="divide_pick" title="Diviser (DIV)" data-i18n-title="tool.divide" onclick="executeCommand('DIVIDE')">
         <svg viewBox="0 0 24 24">
           <line x1="4" y1="12" x2="20" y2="12"/>
           <circle cx="9" cy="12" r="2" fill="currentColor" stroke="none"/>
@@ -2081,7 +2098,7 @@
         </svg>
       </button>
       <!-- Axes de cercle (repère de centre) -->
-      <button class="tool-btn" title="Axes de cercle (DIMCENTER)" onclick="executeCommand('DIMCENTER')">
+      <button class="tool-btn" title="Axes de cercle (DIMCENTER)" data-i18n-title="tool.dimcenter" onclick="executeCommand('DIMCENTER')">
         <svg viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="6" fill="none"/>
           <line x1="2" y1="12" x2="22" y2="12" stroke-dasharray="4,2"/>
@@ -2090,15 +2107,15 @@
       </button>
       <div class="tb-sep"></div>
       <!-- Annuler / Refaire -->
-      <button class="tool-btn" title="Annuler (Ctrl+Z)" onclick="CMD.UNDO.exec()">
+      <button class="tool-btn" title="Annuler (Ctrl+Z)" data-i18n-title="tool.undo" onclick="CMD.UNDO.exec()">
         <svg viewBox="0 0 24 24"><path d="M4 10h11a5 5 0 010 10H9M4 10l4-4M4 10l4 4"/></svg>
       </button>
-      <button class="tool-btn" title="Refaire (Ctrl+Y)" onclick="CMD.REDO.exec()">
+      <button class="tool-btn" title="Rétablir (Ctrl+Y)" data-i18n-title="tool.redo" onclick="CMD.REDO.exec()">
         <svg viewBox="0 0 24 24"><path d="M20 10H9a5 5 0 000 10h6M20 10l-4-4M20 10l-4 4"/></svg>
       </button>
       <div class="tb-sep"></div>
       <!-- Supprimer -->
-      <button class="tool-btn" title="Supprimer (Del)" onclick="CMD.ERASE.exec()">
+      <button class="tool-btn" title="Supprimer (Suppr)" data-i18n-title="tool.erase" onclick="CMD.ERASE.exec()">
         <svg viewBox="0 0 24 24">
           <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
           <path d="M10 11v5M14 11v5"/>
@@ -2138,7 +2155,7 @@
       <button class="tool-btn" data-tool="polyline" title="Polyligne (PL)" data-i18n-title="tool.polyline" onclick="setTool('polyline')">
         <svg viewBox="0 0 24 24"><polyline points="4,18 8,8 14,14 20,4"/></svg>
       </button>
-      <button class="tool-btn" data-tool="spline" title="Spline (SPL)" onclick="setTool('spline');termPrint('SPLINE: Cliquez les points de passage — C=Clore  Echap=Finir','info')">
+      <button class="tool-btn" data-tool="spline" title="Spline (SPL)" data-i18n-title="tool.spline" onclick="setTool('spline');termPrint('SPLINE: Cliquez les points de passage — C=Clore  Echap=Finir','info')">
         <svg viewBox="0 0 24 24"><path d="M4,18 C6,18 7,8 10,8 S16,14 20,4" fill="none"/></svg>
       </button>
       <button class="tool-btn" data-tool="xline" title="Ligne infinie (XL)" data-i18n-title="tool.xline" onclick="executeCommand('XLINE')">
@@ -2149,21 +2166,21 @@
           <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
         </svg>
       </button>
-      <button class="tool-btn" data-tool="ray" title="Demi-droite (RAY)" onclick="executeCommand('RAY')">
+      <button class="tool-btn" data-tool="ray" title="Demi-droite" data-i18n-title="tool.ray" onclick="executeCommand('RAY')">
         <svg viewBox="0 0 24 24" fill="none">
           <circle cx="4" cy="12" r="2" fill="currentColor"/>
           <line x1="4" y1="12" x2="22" y2="12"/>
           <polyline points="19,9 22,12 19,15"/>
         </svg>
       </button>
-      <button class="tool-btn" data-tool="ray_rev" title="Demi-droite inverse (RAY_REV)" onclick="executeCommand('RAY_REV')">
+      <button class="tool-btn" data-tool="ray_rev" title="Demi-droite inverse (RAY_REV)" data-i18n-title="tool.ray_rev" onclick="executeCommand('RAY_REV')">
         <svg viewBox="0 0 24 24" fill="none">
           <line x1="2" y1="12" x2="20" y2="12"/>
           <polyline points="5,9 2,12 5,15"/>
           <circle cx="20" cy="12" r="2" fill="currentColor"/>
         </svg>
       </button>
-      <button class="tool-btn" data-tool="point" title="Point (PT)" onclick="executeCommand('POINT')">
+      <button class="tool-btn" data-tool="point" title="Point (PT)" data-i18n-title="tool.point" onclick="executeCommand('POINT')">
         <svg viewBox="0 0 24 24">
           <line x1="12" y1="5" x2="12" y2="19"/>
           <line x1="5" y1="12" x2="19" y2="12"/>
@@ -2187,7 +2204,7 @@
           <line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="3,2"/>
         </svg>
       </button>
-      <button class="tool-btn" id="tube-def-btn" title="Définir Ø et RM du tube" onclick="toggleTubeDefPopup(event)">
+      <button class="tool-btn" id="tube-def-btn" title="Définir Ø et RM du tube" data-i18n-title="tool.tube_def" onclick="toggleTubeDefPopup(event)">
         <svg viewBox="0 0 24 24" fill="none">
           <line x1="3" y1="6" x2="21" y2="6" stroke-width="1.5"/>
           <line x1="3" y1="18" x2="21" y2="18" stroke-width="1.5"/>
@@ -2196,12 +2213,12 @@
         </svg>
       </button>
       <div style="display:flex;gap:1px;margin:0 2px" id="tube-ref-btns">
-        <button class="tool-btn tube-ref-btn active" id="tubref-axe" title="Tracé sur axe (TUBREF AXE)" onclick="executeCommand('TUBREF AXE')" style="font-size:9px;padding:0 4px;height:22px">AXE</button>
-        <button class="tool-btn tube-ref-btn" id="tubref-ext" title="Tracé paroi extérieure (TUBREF EXT)" onclick="executeCommand('TUBREF EXT')" style="font-size:9px;padding:0 4px;height:22px">EXT</button>
-        <button class="tool-btn tube-ref-btn" id="tubref-int" title="Tracé paroi intérieure (TUBREF INT)" onclick="executeCommand('TUBREF INT')" style="font-size:9px;padding:0 4px;height:22px">INT</button>
+        <button class="tool-btn tube-ref-btn active" id="tubref-axe" title="Tracé sur axe (TUBREF AXE)" data-i18n-title="tool.tubref_axe" onclick="executeCommand('TUBREF AXE')" style="font-size:9px;padding:0 4px;height:22px">AXE</button>
+        <button class="tool-btn tube-ref-btn" id="tubref-ext" title="Tracé paroi extérieure (TUBREF EXT)" data-i18n-title="tool.tubref_ext" onclick="executeCommand('TUBREF EXT')" style="font-size:9px;padding:0 4px;height:22px">EXT</button>
+        <button class="tool-btn tube-ref-btn" id="tubref-int" title="Tracé paroi intérieure (TUBREF INT)" data-i18n-title="tool.tubref_int" onclick="executeCommand('TUBREF INT')" style="font-size:9px;padding:0 4px;height:22px">INT</button>
       </div>
       <div class="tb-sep"></div>
-      <button class="tool-btn" data-tool="text_place" title="Texte (T)" onclick="executeCommand('TEXT')">
+      <button class="tool-btn" data-tool="text_place" title="Texte (TX)" data-i18n-title="tool.text" onclick="executeCommand('TEXT')">
         <svg viewBox="0 0 24 24" stroke="none"><text x="3" y="19" font-size="17" fill="currentColor" font-family="serif" font-style="italic">T</text></svg>
       </button>
       <button class="tool-btn" data-tool="leader" title="Repère (LEADER)" data-i18n-title="tool.leader" onclick="executeCommand('LEADER')">
@@ -2263,7 +2280,7 @@
           <circle cx="8"  cy="18" r="1.2"/><circle cx="12" cy="18" r="1.2"/><circle cx="16" cy="18" r="1.2"/>
         </svg>
       </button>
-      <button class="tool-btn" data-tool="matchprop" title="Copier les propriétés (MA)" onclick="executeCommand('MATCHPROP')">
+      <button class="tool-btn" data-tool="matchprop" title="Copier les propriétés (MA)" data-i18n-title="tool.matchprop" onclick="executeCommand('MATCHPROP')">
         <svg viewBox="0 0 24 24" fill="none">
           <path d="M16 3l5 5-8.5 8.5-5-5L16 3z"/>
           <line x1="9" y1="8.5" x2="15.5" y2="15"/>
@@ -2280,19 +2297,19 @@
       <span class="tb-title" data-i18n="tb.snap">Accrochage</span><span class="tb-close" onclick="hideToolbar('tb-snap')">×</span>
     </div>
     <div class="tb-buttons">
-      <button class="tool-btn" id="snap-btn" title="Grille Snap (F3)" onclick="toggleSnap()">
+      <button class="tool-btn" id="snap-btn" title="Accrochage grille (F9)" data-i18n-title="tool.snap" onclick="toggleSnap()">
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1" stroke-dasharray="2"/><circle cx="9" cy="9" r="1.5"/><circle cx="15" cy="9" r="1.5"/><circle cx="9" cy="15" r="1.5"/><circle cx="15" cy="15" r="1.5"/></svg>
       </button>
-      <button class="tool-btn" id="osnap-btn" title="OSNAP (F4)" onclick="toggleOsnap()">
+      <button class="tool-btn" id="osnap-btn" title="Accrochage objets (F3)" data-i18n-title="tool.osnap" onclick="toggleOsnap()">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="22"/><line x1="2" y1="12" x2="8" y2="12"/><line x1="16" y1="12" x2="22" y2="12"/></svg>
       </button>
-      <button class="tool-btn" id="ortho-btn" title="Ortho (F8)" onclick="toggleOrtho()">
+      <button class="tool-btn" id="ortho-btn" title="Ortho (F8)" data-i18n-title="tool.ortho" onclick="toggleOrtho()">
         <svg viewBox="0 0 24 24"><path d="M4 20V8h12"/></svg>
       </button>
-      <button class="tool-btn" id="polar-btn" title="Polaire (F10)" onclick="togglePolar()">
+      <button class="tool-btn" id="polar-btn" title="Polaire (F10)" data-i18n-title="tool.polar" onclick="togglePolar()">
         <svg viewBox="0 0 24 24"><path d="M12 12l7-7M12 12l-2-9M12 12l-9-2M12 12L5 5" stroke-dasharray="2"/><circle cx="12" cy="12" r="2"/></svg>
       </button>
-      <button class="tool-btn" id="grid-btn" title="Grille (G)" onclick="toggleGridVis()">
+      <button class="tool-btn" id="grid-btn" title="Grille" data-i18n-title="tool.grid" onclick="toggleGridVis()">
         <svg viewBox="0 0 24 24"><path d="M3 3v18h18M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
       </button>
     </div>
@@ -2311,7 +2328,7 @@
       <button class="tool-btn" data-tool="zoomwin" title="Zoom Fenêtre" data-i18n-title="tool.zoom_window" onclick="setTool('zoomwin');termPrint('ZOOM FENÊTRE : cliquez le 1er coin','info')">
         <svg viewBox="0 0 24 24"><rect x="4" y="4" width="12" height="12" stroke-dasharray="2.5" fill="none"/><path d="M14 14L20 20"/></svg>
       </button>
-      <button class="tool-btn" data-tool="pan" title="Panoramique" onclick="setTool('pan')">
+      <button class="tool-btn" data-tool="pan" title="Panoramique (P)" data-i18n-title="tool.pan" onclick="setTool('pan')">
         <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="3" fill="none"/></svg>
       </button>
       <button class="tool-btn" id="theme-btn" title="Basculer le thème (THEME)" data-i18n-title="tool.theme" onclick="executeCommand('THEME')">
@@ -2402,6 +2419,29 @@
 
       <div class="ribbon-panel">
         <div class="ribbon-panel-buttons">
+          <button class="tool-btn rb-btn rb-big" title="Ouvrir (Ctrl+O)" data-i18n-title="tool.open" onclick="cmdOpen()">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M3 7a1 1 0 011-1h5l2 2h9a1 1 0 011 1v3"/><path d="M3 7v11a1 1 0 001 1h15.2a1 1 0 00.96-.72L23 10H6.2a1 1 0 00-.96.72L3 18"/></svg>
+            <span class="rb-label" data-i18n="ribbon.btn.open">Ouvrir</span>
+          </button>
+          <button class="tool-btn rb-btn rb-big" title="Sauvegarder (Ctrl+S)" data-i18n-title="tool.save" onclick="cmdSave()">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 4h12l4 4v12a0 0 0 010 0H4a0 0 0 010 0V4z"/><rect x="8" y="4" width="8" height="5" rx="1"/><rect x="7" y="13" width="10" height="7" rx="1"/></svg>
+            <span class="rb-label" data-i18n="ribbon.btn.save">Enregistrer</span>
+          </button>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-small" title="Exporter PDF (Ctrl+P)" data-i18n-title="tool.print" onclick="openPrintDialog()">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M7 9V3h10v6"/><path d="M7 18H5a2 2 0 01-2-2v-5a2 2 0 012-2h14a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" title="Assistant IA Ollama" data-i18n-title="tool.ai" onclick="toggleAiPanel()">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="8" width="16" height="11" rx="2"/><line x1="12" y1="4" x2="12" y2="8"/><circle cx="12" cy="3" r="1.4" fill="currentColor"/><circle cx="9" cy="13" r="1.4" fill="currentColor"/><circle cx="15" cy="13" r="1.4" fill="currentColor"/><line x1="9.5" y1="16.5" x2="14.5" y2="16.5"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="ribbon-panel-title" data-i18n="ribbon.panel.file">Fichier</div>
+      </div>
+      <div class="ribbon-sep"></div>
+
+      <div class="ribbon-panel">
+        <div class="ribbon-panel-buttons">
           <button class="tool-btn rb-btn rb-big" data-tool="line" title="Ligne (L)" data-i18n-title="tool.line" onclick="setTool('line')">
             <svg viewBox="0 0 24 24"><line x1="5" y1="19" x2="19" y2="5"/></svg>
             <span class="rb-label" data-i18n="ribbon.btn.line">Ligne</span>
@@ -2433,7 +2473,7 @@
             <button class="tool-btn rb-btn rb-small" data-tool="ellipse" title="Ellipse (EL)" data-i18n-title="tool.ellipse" onclick="executeCommand('ELLIPSE')">
               <svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="6"/></svg>
             </button>
-            <button class="tool-btn rb-btn rb-small" data-tool="spline" title="Spline (SPL)" onclick="setTool('spline');termPrint('SPLINE: Cliquez les points de passage — C=Clore  Echap=Finir','info')">
+            <button class="tool-btn rb-btn rb-small" data-tool="spline" title="Spline (SPL)" data-i18n-title="tool.spline" onclick="setTool('spline');termPrint('SPLINE: Cliquez les points de passage — C=Clore  Echap=Finir','info')">
               <svg viewBox="0 0 24 24"><path d="M4,18 C6,18 7,8 10,8 S16,14 20,4" fill="none"/></svg>
             </button>
             <button class="tool-btn rb-btn rb-small" data-tool="hatch" title="Hachures (H)" data-i18n-title="tool.hatch" onclick="executeCommand('HATCH')">
@@ -2456,17 +2496,26 @@
                 <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
               </svg>
             </button>
-            <button class="tool-btn rb-btn rb-small" data-tool="ray" title="Demi-droite (RAY)" onclick="executeCommand('RAY')">
+            <button class="tool-btn rb-btn rb-small" data-tool="ray" title="Demi-droite" data-i18n-title="tool.ray" onclick="executeCommand('RAY')">
               <svg viewBox="0 0 24 24" fill="none">
                 <circle cx="4" cy="12" r="2" fill="currentColor"/>
                 <line x1="4" y1="12" x2="22" y2="12"/>
                 <polyline points="19,9 22,12 19,15"/>
               </svg>
             </button>
-            <button class="tool-btn rb-btn rb-small" data-tool="point" title="Point (PT)" onclick="executeCommand('POINT')">
+            <button class="tool-btn rb-btn rb-small" data-tool="point" title="Point (PT)" data-i18n-title="tool.point" onclick="executeCommand('POINT')">
               <svg viewBox="0 0 24 24">
                 <line x1="12" y1="5" x2="12" y2="19"/>
                 <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+          </div>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-small" data-tool="ray_rev" title="Demi-droite inverse (RAY_REV)" data-i18n-title="tool.ray_rev" onclick="executeCommand('RAY_REV')">
+              <svg viewBox="0 0 24 24" fill="none">
+                <line x1="2" y1="12" x2="20" y2="12"/>
+                <polyline points="5,9 2,12 5,15"/>
+                <circle cx="20" cy="12" r="2" fill="currentColor"/>
               </svg>
             </button>
           </div>
@@ -2616,7 +2665,14 @@
                 <line x1="8" y1="12" x2="2" y2="12"/><polygon points="4,10 4,14 1,12" fill="currentColor"/>
               </svg>
             </button>
-            <button class="tool-btn rb-btn rb-small" title="Supprimer (Del)" onclick="CMD.ERASE.exec()">
+            <button class="tool-btn rb-btn rb-small" data-tool="divide_pick" title="Diviser (DIV)" data-i18n-title="tool.divide" onclick="executeCommand('DIVIDE')">
+              <svg viewBox="0 0 24 24">
+                <line x1="4" y1="12" x2="20" y2="12"/>
+                <circle cx="9" cy="12" r="2" fill="currentColor" stroke="none"/>
+                <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
+              </svg>
+            </button>
+            <button class="tool-btn rb-btn rb-small" title="Supprimer (Suppr)" data-i18n-title="tool.erase" onclick="CMD.ERASE.exec()">
               <svg viewBox="0 0 24 24">
                 <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
                 <path d="M10 11v5M14 11v5"/>
@@ -2691,14 +2747,14 @@
                 <circle cx="8"  cy="18" r="1.2"/><circle cx="12" cy="18" r="1.2"/><circle cx="16" cy="18" r="1.2"/>
               </svg>
             </button>
-            <button class="tool-btn rb-btn rb-small" title="Copier les propriétés (MA)" onclick="executeCommand('MATCHPROP')">
+            <button class="tool-btn rb-btn rb-small" title="Copier les propriétés (MA)" data-i18n-title="tool.matchprop" onclick="executeCommand('MATCHPROP')">
               <svg viewBox="0 0 24 24" fill="none">
                 <path d="M16 3l5 5-8.5 8.5-5-5L16 3z"/>
                 <line x1="9" y1="8.5" x2="15.5" y2="15"/>
                 <path d="M6.5 15.5c-1.7 0-2.8 1.3-2.8 3.1 0 .6-.5 1.1-1.7 1.3.9.9 2.3 1.4 3.6 1.4 2 0 3.4-1.4 3.4-3.3 0-1.6-1.1-2.5-2.5-3.5z" fill="currentColor" stroke="none"/>
               </svg>
             </button>
-            <button class="tool-btn rb-btn rb-small" title="Axes de cercle (DIMCENTER)" onclick="executeCommand('DIMCENTER')">
+            <button class="tool-btn rb-btn rb-small" title="Axes de cercle (DIMCENTER)" data-i18n-title="tool.dimcenter" onclick="executeCommand('DIMCENTER')">
               <svg viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="6" fill="none"/>
                 <line x1="2" y1="12" x2="22" y2="12" stroke-dasharray="4,2"/>
@@ -2708,6 +2764,36 @@
           </div>
         </div>
         <div class="ribbon-panel-title" data-i18n="ribbon.panel.utilities">Utilitaires</div>
+      </div>
+      <div class="ribbon-sep"></div>
+
+      <div class="ribbon-panel">
+        <div class="ribbon-panel-buttons">
+          <button class="tool-btn rb-btn rb-big" data-tool="tube" title="Tube 2 traits (TUBE)" data-i18n-title="tool.tube" onclick="executeCommand('TUBE')">
+            <svg viewBox="0 0 24 24">
+              <line x1="3" y1="7" x2="21" y2="7"/>
+              <line x1="3" y1="17" x2="21" y2="17"/>
+              <line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="3,2"/>
+            </svg>
+            <span class="rb-label" data-i18n="tool.tube">Tube 2 traits (TUBE)</span>
+          </button>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-small" data-mirror="tube-def-btn" title="Définir Ø et RM du tube" data-i18n-title="tool.tube_def" onclick="toggleTubeDefPopup(event)">
+              <svg viewBox="0 0 24 24" fill="none">
+                <line x1="3" y1="6" x2="21" y2="6" stroke-width="1.5"/>
+                <line x1="3" y1="18" x2="21" y2="18" stroke-width="1.5"/>
+                <line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="3,2" stroke-width="1"/>
+                <text x="8" y="12.5" font-size="5.5" fill="currentColor" stroke="none" font-family="monospace" dominant-baseline="middle">Ø RM</text>
+              </svg>
+            </button>
+          </div>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-tubref active" data-mirror="tubref-axe" title="Tracé sur axe (TUBREF AXE)" data-i18n-title="tool.tubref_axe" onclick="executeCommand('TUBREF AXE')">AXE</button>
+            <button class="tool-btn rb-btn rb-tubref" data-mirror="tubref-ext" title="Tracé paroi extérieure (TUBREF EXT)" data-i18n-title="tool.tubref_ext" onclick="executeCommand('TUBREF EXT')">EXT</button>
+            <button class="tool-btn rb-btn rb-tubref" data-mirror="tubref-int" title="Tracé paroi intérieure (TUBREF INT)" data-i18n-title="tool.tubref_int" onclick="executeCommand('TUBREF INT')">INT</button>
+          </div>
+        </div>
+        <div class="ribbon-panel-title" data-i18n="ribbon.panel.tube">Tube</div>
       </div>
     </div>
 
@@ -2758,7 +2844,7 @@
 
       <div class="ribbon-panel">
         <div class="ribbon-panel-buttons">
-          <button class="tool-btn rb-btn rb-big" data-tool="text_place" title="Texte (T)" onclick="executeCommand('TEXT')">
+          <button class="tool-btn rb-btn rb-big" data-tool="text_place" title="Texte (TX)" data-i18n-title="tool.text" onclick="executeCommand('TEXT')">
             <svg viewBox="0 0 24 24" stroke="none"><text x="3" y="19" font-size="17" fill="currentColor" font-family="serif" font-style="italic">T</text></svg>
             <span class="rb-label" data-i18n="ribbon.btn.text">Texte</span>
           </button>
@@ -2788,7 +2874,7 @@
             <svg viewBox="0 0 24 24"><rect x="4" y="4" width="12" height="12" stroke-dasharray="2.5" fill="none"/><path d="M14 14L20 20"/></svg>
             <span class="rb-label" data-i18n="ribbon.btn.zoom_window">Zoom fenêtre</span>
           </button>
-          <button class="tool-btn rb-btn rb-big" data-tool="pan" title="Panoramique" onclick="setTool('pan')">
+          <button class="tool-btn rb-btn rb-big" data-tool="pan" title="Panoramique (P)" data-i18n-title="tool.pan" onclick="setTool('pan')">
             <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="3" fill="none"/></svg>
             <span class="rb-label" data-i18n="ribbon.btn.pan">Panoramique</span>
           </button>
@@ -2798,6 +2884,37 @@
           </button>
         </div>
         <div class="ribbon-panel-title" data-i18n="ribbon.panel.view">Vue</div>
+      </div>
+      <div class="ribbon-sep"></div>
+
+      <div class="ribbon-panel">
+        <div class="ribbon-panel-buttons">
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-med" data-mirror="snap-btn" title="Accrochage grille (F9)" data-i18n-title="tool.snap" onclick="toggleSnap()">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1" stroke-dasharray="2"/><circle cx="9" cy="9" r="1.5"/><circle cx="15" cy="9" r="1.5"/><circle cx="9" cy="15" r="1.5"/><circle cx="15" cy="15" r="1.5"/></svg>
+              <span class="rb-label" data-i18n="ribbon.btn.snap">Magnétisme</span>
+            </button>
+            <button class="tool-btn rb-btn rb-med" data-mirror="osnap-btn" title="Accrochage objets (F3)" data-i18n-title="tool.osnap" onclick="toggleOsnap()">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="22"/><line x1="2" y1="12" x2="8" y2="12"/><line x1="16" y1="12" x2="22" y2="12"/></svg>
+              <span class="rb-label" data-i18n="ribbon.btn.osnap">Objets</span>
+            </button>
+            <button class="tool-btn rb-btn rb-med" data-mirror="grid-btn" title="Grille" data-i18n-title="tool.grid" onclick="toggleGridVis()">
+              <svg viewBox="0 0 24 24"><path d="M3 3v18h18M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+              <span class="rb-label" data-i18n="ribbon.btn.grid">Grille</span>
+            </button>
+          </div>
+          <div class="rb-col">
+            <button class="tool-btn rb-btn rb-med" data-mirror="ortho-btn" title="Ortho (F8)" data-i18n-title="tool.ortho" onclick="toggleOrtho()">
+              <svg viewBox="0 0 24 24"><path d="M4 20V8h12"/></svg>
+              <span class="rb-label" data-i18n="ribbon.btn.ortho">Ortho</span>
+            </button>
+            <button class="tool-btn rb-btn rb-med" data-mirror="polar-btn" title="Polaire (F10)" data-i18n-title="tool.polar" onclick="togglePolar()">
+              <svg viewBox="0 0 24 24"><path d="M12 12l7-7M12 12l-2-9M12 12l-9-2M12 12L5 5" stroke-dasharray="2"/><circle cx="12" cy="12" r="2"/></svg>
+              <span class="rb-label" data-i18n="ribbon.btn.polar">Polaire</span>
+            </button>
+          </div>
+        </div>
+        <div class="ribbon-panel-title" data-i18n="ribbon.panel.snap">Accrochage</div>
       </div>
     </div>
 
@@ -2862,6 +2979,7 @@
       <div class="overlay-badge" id="zoom-badge">1:1</div>
     </div>
     <div id="dynamic-input">
+      <span class="di-abs-badge" id="di-abs-badge" title="Coordonnées absolues actives (X,Y depuis l'origine, pas relatif au dernier point)" data-i18n-title="di.abs_badge_title">A</span>
       <div class="di-field active" id="di-dist-field">
         <span class="di-label" id="di-label1">D</span>
         <input class="di-input" id="di-dist" placeholder="0.0" tabindex="1">
@@ -3480,6 +3598,7 @@ const USER_PREFS = {
   ortho: false,
   polar: true,
   polarAngle: 15,
+  coordAbsolute: false,
   rightDragPan: false,
   tubeDiameter: 40,
   tubeBendRadius: 67,
@@ -3531,6 +3650,7 @@ const S = {
   snap: true,
   ortho: false,
   polar: true,
+  coordAbsolute: false, // bulle dynamique en X/Y absolu pour tous les points (pas seulement le premier)
   rightDragPan: false, // glisser bouton droit pour déplacer la vue (clic droit reste Entrée)
   polarAngle: 15, // degrees increment for polar tracking
   gridVis: true,
@@ -4744,11 +4864,15 @@ function parseDistanceInput(raw, basePoint, mouseWorld) {
   }
 
   // Relatif: @50,30 ou 50,30 ou 100+5,200/2
-  const rel = raw.match(/^@?\s*(.+),\s*(.+)$/);
+  // Option "coordonnées absolues" : sans @, x,y est lu en absolu (convention AutoCAD)
+  const rel = raw.match(/^(@?)\s*(.+),\s*(.+)$/);
   if (rel) {
-    const ex = safeEvalMath(rel[1]) ?? parseFloat(rel[1]);
-    const ey = safeEvalMath(rel[2]) ?? parseFloat(rel[2]);
-    if (isFinite(ex) && isFinite(ey)) return [basePoint[0] + ex, basePoint[1] + ey];
+    const ex = safeEvalMath(rel[2]) ?? parseFloat(rel[2]);
+    const ey = safeEvalMath(rel[3]) ?? parseFloat(rel[3]);
+    if (isFinite(ex) && isFinite(ey)) {
+      if (!rel[1] && S.coordAbsolute) return [ex, ey];
+      return [basePoint[0] + ex, basePoint[1] + ey];
+    }
   }
 
   // Distance seule ou expression: 200, 105.3+35, 2250/2
@@ -7264,7 +7388,8 @@ function applyTubeDef() {
   if (!isNaN(rm) && rm > 0) { S.tubeBendRadius = rm; }
   termPrint('TUBE  Ø' + S.tubeDiameter + '  RM' + S.tubeBendRadius + ' mm', 'success');
   document.getElementById('tube-def-popup').classList.remove('show');
-  document.getElementById('tube-def-btn').title = 'Ø' + S.tubeDiameter + '  RM' + S.tubeBendRadius;
+  document.querySelectorAll('#tube-def-btn,[data-mirror="tube-def-btn"]')
+    .forEach(b => b.title = 'Ø' + S.tubeDiameter + '  RM' + S.tubeBendRadius);
   setTimeout(smartFocus, 0);
 }
 
@@ -7954,10 +8079,7 @@ function finishTube() {
 
 function updateTubeRefUI() {
   const ref = S.tubeRef || 'axe';
-  ['axe','ext','int'].forEach(r => {
-    const btn = document.getElementById('tubref-' + r);
-    if (btn) btn.classList.toggle('active', r === ref);
-  });
+  ['axe','ext','int'].forEach(r => setBtnActive('tubref-' + r, r === ref));
 }
 
 function flattenPolyPoints(pts, closed) {
@@ -10533,15 +10655,57 @@ const diLabel1 = document.getElementById('di-label1');
 const diLabel2 = document.getElementById('di-label2');
 const diUnit1 = document.getElementById('di-unit1');
 const diUnit2 = document.getElementById('di-unit2');
+const diAbsBadge = document.getElementById('di-abs-badge');
+
+// Outils "placement en un clic" : un seul point, pas de second point à saisir
+// (POINT, portes/prises/interrupteurs/fenêtres, texte, insertion de bloc).
+// Partagé par getDIMode(), confirmDynamicInput() et le parsing terminal.
+const PLACEMENT_TOOLS = ['point','door','outlet','switch_place','window_place','text_place','insert_place'];
+
+// Outils dont le 1er point se saisit dans la bulle DI (X,Y).
+// LISTE UNIQUE : getDIMode(), le routage clavier (frappe d'un chiffre / Tab) et
+// diFirstPointReady() s'appuient dessus. Elle était auparavant recopiée dans le
+// handler keydown global en oubliant rectcenter/polygon/ellipse/spline/xline/ray —
+// ces outils affichaient donc la bulle sans jamais y router la frappe.
+const DI_POINT_TOOLS = ['line','xline','ray','ray_rev','rect','rectcenter','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube','ellipse','polygon', ...PLACEMENT_TOOLS];
 
 // Returns the input mode for the current tool and drawing state
 function getDIMode() {
-  const drawingTools = ['line','xline','ray','ray_rev','rect','rectcenter','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube','ellipse','polygon'];
   // First point: show X,Y — sauf DEPUIS actif, où D/A (relatif au point de référence)
-  if (!S.drawing && drawingTools.includes(S.tool)) return S._fromBase ? 'polar' : 'xy';
+  if (!S.drawing && DI_POINT_TOOLS.includes(S.tool)) return S._fromBase ? 'polar' : 'xy';
+  // Option "coordonnées absolues" : X/Y pour tous les points. Pour RECT/RECTCENTER
+  // le 2e point devient le coin opposé en absolu au lieu de Largeur×Hauteur.
+  // DEPUIS garde la priorité, et CIRCLE reste en rayon (comme AutoCAD).
+  const absTools = ['line','wall','leader','polyline','cable','spline','tube','arc','rect','rectcenter'];
+  if (S.coordAbsolute && !S._fromBase && absTools.includes(S.tool)) return 'xy';
   if (S.tool === 'rect' || S.tool === 'rectcenter') return 'wh'; // Width × Height
   if (S.tool === 'circle') return 'radius'; // Radius only
+  if (S._fromBase) return 'polar'; // DEPUIS prime toujours sur le mode absolu
   return 'polar'; // Distance + Angle (line, polyline, wall, etc.)
+}
+
+// Position de la bulle DI près du curseur. Les coordonnées sont relatives à
+// .canvas-area (parent positionné de #dynamic-input), comme S.mouseScreen.
+// Le clamp garde la bulle dans le canevas : sans lui, une bulle affichée alors
+// que la souris n'a jamais survolé le canevas (S.mouseScreen resté à [0,0], ex:
+// outil choisi au bouton sans bouger la souris) se retrouvait sous le ruban,
+// invisible et impossible à cliquer.
+function _diContainerPos(sx, sy) {
+  const w = diContainer.offsetWidth || 160;
+  const h = diContainer.offsetHeight || 30;
+  const x = Math.max(0, Math.min(sx + 20, canvas.clientWidth - w));
+  const y = Math.max(0, Math.min(sy - 45, canvas.clientHeight - h));
+  return [x, y];
+}
+
+// La bulle DI est-elle la bonne cible du clavier pour le point à venir ?
+// Vrai dès qu'un outil de dessin attend son 1er point — sauf POLYGONE à l'étape
+// « nombre de côtés », qui se saisit au terminal avant le centre.
+function diFirstPointReady() {
+  if (S.drawing || S.gripEdit) return false;
+  if (!DI_POINT_TOOLS.includes(S.tool)) return false;
+  if (S.tool === 'polygon' && S._polyStep !== 1) return false;
+  return true;
 }
 
 function updateDynamicInput() {
@@ -10561,18 +10725,31 @@ function updateDynamicInput() {
 
   const mode = getDIMode();
 
-  // === FIRST POINT MODE (X,Y) ===
+  // Indicateur "coordonnées absolues" — visible dès que l'option est active et
+  // que la bulle affiche X,Y (sinon rien à signaler : D/A n'est jamais "absolu").
+  const absActive = S.coordAbsolute && mode === 'xy';
+  diContainer.classList.toggle('abs-mode', absActive);
+  diAbsBadge.classList.toggle('visible', absActive);
+
+  // === X,Y MODE (premier point, ou tout point si "coordonnées absolues" actif) ===
   if (mode === 'xy') {
+    const hasLast = S.drawing && S.drawPoints.length > 0;
     diLabel1.textContent = 'X'; diUnit1.textContent = '';
     diLabel2.textContent = 'Y'; diUnit2.textContent = '';
     diAngleField.style.display = '';
-    cmdInput.placeholder = '⟶ Premier point: X,Y (ex: 100,200) ou cliquez...';
+    cmdInput.placeholder = hasLast
+      ? '⟶ Point suivant: X,Y absolu (ex: 100,200) ou cliquez...'
+      : '⟶ Premier point: X,Y (ex: 100,200) ou cliquez...';
 
     // Update with snapped/osnap coords under cursor
     if (!S.diLocked) {
       let [mx, my] = S.mouseWorld;
       if (S.currentOsnap) { mx = S.currentOsnap.x; my = S.currentOsnap.y; }
       else { [mx, my] = snapToGrid(mx, my); }
+      if (hasLast) {
+        const last = S.drawPoints[S.drawPoints.length - 1];
+        [mx, my] = applyConstraint(last[0], last[1], mx, my);
+      }
       diDist.value = mx.toFixed(1);
       diAngle.value = my.toFixed(1);
       if (document.activeElement === diDist) diDist.select();
@@ -10580,8 +10757,7 @@ function updateDynamicInput() {
     }
 
     diContainer.classList.add('visible');
-    diContainer.style.left = (S.mouseScreen[0] + 20) + 'px';
-    diContainer.style.top = (S.mouseScreen[1] - 45) + 'px';
+    [diContainer.style.left, diContainer.style.top] = _diContainerPos(S.mouseScreen[0], S.mouseScreen[1]).map(v => v + 'px');
     diDistField.classList.toggle('active', S.diField === 'dist');
     diAngleField.classList.toggle('active', S.diField === 'angle');
     if (pi) pi.style.display = 'none';
@@ -10657,8 +10833,7 @@ function updateDynamicInput() {
   }
 
   diContainer.classList.add('visible');
-  diContainer.style.left = (S.mouseScreen[0] + 20) + 'px';
-  diContainer.style.top = (S.mouseScreen[1] - 45) + 'px';
+  [diContainer.style.left, diContainer.style.top] = _diContainerPos(S.mouseScreen[0], S.mouseScreen[1]).map(v => v + 'px');
   diDistField.classList.toggle('active', S.diField === 'dist');
   diAngleField.classList.toggle('active', S.diField === 'angle');
   if ((mode !== 'polar' || !S.polar || S.ortho) && pi) pi.style.display = 'none';
@@ -10671,6 +10846,23 @@ diDist.addEventListener('focus', () => { S.diField = 'dist'; diDist.select(); })
 diAngle.addEventListener('focus', () => { S.diField = 'angle'; diAngle.select(); });
 diDist.addEventListener('blur', (ev) => { if (ev.relatedTarget !== diAngle) S.diLocked = false; });
 diAngle.addEventListener('blur', (ev) => { if (ev.relatedTarget !== diDist) S.diLocked = false; });
+
+// La bulle DI garde le focus dès qu'un outil attend son 1er point, pour qu'on
+// puisse taper la coordonnée sans clic. Mais une lettre n'est jamais une
+// coordonnée : c'est une commande (L, RC, DEPUIS…) → on rend la main au terminal
+// sans perdre la frappe. Les mots-clés lettres de la bulle (D du cercle, I/C du
+// polygone) arrivent tous après le 1er point, donc diFirstPointReady() les exclut.
+function _diLetterToTerminal(ev) {
+  if (ev.ctrlKey || ev.metaKey || ev.altKey) return false;
+  if (!/^[a-zA-Z]$/.test(ev.key)) return false;
+  if (S.diLocked || !diFirstPointReady()) return false;
+  ev.preventDefault(); ev.stopPropagation();
+  diDist.blur(); diAngle.blur();
+  cmdInput.focus();
+  cmdInput.value += ev.key;
+  cmdInput.dispatchEvent(new Event('input'));
+  return true;
+}
 
 diDist.addEventListener('keydown', (ev) => {
   if (ev.key === 'Tab') {
@@ -10702,6 +10894,8 @@ diDist.addEventListener('keydown', (ev) => {
     S.diLocked = false; diDist.blur(); diAngle.blur();
     CMD.ERASE.exec();
     setTimeout(smartFocus, 0);
+  } else if (_diLetterToTerminal(ev)) {
+    // rien de plus : la frappe est repartie dans la barre de commande
   } else if (ev.key.length === 1 || ev.key === 'Backspace' || ev.key === 'Delete') {
     S.diLocked = true; // l'utilisateur commence à taper → verrouiller
   }
@@ -10728,31 +10922,57 @@ diAngle.addEventListener('keydown', (ev) => {
     S.diLocked = false; diDist.blur(); diAngle.blur();
     CMD.ERASE.exec();
     setTimeout(smartFocus, 0);
+  } else if (_diLetterToTerminal(ev)) {
+    // rien de plus : la frappe est repartie dans la barre de commande
   } else if (ev.key.length === 1 || ev.key === 'Backspace' || ev.key === 'Delete') {
     S.diLocked = true;
   }
 });
+
+// Dans un champ X/Y, la virgule sépare X de Y (convention CAO) : taper « 100,200 »
+// d'un seul coup remplit les deux valeurs, sans passer par Tab. Les préfixes du
+// terminal sont acceptés : #absolu, @relatif à basePoint, et d<a polaire.
+// Retourne null si le champ ne contient qu'une valeur X (saisie X puis Tab puis Y).
+function readXYPair(basePoint) {
+  const raw = diDist.value.trim();
+  if (!/[,<]/.test(raw)) return null;
+  if (raw.includes('<') || raw.startsWith('@')) return parseDistanceInput(raw, basePoint, S.mouseWorld);
+  const m = raw.replace(/^#/, '').match(/^([^,]+),(.+)$/);
+  if (!m) return null;
+  const x = safeEvalMath(m[1]) ?? parseFloat(m[1]);
+  const y = safeEvalMath(m[2]) ?? parseFloat(m[2]);
+  return (isFinite(x) && isFinite(y)) ? [x, y] : null;
+}
 
 function confirmDynamicInput() {
   S.osnapAcquired = []; // saisie de coordonnées = équivalent d'un clic : reset OTRACK
   const mode = getDIMode();
 
   // === FIRST POINT (X,Y) ===
-  if (mode === 'xy') {
-    const x = parseFloat(diDist.value);
-    const y = parseFloat(diAngle.value);
+  if (mode === 'xy' && !S.drawing) {
+    const pair = readXYPair([0, 0]);
+    const x = pair ? pair[0] : parseFloat(diDist.value);
+    const y = pair ? pair[1] : parseFloat(diAngle.value);
     if (isNaN(x) || isNaN(y)) { termPrint('Coordonnées invalides', 'error'); return; }
     S.diLocked = false; diDist.blur(); diAngle.blur();
+    if (PLACEMENT_TOOLS.includes(S.tool)) {
+      // Un seul point à placer (POINT, porte/prise/interrupteur/fenêtre, texte,
+      // insertion) : pas de second point à attendre, on place directement.
+      handleClick(x, y, {shiftKey:false}, x, y);
+      render(); setTimeout(smartFocus, 0); return;
+    }
     // Start drawing with this point
     S.drawing = true;
     S.drawPoints = [[x, y]];
     S.awaitingInput = true;
     if (S.tool === 'tube') S.tubePoints = [[x, y]];
+    if (S.tool === 'polygon') { S._polyCenter = [x, y]; S._polyStep = 2; }
     termPrint('Point 1: (' + x.toFixed(1) + ', ' + y.toFixed(1) + ')', 'info');
-    if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
+    if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint(S.coordAbsolute ? 'Coin opposé X,Y absolu (ex: 100,100) ou cliquez' : 'Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
     else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
     else if (S.tool === 'dim_angular') termPrint('DIMANGULAR: cliquez la 1ère ligne', 'info');
     else if (S.tool === 'tube') termPrint('Longueur (ex: 500) ou 500<45 — Entrée pour terminer', 'warning');
+    else if (S.tool === 'polygon') termPrint('POLYGONE ' + S._polyNSides + ' côtés [' + S._polyMode + '] — rayon (clic ou valeur)  |  I=Inscrit  C=Circonsrit', 'info');
     else termPrint('2ème point ou longueur (ex: 150, 100<45, 100,50)', 'warning');
     render(); setTimeout(smartFocus, 0); return;
   }
@@ -10767,15 +10987,21 @@ function confirmDynamicInput() {
     const y = S._fromBase[1] + d * Math.sin(aRad);
     S._fromBase = null;
     S.diLocked = false; diDist.blur(); diAngle.blur();
+    if (PLACEMENT_TOOLS.includes(S.tool)) {
+      handleClick(x, y, {shiftKey:false}, x, y);
+      render(); setTimeout(smartFocus, 0); return;
+    }
     S.drawing = true;
     S.drawPoints = [[x, y]];
     S.awaitingInput = true;
     if (S.tool === 'tube') S.tubePoints = [[x, y]];
+    if (S.tool === 'polygon') { S._polyCenter = [x, y]; S._polyStep = 2; }
     termPrint('Point 1 (DEPUIS): (' + x.toFixed(1) + ', ' + y.toFixed(1) + ')', 'info');
-    if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
+    if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint(S.coordAbsolute ? 'Coin opposé X,Y absolu (ex: 100,100) ou cliquez' : 'Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
     else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
     else if (S.tool === 'dim_angular') termPrint('DIMANGULAR: cliquez la 1ère ligne', 'info');
     else if (S.tool === 'tube') termPrint('Longueur (ex: 500) ou 500<45 — Entrée pour terminer', 'warning');
+    else if (S.tool === 'polygon') termPrint('POLYGONE ' + S._polyNSides + ' côtés [' + S._polyMode + '] — rayon (clic ou valeur)  |  I=Inscrit  C=Circonsrit', 'info');
     else termPrint('2ème point ou longueur (ex: 150, 100<45, 100,50)', 'warning');
     render(); setTimeout(smartFocus, 0); return;
   }
@@ -10904,6 +11130,15 @@ function confirmDynamicInput() {
     ny = base[1] + r * Math.sin(angle);
     if (S.circleDiamMode) { termPrint('→ Diamètre=' + rv.toFixed(1) + '  Rayon=' + r.toFixed(1), 'info'); S.circleDiamMode = false; }
     else termPrint('→ Rayon=' + r.toFixed(1), 'info');
+
+  } else if (mode === 'xy') {
+    // Point suivant en coordonnées absolues (option "coordonnées absolues")
+    const pair = readXYPair(base);
+    const xv = pair ? pair[0] : readNum(diDist.value);
+    const yv = pair ? pair[1] : readNum(diAngle.value);
+    if (isNaN(xv) || isNaN(yv)) { termPrint('Coordonnées invalides', 'error'); return; }
+    nx = xv; ny = yv;
+    termPrint('→ X=' + nx.toFixed(1) + '  Y=' + ny.toFixed(1), 'info');
 
   } else {
     // POLAR: field1 = distance, field2 = angle
@@ -11550,6 +11785,10 @@ function smartFocus() {
   if (S.diLocked && (S.drawing || S.tool !== 'select')) return;
   // Pendant le dessin avec au moins un point → focus automatique sur DI
   if (S.drawing && S.drawPoints.length > 0) { diDist.focus(); diDist.select(); return; }
+  // Outil de dessin qui attend son 1er point → focus sur la bulle X,Y : la valeur
+  // se tape directement au lancement de la fonction. Une lettre (= commande) rend
+  // la main au terminal, voir le handler keydown de diDist/diAngle.
+  if (diFirstPointReady()) { S.diLocked = false; diDist.focus(); diDist.select(); return; }
   S.diLocked = false;
   cmdInput.focus();
 }
@@ -12096,7 +12335,7 @@ function handleClick(wx, wy, ev, rawWx, rawWy) {
       S.drawing = true; S.drawPoints = [[wx, wy]]; S.awaitingInput = true;
       if (tool === 'rectcenter') termPrint('Centre: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ') — Largeur,Hauteur ou cliquez un coin', 'warning');
       else termPrint('Point 1: (' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ')', 'info');
-      if (tool === 'rect' || tool === 'rectcenter') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
+      if (tool === 'rect' || tool === 'rectcenter') termPrint(S.coordAbsolute ? 'Coin opposé X,Y absolu (ex: 100,100) ou cliquez' : 'Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
       else if (tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
       else termPrint('Longueur (ex: 150) ou 100<45 ou cliquez le 2ème point', 'warning');
     } else {
@@ -15810,12 +16049,27 @@ function setTool(t) {
   diContainer.classList.remove('visible');
   document.getElementById('osnap-tooltip').style.display='none';
   document.getElementById('polar-info').style.display='none';
+  // Ré-affiche immédiatement la bulle DI (X,Y) pour les outils de dessin : sans ce
+  // render(), elle restait cachée par le classList.remove ci-dessus jusqu'au prochain
+  // mousemove sur le canevas — un utilisateur qui sélectionne l'outil puis tape aussitôt
+  // (sans bouger la souris) ne voyait donc jamais la bulle apparaître (ex: RECTCENTER, POLYGON).
+  render();
+  // …et lui donner le focus, pour taper la valeur sans autre clic. Différé : le clic
+  // sur le bouton d'outil donne d'abord le focus au bouton.
+  setTimeout(smartFocus, 0);
+}
+
+// Un bouton bascule existe en deux exemplaires : la barre docked (id="xxx-btn")
+// et sa copie dans le ruban (data-mirror="xxx-btn"). setBtnActive() synchronise
+// l'état actif des deux, quel que soit le mode d'interface affiché.
+function setBtnActive(id, on) {
+  document.querySelectorAll('#'+id+',[data-mirror="'+id+'"]').forEach(b => b.classList.toggle('active', !!on));
 }
 
 function toggleSnap() {
   S.snap=!S.snap;
   document.getElementById('snap-label').className='snap-indicator'+(S.snap?'':' off');
-  document.getElementById('snap-btn').classList.toggle('active',S.snap);
+  setBtnActive('snap-btn',S.snap);
   termPrint('Snap grille: '+(S.snap?'ON':'OFF'),'info');
   autoSavePrefs();
 }
@@ -15824,7 +16078,7 @@ function toggleOsnap() {
   S.osnapEnabled=!S.osnapEnabled;
   document.getElementById('osnap-label').className='snap-indicator'+(S.osnapEnabled?'':' off');
   if(S.osnapEnabled) document.getElementById('osnap-label').style.color='var(--osnap-endpoint)';
-  document.getElementById('osnap-btn').classList.toggle('active',S.osnapEnabled);
+  setBtnActive('osnap-btn',S.osnapEnabled);
   termPrint('OSNAP: '+(S.osnapEnabled?'ON':'OFF'),'info');
   autoSavePrefs();
 }
@@ -15834,9 +16088,9 @@ function toggleOrtho() {
   if (S.ortho) S.polar = false; // mutually exclusive
   _osnapCache.wx = NaN; // invalide le cache OSNAP (twx/twy dépend de ortho)
   document.getElementById('ortho-label').className='snap-indicator'+(S.ortho?'':' off');
-  document.getElementById('ortho-btn').classList.toggle('active',S.ortho);
+  setBtnActive('ortho-btn',S.ortho);
   document.getElementById('polar-label').className='snap-indicator'+(S.polar?'':' off');
-  document.getElementById('polar-btn').classList.toggle('active',S.polar);
+  setBtnActive('polar-btn',S.polar);
   termPrint('Ortho: '+(S.ortho?'ON':'OFF')+(S.ortho?' (contraint à 90°)':''),'info');
   autoSavePrefs();
 }
@@ -15847,9 +16101,9 @@ function togglePolar() {
   _osnapCache.wx = NaN; // invalide le cache OSNAP
   document.getElementById('polar-label').className='snap-indicator'+(S.polar?'':' off');
   if(S.polar) document.getElementById('polar-label').style.color='var(--success)';
-  document.getElementById('polar-btn').classList.toggle('active',S.polar);
+  setBtnActive('polar-btn',S.polar);
   document.getElementById('ortho-label').className='snap-indicator'+(S.ortho?'':' off');
-  document.getElementById('ortho-btn').classList.toggle('active',S.ortho);
+  setBtnActive('ortho-btn',S.ortho);
   termPrint('Polaire: '+(S.polar?'ON (incrément '+S.polarAngle+'°)':'OFF'),'info');
   if (!S.polar) document.getElementById('polar-info').style.display='none';
   autoSavePrefs();
@@ -15857,7 +16111,7 @@ function togglePolar() {
 
 function toggleGridVis() {
   S.gridVis=!S.gridVis;
-  document.getElementById('grid-btn').classList.toggle('active',S.gridVis);
+  setBtnActive('grid-btn',S.gridVis);
   render();
 }
 
@@ -18993,7 +19247,7 @@ function executeCommand(input) {
   }
 
   // ---- FIRST POINT INPUT: tool active but no drawing started yet ----
-  const drawingTools = ['line','xline','ray','ray_rev','rect','rectcenter','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube','ellipse','polygon'];
+  const drawingTools = ['line','xline','ray','ray_rev','rect','rectcenter','circle','arc','wall','leader','polyline','cable','spline','dim_linear','dim_aligned','dim_angular','tube','ellipse','polygon', ...PLACEMENT_TOOLS];
   if (!S.drawing && drawingTools.includes(S.tool)) {
     // DEPUIS (FROM) actif : le point de référence choisi via le menu contextuel
     // Ctrl+clic-droit sert de base à une coordonnée relative/polaire — seul moyen
@@ -19005,11 +19259,16 @@ function executeCommand(input) {
         const [fx, fy] = fromResolved;
         S._fromBase = null;
         termPrint('❯ ' + raw, '');
+        if (PLACEMENT_TOOLS.includes(S.tool)) {
+          termPrint('Point (DEPUIS): (' + fx.toFixed(1) + ', ' + fy.toFixed(1) + ')', 'info');
+          handleClick(fx, fy, {shiftKey:false}, fx, fy);
+          render(); return;
+        }
         termPrint('Point 1 (DEPUIS): (' + fx.toFixed(1) + ', ' + fy.toFixed(1) + ')', 'info');
         S.drawing = true;
         S.drawPoints = [[fx, fy]];
         S.awaitingInput = true;
-        if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
+        if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint(S.coordAbsolute ? 'Coin opposé X,Y absolu (ex: 100,100) ou cliquez' : 'Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
         else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
         else if (S.tool === 'dim_angular') termPrint('DIMANGULAR: cliquez la 1ère ligne', 'info');
         else termPrint('2ème point ou longueur (ex: 150, 100<45, 100,50)', 'warning');
@@ -19021,13 +19280,18 @@ function executeCommand(input) {
     if (fpMatch) {
       const fx = parseFloat(fpMatch[1]), fy = parseFloat(fpMatch[2]);
       termPrint('❯ ' + raw, '');
+      if (PLACEMENT_TOOLS.includes(S.tool)) {
+        termPrint('Point: (' + fx.toFixed(1) + ', ' + fy.toFixed(1) + ')', 'info');
+        handleClick(fx, fy, {shiftKey:false}, fx, fy);
+        render(); return;
+      }
       termPrint('Point 1: (' + fx.toFixed(1) + ', ' + fy.toFixed(1) + ')', 'info');
       // Start drawing with this point
       S.drawing = true;
       S.drawPoints = [[fx, fy]];
       S.awaitingInput = true;
       // Show next step prompt
-      if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint('Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
+      if (S.tool === 'rect' || S.tool === 'rectcenter') termPrint(S.coordAbsolute ? 'Coin opposé X,Y absolu (ex: 100,100) ou cliquez' : 'Largeur,Hauteur (ex: 100,100) ou cliquez le coin opposé', 'warning');
       else if (S.tool === 'circle') termPrint('Rayon (ex: 50) ou D pour diamètre, ou cliquez', 'warning');
       else if (S.tool === 'dim_angular') termPrint('DIMANGULAR: cliquez la 1ère ligne', 'info');
       else termPrint('2ème point ou longueur (ex: 150, 100<45, 100,50)', 'warning');
@@ -19262,6 +19526,9 @@ function submitCmdInput() {
   S.cmdHistoryIdx = -1;
   executeCommand(cmdInput.value);
   cmdInput.value='';
+  // La commande peut avoir armé un outil qui attend son 1er point (ex: POLYGONE
+  // après le nombre de côtés) → le focus suit vers la bulle DI.
+  setTimeout(smartFocus, 0);
 }
 
 cmdInput.addEventListener('keydown',(ev)=>{
@@ -19711,8 +19978,7 @@ document.addEventListener('keydown',(ev)=>{
   }
 
   // Auto-focus distance field when typing numbers while drawing or waiting for first point (comportement CAO standard)
-  const drawingTools2 = ['line','rect','circle','arc','wall','leader','polyline','cable','dim_linear','dim_aligned','dim_angular','tube'];
-  const wantInput = (S.drawing && S.drawPoints.length > 0) || (S.tool==='tube' && S.drawing && S.tubePoints.length>0) || (!S.drawing && drawingTools2.includes(S.tool));
+  const wantInput = (S.drawing && S.drawPoints.length > 0) || (S.tool==='tube' && S.drawing && S.tubePoints.length>0) || diFirstPointReady();
   if (wantInput && /^[0-9.\-@#]$/.test(ev.key)) {
     ev.preventDefault();
     diDist.value = '';
@@ -19724,8 +19990,7 @@ document.addEventListener('keydown',(ev)=>{
   }
 
   // Tab while drawing or waiting for first point = focus dynamic input
-  const tabDrawTools = ['line','rect','circle','arc','wall','leader','polyline','cable','dim_linear','dim_aligned','dim_angular','tube'];
-  if (ev.key==='Tab' && (S.drawing && S.drawPoints.length > 0 || !S.drawing && tabDrawTools.includes(S.tool))) {
+  if (ev.key==='Tab' && (S.drawing && S.drawPoints.length > 0 || diFirstPointReady())) {
     ev.preventDefault();
     diDist.focus(); diDist.select();
     return;
@@ -21001,6 +21266,7 @@ function captureUserPrefs() {
     ortho: S.ortho,
     polar: S.polar,
     polarAngle: S.polarAngle,
+    coordAbsolute: S.coordAbsolute,
     rightDragPan: S.rightDragPan,
     tubeDiameter: S.tubeDiameter,
     tubeBendRadius: S.tubeBendRadius,
@@ -21045,6 +21311,7 @@ function applyUserPrefs(prefs) {
   if (prefs.ortho !== undefined)        S.ortho = prefs.ortho;
   if (prefs.polar !== undefined)        S.polar = prefs.polar;
   if (prefs.polarAngle !== undefined)   S.polarAngle = prefs.polarAngle;
+  if (prefs.coordAbsolute !== undefined) S.coordAbsolute = prefs.coordAbsolute;
   if (prefs.rightDragPan !== undefined) S.rightDragPan = prefs.rightDragPan;
   if (prefs.tubeDiameter !== undefined) S.tubeDiameter = prefs.tubeDiameter;
   if (prefs.tubeBendRadius !== undefined) S.tubeBendRadius = prefs.tubeBendRadius;
@@ -21201,6 +21468,7 @@ function openPrefsDialog() {
       ${row(`Mode ortho <span class="pf-unit">F8</span>`, chk('ortho', p.ortho))}
       ${row(`Accrochage polaire <span class="pf-unit">F10</span>`, chk('polar', p.polar))}
       ${row(`Incrément polaire`, num('polarAngle', p.polarAngle, 5, 1, 90), '°')}
+      ${row(`Coordonnées absolues (bulle de saisie)`, chk('coordAbsolute', p.coordAbsolute))}
       ${row(`Taille du pickbox`, num('pickboxPx', p.pickboxPx ?? 6, 1, 3, 20), 'px')}
       ${row(`Déplacement de la vue`, sel('rightDragPan', [
         {v:'0', l:`Molette seule`},
@@ -21250,6 +21518,7 @@ function openPrefsDialog() {
       ortho: g('ortho').checked,
       polar: g('polar').checked,
       polarAngle: parseFloat(g('polarAngle').value) || 15,
+      coordAbsolute: g('coordAbsolute').checked,
       rightDragPan: g('rightDragPan').value === '1',
       pickboxPx: parseFloat(g('pickboxPx').value) || 6,
       tubeDiameter: parseFloat(g('tubeDiameter').value) || 40,
@@ -22967,7 +23236,7 @@ function injectMenuIcons(){
 document.addEventListener('click', (ev) => {
   document.getElementById('tb-context').classList.remove('show');
   document.getElementById('canvas-context').classList.remove('show');
-  if (!ev.target.closest('#tube-def-popup') && !ev.target.closest('#tube-def-btn'))
+  if (!ev.target.closest('#tube-def-popup') && !ev.target.closest('#tube-def-btn') && !ev.target.closest('[data-mirror="tube-def-btn"]'))
     document.getElementById('tube-def-popup').classList.remove('show');
   if (!ev.target.closest('.menu-dropdown')) closeMenus();
 });
@@ -23304,27 +23573,27 @@ function closeMenus() {
 // ===== INIT =====
 function syncUIState() {
   // Snap
-  document.getElementById('snap-btn').classList.toggle('active', S.snap);
+  setBtnActive('snap-btn',S.snap);
   document.getElementById('snap-label').className = 'snap-indicator' + (S.snap ? '' : ' off');
 
   // OSNAP
-  document.getElementById('osnap-btn').classList.toggle('active', S.osnapEnabled);
+  setBtnActive('osnap-btn',S.osnapEnabled);
   document.getElementById('osnap-label').className = 'snap-indicator' + (S.osnapEnabled ? '' : ' off');
   if (S.osnapEnabled) document.getElementById('osnap-label').style.color = 'var(--osnap-endpoint)';
   else document.getElementById('osnap-label').style.color = '';
 
   // Ortho
-  document.getElementById('ortho-btn').classList.toggle('active', S.ortho);
+  setBtnActive('ortho-btn',S.ortho);
   document.getElementById('ortho-label').className = 'snap-indicator' + (S.ortho ? '' : ' off');
 
   // Polar
-  document.getElementById('polar-btn').classList.toggle('active', S.polar);
+  setBtnActive('polar-btn',S.polar);
   document.getElementById('polar-label').className = 'snap-indicator' + (S.polar ? '' : ' off');
   if (S.polar) document.getElementById('polar-label').style.color = 'var(--success)';
   else document.getElementById('polar-label').style.color = '';
 
   // Grid
-  document.getElementById('grid-btn').classList.toggle('active', S.gridVis);
+  setBtnActive('grid-btn',S.gridVis);
 }
 
 // ===== SIDE PANEL RESIZE + TOGGLE =====
